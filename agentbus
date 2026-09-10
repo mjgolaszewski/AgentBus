@@ -1,0 +1,230 @@
+#!/usr/bin/env python3
+"""Local service lifecycle and HTTP client for the superworkspace AgentBus."""
+
+from __future__ import annotations
+
+import argparse
+import fcntl
+import json
+import os
+from pathlib import Path
+import shlex
+import signal
+import subprocess
+import sys
+import time
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode, urlsplit
+from urllib.request import HTTPRedirectHandler, Request, build_opener
+
+
+class ClientError(Exception):
+    pass
+
+
+class NoRedirects(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def configuration() -> tuple[Path, dict[str, str]]:
+    source = Path(__file__).resolve().parent
+    default_project = source if (source / "pyproject.toml").is_file() else (
+        Path(os.environ.get("WEED_WORKSPACE", "/docker")) / ".devcontainer/agentbus"
+    )
+    project = Path(os.environ.get("AGENTBUS_PROJECT_DIR", str(default_project))).resolve()
+    config = Path(os.environ.get("AGENTBUS_CONFIG", str(project / ".env"))).expanduser()
+    values: dict[str, str] = {}
+    if config.is_file():
+        for number, line in enumerate(config.read_text().splitlines(), 1):
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line.startswith("export "):
+                line = line[7:]
+            key, separator, value = line.partition("=")
+            key = key.strip()
+            if not separator or not key.startswith("AGENTBUS_") or not key.replace("_", "").isalnum():
+                raise ClientError(f"Invalid AgentBus setting at {config}:{number}")
+            try:
+                parts = shlex.split(value, comments=True)
+            except ValueError:
+                raise ClientError(f"Invalid quoting at {config}:{number}") from None
+            if len(parts) > 1:
+                raise ClientError(f"Quote values containing spaces at {config}:{number}")
+            values[key] = parts[0] if parts else ""
+    values.update(os.environ)
+    values.setdefault("AGENTBUS_STATE_DIR", str(project / ".state"))
+    values.setdefault("AGENTBUS_DB_PATH", str(Path(values["AGENTBUS_STATE_DIR"]) / "messages.sqlite3"))
+    values.setdefault("AGENTBUS_HOST", "127.0.0.1")
+    values.setdefault("AGENTBUS_PORT", "8766")
+    values.setdefault("AGENTBUS_URL", f"http://127.0.0.1:{values['AGENTBUS_PORT']}")
+    return project, values
+
+
+def api(values: dict[str, str], path: str, payload: dict | None = None) -> dict:
+    token = values.get("AGENTBUS_API_TOKEN", "")
+    if path != "/healthz" and not token:
+        raise ClientError("Set AGENTBUS_API_TOKEN in the environment or AgentBus .env file.")
+    base = values["AGENTBUS_URL"].rstrip("/")
+    try:
+        parsed = urlsplit(base)
+        valid = parsed.scheme in {"http", "https"} and parsed.hostname and parsed.port != 0
+    except ValueError:
+        raise ClientError("AGENTBUS_URL is not a valid HTTP(S) service URL.") from None
+    if not valid or parsed.username or parsed.password or parsed.query or parsed.fragment:
+        raise ClientError("AGENTBUS_URL must be an HTTP(S) service URL without embedded credentials.")
+    if parsed.scheme == "http" and parsed.hostname not in {"127.0.0.1", "localhost", "::1"}:
+        raise ClientError("Use HTTPS for a remote AgentBus URL; HTTP is supported on loopback only.")
+    body = json.dumps(payload).encode() if payload is not None else None
+    headers = {"Content-Type": "application/json"}
+    if token and path != "/healthz":
+        headers["Authorization"] = f"Bearer {token}"
+    request = Request(base + path, data=body, headers=headers)
+    try:
+        with build_opener(NoRedirects).open(request, timeout=3 if path == "/healthz" else 35) as response:
+            return json.load(response)
+    except HTTPError as exc:
+        retry = exc.headers.get("Retry-After")
+        suffix = f"; retry after {retry} seconds" if retry else ""
+        # Avoid printing upstream/proxy response bodies that might echo credentials.
+        raise ClientError(f"AgentBus returned HTTP {exc.code}{suffix}.") from None
+    except (URLError, TimeoutError):
+        raise ClientError("Cannot reach AgentBus. Check `agentbus status` and AGENTBUS_URL.") from None
+    except (ValueError, UnicodeDecodeError):
+        raise ClientError("AgentBus returned invalid JSON. Check AGENTBUS_URL.") from None
+
+
+def process_identity(pid: int) -> str | None:
+    try:
+        # Fields after comm begin at stat field 3; starttime is field 22.
+        fields = Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()
+        if fields[0] == "Z":
+            return None
+        return fields[19]
+    except (OSError, IndexError):
+        return None
+
+
+def running_process(state: Path) -> int | None:
+    try:
+        record = json.loads((state / "service.json").read_text())
+        pid = int(record["pid"])
+        identity = process_identity(pid)
+        if pid > 1 and identity is not None and identity == record["start_time"]:
+            return pid
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return None
+
+
+def serve(project: Path, values: dict[str, str]) -> None:
+    for name in ("API_TOKEN", "SLACK_BOT_TOKEN", "SLACK_APP_TOKEN", "SLACK_CHANNEL"):
+        if not values.get(f"AGENTBUS_{name}"):
+            raise ClientError(f"Set AGENTBUS_{name} before starting AgentBus.")
+    if not (project / "uv.lock").is_file():
+        raise ClientError(f"AgentBus installation is incomplete: missing {project / 'uv.lock'}")
+    os.umask(0o077)
+    args = ["uv", "run", "--frozen", "--project", str(project), "--directory", str(project),
+            "python", "-m", "uvicorn", "agentbus_service:create_app", "--factory",
+            "--host", values["AGENTBUS_HOST"], "--port", values["AGENTBUS_PORT"],
+            "--no-access-log"]
+    os.execvpe(args[0], args, values)
+
+
+def lifecycle(command: str, project: Path, values: dict[str, str]) -> int:
+    if command == "autostart" and values.get("AGENTBUS_AUTOSTART", "0") != "1":
+        return 0
+    os.umask(0o077)
+    state = Path(values["AGENTBUS_STATE_DIR"])
+    if command == "status":
+        print(f"Local process: {running_process(state) or 'stopped'}")
+        try:
+            print(json.dumps(api(values, "/healthz"), indent=2))
+            return 0
+        except ClientError as exc:
+            print(str(exc))
+            return 1
+    state.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with (state / "service.lock").open("a") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        pid = running_process(state)
+        if command == "stop":
+            if not pid:
+                print("AgentBus is stopped.")
+                return 0
+            os.killpg(pid, signal.SIGTERM)
+            for _ in range(100):
+                if running_process(state) is None:
+                    (state / "service.json").unlink(missing_ok=True)
+                    print("AgentBus stopped.")
+                    return 0
+                time.sleep(0.1)
+            raise ClientError("AgentBus is still shutting down; inspect .state/service.log.")
+        if pid:
+            print(f"AgentBus already running (PID {pid}).")
+            return 0
+        for name in ("API_TOKEN", "SLACK_BOT_TOKEN", "SLACK_APP_TOKEN", "SLACK_CHANNEL"):
+            if not values.get(f"AGENTBUS_{name}"):
+                raise ClientError(f"Set AGENTBUS_{name} before starting AgentBus.")
+        launcher = project / "agentbus"
+        with (state / "service.log").open("ab") as log:
+            child = subprocess.Popen([sys.executable, str(launcher), "serve"], env=values,
+                                     stdin=subprocess.DEVNULL, stdout=log, stderr=log,
+                                     start_new_session=True, umask=0o077)
+        identity = process_identity(child.pid)
+        (state / "service.json").write_text(json.dumps({"pid": child.pid, "start_time": identity}))
+        # Dependencies may need downloading on the first run. Report starting honestly.
+        for _ in range(30):
+            if child.poll() is not None:
+                (state / "service.json").unlink(missing_ok=True)
+                raise ClientError(f"AgentBus failed to start; inspect {state / 'service.log'}")
+            time.sleep(0.1)
+        print(f"AgentBus started (PID {child.pid}); check `agentbus status` for Slack connectivity.")
+        print(f"Log: {state / 'service.log'}")
+        return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    commands = parser.add_subparsers(dest="command", required=True)
+    for name in ("serve", "start", "stop", "status", "autostart"):
+        commands.add_parser(name)
+    send = commands.add_parser("send", help="Publish a message to the configured Slack channel")
+    send.add_argument("text", help="Message text, or - to read stdin")
+    send.add_argument("--sender", required=True)
+    send.add_argument("--recipient", default="all")
+    send.add_argument("--kind", default="message")
+    send.add_argument("--repo")
+    send.add_argument("--correlation-id")
+    send.add_argument("--thread-ts")
+    read = commands.add_parser("read", help="Read the durable local inbox")
+    read.add_argument("--after", type=int, default=0)
+    read.add_argument("--limit", type=int, default=100)
+    read.add_argument("--recipient")
+    read.add_argument("--thread-ts")
+    ns = parser.parse_args(argv)
+    try:
+        project, values = configuration()
+        if ns.command == "serve":
+            serve(project, values)
+            return 0
+        if ns.command in {"start", "stop", "status", "autostart"}:
+            return lifecycle(ns.command, project, values)
+        if ns.command == "send":
+            payload = {key: value for key, value in vars(ns).items() if key != "command" and value is not None}
+            if payload["text"] == "-":
+                payload["text"] = sys.stdin.read()
+            result = api(values, "/v1/messages", payload)
+        else:
+            query = {key: value for key, value in vars(ns).items() if key != "command" and value is not None}
+            result = api(values, "/v1/messages?" + urlencode(query))
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        return 0
+    except (ClientError, OSError) as exc:
+        print(f"agentbus: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

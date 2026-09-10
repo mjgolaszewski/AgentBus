@@ -1,0 +1,21 @@
+[project]
+name = "superworkspace-agentbus"
+version = "0.1.0"
+description = "Local authenticated Slack channel transport for superworkspace agents"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.141.1",
+    "httpx==0.28.1",
+    "pydantic==2.13.5",
+    "slack-sdk==3.44.1",
+    "uvicorn==0.52.4",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

@@ -1,0 +1,19 @@
+name: superworkspace-agentbus
+services:
+  agentbus:
+    build: .
+    env_file: .env
+    environment:
+      AGENTBUS_DB_PATH: /data/messages.sqlite3
+    ports:
+      - "127.0.0.1:8766:8766"
+    volumes:
+      - agentbus-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8766/healthz', timeout=2)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+volumes:
+  agentbus-data:
