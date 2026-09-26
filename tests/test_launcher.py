@@ -285,7 +285,7 @@ def test_send_reads_stdin_and_preserves_thread_and_recipient(launcher, monkeypat
                           "--thread-ts", "123.456", "--correlation-id", "task-1"]) == 0
     assert captured == [("/v1/messages", {
         "text": "first line\nsecond line\n", "sender": "writer", "recipient": "reviewer",
-        "kind": "message", "thread_ts": "123.456", "correlation_id": "task-1",
+        "kind": "message", "audience": "direct", "thread_ts": "123.456", "correlation_id": "task-1",
     })]
     assert json.loads(capsys.readouterr().out) == {"ok": True}
 
@@ -301,3 +301,71 @@ def test_read_encodes_filter_query_without_leaking_token(launcher, monkeypatch):
     assert parse_qs(parsed.query) == {"after": ["17"], "limit": ["3"],
                                     "recipient": ["agent:one"], "thread_ts": ["123.456"]}
     assert TOKEN not in captured[0]
+
+
+def test_onboard_creates_unique_chat_profiles_for_same_repo(launcher, tmp_path, monkeypatch, capsys):
+    state = tmp_path / "consumers"
+    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
+    monkeypatch.setattr(launcher, "configuration", lambda: (Path("/unused"), values))
+    monkeypatch.setattr(launcher, "api", lambda _values, path, payload=None: {
+        "protocol_version": 2, "inbox_id": "inbox-1", "channel": "C123", "high_water_cursor": 42,
+    })
+    for name in ("weed", "fern"):
+        assert launcher.main(["onboard", "--repo", "tools", "--name", name,
+                              "--role", "maintainer"]) == 0
+    weed = json.loads((state / "tools:weed.json").read_text())
+    fern = json.loads((state / "tools:fern.json").read_text())
+    assert weed["identity"] == "tools:weed" and fern["identity"] == "tools:fern"
+    assert weed["chat_id"] != fern["chat_id"]
+    assert weed["ack_cursor"] == fern["ack_cursor"] == 42
+    assert (state.stat().st_mode & 0o777) == 0o700
+    assert (state / "tools:weed.json").stat().st_mode & 0o777 == 0o600
+    assert launcher.main(["onboard", "--repo", "tools", "--name", "weed",
+                          "--role", "maintainer"]) == 1
+    assert "already exists" in capsys.readouterr().err
+
+
+def test_inbox_after_zero_is_stateless_and_ack_is_bounded(launcher, tmp_path, monkeypatch, capsys):
+    state = tmp_path / "consumers"
+    state.mkdir()
+    profile = {"schema_version": 2, "chat_id": "chat-1", "identity": "tools:weed",
+               "repo": "tools", "name": "weed", "display_name": "Weed", "role": "maintainer",
+               "voice": "plain", "remit": "tools", "inbox_id": "inbox-1", "channel": "C123",
+               "service_url": "http://127.0.0.1:8766", "ack_cursor": 8, "observed_cursor": 10}
+    (state / "tools:weed.json").write_text(json.dumps(profile))
+    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
+    monkeypatch.setattr(launcher, "configuration", lambda: (Path("/unused"), values))
+
+    def fake_api(_values, path, payload=None):
+        if path == "/v1/info":
+            return {"inbox_id": "inbox-1", "channel": "C123", "high_water_cursor": 50}
+        assert "after=0" in path
+        return {"messages": [{"cursor": 40}], "next_cursor": 50, "has_more": False}
+
+    monkeypatch.setattr(launcher, "api", fake_api)
+    assert launcher.main(["inbox", "--identity", "tools:weed", "--after", "0"]) == 0
+    assert json.loads((state / "tools:weed.json").read_text())["observed_cursor"] == 10
+    capsys.readouterr()
+    assert launcher.main(["ack", "--identity", "tools:weed", "--through", "11"]) == 1
+    assert "highest cursor observed" in capsys.readouterr().err
+    assert launcher.main(["ack", "--identity", "tools:weed", "--through", "10"]) == 0
+    assert json.loads((state / "tools:weed.json").read_text())["ack_cursor"] == 10
+
+
+def test_cli_rejects_ambiguous_actionable_send_before_api(launcher, monkeypatch, capsys):
+    called = []
+    monkeypatch.setattr(launcher, "configuration", lambda: (Path("/unused"), {}))
+    monkeypatch.setattr(launcher, "api", lambda *args, **kwargs: called.append(args))
+    assert launcher.main(["send", "Who owns this?", "--sender", "tools:weed",
+                          "--kind", "question"]) == 1
+    assert called == []
+    assert "require --to" in capsys.readouterr().err
+
+
+def test_consumer_profiles_reject_symlinked_state(launcher, tmp_path):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    linked = tmp_path / "linked"
+    linked.symlink_to(outside, target_is_directory=True)
+    with pytest.raises(launcher.ClientError, match="unsafe"):
+        launcher.consumer_state_dir({"AGENTBUS_CONSUMER_STATE_DIR": str(linked)})

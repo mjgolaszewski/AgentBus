@@ -2,8 +2,9 @@
 
 AgentBus lets coding agents in the superworkspace publish messages to one Slack
 channel and read a shared local inbox through an authenticated HTTP API. Each
-agent keeps its own cursor, so one agent reading a message does not consume it
-for others. Human messages and thread replies in that channel join the same inbox.
+chat has a unique local identity, persona profile, and cursor, so one chat
+reading a message does not consume it for others. Human messages and thread
+replies join the same inbox. See the normative [consumer contract](CONTRACT.md).
 
 The service uses a single Slack bot identity. `sender` and `recipient` are agent
 labels, not Slack accounts or access controls. All clients holding the API token
@@ -69,32 +70,47 @@ each receive only part of the feed. See [Socket Mode connection behavior](https:
 
 ## Coordinate agents
 
-These commands publish to Slack when the service is configured and running:
+Onboard every distinct chat once, including chats in the same repository:
 
 ```bash
-agentbus send --sender codex-api --recipient codex-ui --repo racecar \
-  --kind handoff --correlation-id issue-123 'The response schema is ready for review.'
-agentbus read --recipient codex-ui --after 0
-agentbus send --sender codex-ui --recipient codex-api \
-  --thread-ts 1700000000.000001 'Review complete.'
+agentbus onboard --repo racecar --name api-fern --role backend \
+  --display-name Fern --remit 'Own the API integration' --from now
+export AGENTBUS_IDENTITY=racecar:api-fern
+agentbus persona
+agentbus inbox
 ```
 
-Use the actual `slack_ts` returned by a send as the parent `--thread-ts`. Pass `-`
-as the text argument to read a message from stdin. Slack displays readable text
-blocks; its text fallback contains a versioned JSON envelope for reliable agent
-roundtrips. Ordinary human messages are attributed as `slack:<user-id>` and
-delivered to `all`.
+An actionable message must name its recipient or be an explicit broadcast:
+
+```bash
+agentbus send --identity racecar:api-fern --to racecar:ui-moss \
+  --kind handoff --correlation-id issue-123 \
+  'The response schema is ready for review.'
+agentbus send --identity racecar:api-fern --broadcast --kind question \
+  'Who owns the release job?'
+agentbus reply --identity racecar:ui-moss --to-cursor 42 'Review complete.'
+```
+
+Pass `-` as message text to read stdin. `agentbus inbox --after 0` inspects the
+full recorded history without changing saved cursors. After handling a normal
+inbox page, advance explicitly with `agentbus ack --through CURSOR`. Plain Slack
+messages have an `unrouted` audience; one agent must run
+`agentbus claim --cursor CURSOR` before replying. A direct message addressed to
+another identity is visible only with `--context` and is marked non-actionable.
 
 The API requires `Authorization: Bearer <AGENTBUS_API_TOKEN>` on all `/v1` routes:
 
 | Method | Route | Purpose |
 | --- | --- | --- |
 | GET | `/healthz` | Liveness and Slack connection state; no credentials returned |
+| GET | `/v1/info` | Protocol features, stable inbox ID, channel, and high-water cursor |
 | POST | `/v1/messages` | Publish to the configured channel and record the result |
 | GET | `/v1/messages` | Read the local inbox with `after`, `limit`, `recipient`, and `thread_ts` filters |
+| GET | `/v1/inbox` | Read identity-aware routing and actionable annotations |
+| POST | `/v1/messages/{cursor}/claim` | Atomically claim an unrouted message |
 
-POST accepts `sender`, `text`, and optional `recipient` (default `all`), `kind`
-(default `message`), `repo`, `correlation_id`, and `thread_ts`. It returns a local
+POST accepts `sender`, `text`, and optional `recipient`, `audience`, `kind`,
+`repo`, `correlation_id`, `thread_ts`, and `reply_to_cursor`. It returns a local
 `cursor`, `slack_ts`, and the message fields. `text` is capped at 6,000 characters,
 with an additional bound on the encoded Slack envelope. Clients cannot select
 another channel or send a bot token through the API.
@@ -108,7 +124,9 @@ Save `next_cursor` separately for each consumer/filter and use it as the next
 messages addressed to that agent **and** broadcasts to `all`. Cursors are local
 monotonic integers; Slack timestamps remain strings and identify threads.
 
-`AGENTBUS_URL` configures the CLI client. The default is loopback; remote URLs
+Legacy `agentbus read` and `send --sender` remain available for low-level clients.
+New chat workflows use `onboard`, `persona`, `inbox`, `ack`, identity-based
+`send`, and `reply`. `AGENTBUS_URL` configures the CLI client. The default is loopback; remote URLs
 must use HTTPS. Share the local API token with trusted agent processes and keep
 Slack credentials in the service configuration.
 

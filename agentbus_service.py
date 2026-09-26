@@ -18,7 +18,8 @@ from pathlib import Path
 import re
 import sqlite3
 import threading
-from typing import Annotated, Callable
+from typing import Annotated, Callable, Literal
+import uuid
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
 import httpx
@@ -33,6 +34,7 @@ LOGGER = logging.getLogger("agentbus")
 IDENTIFIER = r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$"
 SLACK_TS = r"^[0-9]{1,20}\.[0-9]{1,20}$"
 MAX_TEXT = 6000
+ACTIONABLE_KINDS = {"question", "request", "blocker", "handoff"}
 
 
 @dataclass(frozen=True)
@@ -65,7 +67,7 @@ class Settings:
 
 def encode_envelope(message: SendMessage) -> str:
     """Keep Slack's link/mention processing out of the machine-readable fallback."""
-    encoded = json.dumps({"agentbus": 1, **message.model_dump(include=set(SendMessage.model_fields))},
+    encoded = json.dumps({"agentbus": 2, **message.model_dump(include=set(SendMessage.model_fields))},
                          ensure_ascii=True, separators=(",", ":"))
     for literal, escape in (("<", r"\u003c"), (">", r"\u003e"), ("&", r"\u0026"), ("/", r"\/")):
         encoded = encoded.replace(literal, escape)
@@ -82,6 +84,8 @@ class SendMessage(BaseModel):
     kind: str = Field(default="message", pattern=IDENTIFIER)
     correlation_id: str | None = Field(default=None, max_length=128)
     thread_ts: str | None = Field(default=None, pattern=SLACK_TS)
+    audience: Literal["direct", "broadcast", "informational", "unrouted"] | None = None
+    reply_to_cursor: int | None = Field(default=None, ge=1)
 
     @model_validator(mode="after")
     def check_text(self) -> SendMessage:
@@ -93,6 +97,19 @@ class SendMessage(BaseModel):
                     value.encode("utf-8")
                 except UnicodeEncodeError:
                     raise ValueError("message fields must contain valid Unicode") from None
+        if self.audience is None:
+            if self.recipient != "all":
+                self.audience = "direct"
+            elif self.kind in ACTIONABLE_KINDS and "recipient" not in self.model_fields_set:
+                raise ValueError("actionable messages require a recipient or explicit broadcast audience")
+            else:
+                self.audience = "broadcast"
+        if self.audience == "direct" and self.recipient == "all":
+            raise ValueError("direct messages require a named recipient")
+        if self.audience == "broadcast" and self.recipient != "all":
+            raise ValueError("broadcast messages must use recipient 'all'")
+        if self.audience == "unrouted" and not self.sender.startswith("slack:"):
+            raise ValueError("unrouted audience is reserved for Slack messages without routing metadata")
         if len(encode_envelope(self)) > 39000:
             raise ValueError("encoded message exceeds Slack's safe text size; shorten text")
         return self
@@ -108,6 +125,35 @@ class MessagePage(BaseModel):
     messages: list[Message]
     next_cursor: int
     has_more: bool
+
+
+class InboxMessage(Message):
+    actionable: bool
+    action_reason: str
+
+
+class InboxPage(BaseModel):
+    messages: list[InboxMessage]
+    next_cursor: int
+    has_more: bool
+
+
+class ClaimRequest(BaseModel):
+    identity: str = Field(pattern=IDENTIFIER)
+
+
+class Claim(BaseModel):
+    cursor: int
+    identity: str
+    claimed_at: str
+
+
+class Info(BaseModel):
+    protocol_version: int = 2
+    inbox_id: str
+    channel: str
+    high_water_cursor: int
+    features: list[str]
 
 
 class MessageStore:
@@ -133,6 +179,24 @@ class MessageStore:
                 UNIQUE(channel, slack_ts)
             )
         """)
+        self._db.execute("""
+            CREATE TABLE IF NOT EXISTS metadata (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )
+        """)
+        self._db.execute("""
+            CREATE TABLE IF NOT EXISTS claims (
+                channel TEXT NOT NULL,
+                cursor INTEGER NOT NULL,
+                identity TEXT NOT NULL,
+                claimed_at TEXT NOT NULL,
+                PRIMARY KEY(channel, cursor),
+                FOREIGN KEY(cursor) REFERENCES messages(cursor)
+            )
+        """)
+        self._db.execute("INSERT OR IGNORE INTO metadata(key, value) VALUES ('inbox_id', ?)",
+                         (str(uuid.uuid4()),))
         self._db.commit()
 
     @staticmethod
@@ -174,6 +238,90 @@ class MessageStore:
         next_cursor = messages[-1].cursor if has_more else max(after, high)
         return MessagePage(messages=messages, next_cursor=next_cursor, has_more=has_more)
 
+    def info(self, channel: str) -> Info:
+        with self._lock:
+            inbox_id = self._db.execute("SELECT value FROM metadata WHERE key = 'inbox_id'").fetchone()[0]
+            high = self._db.execute("SELECT COALESCE(MAX(cursor), 0) FROM messages WHERE channel = ?",
+                                    (channel,)).fetchone()[0]
+        return Info(inbox_id=inbox_id, channel=channel, high_water_cursor=high,
+                    features=["profiles", "stateless-cursors", "explicit-routing",
+                              "parent-replies", "legacy-claims"])
+
+    def message(self, channel: str, cursor: int) -> Message | None:
+        with self._lock:
+            row = self._db.execute("SELECT * FROM messages WHERE channel = ? AND cursor = ?",
+                                   (channel, cursor)).fetchone()
+        return self._message(row) if row else None
+
+    def claim(self, channel: str, cursor: int, identity: str) -> Claim:
+        with self._lock, self._db:
+            message = self.message(channel, cursor)
+            if message is None:
+                raise KeyError(cursor)
+            if message.audience != "unrouted":
+                raise ValueError("only unrouted messages can be claimed")
+            now = datetime.now(timezone.utc).isoformat()
+            self._db.execute("INSERT OR IGNORE INTO claims(channel, cursor, identity, claimed_at) VALUES (?, ?, ?, ?)",
+                             (channel, cursor, identity, now))
+            row = self._db.execute("SELECT cursor, identity, claimed_at FROM claims WHERE channel = ? AND cursor = ?",
+                                   (channel, cursor)).fetchone()
+        return Claim(**dict(row))
+
+    def claimant(self, channel: str, cursor: int) -> str | None:
+        with self._lock:
+            row = self._db.execute("SELECT identity FROM claims WHERE channel = ? AND cursor = ?",
+                                   (channel, cursor)).fetchone()
+        return row[0] if row else None
+
+    def inbox(self, channel: str, identity: str, after: int = 0, limit: int = 100,
+              thread_ts: str | None = None, context: bool = False) -> InboxPage:
+        clauses = ["channel = ?", "cursor > ?"]
+        params: list[str | int] = [channel, after]
+        if thread_ts is not None:
+            clauses.append("(thread_ts = ? OR slack_ts = ?)")
+            params.extend((thread_ts, thread_ts))
+        with self._lock:
+            high = self._db.execute("SELECT COALESCE(MAX(cursor), 0) FROM messages WHERE channel = ?",
+                                    (channel,)).fetchone()[0]
+            rows = self._db.execute("SELECT * FROM messages WHERE " + " AND ".join(clauses) +
+                                    " ORDER BY cursor", params).fetchall()
+            claims = {row["cursor"]: row["identity"] for row in self._db.execute(
+                "SELECT cursor, identity FROM claims WHERE channel = ?", (channel,)).fetchall()}
+        visible: list[InboxMessage] = []
+        for row in rows:
+            message = self._message(row)
+            claim = claims.get(message.cursor)
+            actionable = (message.audience == "direct" and message.recipient == identity) or \
+                         message.audience == "broadcast" or claim == identity
+            reason = ("addressed to this identity" if message.audience == "direct" and message.recipient == identity
+                      else "explicit broadcast" if message.audience == "broadcast"
+                      else "claimed by this identity" if claim == identity
+                      else f"claimed by {claim}" if claim
+                      else f"addressed to {message.recipient}" if message.audience == "direct"
+                      else "informational" if message.audience == "informational"
+                      else "unrouted; claim before replying")
+            if actionable or context or (message.audience == "informational" and message.recipient == identity):
+                visible.append(InboxMessage(**message.model_dump(), actionable=actionable,
+                                            action_reason=reason))
+        has_more = len(visible) > limit
+        shown = visible[:limit]
+        next_cursor = shown[-1].cursor if has_more else max(after, high)
+        return InboxPage(messages=shown, next_cursor=next_cursor, has_more=has_more)
+
+    def validate_reply(self, channel: str, message: SendMessage) -> None:
+        if message.reply_to_cursor is None:
+            return
+        parent = self.message(channel, message.reply_to_cursor)
+        if parent is None:
+            raise KeyError(message.reply_to_cursor)
+        allowed = parent.sender == message.sender or parent.audience == "broadcast" or \
+                  (parent.audience == "direct" and parent.recipient == message.sender) or \
+                  (parent.audience == "unrouted" and self.claimant(channel, parent.cursor) == message.sender)
+        if not allowed:
+            raise PermissionError("sender is not an intended responder for the parent message")
+        if message.recipient != parent.sender or message.audience != "direct":
+            raise ValueError("replies must be direct messages to the parent sender")
+
     def close(self) -> None:
         with self._lock:
             self._db.close()
@@ -192,7 +340,11 @@ def normalize_event(event: dict, channel: str) -> tuple[str, SendMessage] | None
         thread_ts = None
     try:
         envelope = json.loads(text)
-        if isinstance(envelope, dict) and type(envelope.get("agentbus")) is int and envelope.pop("agentbus") == 1:
+        if isinstance(envelope, dict) and envelope.get("agentbus") in (1, 2):
+            version = envelope.pop("agentbus")
+            if version == 1:
+                envelope.pop("audience", None)
+                envelope.pop("reply_to_cursor", None)
             envelope["thread_ts"] = thread_ts
             return ts, SendMessage.model_validate(envelope)
     except (ValueError, RecursionError):
@@ -202,10 +354,12 @@ def normalize_event(event: dict, channel: str) -> tuple[str, SendMessage] | None
     # Human messages can exceed the API's send limit, including escaped Unicode.
     text = text.encode("utf-8", errors="replace").decode("utf-8").strip()[:MAX_TEXT]
     try:
-        return ts, SendMessage(sender=f"slack:{identity}", text=text, thread_ts=thread_ts)
+        return ts, SendMessage(sender=f"slack:{identity}", text=text, thread_ts=thread_ts,
+                               audience="unrouted")
     except ValidationError:
         # Even 3000 astral Unicode characters fit as JSON surrogate pairs.
-        return ts, SendMessage(sender=f"slack:{identity}", text=text[:3000], thread_ts=thread_ts)
+        return ts, SendMessage(sender=f"slack:{identity}", text=text[:3000], thread_ts=thread_ts,
+                               audience="unrouted")
 
 
 class SlackReceiver:
@@ -241,7 +395,7 @@ class SlackPoster:
         self.settings, self.client = settings, client
 
     async def post(self, message: SendMessage) -> str:
-        label = f"{message.sender} → {message.recipient} · {message.kind}"
+        label = f"{message.sender} → {message.recipient} · {message.kind} · {message.audience}"
         if message.repo:
             label += f" · {message.repo}"
         blocks = [{"type": "context", "elements": [{"type": "plain_text", "text": label, "emoji": False}]}]
@@ -302,7 +456,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                 await client.aclose()
             store.close()
 
-    app = FastAPI(title="Superworkspace AgentBus", version="0.1.0", lifespan=lifespan,
+    app = FastAPI(title="Superworkspace AgentBus", version="0.2.0", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
 
     def authenticate(authorization: Annotated[str | None, Header()] = None) -> None:
@@ -316,6 +470,16 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
 
     @app.post("/v1/messages", dependencies=[Depends(authenticate)], response_model=Message, status_code=201)
     async def send(message: SendMessage) -> Message:
+        if message.audience == "unrouted":
+            raise HTTPException(422, "unrouted audience is reserved for Slack ingestion")
+        try:
+            app.state.store.validate_reply(settings.slack_channel, message)
+        except KeyError:
+            raise HTTPException(422, "reply parent does not exist in this inbox") from None
+        except PermissionError as exc:
+            raise HTTPException(409, str(exc)) from None
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from None
         ts = await app.state.poster.post(message)
         try:
             return await asyncio.to_thread(app.state.store.append, settings.slack_channel, ts, message)
@@ -328,5 +492,30 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
              limit: Annotated[int, Query(ge=1, le=200)] = 100,
              thread_ts: Annotated[str | None, Query(pattern=SLACK_TS)] = None) -> MessagePage:
         return app.state.store.read(settings.slack_channel, after, recipient, limit, thread_ts)
+
+    @app.get("/v1/info", dependencies=[Depends(authenticate)], response_model=Info)
+    def info() -> Info:
+        return app.state.store.info(settings.slack_channel)
+
+    @app.get("/v1/inbox", dependencies=[Depends(authenticate)], response_model=InboxPage)
+    def inbox(identity: Annotated[str, Query(pattern=IDENTIFIER)],
+              after: Annotated[int, Query(ge=0)] = 0,
+              limit: Annotated[int, Query(ge=1, le=200)] = 100,
+              thread_ts: Annotated[str | None, Query(pattern=SLACK_TS)] = None,
+              context: bool = False) -> InboxPage:
+        return app.state.store.inbox(settings.slack_channel, identity, after, limit, thread_ts, context)
+
+    @app.post("/v1/messages/{cursor}/claim", dependencies=[Depends(authenticate)], response_model=Claim)
+    def claim(cursor: int, request: ClaimRequest) -> Claim:
+        try:
+            result = app.state.store.claim(settings.slack_channel, cursor, request.identity)
+        except KeyError:
+            raise HTTPException(404, "message not found") from None
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from None
+        if result.identity != request.identity:
+            raise HTTPException(409, f"message already claimed by {result.identity}",
+                                headers={"X-AgentBus-Claimed-By": result.identity})
+        return result
 
     return app

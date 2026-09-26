@@ -100,7 +100,9 @@ def test_send_roundtrip_and_plain_text_blocks_preserve_mentions_and_unicode(serv
     assert payload["unfurl_links"] is False and payload["unfurl_media"] is False
     assert payload["blocks"][1]["text"] == {"type": "plain_text", "text": text, "emoji": False}
     assert "<" not in payload["text"] and "https://" not in payload["text"] and "&" not in payload["text"]
-    assert json.loads(payload["text"]) == {"agentbus": 1, **body}
+    assert json.loads(payload["text"]) == {
+        "agentbus": 2, **body, "audience": "direct", "reply_to_cursor": None,
+    }
     app.state.socket.emit(event(payload["text"], ts=response.json()["slack_ts"],
                                 subtype="bot_message", bot_id="B123", thread_ts=body["thread_ts"]))
     page = client.get("/v1/messages", headers=AUTH).json()
@@ -269,3 +271,85 @@ def test_env_requires_tokens_without_disclosing_values(monkeypatch, tmp_path):
     monkeypatch.setenv("AGENTBUS_API_TOKEN", "too-short")
     with pytest.raises(ValueError, match="at least 32"):
         Settings.from_env()
+
+
+def test_info_is_authenticated_stable_and_reports_high_water(service):
+    client, app, _ = service
+    assert client.get("/v1/info").status_code == 401
+    first = client.get("/v1/info", headers=AUTH).json()
+    assert first["protocol_version"] == 2
+    assert first["high_water_cursor"] == 0
+    assert "explicit-routing" in first["features"]
+    client.post("/v1/messages", headers=AUTH,
+                json={"sender": "repo:weed", "recipient": "repo:fern", "text": "hello"})
+    second = client.get("/v1/info", headers=AUTH).json()
+    assert second["inbox_id"] == first["inbox_id"]
+    assert second["channel"] == CHANNEL and second["high_water_cursor"] == 1
+
+
+def test_actionable_messages_require_explicit_routing(service):
+    client, _, requests = service
+    ambiguous = client.post("/v1/messages", headers=AUTH,
+                            json={"sender": "repo:weed", "kind": "question", "text": "Who owns this?"})
+    assert ambiguous.status_code == 422
+    broadcast = client.post("/v1/messages", headers=AUTH,
+                            json={"sender": "repo:weed", "recipient": "all", "audience": "broadcast",
+                                  "kind": "question", "text": "Who owns this?"})
+    assert broadcast.status_code == 201
+    assert len(requests) == 1
+
+
+def test_direct_message_is_not_actionable_by_another_agent(service):
+    client, _, _ = service
+    sent = client.post("/v1/messages", headers=AUTH,
+                       json={"sender": "human:owner", "recipient": "tools:weed", "audience": "direct",
+                             "kind": "question", "text": "Weed, can you check this?"}).json()
+    assert client.get("/v1/inbox", headers=AUTH,
+                      params={"identity": "bcf:thistle"}).json()["messages"] == []
+    context = client.get("/v1/inbox", headers=AUTH,
+                         params={"identity": "bcf:thistle", "context": True}).json()["messages"]
+    assert context[0]["cursor"] == sent["cursor"]
+    assert context[0]["actionable"] is False
+    assert context[0]["action_reason"] == "addressed to tools:weed"
+    wrong_reply = client.post("/v1/messages", headers=AUTH,
+                              json={"sender": "bcf:thistle", "recipient": "human:owner",
+                                    "audience": "direct", "kind": "reply", "text": "I answered",
+                                    "reply_to_cursor": sent["cursor"]})
+    assert wrong_reply.status_code == 409
+    wrong_target = client.post("/v1/messages", headers=AUTH,
+                               json={"sender": "tools:weed", "recipient": "someone:else",
+                                     "audience": "direct", "kind": "reply", "text": "On it",
+                                     "reply_to_cursor": sent["cursor"]})
+    assert wrong_target.status_code == 422
+    right_reply = client.post("/v1/messages", headers=AUTH,
+                              json={"sender": "tools:weed", "recipient": "human:owner",
+                                    "audience": "direct", "kind": "reply", "text": "On it",
+                                    "reply_to_cursor": sent["cursor"]})
+    assert right_reply.status_code == 201
+
+
+def test_unrouted_slack_message_requires_atomic_claim_before_reply(service):
+    client, app, _ = service
+    app.state.socket.emit(event("Could someone inspect this?"))
+    message = client.get("/v1/messages", headers=AUTH).json()["messages"][0]
+    assert message["audience"] == "unrouted"
+    assert client.get("/v1/inbox", headers=AUTH,
+                      params={"identity": "tools:weed"}).json()["messages"] == []
+    claim = client.post(f"/v1/messages/{message['cursor']}/claim", headers=AUTH,
+                        json={"identity": "tools:weed"})
+    assert claim.status_code == 200 and claim.json()["identity"] == "tools:weed"
+    competing = client.post(f"/v1/messages/{message['cursor']}/claim", headers=AUTH,
+                            json={"identity": "bcf:thistle"})
+    assert competing.status_code == 409
+    inbox = client.get("/v1/inbox", headers=AUTH,
+                       params={"identity": "tools:weed"}).json()["messages"]
+    assert inbox[0]["actionable"] is True and inbox[0]["action_reason"] == "claimed by this identity"
+
+
+def test_v1_envelopes_remain_compatible_and_new_human_messages_are_unrouted():
+    old = json.dumps({"agentbus": 1, "sender": "old-agent", "recipient": "all",
+                      "kind": "message", "text": "legacy"})
+    _, message = normalize_event(event(old), CHANNEL)
+    assert message.audience == "broadcast"
+    _, human = normalize_event(event("plain Slack text"), CHANNEL)
+    assert human.audience == "unrouted"
