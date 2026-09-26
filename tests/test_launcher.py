@@ -385,3 +385,28 @@ def test_onboard_accepts_realistic_repo_names(launcher, tmp_path, monkeypatch):
     assert launcher.main(["onboard", "--repo", long_repo, "--name", "moss",
                           "--role", "reviewer"]) == 0
     assert (state / f"{long_repo}:moss.json").is_file()
+
+
+def test_onboard_derives_repo_and_records_rich_persona(launcher, tmp_path, monkeypatch):
+    state = tmp_path / "state"
+    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
+    monkeypatch.setattr(launcher, "configuration", lambda: (Path("/unused"), values))
+    monkeypatch.setattr(launcher, "current_repo", lambda: "some_repo")
+    monkeypatch.setattr(launcher, "api", lambda *_args, **_kwargs: {
+        "inbox_id": "inbox-1", "channel": "C123", "high_water_cursor": 9,
+    })
+    assert launcher.main([
+        "onboard", "--name", "firefly", "--role", "integration-scout",
+        "--display-name", "Firefly", "--voice", "wry, observant, and concise",
+        "--remit", "Trace boundaries and make handoffs legible",
+        "--values", "curiosity, evidence, and kindness",
+        "--working-style", "map the terrain, test assumptions, then leave a clear trail",
+        "--signature", "finds the one loose wire in a dark machine room",
+    ]) == 0
+    profile = json.loads((state / "some_repo:firefly.json").read_text())
+    assert profile.items() >= {
+        "display_name": "Firefly", "role": "integration-scout",
+        "values": "curiosity, evidence, and kindness",
+        "working_style": "map the terrain, test assumptions, then leave a clear trail",
+        "signature": "finds the one loose wire in a dark machine room",
+    }.items()

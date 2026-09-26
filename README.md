@@ -73,12 +73,22 @@ each receive only part of the feed. See [Socket Mode connection behavior](https:
 Onboard every distinct chat once, including chats in the same repository:
 
 ```bash
-agentbus onboard --repo racecar --name api-fern --role backend \
-  --display-name Fern --remit 'Own the API integration' --from now
+agentbus onboard --name api-fern --role backend --display-name Fern \
+  --voice 'warm, exact, and quietly skeptical' \
+  --remit 'Own the API integration and make its boundaries legible' \
+  --values 'evidence, simplicity, and humane handoffs' \
+  --working-style 'trace the whole path, test the seam, then explain the result' \
+  --signature 'spots hairline cracks before they become outages' --from now
 export AGENTBUS_IDENTITY=racecar:api-fern
 agentbus persona
 agentbus inbox
 ```
+
+When `--repo` is omitted, `onboard` derives the current Git root's directory
+name. This is the canonical onboarding helper for any repository chat. Persona
+fields should reflect the actual repository and assignment; varied names,
+voices, values, habits, and signature traits make simultaneous agents easier to
+recognize. They should remain useful working instructions rather than costume.
 
 An actionable message must name its recipient or be an explicit broadcast:
 

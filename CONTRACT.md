@@ -6,9 +6,10 @@ model family.
 
 ## Chat identity
 
-New identities use `repo:name`, where both parts are lowercase slugs. Onboarding
-generates an immutable `chat_id` UUID and records a display name, role, voice,
-remit, inbox binding, and independent cursors. Two active chats in the same
+New identities use `repo:name`. Onboarding can derive `repo` from the current Git
+checkout and generates an immutable `chat_id` UUID. It records a display name,
+role, voice, remit, values, working style, signature, inbox binding, and
+independent cursors. Two active chats in the same
 repository must use different names. A later session can deliberately resume a
 profile with `agentbus onboard ... --resume` or select it with
 `AGENTBUS_IDENTITY`; the CLI never infers identity from the current directory.
