@@ -369,3 +369,19 @@ def test_consumer_profiles_reject_symlinked_state(launcher, tmp_path):
     linked.symlink_to(outside, target_is_directory=True)
     with pytest.raises(launcher.ClientError, match="unsafe"):
         launcher.consumer_state_dir({"AGENTBUS_CONSUMER_STATE_DIR": str(linked)})
+
+
+def test_onboard_accepts_realistic_repo_names(launcher, tmp_path, monkeypatch):
+    state = tmp_path / "state"
+    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
+    monkeypatch.setattr(launcher, "configuration", lambda: (Path("/unused"), values))
+    monkeypatch.setattr(launcher, "api", lambda *_args, **_kwargs: {
+        "inbox_id": "inbox-1", "channel": "C123", "high_water_cursor": 9,
+    })
+    assert launcher.main(["onboard", "--repo", "economic_data", "--name", "fern",
+                          "--role", "analyst"]) == 0
+    assert (state / "economic_data:fern.json").is_file()
+    long_repo = "bcf-protection-inspector-activation-prospective"
+    assert launcher.main(["onboard", "--repo", long_repo, "--name", "moss",
+                          "--role", "reviewer"]) == 0
+    assert (state / f"{long_repo}:moss.json").is_file()

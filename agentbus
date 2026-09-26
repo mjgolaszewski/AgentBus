@@ -32,6 +32,7 @@ class NoRedirects(HTTPRedirectHandler):
 
 
 NAME_RE = r"^[a-z0-9][a-z0-9-]{0,31}$"
+REPO_RE = r"^[a-z0-9][a-z0-9._-]{0,63}$"
 
 
 def now() -> str:
@@ -389,8 +390,8 @@ def main(argv: list[str] | None = None) -> int:
         if ns.command == "onboard":
             if not re.fullmatch(NAME_RE, ns.name):
                 raise ClientError("Chat names must be lowercase letters, digits, or hyphens (maximum 32).")
-            if not re.fullmatch(NAME_RE, ns.repo):
-                raise ClientError("Repository names must be lowercase letters, digits, or hyphens (maximum 32).")
+            if not re.fullmatch(REPO_RE, ns.repo):
+                raise ClientError("Repository names must be lowercase letters, digits, dots, underscores, or hyphens (maximum 64).")
             identity = f"{ns.repo}:{ns.name}"
             if len(identity) > 80:
                 raise ClientError("Combined AgentBus identity exceeds 80 characters.")
