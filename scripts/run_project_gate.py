@@ -188,7 +188,7 @@ def main() -> int:
         "security-sbom",
         "security-vulnerability-scan",
         "runtime-smoke",
-        "release-build",
+        "release-archive",
     ])
     parser.add_argument("--junit", type=Path)
     args = parser.parse_args()
