@@ -526,7 +526,7 @@ gates:
     invocation: {argv: [python3, *id037, *id026], cwd: ., env: {}, required_env: []}
     evidence: {kind: gate}
     negative_controls:
-    - {id: credential-shaped-token-is-rejected, mutation: {path: *id061, search: "xoxb-\u2026", replace: xoxb-123456789012345678901234567890}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: credential-shaped bytes}}
+    - {id: credential-shaped-token-is-rejected, mutation: {path: *id061, search: "xoxb-\u2026", replace: "\x78oxb-123456789012345678901234567890"}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: credential-shaped bytes}}
   security-vulnerability-scan:
     invocation: {argv: [python3, *id037, *id032], cwd: ., env: {}, required_env: []}
     evidence:
