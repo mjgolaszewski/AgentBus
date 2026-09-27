@@ -1,19 +1,18 @@
 """Launcher regressions using temporary state and local HTTP servers only."""
 
+import io
+import json
+import os
+import signal
+import threading
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
-import io
-import json
-import os
 from pathlib import Path
-import signal
-import threading
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
-
 
 LAUNCHER = Path(__file__).resolve().parents[1] / "agentbus"
 TOKEN = "test-agentbus-token-never-use-in-production"

@@ -48,6 +48,11 @@ The HTTP timeout and redirect-safety cases deliberately account for most local
 test time. They remain behavioral evidence rather than being shortened to make
 the chart look better.
 
+After adding the project-owned architecture propositions, the suite contains 70
+tests. Its Python 3.12 run remains 5.8 seconds locally; lint and type checking
+complete in under one second, while the network-backed vulnerability audit and
+container smoke remain separate producers.
+
 ## Final result
 
 The final prospective train will append:

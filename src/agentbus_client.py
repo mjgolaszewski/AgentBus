@@ -7,7 +7,6 @@ import argparse
 import fcntl
 import json
 import os
-from pathlib import Path
 import re
 import shlex
 import signal
@@ -15,8 +14,9 @@ import subprocess
 import sys
 import tempfile
 import time
-from datetime import datetime, timezone
 import uuid
+from datetime import datetime, timezone
+from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
@@ -473,11 +473,11 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
     elif ns.command == "send":
         if bool(ns.identity) == bool(ns.sender):
             raise ClientError("Use exactly one of --identity or --sender.")
-        profile = None
+        send_profile: dict | None = None
         sender = ns.sender
         if ns.identity:
             sender = resolve_identity(ns.identity)
-            profile, _ = checked_profile(values, sender)
+            send_profile, _ = checked_profile(values, sender)
         if ns.broadcast and ns.recipient:
             raise ClientError("Use either --to/--recipient or --broadcast.")
         if ns.broadcast and ns.informational:
@@ -490,8 +490,10 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
         payload = {"sender": sender, "recipient": recipient, "text": ns.text, "kind": ns.kind}
         if audience:
             payload["audience"] = audience
-        if ns.repo or profile:
-            payload["repo"] = ns.repo or profile["repo"]
+        if ns.repo:
+            payload["repo"] = ns.repo
+        elif send_profile is not None:
+            payload["repo"] = send_profile["repo"]
         if ns.correlation_id:
             payload["correlation_id"] = ns.correlation_id
         if ns.thread_ts:

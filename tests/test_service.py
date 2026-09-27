@@ -2,16 +2,21 @@ import asyncio
 import json
 import sqlite3
 
-from fastapi.testclient import TestClient
 import httpx
 import pytest
+from fastapi.testclient import TestClient
 from slack_sdk.socket_mode.request import SocketModeRequest
 
 from agentbus_service import (
-    API_OPERATIONS, MessageStore, SendMessage, Settings, SlackReceiver, create_app, encode_envelope,
+    API_OPERATIONS,
+    MessageStore,
+    SendMessage,
+    Settings,
+    SlackReceiver,
+    create_app,
+    encode_envelope,
     normalize_event,
 )
-
 
 AUTH = {"Authorization": "Bearer local-test-secret"}
 CHANNEL = "C123456"

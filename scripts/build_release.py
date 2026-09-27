@@ -8,11 +8,10 @@ import gzip
 import hashlib
 import io
 import json
-from pathlib import Path
 import subprocess
 import tarfile
 import tomllib
-
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 

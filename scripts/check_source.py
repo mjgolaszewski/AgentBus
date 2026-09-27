@@ -5,13 +5,12 @@ from __future__ import annotations
 
 import ast
 import json
-from pathlib import Path
 import re
 import stat
 import subprocess
 import sys
 import tomllib
-
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PYTHON_SOURCES = {"agentbus"}
@@ -22,7 +21,15 @@ def tracked_files() -> list[Path]:
     result = subprocess.run(
         ["git", "ls-files", "-z"], cwd=ROOT, check=True, capture_output=True
     )
-    return [ROOT / raw.decode() for raw in result.stdout.split(b"\0") if raw]
+    deleted = subprocess.run(
+        ["git", "ls-files", "--deleted", "-z"], cwd=ROOT, check=True, capture_output=True
+    )
+    deleted_paths = {raw.decode() for raw in deleted.stdout.split(b"\0") if raw}
+    return [
+        ROOT / raw.decode()
+        for raw in result.stdout.split(b"\0")
+        if raw and raw.decode() not in deleted_paths
+    ]
 
 
 def check_python(path: Path, failures: list[str]) -> None:

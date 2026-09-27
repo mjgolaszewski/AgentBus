@@ -7,28 +7,28 @@ Agent names are self-reported labels, not authenticated Slack identities.
 from __future__ import annotations
 
 import asyncio
-from contextlib import asynccontextmanager
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
 import hmac
 import json
 import logging
 import os
-from pathlib import Path
 import re
 import sqlite3
 import threading
-from typing import Annotated, Callable, Literal
 import uuid
+from contextlib import asynccontextmanager
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Annotated, Callable, Literal
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 import httpx
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 from slack_sdk import WebClient
 from slack_sdk.socket_mode import SocketModeClient
+from slack_sdk.socket_mode.client import BaseSocketModeClient
 from slack_sdk.socket_mode.request import SocketModeRequest
 from slack_sdk.socket_mode.response import SocketModeResponse
-
 
 LOGGER = logging.getLogger("agentbus")
 IDENTIFIER = r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$"
@@ -366,7 +366,7 @@ class SlackReceiver:
     def __init__(self, store: MessageStore, channel: str):
         self.store, self.channel = store, channel
 
-    def __call__(self, client: SocketModeClient, request: SocketModeRequest) -> None:
+    def __call__(self, client: BaseSocketModeClient, request: SocketModeRequest) -> None:
         if request.type == "events_api":
             event = request.payload.get("event")
             normalized = normalize_event(event, self.channel) if isinstance(event, dict) else None
@@ -386,7 +386,7 @@ def build_socket(settings: Settings, receiver: SlackReceiver) -> SocketModeClien
         web_client=WebClient(token=settings.slack_bot_token, timeout=15, retry_handlers=[]),
         concurrency=1,
     )
-    client.socket_mode_request_listeners.append(receiver)
+    client.socket_mode_request_listeners.append(receiver.__call__)
     return client
 
 
@@ -398,7 +398,9 @@ class SlackPoster:
         label = f"{message.sender} → {message.recipient} · {message.kind} · {message.audience}"
         if message.repo:
             label += f" · {message.repo}"
-        blocks = [{"type": "context", "elements": [{"type": "plain_text", "text": label, "emoji": False}]}]
+        blocks: list[dict[str, object]] = [
+            {"type": "context", "elements": [{"type": "plain_text", "text": label, "emoji": False}]}
+        ]
         blocks.extend({"type": "section", "text": {"type": "plain_text", "text": message.text[i:i + 3000], "emoji": False}}
                       for i in range(0, len(message.text), 3000))
         payload = {"channel": self.settings.slack_channel, "text": encode_envelope(message), "blocks": blocks,
@@ -512,7 +514,7 @@ def api_claim(request: Request, cursor: int, claim: ClaimRequest) -> Claim:
 
 # BCF inventories this closed population, and FastAPI registers these exact
 # callables below. The governance inventory and runtime dispatch cannot drift.
-API_OPERATIONS = {
+API_OPERATIONS: dict[str, Callable[..., object]] = {
     "health": api_health,
     "send": api_send,
     "read": api_read,

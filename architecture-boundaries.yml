@@ -8,6 +8,8 @@ document:
   path: architecture-boundaries.yml
 architecture:
   source_roots: [src]
+  package_metadata_ownership:
+    - {path: src/__init__.py, layer: package_metadata, context: shared_kernel, exports: [agentbus_client, agentbus_service]}
   mandatory_rule_gate_policy:
     every_mandatory_rule_has_executable_gate: true
     human_review_only_allowed_with_rationale: true
