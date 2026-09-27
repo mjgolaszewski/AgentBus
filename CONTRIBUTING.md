@@ -7,8 +7,8 @@ format need an explicit compatibility account and behavioral tests.
 Install from the lock and run the tests without live Slack credentials:
 
 ```bash
-uv sync --locked --group dev
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run --locked --group dev pytest
+uv sync --locked --extra dev
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run --locked --extra dev pytest
 ```
 
 Governed changes use the canonical prospective train:
