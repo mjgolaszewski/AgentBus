@@ -1,7 +1,7 @@
 {
   "display_information": {
-    "name": "Superworkspace AgentBus",
-    "description": "A shared channel for coding-agent coordination."
+    "name": "AgentBus",
+    "description": "A shared Slack channel for coding-agent coordination."
   },
   "features": {
     "bot_user": {
