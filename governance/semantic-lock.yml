@@ -1,0 +1,12 @@
+schema_version: '1.0'
+document:
+  kind: semantic_authority_lock
+  version: 1.0.0
+  status: active
+  path: governance/semantic-lock.yml
+contracts:
+  semantic_families: fa432257949a3192e1fb4bdfc25dbc6d284d61110b597b7eae0ea4cf58d25ff6
+  application_operations: 67527d57f8f7d1460064448a0b726842024c6e63b62404eab1393591b77c6577
+  canonical_representations: e2669647d28f06d3d2c3775679f6653e120a330822e2b856c5bed150a5a0f49b
+source_inventory_sha256: 01f9e3cd3f72fe9000d3e2462e4456b55642a0a77f84995585645e84c9e1f7a8
+projection_outputs: []

@@ -1,39 +1,589 @@
-document: {kind: gate_contract_registry, version: '1.0', path: governance/gate-contracts.yml}
-schema_version: '1.0'
-profile_contract_version: '1.0'
-target_profile: lite
+document: {kind: gate_contract_registry, version: '2.0', path: governance/gate-contracts.yml}
+schema_version: '2.0'
+profile_contract_version: '3.0'
+target_profile: standard
 execution_policy: {default_timeout_seconds: 1800}
+interpreter_contract:
+  project_dependencies: true
+  requirements_projection: requirements-governance.txt
+  optional_dependency_groups: [dev]
+  gate_requirements: {}
+claim_model:
+  version: '1.0'
+  dependency_sets:
+    governance: [AGENTS.yml, &id057 MEMORY.yml, &id039 architecture-boundaries.yml, governance/**, plans/**, phases/**, schemas/**, Makefile, Makefile.fragment, .gitignore]
+    client-source: [agentbus, &id043 src/agentbus_client.py]
+    service-source: [agentbus_service.py, &id056 src/agentbus_service.py, &id001 slack-app-manifest.json]
+    package-source: [src/__init__.py, &id002 pyproject.toml, uv.lock]
+    client-tests: [&id065 tests/test_launcher.py]
+    service-tests: [&id055 tests/test_service.py]
+    architecture-tests: [&id051 tests/test_architecture.py]
+    producer-code: [scripts/check_source.py, &id037 scripts/run_project_gate.py]
+    release-code: [&id003 Dockerfile, .dockerignore, compose.yaml, .env.example, &id060 scripts/build_release.py, *id001]
+    toolchain: [*id002, uv.lock, requirements-governance.txt]
+    workflow: [.github/workflows/**, governance/ci-graph.yml]
+    security-config: [&id004 SECURITY.md, *id002, uv.lock, *id003]
+    documentation: [&id061 README.md, docs/**, CHANGELOG.md, CONTRACT.md, CONTRIBUTING.md, LICENSE, *id004]
+    no-files: [.bcf-no-files]
+    whole-tree: ['**']
+  execution_groups:
+    governance-contracts:
+      producer: &id005 governance-validate
+      claims: [governance-contracts-valid]
+      captured_by_preflight: true
+    governance-exposure:
+      producer: &id007 governance-exposure-scan
+      claims: [governance-exposure-clean]
+      captured_by_preflight: true
+    semantic-ownership:
+      producer: &id010 semantic-ownership
+      claims: [semantic-ownership-valid]
+      captured_by_preflight: true
+    source-quality:
+      producer: lint
+      claims: [source-quality-valid]
+    static-types:
+      producer: &id015 typecheck
+      claims: [static-types-valid]
+    architecture:
+      producer: &id016 architecture-test
+      claims: [architecture-valid]
+    module-size:
+      producer: &id017 architecture-module-size
+      claims: [module-size-valid]
+    layer-membership:
+      producer: &id019 architecture-layer-membership
+      claims: [layer-membership-valid]
+    context-membership:
+      producer: &id020 architecture-context-membership
+      claims: [context-membership-valid]
+    import-boundaries:
+      producer: &id021 architecture-import-boundaries
+      claims: [import-boundaries-valid]
+    operation-populations:
+      producer: &id022 architecture-cqrs-side
+      claims: [operation-populations-valid]
+    router-boundaries:
+      producer: &id023 architecture-router-thinness
+      claims: [router-boundaries-valid]
+    duplication-boundaries:
+      producer: &id024 architecture-duplication
+      claims: [duplication-boundaries-valid]
+    client-behavior:
+      producer: test
+      claims: [client-behavior-valid]
+    service-contract:
+      producer: &id025 contract-test
+      claims: [service-contract-valid]
+    secrets:
+      producer: &id026 security-secret-scan
+      claims: [secrets-clean]
+    dependencies-consistent:
+      producer: &id029 security-dependency-audit
+      claims: [&id028 dependencies-consistent]
+    sbom:
+      producer: &id030 security-sbom
+      claims: [sbom-valid]
+    vulnerabilities:
+      producer: &id032 security-vulnerability-scan
+      claims: [vulnerabilities-clear]
+    runtime-container:
+      producer: &id033 runtime-smoke
+      claims: [runtime-container-valid]
+    release-archive:
+      producer: &id035 release-smoke
+      claims: [release-archive-reproducible]
+  claims:
+    governance-contracts-valid:
+      truth: governance contracts are internally consistent
+      execution_group: governance-contracts
+      legacy_gate: *id005
+      dependencies:
+        subject: [&id006 governance]
+        detector: [*id006]
+        test_population: []
+        toolchain: [&id011 toolchain]
+        trust: [&id036 workflow]
+      qualification_scope: &id008 detector
+      profiles: [normal, &id009 regulated, self]
+    governance-exposure-clean:
+      truth: published bytes contain no private infrastructure
+      execution_group: governance-exposure
+      legacy_gate: *id007
+      dependencies:
+        subject: [*id006, &id027 documentation]
+        detector: [&id014 producer-code]
+        test_population: []
+        toolchain: []
+        trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    semantic-ownership-valid:
+      truth: semantic families operations and representations have one owner
+      execution_group: *id010
+      legacy_gate: *id010
+      dependencies:
+        subject: [&id012 client-source, &id013 service-source, *id006]
+        detector: [*id006]
+        test_population: []
+        toolchain: [*id011]
+        trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    source-quality-valid:
+      truth: project source satisfies deterministic lint rules
+      execution_group: source-quality
+      legacy_gate: lint
+      dependencies:
+        subject: [*id012, *id013, *id014]
+        detector: [*id014]
+        test_population: []
+        toolchain: [*id011]
+        trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    static-types-valid:
+      truth: project source satisfies declared static type contracts
+      execution_group: static-types
+      legacy_gate: *id015
+      dependencies:
+        subject: [*id012, *id013]
+        detector: [*id014]
+        test_population: []
+        toolchain: [*id011]
+        trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    architecture-valid:
+      truth: the complete AgentBus boundary suite passes
+      execution_group: architecture
+      legacy_gate: *id016
+      dependencies:
+        subject: [*id012, *id013]
+        detector: [*id006]
+        test_population: [&id018 architecture-tests]
+        toolchain: [*id011]
+        trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    module-size-valid:
+      truth: production modules respect the governed LOC cap
+      execution_group: module-size
+      legacy_gate: *id017
+      dependencies:
+        subject: [*id012, *id013]
+        detector: [*id006]
+        test_population: [*id018]
+        toolchain: [*id011]
+        trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    layer-membership-valid:
+      truth: each production module has one owning layer
+      execution_group: layer-membership
+      legacy_gate: *id019
+      dependencies:
+        subject: [*id012, *id013]
+        detector: [*id006]
+        test_population: [*id018]
+        toolchain: [*id011]
+        trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    context-membership-valid:
+      truth: each production module has one bounded context
+      execution_group: context-membership
+      legacy_gate: *id020
+      dependencies:
+        subject: [*id012, *id013]
+        detector: [*id006]
+        test_population: [*id018]
+        toolchain: [*id011]
+        trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    import-boundaries-valid:
+      truth: client and service dependency directions remain closed
+      execution_group: import-boundaries
+      legacy_gate: *id021
+      dependencies:
+        subject: [*id012, *id013]
+        detector: [*id006]
+        test_population: [*id018]
+        toolchain: [*id011]
+        trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    operation-populations-valid:
+      truth: CLI and API operation populations stay closed and classified
+      execution_group: operation-populations
+      legacy_gate: *id022
+      dependencies:
+        subject: [*id012, *id013]
+        detector: [*id006]
+        test_population: [*id018]
+        toolchain: [*id011]
+        trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    router-boundaries-valid:
+      truth: HTTP handlers remain bounded transport adapters
+      execution_group: router-boundaries
+      legacy_gate: *id023
+      dependencies:
+        subject: [*id013]
+        detector: [*id006]
+        test_population: [*id018]
+        toolchain: [*id011]
+        trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    duplication-boundaries-valid:
+      truth: cross-context duplication remains below the declared block size
+      execution_group: duplication-boundaries
+      legacy_gate: *id024
+      dependencies:
+        subject: [*id012, *id013]
+        detector: [*id006]
+        test_population: [*id018]
+        toolchain: [*id011]
+        trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    client-behavior-valid:
+      truth: client lifecycle profile routing cursor and safety behavior passes
+      execution_group: client-behavior
+      legacy_gate: test
+      dependencies:
+        subject: [*id012]
+        detector: [*id014]
+        test_population: [client-tests]
+        toolchain: [*id011]
+        trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    service-contract-valid:
+      truth: HTTP Slack routing persistence and protocol behavior passes
+      execution_group: service-contract
+      legacy_gate: *id025
+      dependencies:
+        subject: [*id013]
+        detector: [*id014]
+        test_population: [service-tests]
+        toolchain: [*id011]
+        trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    secrets-clean:
+      truth: tracked publishable project bytes contain no credential-shaped values
+      execution_group: secrets
+      legacy_gate: *id026
+      dependencies:
+        subject: [*id012, *id013, *id027, &id034 release-code]
+        detector: [*id014]
+        test_population: []
+        toolchain: []
+        trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    dependencies-consistent:
+      truth: installed dependencies match project declarations and lock
+      execution_group: *id028
+      legacy_gate: *id029
+      dependencies:
+        subject: [&id031 package-source]
+        detector: [*id014]
+        test_population: []
+        toolchain: [*id011]
+        trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    sbom-valid:
+      truth: a valid reproducible CycloneDX inventory is produced
+      execution_group: sbom
+      legacy_gate: *id030
+      dependencies:
+        subject: [*id031]
+        detector: [*id014]
+        test_population: []
+        toolchain: [*id011]
+        trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    vulnerabilities-clear:
+      truth: declared dependency environment has no known vulnerability
+      execution_group: vulnerabilities
+      legacy_gate: *id032
+      dependencies:
+        subject: [*id031]
+        detector: [*id014]
+        test_population: []
+        toolchain: [*id011]
+        trust: [security-config]
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    runtime-container-valid:
+      truth: the pinned container builds and runs unprivileged
+      execution_group: runtime-container
+      legacy_gate: *id033
+      dependencies:
+        subject: [*id013, *id034]
+        detector: [*id014]
+        test_population: []
+        toolchain: [*id011]
+        trust: [*id034]
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    release-archive-reproducible:
+      truth: the exact Git subject produces one deterministic self-consistent AgentBus source archive
+      execution_group: release-archive
+      legacy_gate: *id035
+      dependencies:
+        subject: [whole-tree]
+        detector: [*id034]
+        test_population: []
+        toolchain: [*id011]
+        trust: [*id036]
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
 gates:
+  architecture-context-membership:
+    invocation: {argv: [python3, *id037, *id020, --junit, &id038 .artifacts/junit/architecture-context-membership.xml], cwd: ., env: {}, required_env: []}
+    evidence:
+      kind: &id040 test_suite
+      test_contract:
+        junit_xml: *id038
+        min_collected: 1
+        min_executed: 1
+        max_skipped: 0
+        selectors: ['tests/test_architecture.py::test_production_modules_map_to_exactly_one_bounded_context']
+        expected_node_manifest: governance/test-manifests/architecture-context-membership.txt
+        expected_nodes_mode: exact
+        artifact_binding: &id042 non_authoritative_until_captured
+    negative_controls:
+    - {id: contexts-are-closed, mutation: {path: *id039, yaml_path: architecture.bounded_contexts.context_root_tokens, value: [wrong]}, oracle: {kind: &id044 test_node_failure, node_ids: ['tests.test_architecture::test_production_modules_map_to_exactly_one_bounded_context']}}
+  architecture-cqrs-side:
+    invocation: {argv: [python3, *id037, *id022, --junit, &id041 .artifacts/junit/architecture-cqrs-side.xml], cwd: ., env: {}, required_env: []}
+    evidence:
+      kind: *id040
+      test_contract:
+        junit_xml: *id041
+        min_collected: 1
+        min_executed: 1
+        max_skipped: 0
+        selectors: ['tests/test_architecture.py::test_command_and_query_populations_are_closed']
+        expected_node_manifest: governance/test-manifests/architecture-cqrs-side.txt
+        expected_nodes_mode: exact
+        artifact_binding: *id042
+    negative_controls:
+    - {id: cli-population-drift-is-rejected, mutation: {path: *id043, search: 'CLI_OPERATIONS = {', replace: 'CLI_OPERATIONS_BROKEN = {'}, oracle: {kind: *id044, node_ids: ['tests.test_architecture::test_command_and_query_populations_are_closed']}}
+  architecture-duplication:
+    invocation: {argv: [python3, *id037, *id024, --junit, &id045 .artifacts/junit/architecture-duplication.xml], cwd: ., env: {}, required_env: []}
+    evidence:
+      kind: *id040
+      test_contract:
+        junit_xml: *id045
+        min_collected: 1
+        min_executed: 1
+        max_skipped: 0
+        selectors: ['tests/test_architecture.py::test_cross_context_duplication_stays_below_declared_block_size']
+        expected_node_manifest: governance/test-manifests/architecture-duplication.txt
+        expected_nodes_mode: exact
+        artifact_binding: *id042
+    negative_controls:
+    - {id: cross-context-copy-is-detected, mutation: {path: *id039, yaml_path: architecture.duplication_policy.min_duplicate_lines, value: 2}, oracle: {kind: *id044, node_ids: ['tests.test_architecture::test_cross_context_duplication_stays_below_declared_block_size']}}
+  architecture-import-boundaries:
+    invocation: {argv: [python3, *id037, *id021, --junit, &id046 .artifacts/junit/architecture-import-boundaries.xml], cwd: ., env: {}, required_env: []}
+    evidence:
+      kind: *id040
+      test_contract:
+        junit_xml: *id046
+        min_collected: 1
+        min_executed: 1
+        max_skipped: 0
+        selectors: ['tests/test_architecture.py::test_context_import_boundaries']
+        expected_node_manifest: governance/test-manifests/architecture-import-boundaries.txt
+        expected_nodes_mode: exact
+        artifact_binding: *id042
+    negative_controls:
+    - {id: client-framework-import-is-rejected, mutation: {path: *id039, yaml_path: architecture.layers.client.forbidden_import_prefixes, value: [pathlib]}, oracle: {kind: *id044, node_ids: ['tests.test_architecture::test_context_import_boundaries']}}
+  architecture-layer-membership:
+    invocation: {argv: [python3, *id037, *id019, --junit, &id047 .artifacts/junit/architecture-layer-membership.xml], cwd: ., env: {}, required_env: []}
+    evidence:
+      kind: *id040
+      test_contract:
+        junit_xml: *id047
+        min_collected: 1
+        min_executed: 1
+        max_skipped: 0
+        selectors: ['tests/test_architecture.py::test_production_modules_map_to_exactly_one_layer']
+        expected_node_manifest: governance/test-manifests/architecture-layer-membership.txt
+        expected_nodes_mode: exact
+        artifact_binding: *id042
+    negative_controls:
+    - {id: client-layer-is-required, mutation: {path: *id039, yaml_path: architecture.layers.client.required, value: false}, oracle: {kind: *id044, node_ids: ['tests.test_architecture::test_production_modules_map_to_exactly_one_layer']}}
+  architecture-module-size:
+    invocation: {argv: [python3, *id037, *id017, --junit, &id048 .artifacts/junit/architecture-module-size.xml], cwd: ., env: {}, required_env: []}
+    evidence:
+      kind: *id040
+      test_contract:
+        junit_xml: *id048
+        min_collected: 1
+        min_executed: 1
+        max_skipped: 0
+        selectors: ['tests/test_architecture.py::test_production_modules_respect_loc_cap']
+        expected_node_manifest: governance/test-manifests/architecture-module-size.txt
+        expected_nodes_mode: exact
+        artifact_binding: *id042
+    negative_controls:
+    - {id: loc-cap-is-enforced, mutation: {path: *id039, yaml_path: &id052 architecture.production_module_policy.max_loc, value: 1}, oracle: {kind: *id044, node_ids: [&id053 'tests.test_architecture::test_production_modules_respect_loc_cap']}}
+  architecture-router-thinness:
+    invocation: {argv: [python3, *id037, *id023, --junit, &id049 .artifacts/junit/architecture-router-thinness.xml], cwd: ., env: {}, required_env: []}
+    evidence:
+      kind: *id040
+      test_contract:
+        junit_xml: *id049
+        min_collected: 1
+        min_executed: 1
+        max_skipped: 0
+        selectors: ['tests/test_architecture.py::test_http_routers_remain_thin_transport_adapters']
+        expected_node_manifest: governance/test-manifests/architecture-router-thinness.txt
+        expected_nodes_mode: exact
+        artifact_binding: *id042
+    negative_controls:
+    - {id: router-branch-budget-is-enforced, mutation: {path: *id039, yaml_path: architecture.thin_router_policy.max_branch_nodes, value: 0}, oracle: {kind: *id044, node_ids: ['tests.test_architecture::test_http_routers_remain_thin_transport_adapters']}}
+  architecture-test:
+    invocation: {argv: [python3, *id037, *id016, --junit, &id050 .artifacts/junit/architecture-test.xml], cwd: ., env: {}, required_env: []}
+    evidence:
+      kind: *id040
+      test_contract:
+        junit_xml: *id050
+        min_collected: 1
+        min_executed: 1
+        max_skipped: 0
+        selectors: [*id051]
+        expected_node_manifest: governance/test-manifests/architecture-test.txt
+        expected_nodes_mode: exact
+        artifact_binding: *id042
+    negative_controls:
+    - {id: loc-cap-detects-oversized-module, mutation: {path: *id039, yaml_path: *id052, value: 1}, oracle: {kind: *id044, node_ids: [*id053]}}
+  contract-test:
+    invocation: {argv: [python3, *id037, *id025, --junit, &id054 .artifacts/junit/contract-test.xml], cwd: ., env: {}, required_env: []}
+    evidence:
+      kind: *id040
+      test_contract:
+        junit_xml: *id054
+        min_collected: 1
+        min_executed: 1
+        max_skipped: 0
+        selectors: [*id055]
+        expected_node_manifest: governance/test-manifests/contract-test.txt
+        expected_nodes_mode: exact
+        artifact_binding: *id042
+    negative_controls:
+    - {id: api-population-drift-is-rejected, mutation: {path: *id056, search: '    "claim": api_claim,', replace: '    "claim_broken": api_claim,'}, oracle: {kind: *id044, node_ids: ['tests.test_service::test_public_api_operation_inventory_owns_registered_routes']}}
   governance-exposure-scan:
-    invocation: {argv: [python3, scripts/check_governance_exposure.py, &id001 --repo-root, .], cwd: ., env: {}, required_env: []}
+    invocation: {argv: [python3, scripts/check_governance_exposure.py, &id058 --repo-root, .], cwd: ., env: {}, required_env: []}
     evidence: {kind: gate}
     negative_controls:
-    - {id: local-workspace-path-is-rejected, mutation: {path: MEMORY.yml, yaml_path: stable_decisions.canonical_governance_guide, value_base64: L1VzZXJzL2V4YW1wbGUvcHJpdmF0ZS9BR0VOVFMueW1s}, oracle: {kind: &id002 diagnostic, exit_codes: [1], stream: stdout, regex: local_workspace_path}}
+    - {id: local-workspace-path-is-rejected, mutation: {path: *id057, yaml_path: stable_decisions.canonical_governance_guide, value_base64: L1VzZXJzL2V4YW1wbGUvcHJpdmF0ZS9BR0VOVFMueW1s}, oracle: {kind: &id059 diagnostic, exit_codes: [1], stream: stdout, regex: local_workspace_path}}
   governance-validate:
-    invocation: {argv: [python3, scripts/validate_governance_yaml.py, *id001, .], cwd: ., env: {}, required_env: []}
+    invocation: {argv: [python3, scripts/validate_governance_yaml.py, *id058, .], cwd: ., env: {}, required_env: []}
     evidence: {kind: gate}
     negative_controls:
-    - {id: authored-verified-state-is-rejected, mutation: {path: '@active_phase_log', yaml_path: document.status, value: verified}, oracle: {kind: *id002, exit_codes: [1], stream: stderr, regex: 'verified.*(?:not one of|computed)'}}
+    - {id: authored-verified-state-is-rejected, mutation: {path: '@active_phase_log', yaml_path: document.status, value: verified}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: 'verified.*(?:not one of|computed)'}}
+  lint:
+    invocation: {argv: [python3, *id037, lint], cwd: ., env: {}, required_env: []}
+    evidence: {kind: gate}
+    negative_controls:
+    - {id: unused-import-is-rejected, mutation: {path: *id043, search: import argparse, replace: 'import argparse
+
+          import definitely_unused_agentbus_symbol'}, oracle: {kind: *id059, exit_codes: [1], stream: stdout, regex: F401|imported but unused}}
+  release-smoke:
+    invocation: {argv: [python3, *id037, *id035], cwd: ., env: {}, required_env: []}
+    evidence: {kind: gate}
+    negative_controls:
+    - {id: manifest-tree-binding-is-enforced, mutation: {path: *id060, search: 'tree = git("rev-parse", commit + "^{tree}").decode().strip()', replace: tree = "0" * 40}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: release manifest tree mismatch}}
+  runtime-smoke:
+    invocation: {argv: [python3, *id037, *id033], cwd: ., env: {}, required_env: []}
+    evidence: {kind: gate}
+    negative_controls:
+    - {id: root-container-is-rejected, mutation: {path: *id003, search: USER agentbus, replace: USER root}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: runtime-user-mismatch}}
+  security-dependency-audit:
+    invocation: {argv: [python3, *id037, *id029], cwd: ., env: {}, required_env: []}
+    evidence: {kind: gate}
+    negative_controls:
+    - {id: dependency-pin-drift-is-rejected, mutation: {path: *id002, search: fastapi==0.141.1, replace: fastapi==0.1.0}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: &id062 violates|does not satisfy}}
+  security-sbom:
+    invocation: {argv: [python3, *id037, *id030], cwd: ., env: {}, required_env: []}
+    evidence:
+      kind: gate
+      output_requirements:
+      - {path: .artifacts/security/agentbus.cdx.json, media_type: application/vnd.cyclonedx+json, authority: *id042}
+    negative_controls:
+    - {id: version-drift-blocks-sbom, mutation: {path: *id002, search: version = "0.3.0", replace: version = "9.9.9"}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: project version must match}}
+  security-secret-scan:
+    invocation: {argv: [python3, *id037, *id026], cwd: ., env: {}, required_env: []}
+    evidence: {kind: gate}
+    negative_controls:
+    - {id: credential-shaped-token-is-rejected, mutation: {path: *id061, search: "xoxb-\u2026", replace: xoxb-123456789012345678901234567890}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: credential-shaped bytes}}
+  security-vulnerability-scan:
+    invocation: {argv: [python3, *id037, *id032], cwd: ., env: {}, required_env: []}
+    evidence:
+      kind: gate
+      output_requirements:
+      - {path: .artifacts/security/pip-audit.json, media_type: &id063 application/json, authority: *id042}
+    negative_controls:
+    - {id: unlocked-audit-input-is-rejected, mutation: {path: *id002, search: httpx==0.28.1, replace: httpx==0.1.0}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: *id062}}
+  semantic-ownership:
+    invocation: {argv: [python3, scripts/semantic_ownership.py, *id058, .], cwd: ., env: {}, required_env: []}
+    evidence:
+      kind: gate
+      output_requirements:
+      - {path: .artifacts/semantic-ownership/report.json, media_type: *id063, authority: *id042}
+    negative_controls:
+    - {id: canonical-owner-1-is-enforced, mutation: {path: governance/canonical-representations.yml, yaml_path: representations.0.authorized_constructors_and_factories, value: ['scripts/_bcf_runtime/missing.py::owner']}, oracle: {kind: *id059, exit_codes: [1], stream: stdout, regex: owner must be an authorized constructor}}
+  test:
+    invocation: {argv: [python3, *id037, test, --junit, &id064 .artifacts/junit/test.xml], cwd: ., env: {}, required_env: []}
+    evidence:
+      kind: *id040
+      test_contract:
+        junit_xml: *id064
+        min_collected: 1
+        min_executed: 1
+        max_skipped: 0
+        selectors: [*id065]
+        expected_node_manifest: governance/test-manifests/test.txt
+        expected_nodes_mode: exact
+        artifact_binding: *id042
+    negative_controls:
+    - {id: ambiguous-actionable-send-is-rejected, mutation: {path: *id043, search: 'if ns.kind in {"question", "request", "blocker", "handoff"} and audience is None:', replace: 'if False:'}, oracle: {kind: *id044, node_ids: ['tests.test_launcher::test_cli_rejects_ambiguous_actionable_send_before_api']}}
+  typecheck:
+    invocation: {argv: [python3, *id037, *id015], cwd: ., env: {}, required_env: []}
+    evidence: {kind: gate}
+    negative_controls:
+    - {id: operation-map-type-is-enforced, mutation: {path: *id056, search: 'API_OPERATIONS: dict[str, Callable[..., object]]', replace: 'API_OPERATIONS: int'}, oracle: {kind: *id059, exit_codes: [1], stream: stdout, regex: Incompatible types|incompatible type}}
 gate_catalog:
-  governance_validate: {target: governance-validate, status: &id003 required, command_policy: governance_validation, rationale: governed YAML passes schema semantic path and placeholder validation}
-  governance_exposure_scan: {target: governance-exposure-scan, status: *id003, command_policy: governance_exposure_scan, rationale: governed artifacts do not expose local paths or private infrastructure markers}
-  architecture_test: {target: architecture-test, status: &id004 deferred, command_policy: architecture_tests, rationale: architecture boundaries are executable}
-  architecture_module_size: {target: architecture-module-size, status: *id004, command_policy: architecture_module_size, rationale: production modules stay below configured LOC cap}
-  architecture_layer_membership: {target: architecture-layer-membership, status: *id004, command_policy: architecture_layer_membership, rationale: production modules map to one layer}
-  architecture_context_membership: {target: architecture-context-membership, status: *id004, command_policy: architecture_context_membership, rationale: production modules map to one bounded context}
-  architecture_import_boundaries: {target: architecture-import-boundaries, status: *id004, command_policy: architecture_import_boundaries, rationale: layer import purity prevents drift}
-  architecture_cqrs_side: {target: architecture-cqrs-side, status: *id004, command_policy: architecture_cqrs_side, rationale: command and query sides stay separate}
-  architecture_router_thinness: {target: architecture-router-thinness, status: *id004, command_policy: architecture_router_thinness, rationale: routers remain transport adapters}
-  architecture_duplication: {target: architecture-duplication, status: *id004, command_policy: architecture_duplication, rationale: duplication and shared helpers stay explicit}
-  lint: {target: lint, status: *id004, command_policy: lint, rationale: lint rules are wired before release-check is trusted}
-  typecheck: {target: &id005 typecheck, status: *id004, command_policy: *id005, rationale: static analysis is wired before release-check is trusted}
-  test: {target: test, status: *id004, command_policy: automated_tests, rationale: touched behavior has automated tests}
-  contract_test: {target: contract-test, status: *id004, command_policy: contract_tests, rationale: public contracts and adapters have explicit checks}
-  security_secret_scan: {target: security-secret-scan, status: *id004, command_policy: security_secret_scan, rationale: pushed code is scanned for secrets}
-  security_dependency_audit: {target: security-dependency-audit, status: *id004, command_policy: security_dependency_audit, rationale: dependencies have a vulnerability audit lane}
-  security_sbom: {target: security-sbom, status: *id004, command_policy: security_sbom, rationale: production-bound artifacts produce an SBOM}
-  security_vulnerability_scan: {target: security-vulnerability-scan, status: *id004, command_policy: security_vulnerability_scan, rationale: source or image vulnerability scan is wired}
-  runtime_smoke: {target: runtime-smoke, status: *id004, command_policy: runtime_smoke, rationale: runtime behavior is proven in a declared environment}
-  semantic_ownership: {target: semantic-ownership, status: *id004, command_policy: semantic_ownership, rationale: declared canonical representations have one mechanically enforced owner}
-  ci_certification: {target: ci-certification, status: *id004, command_policy: ci_certification, rationale: authenticated exact-commit CI state is independently recomputed before release}
+  governance_validate: {target: *id005, status: &id066 required, command_policy: governance_validation, rationale: governed YAML passes schema semantic path and placeholder validation}
+  governance_exposure_scan: {target: *id007, status: *id066, command_policy: governance_exposure_scan, rationale: governed artifacts do not expose local paths or private infrastructure markers}
+  architecture_test: {target: *id016, status: *id066, command_policy: architecture_tests, rationale: architecture boundaries are executable}
+  architecture_module_size: {target: *id017, status: *id066, command_policy: architecture_module_size, rationale: production modules stay below configured LOC cap}
+  architecture_layer_membership: {target: *id019, status: *id066, command_policy: architecture_layer_membership, rationale: production modules map to one layer}
+  architecture_context_membership: {target: *id020, status: *id066, command_policy: architecture_context_membership, rationale: production modules map to one bounded context}
+  architecture_import_boundaries: {target: *id021, status: *id066, command_policy: architecture_import_boundaries, rationale: layer import purity prevents drift}
+  architecture_cqrs_side: {target: *id022, status: *id066, command_policy: architecture_cqrs_side, rationale: command and query sides stay separate}
+  architecture_router_thinness: {target: *id023, status: *id066, command_policy: architecture_router_thinness, rationale: routers remain transport adapters}
+  architecture_duplication: {target: *id024, status: *id066, command_policy: architecture_duplication, rationale: duplication and shared helpers stay explicit}
+  lint: {target: lint, status: *id066, command_policy: lint, rationale: lint rules are wired before release-check is trusted}
+  typecheck: {target: *id015, status: *id066, command_policy: *id015, rationale: static analysis is wired before release-check is trusted}
+  test: {target: test, status: *id066, command_policy: automated_tests, rationale: touched behavior has automated tests}
+  contract_test: {target: *id025, status: *id066, command_policy: contract_tests, rationale: public contracts and adapters have explicit checks}
+  security_secret_scan: {target: *id026, status: *id066, command_policy: security_secret_scan, rationale: pushed code is scanned for secrets}
+  security_dependency_audit: {target: *id029, status: *id066, command_policy: security_dependency_audit, rationale: dependencies have a vulnerability audit lane}
+  security_sbom: {target: *id030, status: *id066, command_policy: security_sbom, rationale: production-bound artifacts produce an SBOM}
+  security_vulnerability_scan: {target: *id032, status: *id066, command_policy: security_vulnerability_scan, rationale: source or image vulnerability scan is wired}
+  runtime_smoke: {target: *id033, status: *id066, command_policy: &id067 runtime_smoke, rationale: runtime behavior is proven in a declared environment}
+  release_smoke: {target: *id035, status: *id066, command_policy: *id067, rationale: the exact Git subject produces one deterministic self-consistent source archive}
+  semantic_ownership: {target: *id010, status: *id066, command_policy: semantic_ownership, rationale: declared canonical representations have one mechanically enforced owner}
+  ci_certification: {target: ci-certification, status: deferred, command_policy: ci_certification, rationale: authenticated exact-commit CI state is independently recomputed before release}
 provenance: {}

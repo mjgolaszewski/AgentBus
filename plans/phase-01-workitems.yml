@@ -42,4 +42,4 @@ workitems:
   summary: deliver publish v0.3.0 and cut the superworkspace consumer over to an immutable pin
   acceptance:
   - live state and identity survive cutover and embedded source is inactive
-  acceptance_evidence: [runtime-smoke, security-sbom, security-vulnerability-scan]
+  acceptance_evidence: [runtime-smoke, release-smoke, security-sbom, security-vulnerability-scan]
