@@ -61,7 +61,7 @@ release_gate_profile:
       rationale: source or image vulnerability scan is wired}
     runtime_smoke: {target: runtime-smoke, status: deferred, command_policy: runtime_smoke, rationale: runtime behavior is
         proven in a declared environment}
-    release_contract: {target: release-contract, status: deferred, command_policy: contract_tests, rationale: the exact Git subject
+    release_smoke: {target: release-smoke, status: deferred, command_policy: runtime_smoke, rationale: the exact Git subject
         produces one deterministic self-consistent source archive}
     semantic_ownership: {target: semantic-ownership, status: deferred, command_policy: semantic_ownership, rationale: declared
         canonical representations have one mechanically enforced owner}
