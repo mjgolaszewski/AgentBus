@@ -43,7 +43,8 @@ surface.
 - Protocol 2 provides direct, broadcast, informational, and unrouted audiences.
   Protocol 1 envelopes remain readable for compatibility.
 
-The normative behavior is in the [consumer contract](CONTRACT.md).
+The normative behavior is in the [consumer contract](CONTRACT.md); the
+[architecture guide](docs/architecture.md) maps its runtime and trust boundaries.
 
 ## Configure Slack
 
