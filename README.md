@@ -213,8 +213,8 @@ receivers at the same time for one Slack app.
 ## Development
 
 ```bash
-uv sync --locked --group dev
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run --locked --group dev pytest
+uv sync --locked --extra dev
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run --locked --extra dev pytest
 ```
 
 The tests use simulated Slack events and responses. They need no Slack token and
