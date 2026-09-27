@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.metadata
 import json
 import os
@@ -133,6 +134,49 @@ def runtime_smoke() -> None:
     print("runtime-smoke-ok")
 
 
+def release_build() -> None:
+    with tempfile.TemporaryDirectory(prefix="agentbus-release-gate-") as directory:
+        root = Path(directory)
+        outputs = [root / "first", root / "second"]
+        for output in outputs:
+            require_success(run([
+                sys.executable,
+                "scripts/build_release.py",
+                "--ref",
+                "HEAD",
+                "--output",
+                str(output),
+            ]))
+        first_manifest = json.loads((outputs[0] / "release-manifest.json").read_text(encoding="utf-8"))
+        second_manifest = json.loads((outputs[1] / "release-manifest.json").read_text(encoding="utf-8"))
+        if first_manifest != second_manifest:
+            raise SystemExit("release manifests are not reproducible")
+        archive_name = first_manifest["assets"][0]["name"]
+        first_archive = (outputs[0] / archive_name).read_bytes()
+        second_archive = (outputs[1] / archive_name).read_bytes()
+        if first_archive != second_archive:
+            raise SystemExit("release archives are not reproducible")
+        commit = run(["git", "rev-parse", "HEAD"], capture=True)
+        tree = run(["git", "rev-parse", "HEAD^{tree}"], capture=True)
+        require_success(commit)
+        require_success(tree)
+        if first_manifest["commit"] != commit.stdout.strip():
+            raise SystemExit("release manifest commit mismatch")
+        if first_manifest["tree"] != tree.stdout.strip():
+            raise SystemExit("release manifest tree mismatch")
+        version = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+        if first_manifest["version"] != version or archive_name != f"AgentBus-{version}.tar.gz":
+            raise SystemExit("release manifest version mismatch")
+        asset = first_manifest["assets"][0]
+        if asset["sha256"] != hashlib.sha256(first_archive).hexdigest():
+            raise SystemExit("release manifest digest mismatch")
+        if asset["bytes"] != len(first_archive):
+            raise SystemExit("release manifest size mismatch")
+        if (outputs[0] / "SHA256SUMS").read_bytes() != (outputs[1] / "SHA256SUMS").read_bytes():
+            raise SystemExit("release checksum files are not reproducible")
+    print("release-build-ok")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("gate", choices=[
@@ -144,6 +188,7 @@ def main() -> int:
         "security-sbom",
         "security-vulnerability-scan",
         "runtime-smoke",
+        "release-build",
     ])
     parser.add_argument("--junit", type=Path)
     args = parser.parse_args()
@@ -184,8 +229,10 @@ def main() -> int:
         ]))
         json.loads(output.read_text(encoding="utf-8"))
         print(output.relative_to(ROOT))
-    else:
+    elif args.gate == "runtime-smoke":
         runtime_smoke()
+    else:
+        release_build()
     return 0
 
 
