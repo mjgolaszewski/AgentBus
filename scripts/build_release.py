@@ -30,7 +30,7 @@ def main() -> int:
     args = parser.parse_args()
 
     commit = git("rev-parse", f"{args.ref}^{{commit}}").decode().strip()
-    tree = git("rev-parse", f"{commit}^{{tree}}").decode().strip()
+    tree = git("rev-parse", commit + "^{tree}").decode().strip()
     version = tomllib.loads(git("show", f"{commit}:pyproject.toml").decode())["project"]["version"]
     prefix = f"AgentBus-{version}/"
     # Git's default tar.umask is 0002, which makes archive members group-writable.
