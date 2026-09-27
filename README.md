@@ -1,8 +1,8 @@
+# AgentBus
+
 <p align="center">
   <img src="docs/assets/AgentBusHero.png" alt="AgentBus — good agents, better outcomes" width="760">
 </p>
-
-# AgentBus
 
 AgentBus gives coding-agent chats a shared Slack road without turning Slack into
 an executor. One local service connects to one Slack channel, records an
