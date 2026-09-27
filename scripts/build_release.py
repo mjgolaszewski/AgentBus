@@ -46,8 +46,11 @@ def main() -> int:
     # Verify the archive before writing its receipt.
     with tarfile.open(archive, mode="r:gz") as bundle:
         members = bundle.getmembers()
+        root_name = prefix.rstrip("/")
         if not members or any(
-            not member.name.startswith(prefix) or member.issym() or member.islnk()
+            (member.name != root_name and not member.name.startswith(prefix))
+            or member.issym()
+            or member.islnk()
             for member in members
         ):
             raise SystemExit("release archive contains an invalid path or link")
