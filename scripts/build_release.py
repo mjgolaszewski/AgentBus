@@ -8,6 +8,7 @@ import gzip
 import hashlib
 import io
 import json
+import stat
 import subprocess
 import tarfile
 import tomllib
@@ -32,7 +33,9 @@ def main() -> int:
     tree = git("rev-parse", f"{commit}^{{tree}}").decode().strip()
     version = tomllib.loads(git("show", f"{commit}:pyproject.toml").decode())["project"]["version"]
     prefix = f"AgentBus-{version}/"
-    raw_tar = git("archive", "--format=tar", f"--prefix={prefix}", commit)
+    # Git's default tar.umask is 0002, which makes archive members group-writable.
+    # Pin the release policy instead of inheriting machine or repository config.
+    raw_tar = git("-c", "tar.umask=0022", "archive", "--format=tar", f"--prefix={prefix}", commit)
 
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -50,6 +53,7 @@ def main() -> int:
             (member.name != root_name and not member.name.startswith(prefix))
             or member.issym()
             or member.islnk()
+            or stat.S_IMODE(member.mode) not in ({0o755} if member.isdir() else {0o644, 0o755})
             for member in members
         ):
             raise SystemExit("release archive contains an invalid path or link")
