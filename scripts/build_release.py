@@ -56,7 +56,7 @@ def main() -> int:
             or stat.S_IMODE(member.mode) not in ({0o755} if member.isdir() else {0o644, 0o755})
             for member in members
         ):
-            raise SystemExit("release archive contains an invalid path or link")
+            raise SystemExit("release archive contains an invalid path, type, or mode")
 
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
     manifest = {
