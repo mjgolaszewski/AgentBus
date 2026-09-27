@@ -21,7 +21,7 @@ import threading
 from typing import Annotated, Callable, Literal
 import uuid
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 from slack_sdk import WebClient
@@ -430,6 +430,98 @@ class SlackPoster:
         return ts
 
 
+def authenticate(request: Request,
+                 authorization: Annotated[str | None, Header()] = None) -> None:
+    """Authenticate every versioned API operation against the app's settings."""
+    scheme, _, token = (authorization or "").partition(" ")
+    expected = request.app.state.settings.api_token
+    if scheme.lower() != "bearer" or not hmac.compare_digest(token.encode(), expected.encode()):
+        raise HTTPException(401, "Bearer authentication required",
+                            headers={"WWW-Authenticate": "Bearer"})
+
+
+def api_health(request: Request) -> dict:
+    return {"status": "ok", "slack_connected": request.app.state.socket.is_connected()}
+
+
+async def api_send(request: Request, message: SendMessage) -> Message:
+    if message.audience == "unrouted":
+        raise HTTPException(422, "unrouted audience is reserved for Slack ingestion")
+    settings = request.app.state.settings
+    try:
+        request.app.state.store.validate_reply(settings.slack_channel, message)
+    except KeyError:
+        raise HTTPException(422, "reply parent does not exist in this inbox") from None
+    except PermissionError as exc:
+        raise HTTPException(409, str(exc)) from None
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from None
+    ts = await request.app.state.poster.post(message)
+    try:
+        return await asyncio.to_thread(
+            request.app.state.store.append, settings.slack_channel, ts, message
+        )
+    except (sqlite3.Error, OSError):
+        raise HTTPException(
+            503, "Message posted to Slack but local persistence failed; do not resend blindly"
+        ) from None
+
+
+def api_read(request: Request, after: Annotated[int, Query(ge=0)] = 0,
+             recipient: Annotated[str | None, Query(pattern=IDENTIFIER)] = None,
+             limit: Annotated[int, Query(ge=1, le=200)] = 100,
+             thread_ts: Annotated[str | None, Query(pattern=SLACK_TS)] = None) -> MessagePage:
+    settings = request.app.state.settings
+    return request.app.state.store.read(
+        settings.slack_channel, after, recipient, limit, thread_ts
+    )
+
+
+def api_info(request: Request) -> Info:
+    settings = request.app.state.settings
+    return request.app.state.store.info(settings.slack_channel)
+
+
+def api_inbox(request: Request, identity: Annotated[str, Query(pattern=IDENTIFIER)],
+              after: Annotated[int, Query(ge=0)] = 0,
+              limit: Annotated[int, Query(ge=1, le=200)] = 100,
+              thread_ts: Annotated[str | None, Query(pattern=SLACK_TS)] = None,
+              context: bool = False) -> InboxPage:
+    settings = request.app.state.settings
+    return request.app.state.store.inbox(
+        settings.slack_channel, identity, after, limit, thread_ts, context
+    )
+
+
+def api_claim(request: Request, cursor: int, claim: ClaimRequest) -> Claim:
+    settings = request.app.state.settings
+    try:
+        result = request.app.state.store.claim(settings.slack_channel, cursor, claim.identity)
+    except KeyError:
+        raise HTTPException(404, "message not found") from None
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from None
+    if result.identity != claim.identity:
+        raise HTTPException(
+            409,
+            f"message already claimed by {result.identity}",
+            headers={"X-AgentBus-Claimed-By": result.identity},
+        )
+    return result
+
+
+# BCF inventories this closed population, and FastAPI registers these exact
+# callables below. The governance inventory and runtime dispatch cannot drift.
+API_OPERATIONS = {
+    "health": api_health,
+    "send": api_send,
+    "read": api_read,
+    "info": api_info,
+    "inbox": api_inbox,
+    "claim": api_claim,
+}
+
+
 def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClient | None = None,
                socket_factory: Callable = build_socket) -> FastAPI:
     settings = settings or Settings.from_env()
@@ -456,66 +548,20 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                 await client.aclose()
             store.close()
 
-    app = FastAPI(title="Superworkspace AgentBus", version="0.2.0", lifespan=lifespan,
+    app = FastAPI(title="AgentBus", version="0.3.0", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
-
-    def authenticate(authorization: Annotated[str | None, Header()] = None) -> None:
-        scheme, _, token = (authorization or "").partition(" ")
-        if scheme.lower() != "bearer" or not hmac.compare_digest(token.encode(), settings.api_token.encode()):
-            raise HTTPException(401, "Bearer authentication required", headers={"WWW-Authenticate": "Bearer"})
-
-    @app.get("/healthz")
-    def health() -> dict:
-        return {"status": "ok", "slack_connected": app.state.socket.is_connected()}
-
-    @app.post("/v1/messages", dependencies=[Depends(authenticate)], response_model=Message, status_code=201)
-    async def send(message: SendMessage) -> Message:
-        if message.audience == "unrouted":
-            raise HTTPException(422, "unrouted audience is reserved for Slack ingestion")
-        try:
-            app.state.store.validate_reply(settings.slack_channel, message)
-        except KeyError:
-            raise HTTPException(422, "reply parent does not exist in this inbox") from None
-        except PermissionError as exc:
-            raise HTTPException(409, str(exc)) from None
-        except ValueError as exc:
-            raise HTTPException(422, str(exc)) from None
-        ts = await app.state.poster.post(message)
-        try:
-            return await asyncio.to_thread(app.state.store.append, settings.slack_channel, ts, message)
-        except (sqlite3.Error, OSError):
-            raise HTTPException(503, "Message posted to Slack but local persistence failed; do not resend blindly") from None
-
-    @app.get("/v1/messages", dependencies=[Depends(authenticate)], response_model=MessagePage)
-    def read(after: Annotated[int, Query(ge=0)] = 0,
-             recipient: Annotated[str | None, Query(pattern=IDENTIFIER)] = None,
-             limit: Annotated[int, Query(ge=1, le=200)] = 100,
-             thread_ts: Annotated[str | None, Query(pattern=SLACK_TS)] = None) -> MessagePage:
-        return app.state.store.read(settings.slack_channel, after, recipient, limit, thread_ts)
-
-    @app.get("/v1/info", dependencies=[Depends(authenticate)], response_model=Info)
-    def info() -> Info:
-        return app.state.store.info(settings.slack_channel)
-
-    @app.get("/v1/inbox", dependencies=[Depends(authenticate)], response_model=InboxPage)
-    def inbox(identity: Annotated[str, Query(pattern=IDENTIFIER)],
-              after: Annotated[int, Query(ge=0)] = 0,
-              limit: Annotated[int, Query(ge=1, le=200)] = 100,
-              thread_ts: Annotated[str | None, Query(pattern=SLACK_TS)] = None,
-              context: bool = False) -> InboxPage:
-        return app.state.store.inbox(settings.slack_channel, identity, after, limit, thread_ts, context)
-
-    @app.post("/v1/messages/{cursor}/claim", dependencies=[Depends(authenticate)], response_model=Claim)
-    def claim(cursor: int, request: ClaimRequest) -> Claim:
-        try:
-            result = app.state.store.claim(settings.slack_channel, cursor, request.identity)
-        except KeyError:
-            raise HTTPException(404, "message not found") from None
-        except ValueError as exc:
-            raise HTTPException(409, str(exc)) from None
-        if result.identity != request.identity:
-            raise HTTPException(409, f"message already claimed by {result.identity}",
-                                headers={"X-AgentBus-Claimed-By": result.identity})
-        return result
+    app.state.settings = settings
+    auth = [Depends(authenticate)]
+    app.add_api_route("/healthz", API_OPERATIONS["health"], methods=["GET"])
+    app.add_api_route("/v1/messages", API_OPERATIONS["send"], methods=["POST"],
+                      dependencies=auth, response_model=Message, status_code=201)
+    app.add_api_route("/v1/messages", API_OPERATIONS["read"], methods=["GET"],
+                      dependencies=auth, response_model=MessagePage)
+    app.add_api_route("/v1/info", API_OPERATIONS["info"], methods=["GET"],
+                      dependencies=auth, response_model=Info)
+    app.add_api_route("/v1/inbox", API_OPERATIONS["inbox"], methods=["GET"],
+                      dependencies=auth, response_model=InboxPage)
+    app.add_api_route("/v1/messages/{cursor}/claim", API_OPERATIONS["claim"], methods=["POST"],
+                      dependencies=auth, response_model=Claim)
 
     return app

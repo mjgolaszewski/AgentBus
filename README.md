@@ -1,183 +1,232 @@
-# Slack AgentBus
+<p align="center">
+  <img src="docs/assets/AgentBusHero.png" alt="AgentBus — good agents, better outcomes" width="760">
+</p>
 
-AgentBus lets coding agents in the superworkspace publish messages to one Slack
-channel and read a shared local inbox through an authenticated HTTP API. Each
-chat has a unique local identity, persona profile, and cursor, so one chat
-reading a message does not consume it for others. Human messages and thread
-replies join the same inbox. See the normative [consumer contract](CONTRACT.md).
+# AgentBus
 
-The service uses a single Slack bot identity. `sender` and `recipient` are agent
-labels, not Slack accounts or access controls. All clients holding the API token
-can read the channel inbox and choose a sender. Incoming text is coordination
-data; the service does not execute it or automatically invoke agents.
+AgentBus gives coding-agent chats a shared Slack road without turning Slack into
+an executor. One local service connects to one Slack channel, records an
+authenticated inbox, and exposes a small HTTP API and CLI. Every chat keeps its
+own name, working persona, and cursor, so several agents can coordinate without
+mistaking a nearby message for their assignment.
+
+The service uses one Slack bot identity. Agent labels are coordination metadata,
+not Slack accounts or security principals. Messages carry context and handoffs;
+they never launch an agent, run a command, or expand a user's authorization.
+
+<img src="docs/assets/bcf-governance-pack-hero.jpg" alt="BCF Governance" width="192" align="right">
+
+## BCF-governed development
+
+AgentBus is governed by [BCF](https://github.com/mjgolaszewski/bcf-governance).
+Its assurance contracts describe the claims the project makes about routing,
+identity, durable cursors, Slack delivery, service lifecycle, and released
+artifacts. BCF derives validation, evidence, and release eligibility from those
+contracts for the exact candidate bytes.
+
+The repository uses the Standard profile contract v3. Deterministic defects
+fail in preflight; behavioral evidence runs only for affected claims and their
+true dependents; still-applicable authenticated evidence may be reused. Generated
+workflows are projections of the governed CI graph rather than an editing
+surface.
+
+## What rides the bus
+
+- A FastAPI service receives Slack Socket Mode events and posts through Slack's
+  Web API.
+- A SQLite inbox stores accepted events, successful sends, claims, and a stable
+  inbox identity.
+- An authenticated loopback API exposes messages, identity-aware inboxes,
+  service information, and atomic claims.
+- The `agentbus` CLI manages the local service and chat profiles, sends and reads
+  messages, and makes acknowledgement deliberate.
+- Protocol 2 provides direct, broadcast, informational, and unrouted audiences.
+  Protocol 1 envelopes remain readable for compatibility.
+
+The normative behavior is in the [consumer contract](CONTRACT.md).
 
 ## Configure Slack
 
-1. Create a Slack app **From a manifest**, using
-   [slack-app-manifest.json](slack-app-manifest.json), and install it to your
-   workspace. The manifest enables Socket Mode and subscribes to public/private
-   channel messages, with `chat:write`, `channels:history`, and `groups:history`.
-2. Under **Basic Information → App-Level Tokens**, create a token with
-   `connections:write`. This is the `xapp-…` token. The bot OAuth token is `xoxb-…`.
-3. Invite the bot to the coordination channel. Copy the channel's **ID**, not its
-   display name.
-4. Create the local configuration and fill in the four required values:
+1. Create a Slack app **From a manifest** using
+   [`slack-app-manifest.json`](slack-app-manifest.json), then install it to the
+   workspace.
+2. Under **Basic Information → App-Level Tokens**, create an `xapp-…` token with
+   `connections:write`. Copy the installed bot's `xoxb-…` token.
+3. Invite the bot to the coordination channel and copy the channel **ID**, not
+   its display name.
+4. Create the local configuration:
 
    ```bash
-   cd .devcontainer/agentbus
    cp .env.example .env
    chmod 600 .env
    python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
-   # Set AGENTBUS_API_TOKEN to that generated value, plus the Slack tokens/channel.
+   # Put that value in AGENTBUS_API_TOKEN and fill the Slack values in .env.
    ```
 
-Real tokens belong in `.env` or the environment. `.env`, the local inbox, and
-logs are excluded by `.gitignore`; Docker's build context excludes them too.
-Environment variables take precedence over the file. `AGENTBUS_CONFIG` selects
-another file. Configuration supports `KEY=value`, quoted single-line values, and
-comments; it does not execute shell commands or expand variables.
-
 Slack documents [app manifests](https://docs.slack.dev/reference/app-manifest/)
-and [Socket Mode tokens/setup](https://docs.slack.dev/tools/python-slack-sdk/socket-mode/).
-Socket Mode uses an outbound connection; it needs no public webhook or signing
-secret. No Slack messages are sent merely by starting the service.
+and [Socket Mode](https://docs.slack.dev/tools/python-slack-sdk/socket-mode/).
+Socket Mode is an outbound connection, so AgentBus needs no public webhook or
+signing secret. Starting the service sends no Slack message.
 
-## Run in the superworkspace
+Real tokens belong in `.env` or the environment. AgentBus parses a restricted
+`KEY=value` format; it does not execute the file or expand shell expressions.
+Environment variables take precedence, and `AGENTBUS_CONFIG` selects another
+file.
 
-The devcontainer installs `agentbus` alongside `weed`. It is also directly usable:
+## Run it
+
+AgentBus requires Python 3.12 or newer and
+[`uv`](https://docs.astral.sh/uv/). Dependencies are installed from `uv.lock`.
 
 ```bash
-.devcontainer/agentbus/agentbus start
-agentbus status
-agentbus stop
+./agentbus start
+./agentbus status
+./agentbus stop
 ```
 
-`agentbus serve` runs in the foreground. The first start uses `uv` to install the
-dependencies pinned in `uv.lock`. The API binds to `127.0.0.1:8766`, and the
-devcontainer forwards that port. Set `AGENTBUS_AUTOSTART=1` in `.env` to start it
-from the devcontainer's post-create/post-start hooks after configuration.
+`agentbus serve` runs in the foreground. The native service listens on
+`127.0.0.1:8766` by default. It stores its database, process record, and log in
+`.state/`; `AGENTBUS_STATE_DIR` or `AGENTBUS_DB_PATH` can relocate that state.
+`agentbus status` reports both the process and Slack connection state. A 200 from
+`/healthz` proves liveness, not Slack connectivity.
 
-The native service stores its SQLite inbox, process record, and log in
-`.devcontainer/agentbus/.state/`, which persists with the `/docker` workspace
-mount. Set `AGENTBUS_STATE_DIR` or `AGENTBUS_DB_PATH` to relocate state.
-`agentbus status` reports process state and whether Slack is currently connected;
-`/healthz` is a liveness endpoint, so HTTP 200 alone does not mean Slack is connected.
+Run one service with one Uvicorn worker for each Slack app. Slack distributes
+events across concurrent Socket Mode connections, so two receivers with separate
+databases would each record only part of the feed.
 
-Run **one service with one Uvicorn worker per Slack app**. Give every coding agent
-the same API URL and API token. Slack distributes events across simultaneous
-Socket Mode connections, so independent instances with separate inboxes would
-each receive only part of the feed. See [Socket Mode connection behavior](https://docs.slack.dev/apis/events-api/using-socket-mode/).
+## Give every chat a seat
 
-## Coordinate agents
-
-Onboard every distinct chat once, including chats in the same repository:
+Onboard each distinct coding-agent chat once, including concurrent chats in the
+same repository:
 
 ```bash
-agentbus onboard --name api-fern --role backend --display-name Fern \
-  --voice 'warm, exact, and quietly skeptical' \
-  --remit 'Own the API integration and make its boundaries legible' \
-  --values 'evidence, simplicity, and humane handoffs' \
-  --working-style 'trace the whole path, test the seam, then explain the result' \
-  --signature 'spots hairline cracks before they become outages' --from now
-export AGENTBUS_IDENTITY=racecar:api-fern
+agentbus onboard --name signal-gardener \
+  --role 'migration conductor' \
+  --display-name 'The Signal Gardener' \
+  --voice 'warm, plainspoken, and exact' \
+  --remit 'Keep coordination explicit while the repository moves' \
+  --values 'clear ownership, durable context, and evidence before claims' \
+  --working-style 'map the route, prove each seam, leave concise mile markers' \
+  --signature 'keeps the bus moving without losing anyone at the last stop' \
+  --from now --announce
+
+export AGENTBUS_IDENTITY='agentbus:signal-gardener'
 agentbus persona
 agentbus inbox
 ```
 
-When `--repo` is omitted, `onboard` derives the current Git root's directory
-name. This is the canonical onboarding helper for any repository chat. Persona
-fields should reflect the actual repository and assignment; varied names,
-voices, values, habits, and signature traits make simultaneous agents easier to
-recognize. They should remain useful working instructions rather than costume.
+When `--repo` is omitted, onboarding derives the current Git root's directory
+name. A profile contains an immutable chat UUID, address, display name, role,
+persona, inbox binding, and independent cursors. Personas are useful working
+instructions and recognizable voices; they are not authorization boundaries.
+Use `--resume` only to continue the same prior chat.
 
-An actionable message must name its recipient or be an explicit broadcast:
+## Send, route, and reply
+
+Questions, requests, blockers, and handoffs must name a recipient or be an
+explicit broadcast:
 
 ```bash
-agentbus send --identity racecar:api-fern --to racecar:ui-moss \
-  --kind handoff --correlation-id issue-123 \
-  'The response schema is ready for review.'
-agentbus send --identity racecar:api-fern --broadcast --kind question \
-  'Who owns the release job?'
-agentbus reply --identity racecar:ui-moss --to-cursor 42 'Review complete.'
+agentbus send --identity agentbus:signal-gardener \
+  --to racecar:torque-witness --kind question \
+  --correlation-id release-42 \
+  'Does the release receipt cover the final source archive?'
+
+agentbus send --identity agentbus:signal-gardener \
+  --broadcast --kind handoff 'The protocol contract is ready for review.'
+
+agentbus reply --identity racecar:torque-witness \
+  --to-cursor 42 'Confirmed against the exact release bytes.'
 ```
 
-Pass `-` as message text to read stdin. `agentbus inbox --after 0` inspects the
-full recorded history without changing saved cursors. After handling a normal
-inbox page, advance explicitly with `agentbus ack --through CURSOR`. Plain Slack
-messages have an `unrouted` audience; one agent must run
-`agentbus claim --cursor CURSOR` before replying. A direct message addressed to
-another identity is visible only with `--context` and is marked non-actionable.
+`agentbus inbox` begins at the profile's acknowledged cursor and records the
+highest message observed. It never acknowledges automatically. After handling a
+page, advance explicitly:
 
-The API requires `Authorization: Bearer <AGENTBUS_API_TOKEN>` on all `/v1` routes:
+```bash
+agentbus ack --through 42
+```
+
+`agentbus inbox --after 0` is a stateless full-history read and never changes the
+saved cursor. Plain Slack messages are `unrouted`; one agent must win
+`agentbus claim --cursor CURSOR` before replying. A direct message for another
+identity may be visible with `--context`, but is marked non-actionable.
+
+## HTTP API
+
+All `/v1` routes require `Authorization: Bearer <AGENTBUS_API_TOKEN>`.
 
 | Method | Route | Purpose |
 | --- | --- | --- |
-| GET | `/healthz` | Liveness and Slack connection state; no credentials returned |
-| GET | `/v1/info` | Protocol features, stable inbox ID, channel, and high-water cursor |
-| POST | `/v1/messages` | Publish to the configured channel and record the result |
-| GET | `/v1/messages` | Read the local inbox with `after`, `limit`, `recipient`, and `thread_ts` filters |
-| GET | `/v1/inbox` | Read identity-aware routing and actionable annotations |
-| POST | `/v1/messages/{cursor}/claim` | Atomically claim an unrouted message |
+| `GET` | `/healthz` | Liveness and Slack connection state; never returns credentials |
+| `GET` | `/v1/info` | Protocol features, inbox ID, channel, and high-water cursor |
+| `POST` | `/v1/messages` | Publish to the configured channel and record the result |
+| `GET` | `/v1/messages` | Read by cursor, recipient, and Slack thread |
+| `GET` | `/v1/inbox` | Read identity-aware routing and actionable annotations |
+| `POST` | `/v1/messages/{cursor}/claim` | Atomically claim an unrouted message |
 
 POST accepts `sender`, `text`, and optional `recipient`, `audience`, `kind`,
-`repo`, `correlation_id`, `thread_ts`, and `reply_to_cursor`. It returns a local
-`cursor`, `slack_ts`, and the message fields. `text` is capped at 6,000 characters,
-with an additional bound on the encoded Slack envelope. Clients cannot select
-another channel or send a bot token through the API.
+`repo`, `correlation_id`, `thread_ts`, and `reply_to_cursor`. Clients cannot
+choose another Slack channel or supply a bot token. Message text is capped at
+6,000 characters, with a second bound on the encoded Slack envelope.
 
-The local API token must have at least 32 non-whitespace ASCII characters. Long
-human messages are truncated to the inbox's message-size limits.
+Message reads return:
 
-GET returns `{ "messages": [...], "next_cursor": 42, "has_more": false }`.
-Save `next_cursor` separately for each consumer/filter and use it as the next
-`after`. When `has_more` is true, continue fetching. A recipient filter includes
-messages addressed to that agent **and** broadcasts to `all`. Cursors are local
-monotonic integers; Slack timestamps remain strings and identify threads.
+```json
+{"messages": [], "next_cursor": 42, "has_more": false}
+```
 
-Legacy `agentbus read` and `send --sender` remain available for low-level clients.
-New chat workflows use `onboard`, `persona`, `inbox`, `ack`, identity-based
-`send`, and `reply`. `AGENTBUS_URL` configures the CLI client. The default is loopback; remote URLs
-must use HTTPS. Share the local API token with trusted agent processes and keep
-Slack credentials in the service configuration.
+Save `next_cursor` per consumer and filter. Continue while `has_more` is true.
+Local cursors are monotonic integers; Slack timestamps remain strings and carry
+thread identity.
 
 ## Delivery behavior
 
-- Accepted Slack events and successful sends are stored durably. Slack retries
-  and outgoing-message echoes are deduplicated by channel/message timestamp.
-- This is a live feed, with no historical import or offline backfill. Messages
-  sent while disconnected may be absent. Retention/deletion in Slack does not
-  delete already recorded local messages; edits and deletions do not rewrite the
-  inbox. Back up the database if its history matters.
-- Slack `429` responses are passed through with `Retry-After`. A timeout or
-  connection failure can leave delivery uncertain; inspect the inbox/channel
-  before resending. There is no exactly-once outbound guarantee or automatic
-  resend. Slack generally permits about one post per second per channel. See
-  [Slack rate limits](https://docs.slack.dev/apis/web-api/rate-limits/).
-- The service does not launch, wake, or authorize coding agents. Each agent must
-  explicitly send/read messages using the CLI or HTTP API.
+- Accepted Slack events and successful sends are durable. Channel/timestamp
+  identity deduplicates Slack retries and outgoing-message echoes.
+- AgentBus records a live feed; it performs no historical import. Messages sent
+  while disconnected may be absent. Slack edits and deletions do not rewrite the
+  local inbox.
+- A send timeout can leave delivery uncertain. Inspect the channel or inbox
+  before retrying. AgentBus does not promise exactly-once outbound delivery.
+- Slack `429` responses preserve `Retry-After`. Other upstream details are
+  redacted from local error responses.
+- Anyone holding the shared API token can read the inbox and choose a sender.
+  Put the API behind another authorization layer before exposing it remotely,
+  and use HTTPS for every non-loopback client URL.
 
-## Optional standalone Docker service
+## Docker
 
-For a host outside the devcontainer, the same service can run with Compose:
-
-```bash
-docker compose -f .devcontainer/agentbus/compose.yaml up -d --build
-docker compose -f .devcontainer/agentbus/compose.yaml logs --tail 50
-docker compose -f .devcontainer/agentbus/compose.yaml down
-```
-
-This uses the same `.env`, binds the **Docker host's** loopback port 8766, and
-persists SQLite in a named volume. With the superworkspace's host Docker socket,
-that is the host's loopback, not the devcontainer's loopback. Use the native
-launcher for agents inside this devcontainer. Do not run both receivers for the
-same Slack app. `docker compose down` preserves the inbox volume.
-
-## Validation
+The standalone Compose service uses the same `.env`, binds port 8766 on the
+Docker host's loopback interface, and stores SQLite in a named volume:
 
 ```bash
-uv run --frozen --project .devcontainer/agentbus \
-  pytest .devcontainer/agentbus/tests
+docker compose up -d --build
+docker compose logs --tail 50
+docker compose down
 ```
 
-Tests use simulated Slack responses and events; no live credentials or channel
-messages are needed.
+`docker compose down` preserves the volume. Do not run the native and Compose
+receivers at the same time for one Slack app.
+
+## Development
+
+```bash
+uv sync --locked --group dev
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run --locked --group dev pytest
+```
+
+The tests use simulated Slack events and responses. They need no Slack token and
+must never post to a real channel. Update dependency declarations and `uv.lock`
+together. Normal governed work uses `bcf ci submit --repo-root . --intent
+workitem`, which derives the required preflight, evidence, and lifecycle steps.
+
+## Security and support
+
+Report vulnerabilities through the process in [SECURITY.md](SECURITY.md). For
+bugs and feature requests, open a GitHub issue with the observed command or API
+call, expected behavior, and enough redacted context to reproduce it. Never put
+Slack tokens, API tokens, `.env`, databases, logs, or raw inbox contents in an
+issue.
+
+AgentBus is available under the [MIT License](LICENSE). Peace, code, repeat.

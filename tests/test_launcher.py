@@ -410,3 +410,11 @@ def test_onboard_derives_repo_and_records_rich_persona(launcher, tmp_path, monke
         "working_style": "map the terrain, test assumptions, then leave a clear trail",
         "signature": "finds the one loose wire in a dark machine room",
     }.items()
+
+
+def test_public_cli_operation_inventory_matches_parser_surface(launcher):
+    assert set(launcher.CLI_OPERATIONS) == {
+        "serve", "start", "stop", "status", "autostart", "send", "read",
+        "onboard", "persona", "agents", "inbox", "ack", "rebind", "claim", "reply",
+    }
+    assert all(callable(operation) for operation in launcher.CLI_OPERATIONS.values())

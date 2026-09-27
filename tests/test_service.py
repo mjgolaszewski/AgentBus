@@ -8,7 +8,8 @@ import pytest
 from slack_sdk.socket_mode.request import SocketModeRequest
 
 from agentbus_service import (
-    MessageStore, SendMessage, Settings, SlackReceiver, create_app, encode_envelope, normalize_event,
+    API_OPERATIONS, MessageStore, SendMessage, Settings, SlackReceiver, create_app, encode_envelope,
+    normalize_event,
 )
 
 
@@ -79,6 +80,22 @@ def test_auth_health_and_invalid_messages_never_contact_slack(service):
     assert client.get("/v1/messages?limit=201", headers=AUTH).status_code == 422
     assert requests == []
     assert "secret" not in client.get("/healthz").text
+
+
+def test_public_api_operation_inventory_owns_registered_routes(settings):
+    app = create_app(settings, socket_factory=FakeSocket)
+    routes = {
+        (method, route.path): route.endpoint
+        for route in app.routes
+        for method in getattr(route, "methods", set())
+    }
+    assert set(API_OPERATIONS) == {"health", "send", "read", "info", "inbox", "claim"}
+    assert routes[("GET", "/healthz")] is API_OPERATIONS["health"]
+    assert routes[("POST", "/v1/messages")] is API_OPERATIONS["send"]
+    assert routes[("GET", "/v1/messages")] is API_OPERATIONS["read"]
+    assert routes[("GET", "/v1/info")] is API_OPERATIONS["info"]
+    assert routes[("GET", "/v1/inbox")] is API_OPERATIONS["inbox"]
+    assert routes[("POST", "/v1/messages/{cursor}/claim")] is API_OPERATIONS["claim"]
 
 
 def test_send_roundtrip_and_plain_text_blocks_preserve_mentions_and_unicode(service):

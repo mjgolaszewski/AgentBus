@@ -333,6 +333,249 @@ def lifecycle(command: str, project: Path, values: dict[str, str]) -> int:
         return 0
 
 
+def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    if ns.command == "serve":
+        serve(project, values)
+        return 0
+    if ns.command in {"start", "stop", "status", "autostart"}:
+        return lifecycle(ns.command, project, values)
+    if ns.command == "onboard":
+        ns.repo = ns.repo or current_repo()
+        if not re.fullmatch(NAME_RE, ns.name):
+            raise ClientError("Chat names must be lowercase letters, digits, or hyphens (maximum 32).")
+        if not re.fullmatch(REPO_RE, ns.repo):
+            raise ClientError("Repository names must be lowercase letters, digits, dots, underscores, or hyphens (maximum 64).")
+        identity = f"{ns.repo}:{ns.name}"
+        if len(identity) > 80:
+            raise ClientError("Combined AgentBus identity exceeds 80 characters.")
+        path = identity_path(values, identity)
+        directory = path.parent
+        directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+        with (directory / ".profiles.lock").open("a") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            if path.exists():
+                if ns.resume:
+                    profile, _ = checked_profile(values, identity)
+                    print(adoption_block(profile))
+                    return 0
+                raise ClientError(f"Identity {identity!r} already exists; use --resume to adopt it explicitly.")
+            info = api(values, "/v1/info")
+            cursor = 0 if ns.start_from == "beginning" else info["high_water_cursor"]
+            profile = {
+                "schema_version": 2, "chat_id": str(uuid.uuid4()), "identity": identity,
+                "repo": ns.repo, "name": ns.name,
+                "display_name": ns.display_name or ns.name.replace("-", " ").title(),
+                "role": ns.role, "voice": ns.voice,
+                "remit": ns.remit or f"Work on {ns.repo}", "values": ns.values,
+                "working_style": ns.working_style, "signature": ns.signature,
+                "persona_file": ns.persona_file,
+                "service_url": values["AGENTBUS_URL"], "inbox_id": info["inbox_id"],
+                "channel": info["channel"], "ack_cursor": cursor, "observed_cursor": cursor,
+                "created_at": now(), "updated_at": now(), "announcement": None,
+            }
+            atomic_json(path, profile)
+        if ns.announce is not None:
+            message = ns.announce or f"{profile['display_name']} joined as {identity}, role {profile['role']}. {profile['remit']}"
+            receipt = api(values, "/v1/messages", {"sender": identity, "recipient": "all",
+                          "audience": "broadcast", "kind": "introduction", "repo": ns.repo,
+                          "text": message})
+            profile["announcement"] = {"cursor": receipt["cursor"], "slack_ts": receipt["slack_ts"]}
+            save_profile(values, profile)
+        print(adoption_block(profile))
+        return 0
+    if ns.command == "agents":
+        directory = consumer_state_dir(values)
+        profiles = []
+        if directory.is_dir():
+            for path in sorted(directory.glob("*.json")):
+                try:
+                    data = json.loads(path.read_text())
+                    if isinstance(data, dict):
+                        profiles.append({key: data.get(key) for key in
+                                         ("identity", "display_name", "repo", "role", "chat_id")})
+                except (OSError, ValueError):
+                    continue
+        if ns.json:
+            print(json.dumps(profiles, indent=2, ensure_ascii=False))
+        else:
+            for item in profiles:
+                print(f"{item['identity'] or '(legacy)'}\t{item['display_name']}\t{item['role']}")
+        return 0
+    if ns.command == "persona":
+        identity = resolve_identity(ns.identity)
+        profile, _ = checked_profile(values, identity)
+        changes = {key: getattr(ns, key) for key in
+                   ("display_name", "role", "voice", "remit", "values", "working_style",
+                    "signature", "persona_file")
+                   if getattr(ns, key) is not None}
+        if changes:
+            if any(not value.strip() for value in changes.values()):
+                raise ClientError("Persona fields must not be blank.")
+            profile.update(changes)
+            save_profile(values, profile)
+        print(json.dumps(profile, indent=2, ensure_ascii=False) if ns.json else adoption_block(profile))
+        return 0
+    if ns.command == "inbox":
+        identity = resolve_identity(ns.identity)
+        profile, _ = checked_profile(values, identity)
+        historical = ns.after is not None
+        after = ns.after if historical else int(profile["ack_cursor"])
+        query = {"identity": identity, "after": after, "limit": ns.limit}
+        if ns.thread_ts:
+            query["thread_ts"] = ns.thread_ts
+        if ns.context:
+            query["context"] = "true"
+        result = api(values, "/v1/inbox?" + urlencode(query))
+        if not historical and result["messages"]:
+            profile["observed_cursor"] = max(int(profile.get("observed_cursor", 0)),
+                                             max(item["cursor"] for item in result["messages"]))
+            save_profile(values, profile)
+        result["ack_cursor"] = profile["ack_cursor"]
+    elif ns.command == "ack":
+        identity = resolve_identity(ns.identity)
+        profile, _ = checked_profile(values, identity)
+        if ns.through < int(profile["ack_cursor"]):
+            raise ClientError("Acknowledgements are monotonic and cannot move backward.")
+        if ns.through > int(profile["observed_cursor"]):
+            raise ClientError("Cannot acknowledge beyond the highest cursor observed by this chat.")
+        profile["ack_cursor"] = ns.through
+        save_profile(values, profile)
+        result = {"identity": identity, "ack_cursor": ns.through}
+    elif ns.command == "rebind":
+        identity = resolve_identity(ns.identity)
+        profile = load_profile(values, identity, save_migration=False)
+        info = api(values, "/v1/info")
+        cursor = 0 if ns.start_from == "beginning" else info["high_water_cursor"]
+        profile.update(inbox_id=info["inbox_id"], channel=info["channel"],
+                       service_url=values["AGENTBUS_URL"], ack_cursor=cursor,
+                       observed_cursor=cursor)
+        save_profile(values, profile)
+        result = {"identity": identity, "inbox_id": info["inbox_id"], "ack_cursor": cursor}
+    elif ns.command == "claim":
+        identity = resolve_identity(ns.identity)
+        checked_profile(values, identity)
+        result = api(values, f"/v1/messages/{ns.cursor}/claim", {"identity": identity})
+    elif ns.command == "reply":
+        identity = resolve_identity(ns.identity)
+        profile, _ = checked_profile(values, identity)
+        parent_page = api(values, "/v1/messages?" + urlencode({"after": ns.to_cursor - 1, "limit": 1}))
+        if not parent_page["messages"] or parent_page["messages"][0]["cursor"] != ns.to_cursor:
+            raise ClientError("Reply parent does not exist in this inbox.")
+        parent = parent_page["messages"][0]
+        text = sys.stdin.read() if ns.text == "-" else ns.text
+        result = api(values, "/v1/messages", {
+            "sender": identity, "recipient": parent["sender"], "audience": "direct",
+            "text": text, "repo": profile["repo"], "kind": "reply",
+            "correlation_id": parent.get("correlation_id"),
+            "thread_ts": parent.get("thread_ts") or parent["slack_ts"],
+            "reply_to_cursor": ns.to_cursor,
+        })
+    elif ns.command == "send":
+        if bool(ns.identity) == bool(ns.sender):
+            raise ClientError("Use exactly one of --identity or --sender.")
+        profile = None
+        sender = ns.sender
+        if ns.identity:
+            sender = resolve_identity(ns.identity)
+            profile, _ = checked_profile(values, sender)
+        if ns.broadcast and ns.recipient:
+            raise ClientError("Use either --to/--recipient or --broadcast.")
+        if ns.broadcast and ns.informational:
+            raise ClientError("Use either --broadcast or --informational.")
+        recipient = ns.recipient or "all"
+        audience = "broadcast" if ns.broadcast else "informational" if ns.informational else \
+                   "direct" if ns.recipient else None
+        if ns.kind in {"question", "request", "blocker", "handoff"} and audience is None:
+            raise ClientError("Actionable messages require --to RECIPIENT or --broadcast.")
+        payload = {"sender": sender, "recipient": recipient, "text": ns.text, "kind": ns.kind}
+        if audience:
+            payload["audience"] = audience
+        if ns.repo or profile:
+            payload["repo"] = ns.repo or profile["repo"]
+        if ns.correlation_id:
+            payload["correlation_id"] = ns.correlation_id
+        if ns.thread_ts:
+            payload["thread_ts"] = ns.thread_ts
+        if ns.reply_to_cursor:
+            payload["reply_to_cursor"] = ns.reply_to_cursor
+        if payload["text"] == "-":
+            payload["text"] = sys.stdin.read()
+        result = api(values, "/v1/messages", payload)
+    else:  # legacy raw read
+        query = {key: value for key, value in vars(ns).items() if key != "command" and value is not None}
+        result = api(values, "/v1/messages?" + urlencode(query))
+    print(json.dumps(result, indent=2, ensure_ascii=False))
+    return 0
+
+
+def cli_serve(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    return _execute_command(ns, project, values)
+
+
+def cli_lifecycle(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    return _execute_command(ns, project, values)
+
+
+def cli_send(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    return _execute_command(ns, project, values)
+
+
+def cli_read(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    return _execute_command(ns, project, values)
+
+
+def cli_onboard(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    return _execute_command(ns, project, values)
+
+
+def cli_persona(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    return _execute_command(ns, project, values)
+
+
+def cli_agents(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    return _execute_command(ns, project, values)
+
+
+def cli_inbox(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    return _execute_command(ns, project, values)
+
+
+def cli_ack(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    return _execute_command(ns, project, values)
+
+
+def cli_rebind(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    return _execute_command(ns, project, values)
+
+
+def cli_claim(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    return _execute_command(ns, project, values)
+
+
+def cli_reply(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    return _execute_command(ns, project, values)
+
+
+# BCF inventories this closed population, and main dispatches through it.
+CLI_OPERATIONS = {
+    "serve": cli_serve,
+    "start": cli_lifecycle,
+    "stop": cli_lifecycle,
+    "status": cli_lifecycle,
+    "autostart": cli_lifecycle,
+    "send": cli_send,
+    "read": cli_read,
+    "onboard": cli_onboard,
+    "persona": cli_persona,
+    "agents": cli_agents,
+    "inbox": cli_inbox,
+    "ack": cli_ack,
+    "rebind": cli_rebind,
+    "claim": cli_claim,
+    "reply": cli_reply,
+}
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -404,178 +647,7 @@ def main(argv: list[str] | None = None) -> int:
     ns = parser.parse_args(argv)
     try:
         project, values = configuration()
-        if ns.command == "serve":
-            serve(project, values)
-            return 0
-        if ns.command in {"start", "stop", "status", "autostart"}:
-            return lifecycle(ns.command, project, values)
-        if ns.command == "onboard":
-            ns.repo = ns.repo or current_repo()
-            if not re.fullmatch(NAME_RE, ns.name):
-                raise ClientError("Chat names must be lowercase letters, digits, or hyphens (maximum 32).")
-            if not re.fullmatch(REPO_RE, ns.repo):
-                raise ClientError("Repository names must be lowercase letters, digits, dots, underscores, or hyphens (maximum 64).")
-            identity = f"{ns.repo}:{ns.name}"
-            if len(identity) > 80:
-                raise ClientError("Combined AgentBus identity exceeds 80 characters.")
-            path = identity_path(values, identity)
-            directory = path.parent
-            directory.mkdir(parents=True, exist_ok=True, mode=0o700)
-            with (directory / ".profiles.lock").open("a") as lock:
-                fcntl.flock(lock, fcntl.LOCK_EX)
-                if path.exists():
-                    if ns.resume:
-                        profile, _ = checked_profile(values, identity)
-                        print(adoption_block(profile))
-                        return 0
-                    raise ClientError(f"Identity {identity!r} already exists; use --resume to adopt it explicitly.")
-                info = api(values, "/v1/info")
-                cursor = 0 if ns.start_from == "beginning" else info["high_water_cursor"]
-                profile = {
-                    "schema_version": 2, "chat_id": str(uuid.uuid4()), "identity": identity,
-                    "repo": ns.repo, "name": ns.name,
-                    "display_name": ns.display_name or ns.name.replace("-", " ").title(),
-                    "role": ns.role, "voice": ns.voice,
-                    "remit": ns.remit or f"Work on {ns.repo}", "values": ns.values,
-                    "working_style": ns.working_style, "signature": ns.signature,
-                    "persona_file": ns.persona_file,
-                    "service_url": values["AGENTBUS_URL"], "inbox_id": info["inbox_id"],
-                    "channel": info["channel"], "ack_cursor": cursor, "observed_cursor": cursor,
-                    "created_at": now(), "updated_at": now(), "announcement": None,
-                }
-                atomic_json(path, profile)
-            if ns.announce is not None:
-                message = ns.announce or f"{profile['display_name']} joined as {identity}, role {profile['role']}. {profile['remit']}"
-                receipt = api(values, "/v1/messages", {"sender": identity, "recipient": "all",
-                              "audience": "broadcast", "kind": "introduction", "repo": ns.repo,
-                              "text": message})
-                profile["announcement"] = {"cursor": receipt["cursor"], "slack_ts": receipt["slack_ts"]}
-                save_profile(values, profile)
-            print(adoption_block(profile))
-            return 0
-        if ns.command == "agents":
-            directory = consumer_state_dir(values)
-            profiles = []
-            if directory.is_dir():
-                for path in sorted(directory.glob("*.json")):
-                    try:
-                        data = json.loads(path.read_text())
-                        if isinstance(data, dict):
-                            profiles.append({key: data.get(key) for key in
-                                             ("identity", "display_name", "repo", "role", "chat_id")})
-                    except (OSError, ValueError):
-                        continue
-            if ns.json:
-                print(json.dumps(profiles, indent=2, ensure_ascii=False))
-            else:
-                for item in profiles:
-                    print(f"{item['identity'] or '(legacy)'}\t{item['display_name']}\t{item['role']}")
-            return 0
-        if ns.command == "persona":
-            identity = resolve_identity(ns.identity)
-            profile, _ = checked_profile(values, identity)
-            changes = {key: getattr(ns, key) for key in
-                       ("display_name", "role", "voice", "remit", "values", "working_style",
-                        "signature", "persona_file")
-                       if getattr(ns, key) is not None}
-            if changes:
-                if any(not value.strip() for value in changes.values()):
-                    raise ClientError("Persona fields must not be blank.")
-                profile.update(changes)
-                save_profile(values, profile)
-            print(json.dumps(profile, indent=2, ensure_ascii=False) if ns.json else adoption_block(profile))
-            return 0
-        if ns.command == "inbox":
-            identity = resolve_identity(ns.identity)
-            profile, _ = checked_profile(values, identity)
-            historical = ns.after is not None
-            after = ns.after if historical else int(profile["ack_cursor"])
-            query = {"identity": identity, "after": after, "limit": ns.limit}
-            if ns.thread_ts:
-                query["thread_ts"] = ns.thread_ts
-            if ns.context:
-                query["context"] = "true"
-            result = api(values, "/v1/inbox?" + urlencode(query))
-            if not historical and result["messages"]:
-                profile["observed_cursor"] = max(int(profile.get("observed_cursor", 0)),
-                                                 max(item["cursor"] for item in result["messages"]))
-                save_profile(values, profile)
-            result["ack_cursor"] = profile["ack_cursor"]
-        elif ns.command == "ack":
-            identity = resolve_identity(ns.identity)
-            profile, _ = checked_profile(values, identity)
-            if ns.through < int(profile["ack_cursor"]):
-                raise ClientError("Acknowledgements are monotonic and cannot move backward.")
-            if ns.through > int(profile["observed_cursor"]):
-                raise ClientError("Cannot acknowledge beyond the highest cursor observed by this chat.")
-            profile["ack_cursor"] = ns.through
-            save_profile(values, profile)
-            result = {"identity": identity, "ack_cursor": ns.through}
-        elif ns.command == "rebind":
-            identity = resolve_identity(ns.identity)
-            profile = load_profile(values, identity, save_migration=False)
-            info = api(values, "/v1/info")
-            cursor = 0 if ns.start_from == "beginning" else info["high_water_cursor"]
-            profile.update(inbox_id=info["inbox_id"], channel=info["channel"],
-                           service_url=values["AGENTBUS_URL"], ack_cursor=cursor,
-                           observed_cursor=cursor)
-            save_profile(values, profile)
-            result = {"identity": identity, "inbox_id": info["inbox_id"], "ack_cursor": cursor}
-        elif ns.command == "claim":
-            identity = resolve_identity(ns.identity)
-            checked_profile(values, identity)
-            result = api(values, f"/v1/messages/{ns.cursor}/claim", {"identity": identity})
-        elif ns.command == "reply":
-            identity = resolve_identity(ns.identity)
-            profile, _ = checked_profile(values, identity)
-            parent_page = api(values, "/v1/messages?" + urlencode({"after": ns.to_cursor - 1, "limit": 1}))
-            if not parent_page["messages"] or parent_page["messages"][0]["cursor"] != ns.to_cursor:
-                raise ClientError("Reply parent does not exist in this inbox.")
-            parent = parent_page["messages"][0]
-            text = sys.stdin.read() if ns.text == "-" else ns.text
-            result = api(values, "/v1/messages", {
-                "sender": identity, "recipient": parent["sender"], "audience": "direct",
-                "text": text, "repo": profile["repo"], "kind": "reply",
-                "correlation_id": parent.get("correlation_id"),
-                "thread_ts": parent.get("thread_ts") or parent["slack_ts"],
-                "reply_to_cursor": ns.to_cursor,
-            })
-        elif ns.command == "send":
-            if bool(ns.identity) == bool(ns.sender):
-                raise ClientError("Use exactly one of --identity or --sender.")
-            profile = None
-            sender = ns.sender
-            if ns.identity:
-                sender = resolve_identity(ns.identity)
-                profile, _ = checked_profile(values, sender)
-            if ns.broadcast and ns.recipient:
-                raise ClientError("Use either --to/--recipient or --broadcast.")
-            if ns.broadcast and ns.informational:
-                raise ClientError("Use either --broadcast or --informational.")
-            recipient = ns.recipient or "all"
-            audience = "broadcast" if ns.broadcast else "informational" if ns.informational else \
-                       "direct" if ns.recipient else None
-            if ns.kind in {"question", "request", "blocker", "handoff"} and audience is None:
-                raise ClientError("Actionable messages require --to RECIPIENT or --broadcast.")
-            payload = {"sender": sender, "recipient": recipient, "text": ns.text, "kind": ns.kind}
-            if audience:
-                payload["audience"] = audience
-            if ns.repo or profile:
-                payload["repo"] = ns.repo or profile["repo"]
-            if ns.correlation_id:
-                payload["correlation_id"] = ns.correlation_id
-            if ns.thread_ts:
-                payload["thread_ts"] = ns.thread_ts
-            if ns.reply_to_cursor:
-                payload["reply_to_cursor"] = ns.reply_to_cursor
-            if payload["text"] == "-":
-                payload["text"] = sys.stdin.read()
-            result = api(values, "/v1/messages", payload)
-        else:  # legacy raw read
-            query = {key: value for key, value in vars(ns).items() if key != "command" and value is not None}
-            result = api(values, "/v1/messages?" + urlencode(query))
-        print(json.dumps(result, indent=2, ensure_ascii=False))
-        return 0
+        return CLI_OPERATIONS[ns.command](ns, project, values)
     except (ClientError, OSError) as exc:
         print(f"agentbus: {exc}", file=sys.stderr)
         return 1
