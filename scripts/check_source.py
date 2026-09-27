@@ -81,7 +81,7 @@ def main() -> int:
         failures.append(f"pyproject.toml: invalid TOML: {exc}")
         project = {}
     version = project.get("project", {}).get("version")
-    service = (ROOT / "agentbus_service.py").read_text(encoding="utf-8")
+    service = (ROOT / "src" / "agentbus_service.py").read_text(encoding="utf-8")
     if not isinstance(version, str) or f'version="{version}"' not in service:
         failures.append("project version must match the FastAPI service version")
     if isinstance(version, str) and f"## [{version}]" not in (ROOT / "CHANGELOG.md").read_text():

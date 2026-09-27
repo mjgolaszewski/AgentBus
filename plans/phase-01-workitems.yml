@@ -1,0 +1,46 @@
+document:
+  kind: execution_phase_workitem_ledger
+  name: Phase 01 Workitems
+  id: agentbus-phase-01-workitems
+  version: 1.0.0
+  generated_at_utc: '2026-09-27T00:00:00Z'
+  status: planned
+  path: plans/phase-01-workitems.yml
+  phase_id: P01
+workitems:
+- id: P01-P0-01
+  priority: P0
+  status: DONE
+  summary: deliver characterize inherited architecture tests CI controls and release boundaries
+  acceptance:
+  - inherited baseline and proposition inventory are recorded
+  acceptance_evidence: &id001
+  - governance-validate
+- id: P01-P0-02
+  priority: P0
+  status: IN_PROGRESS
+  summary: deliver adopt released BCF 2.1 without rewriting application semantics
+  acceptance:
+  - canonical governance validation and doctor diagnostics pass
+  acceptance_evidence: *id001
+- id: P01-P0-03
+  priority: P0
+  status: TODO
+  summary: deliver encode AgentBus assurance as claims dependencies producers and negative controls
+  acceptance:
+  - every inherited proposition has an owning claim and executable producer
+  acceptance_evidence: *id001
+- id: P01-P0-04
+  priority: P0
+  status: TODO
+  summary: deliver prove selective invalidation reuse early rejection and fail-closed ambiguity
+  acceptance:
+  - representative selective execution reuse deterministic rejection and ambiguity cases pass
+  acceptance_evidence: [governance-validate]
+- id: P01-P0-05
+  priority: P0
+  status: TODO
+  summary: deliver publish v0.3.0 and cut the superworkspace consumer over to an immutable pin
+  acceptance:
+  - live state and identity survive cutover and embedded source is inactive
+  acceptance_evidence: [governance-validate]

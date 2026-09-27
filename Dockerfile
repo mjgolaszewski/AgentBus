@@ -5,6 +5,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 COPY agentbus_service.py ./
+COPY src/ ./src/
 RUN useradd --uid 10001 --create-home agentbus \
     && mkdir /data && chown agentbus:agentbus /data
 USER agentbus

@@ -1,0 +1,94 @@
+document:
+  kind: durable_project_memory
+  name: "AgentBus Working Memory"
+  id: "agentbus-memory"
+  version: 1.0.0
+  generated_at_utc: "2026-09-27T00:00:00Z"
+  status: active
+  path: MEMORY.yml
+regression_shield:
+  purpose: keep this file as durable project memory, not as an execution transcript
+  invariants:
+    - store stable decisions, constraints, environment facts, reusable commands, and references
+    - keep workitem execution evidence in phases/*.yml
+    - update high-signal entries instead of duplicating them
+    - never record secrets or local environment values here
+stable_decisions:
+  canonical_repo_root: "."
+  canonical_governance_guide: AGENTS.yml
+  canonical_product_spec: plans/product-spec.yml
+  canonical_build_plan: plans/build-plan.yml
+  canonical_active_phase_ledger: plans/phase-ledger.yml
+  canonical_phase_history: plans/phase-history.yml
+  canonical_phase_log_root: phases/
+  code_roots:
+    backend: src
+    frontend: not_applicable
+  delivery_architecture:
+    backend: "flat client and service contexts with closed operation mappings"
+    frontend: "not_applicable"
+    data: "SQLite inbox and local JSON consumer profiles"
+    observability: open_telemetry_traces_plus_structured_trace_linked_logs
+  governance_process:
+    semantic_validator: scripts/validate_governance_yaml.py
+    structural_schema_root: schemas/
+    hotfix_lane: governed_and_machine_readable
+    artifact_ownership: canonical_owner_map_recorded_in_AGENTS
+    phase_rollover: phase_ledger_and_MEMORY_must_move_together
+    build_artifact_convention: follow_local_template_pack_shapes_and_naming
+memory_retention_policy:
+  stable_decisions:
+    review_frequency: per_phase_rollover
+  environment_facts:
+    revalidate_after_days: 30
+  reusable_commands:
+    validate_on_release_gate: true
+  stale_entry_handling:
+    - mark_deprecated_before_removal
+    - preserve_replacement_reference_when_available
+environment_facts:
+  current_repo_state:
+    - initial governance template installed on 2026-09-27 using existing adoption mode
+    - all governance, memory, specs, plans, workitem ledgers, and phase logs are YAML-native
+    - observability contracts are scaffolded under contracts/observability/v1/
+    - structural anti-drift gates are scaffolded for module size, layer ownership, bounded-context ownership, CQRS side rules, router thinness, and duplication
+    - application behavior was extracted from superworkspace-tools history and characterized by 63 tests on Python 3.12 and 3.14
+    - BCF 2.1.0 Lite is a bootstrap while released 2.1.1 adopter fixes and Standard profile contract v3 are required for certification
+    - production implementations live under src while top-level client and service shims preserve public executable and import paths
+  active_artifacts:
+    spec: plans/product-spec.yml
+    build_plan: plans/build-plan.yml
+    active_phase_ledger: plans/phase-ledger.yml
+    phase_history: plans/phase-history.yml
+    active_phase_plan: plans/phase-01-plan.yml
+    active_workitem_ledger: plans/phase-01-workitems.yml
+    active_phase_log: phases/phase-01-log.yml
+known_constraints:
+  - preserve the public CLI HTTP protocol SQLite state and deployment behavior during governance adoption
+  - use only immutable released BCF artifacts and their published digests
+  - keep provider authority boundaries and avoid persistent trusted-controller capability
+  - specialize repo_identity_provider and repo_observability_backend in the observability contracts before production use
+reusable_commands:
+  - make governance-validate
+  - make architecture-test
+  - make lint
+  - make typecheck
+  - make test
+  - make release-check
+references:
+  governance:
+    - AGENTS.yml
+    - governance-profile.yml
+    - architecture-boundaries.yml
+    - schemas/
+    - contracts/observability/v1/
+    - plans/phase-ledger.yml
+    - plans/phase-history.yml
+    - docs/OPERATIONS.md
+  product:
+    - plans/product-spec.yml
+    - plans/build-plan.yml
+  execution:
+    - plans/phase-01-plan.yml
+    - plans/phase-01-workitems.yml
+    - phases/phase-01-log.yml

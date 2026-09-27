@@ -1,0 +1,40 @@
+document:
+  kind: product_spec
+  name: "AgentBus Product Spec"
+  id: "agentbus-product-spec"
+  version: 1.0.0
+  generated_at_utc: "2026-09-27T00:00:00Z"
+  status: active_delivery
+  path: plans/product-spec.yml
+product:
+  name: "AgentBus"
+  project_name: "AgentBus"
+  positioning: "Slack-backed coordination transport and durable inbox for coding-agent chats"
+  target_users: ["coding agents and operators coordinating through Slack"]
+  non_goals:
+    - "executing or orchestrating coding agents"
+    - "using persona labels as authentication or authorization"
+    - "providing offline Slack history, exactly-once Slack delivery, or a general message broker"
+constraints:
+  operating_constraints:
+    - "one Socket Mode receiver per Slack application"
+    - "bearer-authenticated HTTP is loopback-only unless an operator supplies a secure boundary"
+    - "SQLite and consumer profiles remain outside source and release archives"
+    - "Python 3.12 or newer with dependencies locked by uv"
+  known_external_dependencies:
+    - "Slack Web API and Socket Mode"
+    - "SQLite"
+    - "GitHub Actions hosted runners"
+    - "Docker for container release evidence"
+architecture:
+  backend: "flat client and service contexts with closed CLI and HTTP operation populations"
+  frontend: "not applicable; the product is a CLI and HTTP service"
+  data: "SQLite durable inbox plus local JSON consumer profiles"
+execution_phases:
+  - phase_id: P01
+    build_block: "existing_repo_adoption"
+    objective: "forward-port preserved AgentBus assurance into BCF 2.1 Standard governance"
+    release_train: release_1
+acceptance:
+  release_gate: make release-check
+  evidence_location: phases/

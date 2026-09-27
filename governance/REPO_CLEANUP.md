@@ -1,0 +1,61 @@
+# Repo Cleanup
+
+Use this when a BCF-governed repo has drifted: old phase sprawl, audit files in
+the wrong roots, nested governance, stale docs, or abandoned YAML.
+
+Machine contract: `governance/repo-cleanup-contract.yml`.
+Routine commands remain in `docs/OPERATIONS.md`; this document covers only the
+cleanup branch.
+
+Interactive apply requests confirmation. Non-TTY apply must include `--yes` or
+it fails before mutation. Proposed changes are validated in a temporary shadow
+worktree and transferred atomically with rollback.
+
+## Sequence
+
+1. Run `bcf cleanup --repo-root .` and read safe actions separately from manual actions.
+2. Apply only approved deterministic moves with `bcf cleanup --repo-root . --apply`.
+3. Retrieve a passing truth report for any completed phase that has a mechanically computed closed state and a retained CI/release artifact as `durable_ref`.
+4. Remove stale completed triplets with `bcf cleanup --repo-root . --phase-retention-mode --apply` when Git history should retain the old artifact bytes. Add `--truth-report .artifacts/bcf/truth.json` only when that current closed report exists and its sha256 can be checked against retained CI; without it, history records authored completion and no derived closeout claim.
+5. Move stale closed triplets with `bcf cleanup --repo-root . --phase-retention-mode archive --truth-report .artifacts/bcf/truth.json --apply` when local ignored archive storage is preferred; the local path is non-authoritative and its sha256 must match a retained CI artifact.
+6. Use `bcf install --target . --force-rescaffold` only after accepting the destructive warning.
+7. Use `bcf cleanup --repo-root . --remove-governance-pack` only when intentionally decommissioning BCF governance.
+8. Tune architecture gates to the repo's real layout; do not delete gates to make validation pass.
+9. Review README, docs, runbooks, plans, and phase logs section by section against repo evidence.
+10. For durable evidence, retain every reachable immutable object and active lease. Preview exact transient Actions handoffs with `bcf evidence-store retention-plan`; apply only those authenticated IDs with `retention-apply-actions`, which repeats cold resolution and never deletes a durable Release. A digest never substitutes for preserved bytes.
+11. Record command outcomes and unresolved constraints in the active phase log.
+
+## Deterministic Work
+
+BCF can move audit/review evidence into `audits/`, create `audits/README.md`,
+rewrite exact path references, record completed phase artifacts with exact Git
+custody, add a derived closeout snapshot only when supported by a supplied
+passing truth report, maintain compact `plans/phase-history.yml`, archive artifacts into ignored
+`governance/archive/phase-artifacts/` storage, prune related hotfix lane records, remove known BCF-owned files
+and dedicated governance CI gates, and reinstall known BCF-owned files.
+
+The move inventory is limited to the fixed legacy evidence roots in
+`governance/repo-cleanup-contract.yml`. It does not move regular first-party
+source or tests from product packages named `audit` or `audits`.
+
+With no phase-retention switch, cleanup preserves current historical triplet
+behavior. Once a mode is selected, validation enforces the active retention
+window and rejects stale historical triplets or phase-scoped hotfix logs that
+remain active. Phase-history entries must be compact and hash-backed. An entry
+without an exact truth report remains authored `completed`; do not add a
+derived state or replace removed artifacts with empty history rows.
+
+## Editorial and semantic review
+
+Use judgment for documentation currency, product specs, architecture/security
+docs, runbooks, semantic phase history compaction, abandoned YAML, and nested
+governance. An agent may propose those edits. Deterministic validation owns
+mechanically decidable claims, and the declared governance role owns intent and
+approval. Each change must preserve intent while removing stale or duplicate
+surfaces.
+
+## Closeout
+
+Cleanup is complete only when the active governance files are compact, historical
+evidence is retained or indexed, docs match repo behavior, release gates are
+repo-specific, and both `bcf validate` and `bcf truth` outcomes are recorded.

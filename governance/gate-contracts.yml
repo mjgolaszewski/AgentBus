@@ -1,0 +1,39 @@
+document: {kind: gate_contract_registry, version: '1.0', path: governance/gate-contracts.yml}
+schema_version: '1.0'
+profile_contract_version: '1.0'
+target_profile: lite
+execution_policy: {default_timeout_seconds: 1800}
+gates:
+  governance-exposure-scan:
+    invocation: {argv: [python3, scripts/check_governance_exposure.py, &id001 --repo-root, .], cwd: ., env: {}, required_env: []}
+    evidence: {kind: gate}
+    negative_controls:
+    - {id: local-workspace-path-is-rejected, mutation: {path: MEMORY.yml, yaml_path: stable_decisions.canonical_governance_guide, value_base64: L1VzZXJzL2V4YW1wbGUvcHJpdmF0ZS9BR0VOVFMueW1s}, oracle: {kind: &id002 diagnostic, exit_codes: [1], stream: stdout, regex: local_workspace_path}}
+  governance-validate:
+    invocation: {argv: [python3, scripts/validate_governance_yaml.py, *id001, .], cwd: ., env: {}, required_env: []}
+    evidence: {kind: gate}
+    negative_controls:
+    - {id: authored-verified-state-is-rejected, mutation: {path: '@active_phase_log', yaml_path: document.status, value: verified}, oracle: {kind: *id002, exit_codes: [1], stream: stderr, regex: 'verified.*(?:not one of|computed)'}}
+gate_catalog:
+  governance_validate: {target: governance-validate, status: &id003 required, command_policy: governance_validation, rationale: governed YAML passes schema semantic path and placeholder validation}
+  governance_exposure_scan: {target: governance-exposure-scan, status: *id003, command_policy: governance_exposure_scan, rationale: governed artifacts do not expose local paths or private infrastructure markers}
+  architecture_test: {target: architecture-test, status: &id004 deferred, command_policy: architecture_tests, rationale: architecture boundaries are executable}
+  architecture_module_size: {target: architecture-module-size, status: *id004, command_policy: architecture_module_size, rationale: production modules stay below configured LOC cap}
+  architecture_layer_membership: {target: architecture-layer-membership, status: *id004, command_policy: architecture_layer_membership, rationale: production modules map to one layer}
+  architecture_context_membership: {target: architecture-context-membership, status: *id004, command_policy: architecture_context_membership, rationale: production modules map to one bounded context}
+  architecture_import_boundaries: {target: architecture-import-boundaries, status: *id004, command_policy: architecture_import_boundaries, rationale: layer import purity prevents drift}
+  architecture_cqrs_side: {target: architecture-cqrs-side, status: *id004, command_policy: architecture_cqrs_side, rationale: command and query sides stay separate}
+  architecture_router_thinness: {target: architecture-router-thinness, status: *id004, command_policy: architecture_router_thinness, rationale: routers remain transport adapters}
+  architecture_duplication: {target: architecture-duplication, status: *id004, command_policy: architecture_duplication, rationale: duplication and shared helpers stay explicit}
+  lint: {target: lint, status: *id004, command_policy: lint, rationale: lint rules are wired before release-check is trusted}
+  typecheck: {target: &id005 typecheck, status: *id004, command_policy: *id005, rationale: static analysis is wired before release-check is trusted}
+  test: {target: test, status: *id004, command_policy: automated_tests, rationale: touched behavior has automated tests}
+  contract_test: {target: contract-test, status: *id004, command_policy: contract_tests, rationale: public contracts and adapters have explicit checks}
+  security_secret_scan: {target: security-secret-scan, status: *id004, command_policy: security_secret_scan, rationale: pushed code is scanned for secrets}
+  security_dependency_audit: {target: security-dependency-audit, status: *id004, command_policy: security_dependency_audit, rationale: dependencies have a vulnerability audit lane}
+  security_sbom: {target: security-sbom, status: *id004, command_policy: security_sbom, rationale: production-bound artifacts produce an SBOM}
+  security_vulnerability_scan: {target: security-vulnerability-scan, status: *id004, command_policy: security_vulnerability_scan, rationale: source or image vulnerability scan is wired}
+  runtime_smoke: {target: runtime-smoke, status: *id004, command_policy: runtime_smoke, rationale: runtime behavior is proven in a declared environment}
+  semantic_ownership: {target: semantic-ownership, status: *id004, command_policy: semantic_ownership, rationale: declared canonical representations have one mechanically enforced owner}
+  ci_certification: {target: ci-certification, status: *id004, command_policy: ci_certification, rationale: authenticated exact-commit CI state is independently recomputed before release}
+provenance: {}

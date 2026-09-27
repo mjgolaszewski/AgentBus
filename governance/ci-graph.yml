@@ -1,0 +1,108 @@
+document: {kind: ci_graph, name: agentbus CI Graph, id: agentbus-ci-graph, version: 1.0.0, status: active, path: governance/ci-graph.yml}
+schema_version: '1.0'
+provider: github
+profile_contract_version: '1.0'
+default_branch: main
+trusted_controller: {kind: executable, executable: bcf}
+value_sources: {}
+extension_points: [preflight, evidence-lane, before-truth, after-truth, exact-main-producer, trusted-control, scheduled-lane, release-role]
+extensions: []
+resource_classes:
+  candidate-python:
+    runner: ubuntu-24.04
+    trust: candidate
+    hosted: true
+    python_version: '3.12'
+    capabilities: [python, git]
+  trusted-control:
+    runner: ubuntu-24.04
+    trust: trusted
+    hosted: true
+    python_version: '3.12'
+    capabilities: [provider-api]
+artifacts:
+  evidence-session: {path: .artifacts/bcf/sessions, kind: session, scope: run-attempt, retention_days: 30}
+  truth-report: {path: .artifacts/bcf/truth-report.json, kind: terminal, scope: run-attempt, retention_days: 30}
+  exact-main-certification: {path: .artifacts/bcf/exact-main-certification, kind: control, scope: run-attempt, retention_days: 30}
+  structural-receipts: {path: .artifacts/bcf/sessions, kind: lane-input, scope: run-attempt, retention_days: 30}
+conditions: {}
+commands:
+  preflight:
+    argv: ['{python}', scripts/preflight_governance.py, --repo-root, ., --mode, '{env:BCF_PREFLIGHT_MODE}', --python, '{python}', --artifact-root, .artifacts/bcf, --expected-producer, structural-evidence, --format, text]
+    cwd: .
+    environment: {BCF_PREFLIGHT_MODE: '${{ github.event_name == ''pull_request'' && ''pr'' || ''release'' }}', BCF_ENFORCE_PR_CHANGELOG: '${{ github.event_name == ''pull_request'' }}', BCF_PR_BASE_SHA: '${{ github.event.pull_request.base.sha }}'}
+  truth:
+    argv: ['{python}', scripts/governance_truth.py, --repo-root, ., --evidence-dir, .artifacts/bcf, --evaluation-mode, '{env:BCF_TRUTH_MODE}', --format, json, --durable-ref, 'github-actions://${{ github.repository }}/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/bcf-governance-truth', --output, .artifacts/bcf/truth-report.json]
+    cwd: .
+    environment: {BCF_TRUTH_MODE: '${{ github.event_name == ''pull_request'' && ''pr'' || ''closure'' }}'}
+step_components: {}
+workflows:
+- id: governance
+  path: .github/workflows/governance.yml
+  display_name: Governance pull-request evidence
+  role: exact-main
+  events:
+  - {type: pull_request}
+  - {type: workflow_call}
+  - type: push
+    branches: [main]
+  permissions: {contents: read}
+  concurrency: {group: 'agentbus-pr-${{ github.event.pull_request.number || github.ref }}', cancel_in_progress: true}
+  jobs:
+  - id: cheap-preflight
+    display_name: Cheap Preflight
+    semantic_role: cheap-preflight
+    resource_class: candidate-python
+    trust: candidate
+    needs: []
+    condition: success
+    timeout_minutes: 45
+    permissions: {contents: read}
+    checkout: true
+    components: [checkout, python, governance-dependencies]
+    executor: {kind: command, command: preflight}
+    produces: [evidence-session]
+    consumes: []
+    required: true
+  - id: structural-evidence
+    display_name: Structural Evidence
+    semantic_role: structural-evidence
+    resource_class: candidate-python
+    trust: candidate
+    needs: [cheap-preflight]
+    condition: success
+    timeout_minutes: 45
+    permissions: {contents: read}
+    checkout: true
+    components: [checkout, python, governance-dependencies, download-evidence, restore-private-modes]
+    executor:
+      kind: gate_group
+      gates: [governance-exposure-scan, governance-validate]
+    produces: [structural-receipts]
+    consumes: [evidence-session]
+    required: true
+  - id: governance-truthfulness
+    display_name: Terminal Governance Truth
+    semantic_role: terminal-governance-truth
+    resource_class: candidate-python
+    trust: candidate
+    needs: [structural-evidence]
+    condition: always
+    timeout_minutes: 45
+    permissions: {contents: read}
+    checkout: true
+    components: [checkout, python, governance-dependencies, download-evidence, restore-private-modes]
+    executor: {kind: truth, command: truth}
+    produces: [truth-report]
+    consumes: [structural-receipts]
+    required: true
+policy:
+  exact_gate_once: true
+  complete_evidence_fan_in: true
+  single_push_authority: true
+  generated_workflows_only: true
+  forbid_hosted_waiters: true
+  hosted_orchestration: run_and_done
+  forbidden_hosted_tokens: [sleep, poll, watch, wait, while, until, wait-for-runner, lease-runner]
+  minimum_gate_timeout_headroom_seconds: 300
+evidence_storage: {path: governance/evidence-storage.yml, sha256: 2a7dfc0d978124c2e3b1e2b801874bbf88415c762d8518b2a9e51c34a3a684dc}
