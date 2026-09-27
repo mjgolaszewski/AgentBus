@@ -28,7 +28,9 @@ The repository uses the Standard profile contract v3. Deterministic defects
 fail in preflight; behavioral evidence runs only for affected claims and their
 true dependents; still-applicable authenticated evidence may be reused. Generated
 workflows are projections of the governed CI graph rather than an editing
-surface.
+surface. The [governance model](docs/governance-model.md) records why Standard
+fits AgentBus and why the repository retains direct project authority without a
+trusted controller.
 
 ## What rides the bus
 
