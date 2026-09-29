@@ -203,7 +203,10 @@ The sections below cover each step and its operational boundaries.
 Slack documents [app manifests](https://docs.slack.dev/reference/app-manifest/)
 and [Socket Mode](https://docs.slack.dev/tools/python-slack-sdk/socket-mode/).
 Socket Mode is an outbound connection, so AgentBus needs no public webhook or
-signing secret. Starting the service sends no Slack message.
+signing secret. At startup AgentBus calls Slack's `auth.test` method with the bot
+token and binds routed envelopes to the returned bot ID. Startup fails closed if
+that identity cannot be authenticated. Envelope-shaped text from a human or a
+different bot remains an ordinary `unrouted` Slack message.
 
 Real tokens belong in `.env` or the environment. AgentBus parses a restricted
 `KEY=value` format; it does not execute the file or expand shell expressions.
@@ -221,6 +224,10 @@ file.
 `agentbus serve` runs in the foreground. The native service listens on
 `127.0.0.1:8766` by default. It stores its database, process record, and log in
 `.state/`; `AGENTBUS_STATE_DIR` or `AGENTBUS_DB_PATH` can relocate that state.
+Consumer profiles default to `${XDG_STATE_HOME:-~/.local/state}/agentbus/consumers`;
+`AGENTBUS_CONSUMER_STATE_DIR` overrides that location. Existing deployments that
+set `WEED_WORKSPACE` retain their legacy `.superworkspace-tools/agentbus` profile
+location during migration.
 `agentbus status` reports both the process and Slack connection state. A 200 from
 `/healthz` proves liveness, not Slack connectivity.
 
@@ -303,6 +310,9 @@ marked non-actionable.
 
 - Accepted Slack events and successful sends are durable. Channel/timestamp
   identity deduplicates Slack retries and outgoing-message echoes.
+- Routed envelopes are accepted only from the bot identity authenticated from
+  the configured bot token. Human and foreign-bot text is always `unrouted`,
+  even when it contains valid-looking AgentBus JSON.
 - AgentBus records a live feed; it performs no historical import. Messages sent
   while disconnected may be absent. Slack edits and deletions do not rewrite the
   local inbox.
@@ -313,6 +323,37 @@ marked non-actionable.
 - Anyone holding the shared API token can read the inbox and choose a sender.
   Put the API behind another authorization layer before exposing it remotely,
   and use HTTPS for every non-loopback client URL.
+
+## Data handling and deliberate limits
+
+Every AgentBus message is posted to Slack and is therefore subject to the
+workspace's access, export, discovery, and retention policies. The local SQLite
+inbox is an additional copy. Do not send credentials, client data, regulated
+records, or other restricted material unless the operator has approved both
+storage systems for that data. Use a private channel with the smallest useful
+membership and apply the organization's normal Slack retention policy.
+
+The current product is intentionally a same-workspace, single-service bus:
+
+- Logical agent identities and personas are coordination labels. Per-agent
+  credentials and cryptographic identity are deferred until AgentBus needs to
+  cross trust domains.
+- The authenticated Slack bot binding protects routed ingress. Signed envelope
+  federation is deferred because the current topology has one service and one
+  Slack app.
+- SQLite inbox reads are bounded and indexed, but clustering, multi-tenant
+  authorization, and distributed storage remain outside the current scope.
+- The Python distribution and Compose project retain the legacy
+  `superworkspace-agentbus` name so existing dependency locks, commands, and
+  named volumes keep working. Any rename needs a versioned compatibility and
+  data-migration path.
+- BCF governance occupies much more source than the application, although the
+  runtime container excludes it. AgentBus will use a supported external or
+  non-vendored BCF distribution if BCF provides one; it will not fork or delete
+  canonical assurance machinery locally to improve a line-count ratio.
+- Built-in subagents and private MCP transports remain reasonable alternatives.
+  They trade away some combination of cross-tool continuity, durable independent
+  cursors, and human-visible Slack participation.
 
 ## HTTP API
 

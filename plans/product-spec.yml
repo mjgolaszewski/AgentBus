@@ -21,6 +21,8 @@ constraints:
     - "bearer-authenticated HTTP is loopback-only unless an operator supplies a secure boundary"
     - "SQLite and consumer profiles remain outside source and release archives"
     - "Python 3.12 or newer with dependencies locked by uv"
+    - "routed Slack envelopes require the bot identity authenticated from the configured token"
+    - "operators approve both Slack retention and the local SQLite copy for transported data"
   known_external_dependencies: ["Slack Web API and Socket Mode", "SQLite", "GitHub Actions hosted runners", "Docker for container release evidence"]
 architecture:
   backend: "flat client and service contexts with closed CLI and HTTP operation populations"
@@ -32,6 +34,7 @@ execution_phases:
     objective: "forward-port preserved AgentBus assurance into BCF 2.1 Standard governance"
     release_train: release_1
   - {phase_id: P02, build_block: "assurance_topology_patch", objective: "release 0.3.1 with one truthful BCF assurance path and restored Python 3.14 proof", release_train: release_2}
+  - {phase_id: P03, build_block: "transport_and_portability_hardening", objective: "authenticate Slack ingress and harden portability, retention guidance, test ergonomics, and bounded inbox reads", release_train: release_3}
 acceptance:
   release_gate: make release-check
   evidence_location: phases/

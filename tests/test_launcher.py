@@ -370,6 +370,23 @@ def test_consumer_profiles_reject_symlinked_state(launcher, tmp_path):
         launcher.consumer_state_dir({"AGENTBUS_CONSUMER_STATE_DIR": str(linked)})
 
 
+def test_consumer_profiles_use_portable_xdg_default_with_legacy_weed_compatibility(
+    launcher, tmp_path,
+):
+    xdg = tmp_path / "xdg-state"
+    assert launcher.consumer_state_dir({"XDG_STATE_HOME": str(xdg)}) == \
+        xdg / "agentbus/consumers"
+    workspace = tmp_path / "legacy-workspace"
+    assert launcher.consumer_state_dir({"WEED_WORKSPACE": str(workspace)}) == \
+        workspace / ".superworkspace-tools/agentbus"
+    explicit = tmp_path / "explicit"
+    assert launcher.consumer_state_dir({
+        "XDG_STATE_HOME": str(xdg),
+        "WEED_WORKSPACE": str(workspace),
+        "AGENTBUS_CONSUMER_STATE_DIR": str(explicit),
+    }) == explicit
+
+
 def test_onboard_accepts_realistic_repo_names(launcher, tmp_path, monkeypatch):
     state = tmp_path / "state"
     values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}

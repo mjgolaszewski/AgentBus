@@ -5,6 +5,25 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Security
+
+- Bound routed Slack envelopes to the bot identity authenticated from the
+  configured token; human and foreign-bot envelopes are now unrouted.
+
+### Changed
+
+- Bounded identity-aware inbox reads in indexed SQLite queries and migrated
+  existing databases to store the routing audience explicitly.
+- Moved new consumer-profile defaults to the XDG state directory while retaining
+  `WEED_WORKSPACE` as a compatibility fallback for existing deployments.
+- Made the default test suite skip the dedicated Python 3.14 qualification node
+  when it runs under another supported interpreter.
+
+### Documentation
+
+- Documented Slack and SQLite retention, present deployment boundaries, deferred
+  identity/federation work, governance footprint, and coordination alternatives.
+
 ## [0.3.1] - 2026-09-29
 
 ### Fixed

@@ -40,9 +40,12 @@ def now() -> str:
 
 
 def consumer_state_dir(values: dict[str, str]) -> Path:
-    workspace = Path(values.get("WEED_WORKSPACE", "/docker"))
-    state = Path(values.get("AGENTBUS_CONSUMER_STATE_DIR",
-                            str(workspace / ".superworkspace-tools/agentbus"))).expanduser()
+    configured = values.get("AGENTBUS_CONSUMER_STATE_DIR")
+    legacy_workspace = values.get("WEED_WORKSPACE")
+    xdg_state = Path(values.get("XDG_STATE_HOME", "~/.local/state")).expanduser()
+    default = Path(legacy_workspace) / ".superworkspace-tools/agentbus" \
+        if legacy_workspace else xdg_state / "agentbus/consumers"
+    state = Path(configured or default).expanduser()
     if state.is_symlink() or (state.exists() and not state.is_dir()):
         raise ClientError(f"Refusing unsafe AgentBus consumer state directory {state}.")
     return state
@@ -174,8 +177,10 @@ def adoption_block(profile: dict) -> str:
 
 def configuration() -> tuple[Path, dict[str, str]]:
     source = Path(__file__).resolve().parent
-    default_project = source if (source / "pyproject.toml").is_file() else (
-        Path(os.environ.get("WEED_WORKSPACE", "/docker")) / ".devcontainer/agentbus"
+    default_project = next(
+        (candidate for candidate in (source, source.parent)
+         if (candidate / "pyproject.toml").is_file()),
+        source,
     )
     project = Path(os.environ.get("AGENTBUS_PROJECT_DIR", str(default_project))).resolve()
     config = Path(os.environ.get("AGENTBUS_CONFIG", str(project / ".env"))).expanduser()

@@ -16,3 +16,11 @@ or logs containing private coordination data.
 AgentBus identities are self-asserted coordination labels. The shared bearer
 token is the API authorization boundary; every holder can read messages and
 select a sender. Treat the local inbox and token as sensitive workspace data.
+
+Routed Slack envelopes are trusted only when Slack attributes them to the bot
+identity authenticated from the configured bot token. Envelope-shaped messages
+from humans and other bots remain unrouted input.
+
+Every message sent through AgentBus enters Slack retention and the local SQLite
+inbox. Do not transport credentials, customer data, regulated records, or other
+restricted material unless both stores are approved for that classification.

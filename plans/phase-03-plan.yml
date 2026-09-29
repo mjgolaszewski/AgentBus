@@ -1,0 +1,51 @@
+document:
+  kind: execution_phase_plan
+  name: Phase 03 Plan
+  id: project-phase-03-plan
+  version: 1.0.0
+  generated_at_utc: '2026-09-29T00:00:00Z'
+  status: completed
+  path: plans/phase-03-plan.yml
+phase:
+  id: P03
+  build_block: transport_and_portability_hardening
+  planner: codex
+  date: '2026-09-29'
+  scope_source:
+  - AGENTS.yml
+  - plans/product-spec.yml
+  - plans/build-plan.yml
+  - plans/phase-ledger.yml
+  - MEMORY.yml
+delivery_contract:
+  tightly_scoped_deliverables:
+  - bind routed Slack envelopes to the configured AgentBus bot identity and downgrade
+    all other channel text to unrouted
+  - bound inbox queries in SQLite while preserving routing cursor and claim semantics
+  - make client state discovery portable and default tests valid on every supported
+    interpreter
+  - document Slack retention and the intentionally deferred identity federation and
+    governance-cost considerations
+  parallelizable_workstreams:
+  - id: P03-WS1
+    name: transport_security
+  - id: P03-WS2
+    name: persistence_scaling
+  - id: P03-WS3
+    name: portability_and_documentation
+  hard_dependencies:
+  - P02 closed on exact main
+  docker_first_local_runtime: repo_native_validation_and_governance_commands
+  completeness_standard: full_completeness_for_declared_scope
+scope_lock:
+- order: 1
+  statement: keep the phase narrowly scoped to declared deliverables and update canonical
+    governed artifacts in the same change
+verification_plan:
+- make governance-validate
+- make architecture-test
+- make lint
+- make typecheck
+- make test
+- make contract-test
+- make python314-compatibility

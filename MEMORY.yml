@@ -57,19 +57,24 @@ environment_facts:
     - AgentBus v0.3.0 is published from commit 9ceb0cd4916291b5fb3f65b81eda4c84bce1ad53 and the superworkspace consumes its attested immutable archive
     - direct protected-main authority is retained without trusted-controller or BCF release authority
     - production implementations live under src while top-level client and service shims preserve public executable and import paths
+    - routed Slack envelopes are admitted only from the bot identity authenticated from the configured bot token
+    - new consumer profiles use the XDG state directory while WEED_WORKSPACE remains a compatibility fallback
+    - identity-aware inbox reads filter and page in indexed SQLite queries with legacy audience migration
   active_artifacts:
     spec: plans/product-spec.yml
     build_plan: plans/build-plan.yml
     active_phase_ledger: plans/phase-ledger.yml
     phase_history: plans/phase-history.yml
-    active_phase_plan: plans/phase-02-plan.yml
-    active_workitem_ledger: plans/phase-02-workitems.yml
-    active_phase_log: phases/phase-02-log.yml
+    active_phase_plan: plans/phase-03-plan.yml
+    active_workitem_ledger: plans/phase-03-workitems.yml
+    active_phase_log: phases/phase-03-log.yml
 known_constraints:
   - preserve the public CLI HTTP protocol SQLite state and deployment behavior during governance adoption
   - use only immutable released BCF artifacts and their published digests
   - keep provider authority boundaries and avoid persistent trusted-controller capability
   - specialize repo_identity_provider and repo_observability_backend in the observability contracts before production use
+  - per-agent credentials signed federation clustering and multi-tenant authorization remain outside the same-workspace product scope
+  - Slack retention and the local SQLite copy must both be approved for transported data
 reusable_commands:
   - make governance-validate
   - make architecture-test
@@ -91,6 +96,6 @@ references:
     - plans/product-spec.yml
     - plans/build-plan.yml
   execution:
-    - plans/phase-02-plan.yml
-    - plans/phase-02-workitems.yml
-    - phases/phase-02-log.yml
+    - plans/phase-03-plan.yml
+    - plans/phase-03-workitems.yml
+    - phases/phase-03-log.yml
