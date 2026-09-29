@@ -151,27 +151,19 @@ def _selector_map_from_nodes(
     return PytestSelectorMap(gate_id, tuple(sorted(by_identity.items())))
 
 
-def collect_selector_map(
+def _collect_raw_nodes(
     repo_root: Path,
-    gate_id: str,
+    selectors: list[str],
     *,
     python_executable: str | Path | None = None,
-) -> PytestSelectorMap:
-    """Collect the lossless pytest/JUnit identity mapping for one test gate."""
-    repo_root = repo_root.resolve()
-    contract = _test_contract(repo_root, gate_id)
+) -> list[str]:
+    """Collect one deduplicated selector union through one pytest process."""
+
     python = _selected_python(python_executable)
     environment = dict(os.environ)
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
     result = subprocess.run(
-        [
-            str(python),
-            "-m",
-            "pytest",
-            "--collect-only",
-            "-q",
-            *_selectors(repo_root, contract.get("selectors")),
-        ],
+        [str(python), "-m", "pytest", "--collect-only", "-q", *selectors],
         cwd=repo_root,
         env=environment,
         capture_output=True,
@@ -182,16 +174,84 @@ def collect_selector_map(
     if result.returncode != 0:
         diagnostic = result.stderr.strip() or result.stdout.strip() or f"exit {result.returncode}"
         raise TestManifestError(
-            f"pytest collection infrastructure failure for {gate_id}: {diagnostic}"
+            f"pytest collection infrastructure failure: {diagnostic}"
         )
-    return _selector_map_from_nodes(
-        gate_id,
-        [
-            line.strip()
-            for line in result.stdout.splitlines()
-            if ".py::" in line and not line.startswith((" ", "="))
-        ],
+    return [
+        line.strip()
+        for line in result.stdout.splitlines()
+        if ".py::" in line and not line.startswith((" ", "="))
+    ]
+
+
+def _selector_matches_node(selector: str, node: str) -> bool:
+    """Apply the closed path/node selector grammar to one collected node."""
+
+    if "::" in selector:
+        return (
+            node == selector
+            or node.startswith(f"{selector}[")
+            or node.startswith(f"{selector}::")
+        )
+    source = Path(node.split("::", 1)[0])
+    selected = Path(selector)
+    return source == selected or (
+        selected.suffix != ".py" and source.is_relative_to(selected)
     )
+
+
+def collect_selector_maps(
+    repo_root: Path,
+    gate_ids: list[str] | tuple[str, ...],
+    *,
+    python_executable: str | Path | None = None,
+) -> dict[str, PytestSelectorMap]:
+    """Collect every declared gate through one exact pytest invocation."""
+
+    repo_root = repo_root.resolve()
+    contracts = {gate_id: _test_contract(repo_root, gate_id) for gate_id in gate_ids}
+    selectors = {
+        gate_id: _selectors(repo_root, contract.get("selectors"))
+        for gate_id, contract in contracts.items()
+    }
+    union = list(
+        dict.fromkeys(
+            selector
+            for gate_id in gate_ids
+            for selector in selectors[gate_id]
+        )
+    )
+    if not union:
+        return {}
+    raw_nodes = _collect_raw_nodes(
+        repo_root, union, python_executable=python_executable
+    )
+    return {
+        gate_id: _selector_map_from_nodes(
+            gate_id,
+            [
+                node
+                for node in raw_nodes
+                if any(
+                    _selector_matches_node(selector, node)
+                    for selector in selectors[gate_id]
+                )
+            ],
+        )
+        for gate_id in gate_ids
+    }
+
+
+def collect_selector_map(
+    repo_root: Path,
+    gate_id: str,
+    *,
+    python_executable: str | Path | None = None,
+) -> PytestSelectorMap:
+    """Collect the lossless pytest/JUnit identity mapping for one test gate."""
+    repo_root = repo_root.resolve()
+    return collect_selector_maps(
+        repo_root, (gate_id,), python_executable=python_executable
+    )[gate_id]
 
 
 def collect_nodes(
@@ -220,6 +280,86 @@ def declared_test_gates(repo_root: Path) -> list[str]:
         and isinstance(gate.get("evidence"), dict)
         and isinstance(gate["evidence"].get("test_contract"), dict)
         and gate["evidence"]["test_contract"].get("expected_node_manifest")
+    )
+
+
+@dataclass(frozen=True)
+class OracleManifestIndex:
+    """One immutable index from governed test producers to exact node sets."""
+
+    manifests: tuple[tuple[str, frozenset[str]], ...]
+
+    def resolve(self, node_ids: object, *, preferred_gate: str | None = None) -> str:
+        if (
+            not isinstance(node_ids, list)
+            or not node_ids
+            or not all(isinstance(node, str) and node for node in node_ids)
+        ):
+            raise TestManifestError("test-node oracle has no exact nodes")
+        required = set(node_ids)
+        candidates = {
+            gate_id: set(nodes)
+            for gate_id, nodes in self.manifests
+            if required.issubset(nodes)
+        }
+        if preferred_gate in candidates:
+            return str(preferred_gate)
+        most_specific = {
+            gate_id
+            for gate_id, nodes in candidates.items()
+            if not any(other_nodes < nodes for other_nodes in candidates.values())
+        }
+        if len(most_specific) == 1:
+            return next(iter(most_specific))
+        if not candidates:
+            raise TestManifestError("test-node oracle is absent from governed manifests")
+        raise TestManifestError(
+            "test-node oracle producer is ambiguous: "
+            + ", ".join(sorted(most_specific))
+        )
+
+
+def oracle_manifest_index(repo_root: Path) -> OracleManifestIndex:
+    """Compile all governed oracle producers once from canonical manifests."""
+
+    registry = _load_yaml(repo_root / "governance/gate-contracts.yml")
+    gates = registry.get("gates")
+    if not isinstance(gates, dict):
+        raise TestManifestError("gate contract registry has no gate mappings")
+    manifests: list[tuple[str, frozenset[str]]] = []
+    for gate_id, gate in sorted(gates.items()):
+        evidence = gate.get("evidence") if isinstance(gate, dict) else None
+        contract = (
+            evidence.get("test_contract") if isinstance(evidence, dict) else None
+        )
+        if not isinstance(contract, dict) or not contract.get(
+            "expected_node_manifest"
+        ):
+            continue
+        path = _safe_manifest_path(
+            repo_root, contract.get("expected_node_manifest")
+        )
+        if not path.is_file() or path.is_symlink():
+            raise TestManifestError(f"expected node manifest is missing for {gate_id}")
+        nodes = frozenset(
+            line.strip()
+            for line in path.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        )
+        manifests.append((str(gate_id), nodes))
+    return OracleManifestIndex(tuple(manifests))
+
+
+def resolve_oracle_test_gate(
+    repo_root: Path,
+    node_ids: object,
+    *,
+    preferred_gate: str | None = None,
+) -> str:
+    """Resolve one exact test producer for an oracle from governed manifests."""
+
+    return oracle_manifest_index(repo_root).resolve(
+        node_ids, preferred_gate=preferred_gate
     )
 
 
@@ -284,23 +424,72 @@ def update_gate(
 def check_all(
     repo_root: Path, *, python_executable: str | Path | None = None
 ) -> dict[str, int]:
-    return {
-        gate_id: len(
-            check_gate(repo_root, gate_id, python_executable=python_executable)
+    gate_ids = declared_test_gates(repo_root)
+    mappings = collect_selector_maps(
+        repo_root, gate_ids, python_executable=python_executable
+    )
+    result: dict[str, int] = {}
+    for gate_id, mapping in mappings.items():
+        contract = _test_contract(repo_root, gate_id)
+        path = _safe_manifest_path(repo_root, contract.get("expected_node_manifest"))
+        if not path.is_file() or path.is_symlink():
+            raise TestManifestError(f"expected node manifest is missing for {gate_id}")
+        expected = sorted(
+            line.strip()
+            for line in path.read_text(encoding="utf-8").splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
         )
-        for gate_id in declared_test_gates(repo_root)
-    }
+        actual = list(mapping.normalized_nodes)
+        if expected != actual:
+            missing = sorted(set(expected) - set(actual))
+            extra = sorted(set(actual) - set(expected))
+            raise TestManifestError(
+                f"test node manifest drift for {gate_id}; missing={missing}; extra={extra}"
+            )
+        result[gate_id] = len(actual)
+    return result
+
+
+def update_all(
+    repo_root: Path, *, python_executable: str | Path | None = None
+) -> dict[str, Path]:
+    """Regenerate every governed manifest from one shared collection."""
+
+    gate_ids = declared_test_gates(repo_root)
+    mappings = collect_selector_maps(
+        repo_root, gate_ids, python_executable=python_executable
+    )
+    result: dict[str, Path] = {}
+    for gate_id, mapping in mappings.items():
+        contract = _test_contract(repo_root, gate_id)
+        path = _safe_manifest_path(repo_root, contract.get("expected_node_manifest"))
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("\n".join(mapping.normalized_nodes) + "\n", encoding="utf-8")
+        result[gate_id] = path
+    return result
 
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Check or update exact pytest manifests.")
     parser.add_argument("--repo-root", type=Path, default=Path.cwd())
     parser.add_argument("operation", choices=("check", "update"))
-    parser.add_argument("--gate", required=True)
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument("--gate")
+    target.add_argument("--all", action="store_true")
     parser.add_argument("--python", type=Path)
     args = parser.parse_args(argv)
     try:
-        if args.operation == "check":
+        if args.all and args.operation == "check":
+            counts = check_all(
+                args.repo_root.resolve(), python_executable=args.python
+            )
+            print(f"test-manifests-ok gates={len(counts)} nodes={sum(counts.values())}")
+        elif args.all:
+            paths = update_all(
+                args.repo_root.resolve(), python_executable=args.python
+            )
+            print("\n".join(str(path) for path in paths.values()))
+        elif args.operation == "check":
             nodes = check_gate(
                 args.repo_root.resolve(), args.gate, python_executable=args.python
             )

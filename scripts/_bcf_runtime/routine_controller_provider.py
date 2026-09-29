@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import hashlib
-import json
-from enum import StrEnum
+import os
 from pathlib import Path
 import re
 from typing import Any, Mapping
@@ -12,6 +11,7 @@ from typing import Any, Mapping
 import yaml
 
 from .ci_authority_contracts import authority_role_jobs
+from .ci_authority_pins import verify_provider_workflow_authority
 from .ci_github_api import GitHubAPI
 from .ci_github_authority import (
     authenticate_role_run,
@@ -43,9 +43,8 @@ from .prior_evidence_transport import (
     authenticate_merged_pull,
     authenticate_pr_certification,
 )
+from .controller_custody import compile_controller_custody, require_controller_execution
 from .routine_controller_rotation import (
-    ALTERNATE_POLICY_LANE_SEQUENCE,
-    GovernedControllerLane,
     RoutineRotationError,
     advance_transition,
     alternate_policy_lane_contract,
@@ -56,6 +55,17 @@ from .routine_controller_rotation import (
     transition_follows_normalization,
     transition_id,
     validate_transition,
+)
+from .routine_controller_callback import (
+    load_callback_outcome,
+    validate_active_outcome,
+    validate_no_transition_outcome,
+)
+from .routine_controller_admission_custody import authenticate_admission_custody
+from .routine_controller_decision import (
+    ControllerTransitionClass,
+    RoutineDecision,
+    validate_routine_decision,
 )
 from .ci_controller_provider import (
     policy_digest as _policy_digest,
@@ -71,144 +81,13 @@ STAGE_JOB_PREFIXES = {
 }
 
 
-class RoutineDecision(StrEnum):
-    NO_TRANSITION = "no_transition"
-    ROUTINE_TRANSITION_AUTHORIZED = "routine_transition_authorized"
-    ALTERNATE_LANE_REQUIRED = "alternate_lane_required"
-
-
-class ControllerTransitionClass(StrEnum):
-    NONE = "none"
-    RUNTIME_ONLY = "runtime_only"
-    PROTECTED_POLICY_CHANGE = "protected_policy_change"
-
-
-def _exact_keys(value: Mapping[str, Any], expected: set[str], *, field: str) -> None:
-    if set(value) != expected:
-        raise GitHubControllerError(f"{field} inventory is not exact")
-
-
-def _exact_sha(value: object, *, field: str) -> str:
-    text = str(value)
-    if re.fullmatch(r"[a-f0-9]{40}", text) is None:
-        raise GitHubControllerError(f"{field} is not an exact Git identity")
-    return text
-
-
-def _exact_digest(value: object, *, field: str) -> str:
-    text = str(value)
-    if re.fullmatch(r"[a-f0-9]{64}", text) is None:
-        raise GitHubControllerError(f"{field} is not an exact SHA-256 digest")
-    return text
-
-
-def validate_routine_decision(value: Mapping[str, Any]) -> dict[str, Any]:
-    """Validate a closed routine-controller decision before transport."""
-
-    common = {
-        "schema_version", "decision", "transition_class", "applicable",
-        "reason",
-    }
-    decision = str(value.get("decision", ""))
-    if decision == RoutineDecision.ROUTINE_TRANSITION_AUTHORIZED.value:
-        _exact_keys(value, common | {"transition"}, field="routine decision")
-        if (
-            value.get("schema_version") != "1.0"
-            or value.get("transition_class") != ControllerTransitionClass.RUNTIME_ONLY
-            or value.get("applicable") is not True
-            or value.get("reason") != "pending_controller_rotation"
-        ):
-            raise GitHubControllerError("routine transition decision is invalid")
-        result = dict(value)
-        result["transition"] = validate_transition(
-            packaged_repo_root(), value.get("transition")
-        )
-        return result
-
-    subject_admission = common | {"subject", "admission", "release_authority"}
-    if decision == RoutineDecision.NO_TRANSITION.value:
-        _exact_keys(value, subject_admission, field="routine decision")
-        if (
-            value.get("schema_version") != "1.0"
-            or value.get("transition_class") != ControllerTransitionClass.NONE
-            or value.get("applicable") is not False
-            or value.get("reason") != "controller_current"
-        ):
-            raise GitHubControllerError("no-transition decision is invalid")
-    elif decision == RoutineDecision.ALTERNATE_LANE_REQUIRED.value:
-        _exact_keys(
-            value,
-            subject_admission | {"authority", "target", "alternate_lane"},
-            field="routine decision",
-        )
-        if (
-            value.get("schema_version") != "1.0"
-            or value.get("transition_class")
-            != ControllerTransitionClass.PROTECTED_POLICY_CHANGE
-            or value.get("applicable") is not False
-            or value.get("reason") != "authorization_policy_changed"
-        ):
-            raise GitHubControllerError("alternate-lane decision is invalid")
-        authority = value.get("authority")
-        if not isinstance(authority, Mapping):
-            raise GitHubControllerError("alternate-lane authority is invalid")
-        _exact_keys(
-            authority,
-            {
-                "installed_controller_commit", "implementation_pr",
-                "candidate_commit_sha", "source_main_commit_sha",
-                "policy_before_sha256", "policy_after_sha256",
-            },
-            field="alternate-lane authority",
-        )
-        _exact_sha(authority["installed_controller_commit"], field="installed controller")
-        positive_int(authority["implementation_pr"], field="implementation PR")
-        _exact_sha(authority["candidate_commit_sha"], field="candidate commit")
-        _exact_sha(authority["source_main_commit_sha"], field="source main commit")
-        before = _exact_digest(authority["policy_before_sha256"], field="prior policy")
-        after = _exact_digest(authority["policy_after_sha256"], field="candidate policy")
-        if before == after:
-            raise GitHubControllerError("alternate lane requires an exact policy change")
-        validate_controller_pin(value.get("target"))
-        lane = value.get("alternate_lane")
-        if not isinstance(lane, Mapping):
-            raise GitHubControllerError("alternate lane is invalid")
-        _exact_keys(
-            lane,
-            {"id", "required_sequence", "required_initial_state", "required_terminal_state"},
-            field="alternate lane",
-        )
-        if (
-            lane.get("id") != GovernedControllerLane.ORDINARY_PROTECTED_N_N_PLUS_1
-            or lane.get("required_sequence") != list(ALTERNATE_POLICY_LANE_SEQUENCE)
-            or lane.get("required_initial_state") != "ordinary-pending-rotation"
-            or lane.get("required_terminal_state") != "ordinary-current"
-        ):
-            raise GitHubControllerError("alternate lane contract is invalid")
-    else:
-        raise GitHubControllerError("routine decision is unknown")
-
-    subject = value.get("subject")
-    admission = value.get("admission")
-    if not isinstance(subject, Mapping) or not isinstance(admission, Mapping):
-        raise GitHubControllerError("routine decision identity is invalid")
-    _exact_keys(subject, {"commit_sha", "tree_sha"}, field="decision subject")
-    _exact_sha(subject["commit_sha"], field="decision commit")
-    _exact_sha(subject["tree_sha"], field="decision tree")
-    _exact_keys(admission, {"run_id", "run_attempt"}, field="decision admission")
-    positive_int(admission["run_id"], field="admission run ID")
-    positive_int(admission["run_attempt"], field="admission run attempt")
-    if value.get("release_authority") is not False:
-        raise GitHubControllerError("routine decision cannot grant release authority")
-    return dict(value)
-
-
 def _no_transition(
     main: MainIdentity,
     *,
     reason: str,
     admission_run_id: object,
     admission_run_attempt: object,
+    controller_custody: Mapping[str, Any],
 ) -> dict[str, Any]:
     return validate_routine_decision({
         "schema_version": "1.0",
@@ -226,52 +105,76 @@ def _no_transition(
                 positive_int(admission_run_attempt, field="admission run attempt")
             ),
         },
+        "controller_custody": dict(controller_custody),
         "release_authority": False,
     })
 
 
-def _policy_change_route(
+def _authorized_transition(
     main: MainIdentity,
     *,
+    repository: str,
     admission_run_id: object,
     admission_run_attempt: object,
     installed_commit: str,
     target: Mapping[str, str],
     implementation_pr: object,
-    candidate_commit: str,
-    source_main_commit: str,
     policy_before: str,
     policy_after: str,
+    runners: tuple[str, ...],
 ) -> dict[str, Any]:
-    return validate_routine_decision({
+    transition_class = (
+        ControllerTransitionClass.PROTECTED_POLICY_CHANGE.value
+        if policy_before != policy_after
+        else ControllerTransitionClass.RUNTIME_ONLY.value
+    )
+    identity = transition_id(
+        repository_id=main.repository_id,
+        installed_commit=installed_commit,
+        subject_commit=main.checkout_sha,
+        subject_tree=main.tree_sha,
+        artifact_digest=target["BCF_BOOTSTRAP_ARTIFACT_DIGEST"],
+    )
+    receipt = {
         "schema_version": "1.0",
-        "decision": RoutineDecision.ALTERNATE_LANE_REQUIRED.value,
-        "transition_class": ControllerTransitionClass.PROTECTED_POLICY_CHANGE.value,
-        "applicable": False,
-        "reason": "authorization_policy_changed",
-        "subject": {
-            "commit_sha": main.checkout_sha,
-            "tree_sha": main.tree_sha,
-        },
-        "admission": {
-            "run_id": str(positive_int(admission_run_id, field="admission run ID")),
-            "run_attempt": str(
-                positive_int(admission_run_attempt, field="admission run attempt")
-            ),
-        },
+        "transition_id": identity,
+        "state": "authorized",
+        "repository": {"id": main.repository_id, "full_name": repository},
+        "subject": {"commit_sha": main.checkout_sha, "tree_sha": main.tree_sha},
         "authority": {
             "installed_controller_commit": installed_commit,
-            "implementation_pr": str(
-                positive_int(implementation_pr, field="implementation PR")
-            ),
-            "candidate_commit_sha": candidate_commit,
-            "source_main_commit_sha": source_main_commit,
+            "admission_run_id": str(positive_int(admission_run_id, field="admission run ID")),
+            "admission_run_attempt": str(positive_int(admission_run_attempt, field="admission run attempt")),
+            "implementation_pr": str(positive_int(implementation_pr, field="implementation PR")),
             "policy_before_sha256": policy_before,
             "policy_after_sha256": policy_after,
         },
-        "target": dict(target),
-        "alternate_lane": alternate_policy_lane_contract(),
-        "release_authority": False,
+        "artifact": {
+            "id": target["BCF_BOOTSTRAP_ARTIFACT_ID"],
+            "name": target["BCF_BOOTSTRAP_ARTIFACT_NAME"],
+            "provider_digest": target["BCF_BOOTSTRAP_ARTIFACT_DIGEST"],
+            "wheel_sha256": target["BCF_BOOTSTRAP_WHEEL_SHA256"],
+            "run_id": target["BCF_BOOTSTRAP_RUN_ID"],
+            "run_attempt": target["BCF_BOOTSTRAP_RUN_ATTEMPT"],
+            "commit_sha": target["BCF_BOOTSTRAP_COMMIT_SHA"],
+            "tree_sha": target["BCF_BOOTSTRAP_TREE_SHA"],
+        },
+        "required_runners": list(runners),
+        "bootstrap": [],
+        "probe": [],
+        "promotion": [],
+    }
+    return validate_routine_decision({
+        "schema_version": "1.0",
+        "decision": RoutineDecision.ROUTINE_TRANSITION_AUTHORIZED.value,
+        "transition_class": transition_class,
+        "applicable": True,
+        "reason": (
+            "pending_protected_policy_rotation"
+            if transition_class == ControllerTransitionClass.PROTECTED_POLICY_CHANGE
+            else "pending_controller_rotation"
+        ),
+        "transition": validate_transition(packaged_repo_root(), receipt),
     })
 
 
@@ -427,15 +330,33 @@ def resolve_effective_controller(
 
 
 def effective_controller_authority(
-    api: GitHubAPI, *, repository: str
+    api: GitHubAPI, *, repository: str, repo_root: Path | None = None
 ) -> dict[str, str]:
     """Project the exact provider-composed identity accepted by preflight."""
 
+    if repo_root is not None:
+        verify_provider_workflow_authority(
+            repo_root,
+            authority_path=Path("governance/ci-authority.yml"),
+            api=api,
+            repository=repository,
+        )
     pin = resolve_effective_controller(api, repository=repository)["pin"]
     return {
         "controller_commit_sha": pin["BCF_BOOTSTRAP_COMMIT_SHA"],
         "controller_bundle_sha256": pin["BCF_BOOTSTRAP_WHEEL_SHA256"],
     }
+
+
+def project_effective_controller_custody_observation(
+    api: GitHubAPI, *, repository: str
+) -> dict[str, Any]:
+    """Compile a non-authoritative route observation for trusted reauthentication."""
+
+    return compile_controller_custody(
+        resolve_effective_controller(api, repository=repository),
+        repository=repository,
+    )
 
 
 def authorize_transition(
@@ -476,18 +397,31 @@ def authorize_transition(
         admission_run_id=admission_run_id,
         admission_run_attempt=admission_run_attempt,
     )
+    if topology.state not in {
+        AdmissionTopologyState.CERTIFIABLE,
+        AdmissionTopologyState.PENDING_ROTATION,
+    }:
+        raise GitHubControllerError(
+            f"routine controller topology is noncertifying: {topology.reason}"
+        )
+    current = resolve_effective_controller(api, repository=repository)
+    custody = authenticate_admission_custody(
+        api,
+        repository=repository,
+        main=main,
+        authority=authority,
+        admission_run_id=admission_run_id,
+        admission_run_attempt=admission_run_attempt,
+        effective=current,
+    )
     if topology.state is AdmissionTopologyState.CERTIFIABLE:
         return _no_transition(
             main,
             reason="controller_current",
             admission_run_id=admission_run_id,
             admission_run_attempt=admission_run_attempt,
+            controller_custody=custody,
         )
-    if topology.state is not AdmissionTopologyState.PENDING_ROTATION:
-        raise GitHubControllerError(
-            f"routine controller topology is noncertifying: {topology.reason}"
-        )
-    current = resolve_effective_controller(api, repository=repository)
     target = compile_self_controller_pin(
         api,
         repository=repository,
@@ -509,64 +443,19 @@ def authorize_transition(
     )
     before = _policy_digest(api, repository, ref=source_main.checkout_sha)
     after = _policy_digest(api, repository, ref=main.checkout_sha)
-    if before != after:
-        return _policy_change_route(
-            main,
-            admission_run_id=admission_run_id,
-            admission_run_attempt=admission_run_attempt,
-            installed_commit=current_pin["BCF_BOOTSTRAP_COMMIT_SHA"],
-            target=target,
-            implementation_pr=pull["number"],
-            candidate_commit=candidate.checkout_sha,
-            source_main_commit=source_main.checkout_sha,
-            policy_before=before,
-            policy_after=after,
-        )
     _, _, runners = _runner_policy(api, repository, main=main)
-    identity = transition_id(
-        repository_id=main.repository_id,
+    return _authorized_transition(
+        main,
+        repository=repository,
+        admission_run_id=admission_run_id,
+        admission_run_attempt=admission_run_attempt,
         installed_commit=current_pin["BCF_BOOTSTRAP_COMMIT_SHA"],
-        subject_commit=main.checkout_sha,
-        subject_tree=main.tree_sha,
-        artifact_digest=target["BCF_BOOTSTRAP_ARTIFACT_DIGEST"],
+        target=target,
+        implementation_pr=pull["number"],
+        policy_before=before,
+        policy_after=after,
+        runners=runners,
     )
-    receipt = {
-        "schema_version": "1.0",
-        "transition_id": identity,
-        "state": "authorized",
-        "repository": {"id": main.repository_id, "full_name": repository},
-        "subject": {"commit_sha": main.checkout_sha, "tree_sha": main.tree_sha},
-        "authority": {
-            "installed_controller_commit": current_pin["BCF_BOOTSTRAP_COMMIT_SHA"],
-            "admission_run_id": str(positive_int(admission_run_id, field="admission run ID")),
-            "admission_run_attempt": str(positive_int(admission_run_attempt, field="admission run attempt")),
-            "implementation_pr": str(positive_int(pull["number"], field="implementation PR")),
-            "policy_before_sha256": before,
-            "policy_after_sha256": after,
-        },
-        "artifact": {
-            "id": target["BCF_BOOTSTRAP_ARTIFACT_ID"],
-            "name": target["BCF_BOOTSTRAP_ARTIFACT_NAME"],
-            "provider_digest": target["BCF_BOOTSTRAP_ARTIFACT_DIGEST"],
-            "wheel_sha256": target["BCF_BOOTSTRAP_WHEEL_SHA256"],
-            "run_id": target["BCF_BOOTSTRAP_RUN_ID"],
-            "run_attempt": target["BCF_BOOTSTRAP_RUN_ATTEMPT"],
-            "commit_sha": target["BCF_BOOTSTRAP_COMMIT_SHA"],
-            "tree_sha": target["BCF_BOOTSTRAP_TREE_SHA"],
-        },
-        "required_runners": list(runners),
-        "bootstrap": [],
-        "probe": [],
-        "promotion": [],
-    }
-    return validate_routine_decision({
-        "schema_version": "1.0",
-        "decision": RoutineDecision.ROUTINE_TRANSITION_AUTHORIZED.value,
-        "transition_class": ControllerTransitionClass.RUNTIME_ONLY.value,
-        "applicable": True,
-        "reason": "pending_controller_rotation",
-        "transition": validate_transition(packaged_repo_root(), receipt),
-    })
 
 
 def _stage_proofs(
@@ -714,7 +603,18 @@ def dispatch_post_rotation_certification(
         run_id=rotation.run_id,
         run_attempt=rotation.run_attempt,
     )
+    resolved = resolve_effective_controller(api, repository=repository)
+    custody = compile_controller_custody(resolved, repository=repository)
+    require_controller_execution(custody)
+    raw_outcome = load_callback_outcome(
+        Path(os.environ.get("BCF_CONTROLLER_CUSTODY_PATH", ""))
+    )
     if topology == "no_transition":
+        validate_no_transition_outcome(
+            raw_outcome,
+            subject={"commit_sha": main.checkout_sha, "tree_sha": main.tree_sha},
+            custody=custody,
+        )
         return {
             "status": "no_transition",
             "dispatched": False,
@@ -726,7 +626,6 @@ def dispatch_post_rotation_certification(
             "rotation_run_attempt": rotation.run_attempt,
             "release_authority": False,
         }
-    resolved = resolve_effective_controller(api, repository=repository)
     if resolved["source"] != "provider_transition":
         raise GitHubControllerError("no active provider controller transition exists")
     receipts = _active_receipts(
@@ -750,6 +649,10 @@ def dispatch_post_rotation_certification(
     }:
         raise GitHubControllerError("rotation callback does not bind the active transition")
     transition = matching[0]
+    if validate_active_outcome(packaged_repo_root(), raw_outcome) != transition:
+        raise GitHubControllerError(
+            "active callback outcome differs from provider transition"
+        )
     exact_main_subject = {"commit_sha": main.checkout_sha, "tree_sha": main.tree_sha}
     if transition["subject"] != exact_main_subject:
         raise GitHubControllerError("rotation admission subject is not exact main")

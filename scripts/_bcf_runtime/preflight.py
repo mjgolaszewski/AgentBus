@@ -22,7 +22,8 @@ from .evidence_workitem_lifecycle import (
 )
 from .evidence_planning import load_prior_receipts, verification_plan as build_verification_plan
 from .evaluation_scope import EvaluationIntent, evaluation_scope
-from .ci_authority_pins import CIAuthorityPinError, verify_workflow_authority
+from .ci_authority_pins import CIAuthorityPinError
+from .ci_authority_preflight import verify_workflow_authority_preflight
 from .ci_github_identity import GitHubControllerError
 from .ci_self_controller import verify_self_controller_projection
 from .check_governance_exposure import scan_exposures
@@ -48,10 +49,6 @@ from .governance_validation.preflight_negative_controls import (
     stale_negative_control_oracles,
 )
 from .semantic_ownership_scan import run_scan as run_semantic_ownership_scan
-from .self_workflow_contracts import (
-    SelfWorkflowContractError,
-    validate_self_workflow_contracts,
-)
 from .test_manifests import check_all
 from .trusted_controller_compatibility import (
     TrustedControllerCompatibilityError,
@@ -62,6 +59,7 @@ from .trusted_controller_compatibility import (
     verify_trusted_controller_compatibility,
 )
 from .ci_controller_preflight import controller_preflight_projection
+from .controller_custody_prospective import validate_controller_contracts_preflight
 
 
 class PreflightError(ValueError):
@@ -422,9 +420,7 @@ def _workflow_authority(repo_root: Path) -> int:
     if not (repo_root / "governance/ci-authority.yml").is_file():
         return 0
     try:
-        return verify_workflow_authority(
-            repo_root, authority_path=Path("governance/ci-authority.yml")
-        )
+        return verify_workflow_authority_preflight(repo_root)
     except CIAuthorityPinError as exc:
         raise PreflightError(f"workflow authority preflight failed: {exc}") from exc
 
@@ -491,15 +487,6 @@ def _self_controller(
         return count
     except (GitHubControllerError, KeyError, TypeError, TrustedControllerCompatibilityError) as exc:
         raise PreflightError(f"self-controller preflight failed: {exc}") from exc
-
-
-def _self_workflows(repo_root: Path) -> int:
-    if not (repo_root / "governance/self-governance-policy.yml").is_file():
-        return 0
-    try:
-        return validate_self_workflow_contracts(repo_root)
-    except SelfWorkflowContractError as exc:
-        raise PreflightError(f"self-workflow preflight failed: {exc}") from exc
 
 
 def _required_gates(repo_root: Path) -> list[str]:
@@ -654,7 +641,12 @@ def run_preflight(
         "execution_trigger": False,
         "state": "derived_from_authenticated_truth",
     }
-    self_workflows = step("self-workflows", lambda: _self_workflows(repo_root))
+    self_workflows = step(
+        "self-workflows",
+        lambda: validate_controller_contracts_preflight(
+            repo_root, python_executable=python
+        ),
+    )
     workflow_authority = step(
         "workflow-authority", lambda: _workflow_authority(repo_root)
     )

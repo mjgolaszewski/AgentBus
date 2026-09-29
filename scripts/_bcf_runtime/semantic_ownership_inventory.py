@@ -9,7 +9,6 @@ from __future__ import annotations
 import ast
 import copy
 import hashlib
-import subprocess
 from pathlib import Path
 from pathlib import PurePosixPath
 from typing import Any
@@ -23,8 +22,10 @@ from .semantic_python_method_identity import (
     method_dispatch_reference,
     resolve_method_dispatch,
     root_name as _root_name,
+    runtime_function_scopes,
     source_symbol,
 )
+from .semantic_source_paths import candidate_source_files
 
 
 NORMALIZERS = {
@@ -55,34 +56,14 @@ def _relative(repo_root: Path, path: Path) -> str:
 
 
 def tracked_python_files(repo_root: Path, *, allow_empty: bool = False) -> list[Path]:
-    """Return every tracked Python source before any registry is available."""
-    result = subprocess.run(
-        ["git", "ls-files", "-z", "--", "*.py"],
-        cwd=repo_root,
-        capture_output=True,
-        check=False,
+    """Return every Python source present in the proposed candidate tree."""
+    return candidate_source_files(
+        repo_root,
+        ("*.py",),
+        label="Python",
+        error=SemanticInventoryError,
+        allow_empty=allow_empty,
     )
-    if result.returncode != 0:
-        raise SemanticInventoryError("tracked Python discovery requires a Git worktree")
-    files: list[Path] = []
-    for raw in result.stdout.split(b"\0"):
-        if not raw:
-            continue
-        try:
-            relative = Path(raw.decode("utf-8"))
-        except UnicodeDecodeError as exc:
-            raise SemanticInventoryError("tracked Python path is not UTF-8") from exc
-        path = repo_root / relative
-        if relative.is_absolute() or ".." in relative.parts:
-            raise SemanticInventoryError("tracked Python path escapes the repository")
-        if path.is_symlink() or not path.is_file():
-            raise SemanticInventoryError(
-                f"tracked Python source must be a regular file: {relative.as_posix()}"
-            )
-        files.append(path)
-    if not files and not allow_empty:
-        raise SemanticInventoryError("tracked Python discovery returned zero files")
-    return sorted(files)
 
 
 def _annotation(node: ast.expr | None) -> str:
@@ -474,12 +455,16 @@ def discover_python_source(
                 import_bindings=bindings_by_local,
             )
         )
-        for node in tree.body:
-            members = node.body if isinstance(node, ast.ClassDef) else [node]
-            class_name = node.name if isinstance(node, ast.ClassDef) else None
+        scopes, missing = runtime_function_scopes(
+            tree, path=relative, imports=imports
+        )
+        if missing:
+            raise SemanticInventoryError(
+                "Python overload declarations require one runtime implementation: "
+                + ", ".join(missing)
+            )
+        for class_name, members in scopes:
             for member in members:
-                if not isinstance(member, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                    continue
                 local_bindings = {
                     str(value["local"]): value
                     for value in _import_bindings(member, recursive=True)

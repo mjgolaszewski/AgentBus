@@ -13,6 +13,7 @@ from .ci_github_cli_io import (
     required_environment,
 )
 from .ci_github_controller import environment_api
+from .routine_controller_materialization import materialize_transition_authorization
 from .routine_controller_provider import (
     advance_provider_transition,
     authorize_transition,
@@ -38,6 +39,11 @@ def run_controller_rotation_command(argv: list[str]) -> None:
     authorize.add_argument("--admission-run-attempt", required=True)
     authorize.add_argument("--artifact-dir", type=Path, required=True)
     authorize.add_argument("--output", type=Path, required=True)
+    materialize = operations.add_parser("materialize-authorization")
+    materialize.add_argument("--repository", required=True)
+    materialize.add_argument("--decision", type=Path, required=True)
+    materialize.add_argument("--artifact-dir", type=Path, required=True)
+    materialize.add_argument("--output", type=Path, required=True)
     advance = operations.add_parser("advance")
     advance.add_argument("--repository", required=True)
     advance.add_argument("--receipt", type=Path, required=True)
@@ -52,6 +58,9 @@ def run_controller_rotation_command(argv: list[str]) -> None:
     dispatch.add_argument("--repository", required=True)
     dispatch.add_argument("--rotation-run-id", required=True)
     dispatch.add_argument("--rotation-run-attempt", required=True)
+    project = operations.add_parser("project-custody")
+    project.add_argument("--repository", required=True)
+    project.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     api = environment_api()
     output_path = github_output_path()
@@ -68,23 +77,32 @@ def run_controller_rotation_command(argv: list[str]) -> None:
             "decision": result["decision"],
             "transition_class": result["transition_class"],
         }
-        if result["applicable"]:
-            transition = result["transition"]
-            write_exclusive(args.output, transition)
-            outputs.update(
-                {
-                    "transition_id": transition["transition_id"],
-                    **{
-                        f"target_{key}": str(value)
-                        for key, value in transition["artifact"].items()
-                    },
-                }
-            )
-        else:
-            write_exclusive(args.output, result)
+        write_exclusive(args.output, result)
+        if not result["applicable"]:
             outputs["reason"] = result["reason"]
             if result["decision"] == "alternate_lane_required":
                 outputs["alternate_lane"] = result["alternate_lane"]["id"]
+    elif args.operation == "materialize-authorization":
+        payload = json.loads(args.decision.read_text(encoding="utf-8"))
+        result = materialize_transition_authorization(
+            api,
+            repository=args.repository,
+            decision=payload,
+            artifact_dir=args.artifact_dir,
+        )
+        transition = result["transition"]
+        write_exclusive(args.output, transition)
+        outputs = {
+            "applicable": "true",
+            "reason": result["reason"],
+            "decision": result["decision"],
+            "transition_class": result["transition_class"],
+            "transition_id": transition["transition_id"],
+            **{
+                f"target_{key}": str(value)
+                for key, value in transition["artifact"].items()
+            },
+        }
     elif args.operation == "advance":
         payload = json.loads(args.receipt.read_text(encoding="utf-8"))
         result = advance_provider_transition(
@@ -106,6 +124,16 @@ def run_controller_rotation_command(argv: list[str]) -> None:
             "controller_source": result["source"],
             **{key: str(value) for key, value in result["pin"].items()},
         }
+    elif args.operation == "project-custody":
+        from .routine_controller_provider import (
+            project_effective_controller_custody_observation,
+        )
+
+        result = project_effective_controller_custody_observation(
+            api, repository=args.repository
+        )
+        write_exclusive(args.output, result)
+        outputs = {"controller_commit_sha": result["controller"]["commit_sha"]}
     else:
         result = dispatch_post_rotation_certification(
             api,

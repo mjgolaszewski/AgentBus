@@ -18,9 +18,14 @@ from .ci_graph_commands import add_graph_parser, run_graph_command
 from .automation_commands import adopt_dependabot
 from .automation_contracts import AutomationContractError, load_automation_registry
 from .ci_github_api import GitHubAPI
-from .ci_graph_contracts import CIGraphError
+from .ci_graph_contracts import CIGraphError, validate_ci_graph
 from .ci_graph_render import apply_ci_graph, check_ci_graph
-from .ci_authority_pins import CIAuthorityPinError, pin_workflow_authority
+from .ci_authority_pins import (
+    CIAuthorityPinError,
+    pin_workflow_authority,
+    projected_workflow_paths,
+    provider_workflow_ids,
+)
 from .ci_authority_submit import submit_candidate
 from .ci_github_identity import GitHubControllerError
 from .ci_github_cli_io import github_output, github_output_path
@@ -135,7 +140,7 @@ def _parser() -> argparse.ArgumentParser:
     submit.add_argument("--repo-root", type=Path, default=Path.cwd())
     submit.add_argument("--remote", default="origin")
     submit.add_argument("--python", type=Path, default=Path(sys.executable))
-    submit.add_argument("--intent", choices=("workitem", "closure"), required=True)
+    submit.add_argument("--intent", choices=("pr", "workitem", "closure"), required=True)
     submit.add_argument("--format", choices=("text", "json"), default="json")
     runtime = subparsers.add_parser("runtime-check", help="Check capacity before heavy CI.")
     runtime.add_argument("--repo-root", type=Path, default=Path.cwd())
@@ -158,6 +163,10 @@ def _parser() -> argparse.ArgumentParser:
         "--authority", type=Path, default=Path("governance/ci-authority.yml")
     )
     pin.add_argument("--definition-commit", required=True)
+    pin.add_argument(
+        "--repository",
+        help="Resolve every workflow ID from this exact provider repository.",
+    )
     pin.add_argument(
         "--workflow",
         action="append",
@@ -316,11 +325,31 @@ def main(argv: list[str] | None = None) -> None:
             _print(result, args.format)
             return
         if args.operation == "pin-authority":
+            workflows = validate_ci_graph(args.repo_root).workflows
+            workflow_paths = {
+                str(workflow["id"]): str(workflow["path"])
+                for workflow in workflows
+            }
+            workflow_ids = None
+            if args.repository:
+                from .ci_github_controller import environment_api
+
+                workflow_ids = provider_workflow_ids(
+                    environment_api(),
+                    args.repository,
+                    projected_workflow_paths(
+                        args.repo_root,
+                        authority_path=args.authority,
+                        workflow_paths=workflow_paths,
+                    ),
+                )
             result = pin_workflow_authority(
                 args.repo_root,
                 authority_path=args.authority,
                 definition_commit=args.definition_commit,
                 references=tuple(args.workflow or ()),
+                workflow_paths=workflow_paths,
+                workflow_ids=workflow_ids,
                 apply=args.apply,
             )
             _print(result.as_dict(), args.format)

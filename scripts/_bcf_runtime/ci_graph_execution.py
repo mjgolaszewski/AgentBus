@@ -22,6 +22,10 @@ _EFFECTIVE_CONTROLLER = (
     "${{ runner.tool_cache }}/bcf-governance/"
     "${{ steps.effective-controller.outputs.BCF_BOOTSTRAP_COMMIT_SHA }}/bin/bcf"
 )
+_ROUTED_RELEASE_CONTROLLER = (
+    "${{ runner.tool_cache }}/bcf-governance/"
+    "${{ needs.controller-route.outputs.target_commit }}/bin/bcf"
+)
 _EFFECTIVE_RELEASE_OPERATIONS = frozenset(
     {"resolve", "authorize", "resolve-publication", "publish"}
 )
@@ -30,6 +34,53 @@ _INPUT_REFERENCE = re.compile(r"inputs\.([A-Za-z_][A-Za-z0-9_-]*)")
 _LITERAL_INPUT_FALLBACK = re.compile(
     r"inputs\.([A-Za-z_][A-Za-z0-9_-]*)\s*\|\|\s*(['\"])(.*?)\2"
 )
+_DIRECT_POST_MERGE_MODE = re.compile(
+    r"^\$\{\{ inputs\.evaluation_mode \|\| "
+    r"\(github\.event_name == 'push' && '(pr|workitem|closure)' \|\| 'pr'\) \}\}$"
+)
+_DIRECT_POST_MERGE_TARGET = re.compile(
+    r"^\$\{\{ inputs\.evaluation_target \|\| "
+    r"\(github\.event_name == 'push' && '([^']+)' \|\| ''\) \}\}$"
+)
+
+
+def direct_post_merge_mode(mode: str) -> str:
+    """Render one event-safe direct-push evaluation intent."""
+
+    if mode not in {"pr", "workitem", "closure"}:
+        raise CIGraphError("direct post-merge evaluation intent is invalid")
+    return (
+        "${{ inputs.evaluation_mode || "
+        f"(github.event_name == 'push' && '{mode}' || 'pr') }}}}"
+    )
+
+
+def parse_direct_post_merge_mode(value: object) -> str | None:
+    """Decode only the canonical event-safe direct-push intent expression."""
+
+    match = _DIRECT_POST_MERGE_MODE.fullmatch(str(value))
+    return match.group(1) if match else None
+
+
+def direct_post_merge_target(target: str) -> str:
+    """Render one event-safe exact direct-push workitem target."""
+
+    if not target or "'" in target:
+        raise CIGraphError("direct post-merge evaluation target is invalid")
+    return (
+        "${{ inputs.evaluation_target || "
+        f"(github.event_name == 'push' && '{target}' || '') }}}}"
+    )
+
+
+def parse_direct_post_merge_target(value: object) -> str | None:
+    """Decode only the canonical event-safe direct-push target expression."""
+
+    match = _DIRECT_POST_MERGE_TARGET.fullmatch(str(value))
+    return match.group(1) if match else None
+
+
+DIRECT_POST_MERGE_MODE = direct_post_merge_mode("closure")
 
 
 @dataclass(frozen=True)
@@ -51,25 +102,33 @@ def exact_main_evaluation(
     selected = [item for item in workflows if item["id"] == "exact-main"]
     if len(selected) != 1:
         raise CIGraphError("canonical graph must contain one exact-main workflow")
-    jobs = {str(item["id"]): item for item in selected[0]["jobs"]}
+    def role(name: str) -> dict[str, Any]:
+        jobs = [
+            item for item in selected[0]["jobs"]
+            if item.get("semantic_role") == name
+        ]
+        if len(jobs) != 1:
+            raise CIGraphError(f"exact-main semantic role {name} is not unique")
+        return jobs[0]
+
     try:
-        admit = jobs["admit"]["executor"]
-        governance = jobs["governance"]["executor"]
+        admit = role("exact-main-admission")["executor"]
+        governance = role("exact-main-governance-producer")["executor"]
         mode = str(admit["evaluation_mode"])
         target = admit["evaluation_target"] if "evaluation_target" in admit else None
         inputs = governance["inputs"]
     except (KeyError, TypeError) as exc:
         raise CIGraphError("exact-main evaluation intent is incomplete") from exc
-    if mode not in {"workitem", "closure"}:
-        raise CIGraphError("exact-main evaluation intent is not terminally typed")
+    if mode not in {"pr", "workitem", "closure"}:
+        raise CIGraphError("exact-main evaluation intent is not typed")
     input_mode = inputs["evaluation_mode"] if "evaluation_mode" in inputs else None
     input_target = inputs["evaluation_target"] if "evaluation_target" in inputs else None
     if input_mode != mode or input_target != target:
         raise CIGraphError("exact-main admission and governance evaluation intents differ")
     if mode == "workitem" and not isinstance(target, str):
         raise CIGraphError("bounded exact-main target is missing")
-    if mode == "closure" and target is not None:
-        raise CIGraphError("phase closure cannot carry a workitem target")
+    if mode in {"pr", "closure"} and target is not None:
+        raise CIGraphError("unbounded evaluation cannot carry a workitem target")
     return ExactMainEvaluation(mode, target)
 
 
@@ -95,6 +154,29 @@ def _command_ids(
     if executor["kind"] in {"command", "truth"}:
         return (executor["command"],)
     return ()
+
+
+def controller_command_ids(
+    graph: dict[str, Any], executor: dict[str, Any]
+) -> tuple[str, ...]:
+    """Derive every fixed, transported, or ephemeral trusted-controller command."""
+
+    selected: list[str] = []
+    route_tokens = (
+        "needs.trusted-controller-build.outputs.target_commit",
+        "steps.controller-route.outputs.controller_commit_sha",
+        "needs.controller-route.outputs.target_commit",
+    )
+    for command_id in _command_ids(graph, executor):
+        argv = graph["commands"][command_id]["argv"]
+        if "{controller}" in argv or any(
+            isinstance(value, str)
+            and "runner.tool_cache" in value
+            and any(token in value for token in route_tokens)
+            for value in argv
+        ):
+            selected.append(command_id)
+    return tuple(selected)
 
 
 def _argument(argv: list[str], flag: str) -> str | None:
@@ -147,9 +229,16 @@ def _release_controller_issues(
             continue
         operation = argv[3]
         if operation in _EFFECTIVE_RELEASE_OPERATIONS:
-            if argv[0] != _EFFECTIVE_CONTROLLER or (
-                "resolve-effective-controller" not in components[:index]
-            ) or job.get("controller_requirement") != "current":
+            fixed_route = argv[0] == _EFFECTIVE_CONTROLLER and (
+                "resolve-effective-controller" in components[:index]
+            )
+            transported_route = (
+                argv[0] == _ROUTED_RELEASE_CONTROLLER
+                and "controller-route" in job.get("needs", [])
+            )
+            if not (fixed_route or transported_route) or (
+                job.get("controller_requirement") != "current"
+            ):
                 issues.append(
                     f"release {operation} must require the current controller and invoke its provider-effective identity"
                 )
@@ -215,6 +304,32 @@ def job_required_environment(
             else:
                 bindings[name] = distinct[0]
     return bindings, tuple(issues)
+
+
+def local_gate_job_environments(
+    graph: dict[str, Any], producers: tuple[str, ...]
+) -> dict[str, dict[str, str]]:
+    """Project each gate from its one exact pull-request producer job."""
+
+    matches: dict[str, list[dict[str, str]]] = {producer: [] for producer in producers}
+    for workflow in graph["workflows"]:
+        if not any(event.get("type") == "pull_request" for event in workflow["events"]):
+            continue
+        inherited = workflow.get("environment", {})
+        for job in workflow["jobs"]:
+            executor = job["executor"]
+            if executor.get("kind") not in {"gate_group", "gate_shard"}:
+                continue
+            environment = {**inherited, **job.get("environment", {})}
+            for producer in set(executor.get("gates", ())).intersection(matches):
+                matches[producer].append(dict(sorted(environment.items())))
+    invalid = sorted(producer for producer, values in matches.items() if len(values) != 1)
+    if invalid:
+        raise CIGraphError(
+            "local evidence gate does not have one exact pull-request producer job: "
+            + ", ".join(invalid)
+        )
+    return {producer: values[0] for producer, values in sorted(matches.items())}
 
 
 def job_execution_issues(
@@ -417,7 +532,16 @@ def workflow_input_issues(
                         if isinstance(expected, bool)
                         else "" if expected is None else str(expected)
                     )
-                    if fallbacks.get(name) != expected_literal:
+                    actual_fallback = (
+                        "pr"
+                        if name == "evaluation_mode"
+                        and parse_direct_post_merge_mode(value) is not None
+                        else ""
+                        if name == "evaluation_target"
+                        and parse_direct_post_merge_target(value) is not None
+                        else fallbacks.get(name)
+                    )
+                    if actual_fallback != expected_literal:
                         issues.append(
                             f"direct-event workflow {workflow['id']} {surface} input {name} "
                             "fallback must equal its declared workflow_call default"

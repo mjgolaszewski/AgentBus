@@ -27,6 +27,9 @@ from .semantic_authority_contracts import (
     OPERATIONS_PATH,
     capability_states,
 )
+from .ci_graph_post_merge import reconcile_post_merge_scope
+from .ci_graph_contracts import validate_ci_graph
+from .ci_authority_pins import projected_workflow_paths, reconcile_workflow_authority
 
 HOTFIX_MODES = {"lite", "full"}
 
@@ -294,6 +297,7 @@ class ReconcileStep:
     step_id: str
     check: Action
     apply: Action
+    apply_verifies: bool = False
 
 
 def _run_reconcile_command(command: list[str], *, repo_root: Path, step_id: str) -> None:
@@ -316,6 +320,22 @@ def _reconcile_action(repo_root: Path, step_id: str, command: list[str]) -> Acti
     return lambda: _run_reconcile_command(command, repo_root=repo_root, step_id=step_id)
 
 
+def _reconcile_workflow_authority(repo_root: Path, *, apply: bool) -> None:
+    workflows = validate_ci_graph(repo_root).workflows
+    authority_path = Path("governance/ci-authority.yml")
+    graph_paths = {str(value["id"]): str(value["path"]) for value in workflows}
+    reconcile_workflow_authority(
+        repo_root,
+        authority_path=authority_path,
+        workflow_paths=projected_workflow_paths(
+            repo_root,
+            authority_path=authority_path,
+            workflow_paths=graph_paths,
+        ),
+        apply=apply,
+    )
+
+
 def _editorial_base(audit: Path) -> str:
     try:
         payload = yaml.safe_load(audit.read_text(encoding="utf-8"))
@@ -330,8 +350,9 @@ def _editorial_base(audit: Path) -> str:
 def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
     """Return the closed canonical projection order for this repository."""
 
-    python = python.absolute()
-    cli = [str(python), "-m", "bcf_governance.cli"]
+    project_python = python.absolute()
+    tool_python = Path(sys.executable).absolute()
+    cli = [str(tool_python), "-m", "bcf_governance.cli"]
     steps: list[ReconcileStep] = [
         ReconcileStep(
             "structural-limits",
@@ -339,13 +360,20 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
             lambda: validate_structural_limits(repo_root),
         )
     ]
+    steps.append(
+        ReconcileStep(
+            "ci-graph-post-merge-scope",
+            lambda: reconcile_post_merge_scope(repo_root, apply=False),
+            lambda: reconcile_post_merge_scope(repo_root, apply=True),
+        )
+    )
     pack = repo_root / ".github/scripts/build_pack_manifest.py"
     if pack.is_file() and not pack.is_symlink():
         steps.append(
             ReconcileStep(
                 "pack-projection",
-                _reconcile_action(repo_root, "pack-projection", [str(python), str(pack), "--check"]),
-                _reconcile_action(repo_root, "pack-projection", [str(python), str(pack)]),
+                _reconcile_action(repo_root, "pack-projection", [str(tool_python), str(pack), "--check"]),
+                _reconcile_action(repo_root, "pack-projection", [str(tool_python), str(pack)]),
             )
         )
     semantic_states = capability_states(repo_root)
@@ -359,6 +387,7 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
                 "semantic-lock",
                 _reconcile_action(repo_root, "semantic-lock", [*cli, "semantic-ownership", "lock", "--repo-root", str(repo_root), "--check"]),
                 _reconcile_action(repo_root, "semantic-lock", [*cli, "semantic-ownership", "lock", "--repo-root", str(repo_root), "--apply"]),
+                apply_verifies=True,
             )
         )
     elif present := [path.as_posix() for path in semantic_runtime_paths if (repo_root / path).exists()]:
@@ -366,14 +395,15 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
             "semantic authority artifacts are present without an enabled semantic capability: "
             + ", ".join(present)
         )
-    for gate_id in declared_test_gates(repo_root):
+    if declared_test_gates(repo_root):
         common = [*cli, "test-manifest"]
-        suffix = ["--gate", gate_id, "--repo-root", str(repo_root), "--python", str(python)]
+        suffix = ["--all", "--repo-root", str(repo_root), "--python", str(project_python)]
         steps.append(
             ReconcileStep(
-                f"test-manifest:{gate_id}",
-                _reconcile_action(repo_root, f"test-manifest:{gate_id}", [*common, "check", *suffix]),
-                _reconcile_action(repo_root, f"test-manifest:{gate_id}", [*common, "update", *suffix]),
+                "test-manifests",
+                _reconcile_action(repo_root, "test-manifests", [*common, "check", *suffix]),
+                _reconcile_action(repo_root, "test-manifests", [*common, "update", *suffix]),
+                apply_verifies=True,
             )
         )
     for operation in ("lock", "render"):
@@ -384,6 +414,14 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
                 _reconcile_action(repo_root, f"ci-graph-{operation}", [*cli, "ci", "graph", operation, "--repo-root", str(repo_root), "--apply"]),
             )
         )
+    if (repo_root / "governance/ci-authority.yml").is_file():
+        steps.append(
+            ReconcileStep(
+                "workflow-authority",
+                lambda: _reconcile_workflow_authority(repo_root, apply=False),
+                lambda: _reconcile_workflow_authority(repo_root, apply=True),
+            )
+        )
     checker = repo_root / ".github/scripts/check_editorial_contract.py"
     builder = repo_root / ".github/scripts/build_editorial_audit.py"
     if checker.is_file() and builder.is_file() and not checker.is_symlink() and not builder.is_symlink():
@@ -392,8 +430,8 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
         steps.append(
             ReconcileStep(
                 "editorial-audit",
-                _reconcile_action(repo_root, "editorial-audit", [str(python), str(checker)]),
-                _reconcile_action(repo_root, "editorial-audit", [str(python), str(builder), "--repo-root", str(repo_root), "--audit", str(audit), "--base-sha", base, "--apply"]),
+                _reconcile_action(repo_root, "editorial-audit", [str(tool_python), str(checker)]),
+                _reconcile_action(repo_root, "editorial-audit", [str(tool_python), str(builder), "--repo-root", str(repo_root), "--audit", str(audit), "--base-sha", base, "--apply"]),
             )
         )
     return tuple(steps)
@@ -437,7 +475,8 @@ def converge(
             step.apply()
         if snapshot() == before:
             for step in ordered:
-                step.check()
+                if not step.apply_verifies:
+                    step.check()
             return round_number
     raise ReconcileError(f"governance projections did not converge after {max_rounds} rounds")
 
