@@ -76,7 +76,15 @@ def test_gate(gate: str, junit: Path) -> None:
                 "uv", "run", "--python", "3.14", "--locked", "--extra", "dev",
                 *pytest, "-q", *TEST_GATES[gate], f"--junitxml={junit}",
             ]
-            require_success(run(command, environment={"UV_PROJECT_ENVIRONMENT": directory}))
+            require_success(
+                run(
+                    command,
+                    environment={
+                        "AGENTBUS_PYTHON314_COMPAT": "1",
+                        "UV_PROJECT_ENVIRONMENT": directory,
+                    },
+                )
+            )
         return
     pytest[0] = sys.executable
     require_success(run([*pytest, "-q", *TEST_GATES[gate], f"--junitxml={junit}"]))

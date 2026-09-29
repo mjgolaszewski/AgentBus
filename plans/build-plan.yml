@@ -65,29 +65,26 @@ phase_sequence:
       - "prove selective invalidation, evidence reuse, early rejection, and fail-closed ambiguity"
       - "reconcile and prospectively prove exact v0.3.0 candidate bytes"
       - "publish the release and migrate the superworkspace consumer to an immutable pin"
-    parallelizable_workstreams:
-      - "existing_repo_inventory"
-      - "application_contract_and_gate_implementation"
-      - "documentation_and_release_packaging"
-      - "consumer_expand_contract_cutover"
-    verification_commands:
-      - make governance-validate
-      - make check
-      - make test
-      - make release-check
+    parallelizable_workstreams: [existing_repo_inventory, application_contract_and_gate_implementation, documentation_and_release_packaging, consumer_expand_contract_cutover]
+    verification_commands: [make governance-validate, make check, make test, make release-check]
   - phase_id: P02
     build_block: "assurance_topology_patch"
     objective: "release AgentBus 0.3.1 with one truthful BCF assurance graph"
-    hard_dependencies:
-      - "P01 closed on exact main"
+    hard_dependencies: ["P01 closed on exact main"]
     tightly_scoped_deliverables:
       - "restore Python 3.14 behavior proof inside a governed primary-lane producer subprocess"
       - "remove duplicate architecture execution and give source integrity a truthful claim owner"
       - "route retained project commands through canonical BCF gates and produce the 0.3.1 candidate"
-    parallelizable_workstreams:
-      - "assurance_topology"
-    verification_commands:
-      - make governance-validate
-      - make lint
-      - make python314-compatibility
-      - make release-check
+    parallelizable_workstreams: [assurance_topology]
+    verification_commands: [make governance-validate, make lint, make python314-compatibility, make release-check]
+  - phase_id: P03
+    build_block: "transport_and_portability_hardening"
+    objective: "authenticate Slack ingress and harden AgentBus portability and bounded reads"
+    hard_dependencies: ["P02 closed on exact main"]
+    tightly_scoped_deliverables:
+      - "authenticate routed Slack envelopes against the configured bot token identity"
+      - "bound identity-aware inbox reads in indexed SQLite queries with existing-state migration"
+      - "use portable consumer-state defaults and make the default suite valid on supported interpreters"
+      - "document Slack retention, trust boundaries, and deliberately deferred product scope"
+    parallelizable_workstreams: [transport_security, persistence_scaling, portability_and_documentation]
+    verification_commands: [make governance-validate, make architecture-test, make lint, make typecheck, make test, make contract-test, make python314-compatibility]

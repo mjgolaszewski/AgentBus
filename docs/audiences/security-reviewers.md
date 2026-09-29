@@ -7,14 +7,18 @@ all `/v1` operations and allows its holder to choose a sender.
 ## Review these boundaries
 
 - Slack app and bot tokens stay in service configuration.
-- Socket Mode events remain untrusted until channel, shape, envelope, and model
-  validation pass.
+- Startup resolves the configured bot token through Slack `auth.test`. Socket
+  Mode routing metadata remains untrusted until channel, shape, matching bot ID,
+  envelope, and model validation pass. Human and foreign-bot envelopes become
+  unrouted text.
 - Failed durable ingestion is not acknowledged to Slack.
 - The client never follows an HTTP redirect while carrying its bearer token.
 - Plain HTTP is limited to loopback. Remote access requires HTTPS and another
   authorization layer.
 - Runtime state, profiles, logs, tokens, and inbox contents stay outside source
   control and release archives.
+- Every transported message is retained by Slack policy and copied into SQLite;
+  operators must approve both stores for the message data classification.
 - CI uses simulated Slack transports and receives no live credentials.
 
 ## Delivery claims

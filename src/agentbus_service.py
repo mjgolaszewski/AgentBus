@@ -174,11 +174,23 @@ class MessageStore:
                 slack_ts TEXT NOT NULL,
                 thread_ts TEXT,
                 recipient TEXT NOT NULL,
+                audience TEXT NOT NULL,
                 received_at TEXT NOT NULL,
                 payload TEXT NOT NULL,
                 UNIQUE(channel, slack_ts)
             )
         """)
+        columns = {
+            row["name"] for row in self._db.execute("PRAGMA table_info(messages)").fetchall()
+        }
+        if "audience" not in columns:
+            self._db.execute("ALTER TABLE messages ADD COLUMN audience TEXT")
+            for row in self._db.execute("SELECT cursor, payload FROM messages").fetchall():
+                message = SendMessage.model_validate_json(row["payload"])
+                self._db.execute(
+                    "UPDATE messages SET audience = ? WHERE cursor = ?",
+                    (message.audience, row["cursor"]),
+                )
         self._db.execute("""
             CREATE TABLE IF NOT EXISTS metadata (
                 key TEXT PRIMARY KEY,
@@ -197,6 +209,14 @@ class MessageStore:
         """)
         self._db.execute("INSERT OR IGNORE INTO metadata(key, value) VALUES ('inbox_id', ?)",
                          (str(uuid.uuid4()),))
+        self._db.execute(
+            "CREATE INDEX IF NOT EXISTS messages_channel_cursor "
+            "ON messages(channel, cursor)"
+        )
+        self._db.execute(
+            "CREATE INDEX IF NOT EXISTS messages_inbox_route "
+            "ON messages(channel, audience, recipient, cursor)"
+        )
         self._db.commit()
 
     @staticmethod
@@ -208,10 +228,11 @@ class MessageStore:
         with self._lock, self._db:
             self._db.execute("""
                 INSERT OR IGNORE INTO messages
-                    (channel, slack_ts, thread_ts, recipient, received_at, payload)
-                VALUES (?, ?, ?, ?, ?, ?)
+                    (channel, slack_ts, thread_ts, recipient, audience, received_at, payload)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (channel, slack_ts, message.thread_ts, message.recipient,
-                  datetime.now(timezone.utc).isoformat(), message.model_dump_json()))
+                  message.audience, datetime.now(timezone.utc).isoformat(),
+                  message.model_dump_json()))
             row = self._db.execute("SELECT * FROM messages WHERE channel = ? AND slack_ts = ?",
                                    (channel, slack_ts)).fetchone()
             return self._message(row)
@@ -275,22 +296,32 @@ class MessageStore:
 
     def inbox(self, channel: str, identity: str, after: int = 0, limit: int = 100,
               thread_ts: str | None = None, context: bool = False) -> InboxPage:
-        clauses = ["channel = ?", "cursor > ?"]
+        clauses = ["m.channel = ?", "m.cursor > ?"]
         params: list[str | int] = [channel, after]
         if thread_ts is not None:
-            clauses.append("(thread_ts = ? OR slack_ts = ?)")
+            clauses.append("(m.thread_ts = ? OR m.slack_ts = ?)")
             params.extend((thread_ts, thread_ts))
+        if not context:
+            clauses.append(
+                "((m.audience = 'direct' AND m.recipient = ?) "
+                "OR m.audience = 'broadcast' "
+                "OR (m.audience = 'informational' AND m.recipient = ?) "
+                "OR c.identity = ?)"
+            )
+            params.extend((identity, identity, identity))
         with self._lock:
             high = self._db.execute("SELECT COALESCE(MAX(cursor), 0) FROM messages WHERE channel = ?",
                                     (channel,)).fetchone()[0]
-            rows = self._db.execute("SELECT * FROM messages WHERE " + " AND ".join(clauses) +
-                                    " ORDER BY cursor", params).fetchall()
-            claims = {row["cursor"]: row["identity"] for row in self._db.execute(
-                "SELECT cursor, identity FROM claims WHERE channel = ?", (channel,)).fetchall()}
+            rows = self._db.execute(
+                "SELECT m.*, c.identity AS claim_identity FROM messages AS m "
+                "LEFT JOIN claims AS c ON c.channel = m.channel AND c.cursor = m.cursor "
+                "WHERE " + " AND ".join(clauses) + " ORDER BY m.cursor LIMIT ?",
+                (*params, limit + 1),
+            ).fetchall()
         visible: list[InboxMessage] = []
         for row in rows:
             message = self._message(row)
-            claim = claims.get(message.cursor)
+            claim = row["claim_identity"]
             actionable = (message.audience == "direct" and message.recipient == identity) or \
                          message.audience == "broadcast" or claim == identity
             reason = ("addressed to this identity" if message.audience == "direct" and message.recipient == identity
@@ -300,9 +331,8 @@ class MessageStore:
                       else f"addressed to {message.recipient}" if message.audience == "direct"
                       else "informational" if message.audience == "informational"
                       else "unrouted; claim before replying")
-            if actionable or context or (message.audience == "informational" and message.recipient == identity):
-                visible.append(InboxMessage(**message.model_dump(), actionable=actionable,
-                                            action_reason=reason))
+            visible.append(InboxMessage(**message.model_dump(), actionable=actionable,
+                                        action_reason=reason))
         has_more = len(visible) > limit
         shown = visible[:limit]
         next_cursor = shown[-1].cursor if has_more else max(after, high)
@@ -327,7 +357,7 @@ class MessageStore:
             self._db.close()
 
 
-def normalize_event(event: dict, channel: str) -> tuple[str, SendMessage] | None:
+def normalize_event(event: dict, channel: str, trusted_bot_id: str) -> tuple[str, SendMessage] | None:
     if event.get("type") != "message" or event.get("channel") != channel:
         return None
     if event.get("subtype") not in (None, "bot_message", "thread_broadcast") or event.get("hidden"):
@@ -338,18 +368,23 @@ def normalize_event(event: dict, channel: str) -> tuple[str, SendMessage] | None
     thread_ts = event.get("thread_ts")
     if not isinstance(thread_ts, str) or not re.fullmatch(SLACK_TS, thread_ts):
         thread_ts = None
-    try:
-        envelope = json.loads(text)
-        if isinstance(envelope, dict) and envelope.get("agentbus") in (1, 2):
-            version = envelope.pop("agentbus")
-            if version == 1:
-                envelope.pop("audience", None)
-                envelope.pop("reply_to_cursor", None)
-            envelope["thread_ts"] = thread_ts
-            return ts, SendMessage.model_validate(envelope)
-    except (ValueError, RecursionError):
-        pass
-    identity = event.get("user") or event.get("bot_id") or "unknown"
+    trusted_envelope = (
+        event.get("bot_id") == trusted_bot_id
+        and event.get("subtype") in ("bot_message", "thread_broadcast")
+    )
+    if trusted_envelope:
+        try:
+            envelope = json.loads(text)
+            if isinstance(envelope, dict) and envelope.get("agentbus") in (1, 2):
+                version = envelope.pop("agentbus")
+                if version == 1:
+                    envelope.pop("audience", None)
+                    envelope.pop("reply_to_cursor", None)
+                envelope["thread_ts"] = thread_ts
+                return ts, SendMessage.model_validate(envelope)
+        except (ValueError, RecursionError):
+            pass
+    identity = event.get("bot_id") or event.get("user") or "unknown"
     identity = identity if isinstance(identity, str) and re.fullmatch(r"[A-Za-z0-9_-]{1,60}", identity) else "unknown"
     # Human messages can exceed the API's send limit, including escaped Unicode.
     text = text.encode("utf-8", errors="replace").decode("utf-8").strip()[:MAX_TEXT]
@@ -363,13 +398,16 @@ def normalize_event(event: dict, channel: str) -> tuple[str, SendMessage] | None
 
 
 class SlackReceiver:
-    def __init__(self, store: MessageStore, channel: str):
-        self.store, self.channel = store, channel
+    def __init__(self, store: MessageStore, channel: str, trusted_bot_id: str):
+        self.store, self.channel, self.trusted_bot_id = store, channel, trusted_bot_id
 
     def __call__(self, client: BaseSocketModeClient, request: SocketModeRequest) -> None:
         if request.type == "events_api":
             event = request.payload.get("event")
-            normalized = normalize_event(event, self.channel) if isinstance(event, dict) else None
+            normalized = (
+                normalize_event(event, self.channel, self.trusted_bot_id)
+                if isinstance(event, dict) else None
+            )
             if normalized is not None:
                 ts, message = normalized
                 try:
@@ -393,6 +431,23 @@ def build_socket(settings: Settings, receiver: SlackReceiver) -> SocketModeClien
 class SlackPoster:
     def __init__(self, settings: Settings, client: httpx.AsyncClient):
         self.settings, self.client = settings, client
+
+    async def authenticated_bot_id(self) -> str:
+        try:
+            response = await self.client.post(
+                "https://slack.com/api/auth.test",
+                headers={"Authorization": f"Bearer {self.settings.slack_bot_token}"},
+            )
+            data = response.json()
+        except (httpx.HTTPError, ValueError):
+            raise RuntimeError("Slack bot identity verification failed") from None
+        bot_id = data.get("bot_id") if response.is_success and isinstance(data, dict) else None
+        if (
+            not isinstance(data, dict) or data.get("ok") is not True
+            or not isinstance(bot_id, str) or not re.fullmatch(r"B[A-Z0-9]+", bot_id)
+        ):
+            raise RuntimeError("Slack bot identity verification failed")
+        return bot_id
 
     async def post(self, message: SendMessage) -> str:
         label = f"{message.sender} → {message.recipient} · {message.kind} · {message.audience}"
@@ -534,9 +589,13 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
         client = http_client or httpx.AsyncClient(timeout=15, follow_redirects=False)
         socket = None
         try:
-            socket = socket_factory(settings, SlackReceiver(store, settings.slack_channel))
+            poster = SlackPoster(settings, client)
+            trusted_bot_id = await poster.authenticated_bot_id()
+            socket = socket_factory(
+                settings, SlackReceiver(store, settings.slack_channel, trusted_bot_id)
+            )
             app.state.store = store
-            app.state.poster = SlackPoster(settings, client)
+            app.state.poster = poster
             app.state.socket = socket
             try:
                 await asyncio.to_thread(socket.connect)
@@ -550,7 +609,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                 await client.aclose()
             store.close()
 
-    app = FastAPI(title="AgentBus", version="0.3.1", lifespan=lifespan,
+    app = FastAPI(title="AgentBus", version="0.3.2", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     auth = [Depends(authenticate)]

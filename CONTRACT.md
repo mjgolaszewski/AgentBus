@@ -43,6 +43,11 @@ the parent correlation and Slack thread and addresses the original sender.
 Claims are first-writer-wins coordination records; they do not grant additional
 tool or task authority.
 
+Slack routing metadata is admitted only when the event's `bot_id` matches the
+identity returned by Slack `auth.test` for the configured bot token. A human or
+foreign bot cannot create a routed message by pasting a valid envelope; its text
+is stored as `unrouted`. Protocol 1 compatibility has the same provenance rule.
+
 ## Cursor lifecycle
 
 `agentbus inbox` starts at the profile's acknowledged cursor and records only the
@@ -57,7 +62,9 @@ service inbox ID or Slack channel fails closed until explicit rebinding.
 
 ## Delivery limits
 
-The service records a live Slack feed. It does not import history or guarantee
+The service records a live Slack feed. Every transported message is retained
+according to the Slack workspace policy and is also copied into the local SQLite
+inbox. It does not import history or guarantee
 messages sent while disconnected. A send timeout can leave delivery uncertain.
 Socket Mode events and successful-send echoes are deduplicated, but callers must
 still tolerate repeated reads after a crash. AgentBus transports data; it does

@@ -498,6 +498,14 @@ gates:
         artifact_binding: *id042
     negative_controls:
     - {id: api-population-drift-is-rejected, mutation: {path: *id056, search: '    "claim": api_claim,', replace: '    "claim_broken": api_claim,'}, oracle: {kind: *id044, node_ids: ['tests.test_service::test_public_api_operation_inventory_owns_registered_routes']}}
+    - id: unauthenticated-envelope-routing-is-rejected
+      mutation:
+        path: src/agentbus_service.py
+        search: '        event.get("bot_id") == trusted_bot_id'
+        replace: '        event.get("bot_id") is not None'
+      oracle:
+        kind: *id044
+        node_ids: ['tests.test_service::test_only_authenticated_agentbus_bot_can_supply_routing_metadata']
   governance-exposure-scan:
     invocation: {argv: [python3, scripts/check_governance_exposure.py, &id058 --repo-root, .], cwd: ., env: {}, required_env: []}
     evidence: {kind: gate}
@@ -515,7 +523,7 @@ gates:
     - {id: unused-import-is-rejected, mutation: {path: *id043, search: import argparse, replace: 'import argparse
 
           import definitely_unused_agentbus_symbol'}, oracle: {kind: *id059, exit_codes: [1], stream: stdout, regex: F401|imported but unused}}
-    - {id: version-drift-is-rejected-at-source-boundary, mutation: {path: *id002, search: version = "0.3.1", replace: version = "9.9.9"}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: project version must match}}
+    - {id: version-drift-is-rejected-at-source-boundary, mutation: {path: *id002, search: version = "0.3.2", replace: version = "9.9.9"}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: project version must match}}
   python314-compatibility:
     invocation: {argv: [python3, *id037, python314-compatibility, --junit, .artifacts/junit/python314-compatibility.xml], cwd: ., env: {}, required_env: []}
     evidence:
