@@ -4,7 +4,7 @@ document:
   id: agentbus-phase-01-workitems
   version: 1.0.0
   generated_at_utc: '2026-09-27T00:00:00Z'
-  status: planned
+  status: completed
   path: plans/phase-01-workitems.yml
   phase_id: P01
 workitems:
@@ -17,7 +17,7 @@ workitems:
   acceptance_evidence: [architecture-test, test, contract-test]
 - id: P01-P0-02
   priority: P0
-  status: IN_PROGRESS
+  status: DONE
   summary: deliver adopt released BCF 2.1 without rewriting application semantics
   acceptance:
   - requires-workitem-closure:P01-P0-01
@@ -25,7 +25,7 @@ workitems:
   acceptance_evidence: [architecture-test, test, contract-test, security-dependency-audit]
 - id: P01-P0-03
   priority: P0
-  status: TODO
+  status: DONE
   summary: deliver encode AgentBus assurance as claims dependencies producers and negative controls
   acceptance:
   - requires-workitem-closure:P01-P0-02
@@ -33,7 +33,7 @@ workitems:
   acceptance_evidence: [architecture-test, test, contract-test, lint, typecheck]
 - id: P01-P0-04
   priority: P0
-  status: TODO
+  status: DONE
   summary: deliver prove selective invalidation reuse early rejection and fail-closed ambiguity
   acceptance:
   - requires-workitem-closure:P01-P0-03
@@ -41,7 +41,7 @@ workitems:
   acceptance_evidence: [architecture-test, test, contract-test]
 - id: P01-P0-05
   priority: P0
-  status: TODO
+  status: DONE
   summary: deliver publish v0.3.0 and cut the superworkspace consumer over to an immutable pin
   acceptance:
   - requires-workitem-closure:P01-P0-04

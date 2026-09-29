@@ -3,33 +3,33 @@ document:
   name: Phase 01 Log
   id: agentbus-phase-01-log
   version: 1.0.0
-  generated_at_utc: '2026-09-27T00:00:00Z'
-  status: active
+  generated_at_utc: '2026-09-29T14:30:00Z'
+  status: completed
   path: phases/phase-01-log.yml
 phase:
   id: P01
   build_block: existing_repo_adoption
 summary:
-  outcome: active
+  outcome: completed
   highlights:
   - AgentBus history was extracted into a public standalone repository without changing its external protocol
-  - 70 application and architecture tests pass on Python 3.12 and the preserved 63 application tests pass on Python 3.14
-  - BCF 2.1.0 Lite was installed only as a bootstrap while released adopter fixes are awaited
+  - BCF 2.1.4 Standard-v3 governs the project assurance graph through the canonical prospective train
+  - AgentBus v0.3.0 is public and the superworkspace consumes its attested immutable archive without losing live state or personas
 workitems:
 - id: P01-P0-01
   status: DONE
   summary: deliver characterize inherited architecture tests CI controls and release boundaries
 - id: P01-P0-02
-  status: IN_PROGRESS
+  status: DONE
   summary: deliver adopt released BCF 2.1 without rewriting application semantics
 - id: P01-P0-03
-  status: TODO
+  status: DONE
   summary: deliver encode AgentBus assurance as claims dependencies producers and negative controls
 - id: P01-P0-04
-  status: TODO
+  status: DONE
   summary: deliver prove selective invalidation reuse early rejection and fail-closed ambiguity
 - id: P01-P0-05
-  status: TODO
+  status: DONE
   summary: deliver publish v0.3.0 and cut the superworkspace consumer over to an immutable pin
 execution_evidence:
   planned_commands:
@@ -42,16 +42,25 @@ execution_evidence:
     result: 63 passed on Python 3.12 and 63 passed on Python 3.14
   - command: docker build and container runtime smoke
     result: pinned Python image built and ran as UID 10001 with writable SQLite data path
-  - command: make governance-validate and bcf doctor
-    result: specialized Lite bootstrap passes validation and doctor diagnostics
-  - command: project Standard producer suite
-    result: lint typecheck architecture client service dependency SBOM vulnerability and container gates pass locally
+  - command: bcf reconcile --check and bcf doctor
+    result: released BCF 2.1.4 Standard-v3 is at a fixed point and ready without trusted-controller capability
+  - command: bcf ci prospective-train with exact commit and tree identity
+    result: all 18 producers and their isolated negative controls passed locally and on the protected provider path
+  - command: GitHub Actions run 36579763714
+    result: malformed workitem dependency structure rejected in 23 seconds before evidence fan-out
+  - command: GitHub Actions runs 36580561844 and 36581250074
+    result: corrected pull-request and exact-main candidates passed preflight four parallel shards and terminal truth
+  - command: gh release verify-asset v0.3.0 AgentBus-0.3.0.tar.gz
+    result: release archive attestation verified at exact commit and tree identity
+  - command: superworkspace immutable install and live service restart
+    result: SQLite integrity inbox UUID 454 messages one claim six persona profiles and Slack connectivity were preserved
   - command: bcf cleanup --repo-root .
     result: no deterministic cleanup proposed; current active plan and phase require semantic closeout after adoption
   notes:
   - inherited BCF installation was absent; source CI mixed AgentBus with unrelated superworkspace checks
   - baseline and standalone timings are recorded in docs/adoption-measurements.md
-  - BCF 2.1.0 adopter defects 311 through 316 prevent final Standard certification; unreleased candidate bytes are not accepted
+  - direct protected-main events have no eligible provider-authenticated prior-evidence transport, so all unresolved producers execute in parallel
+  - provider timing, governance amplification, release identity, and consumer continuity are recorded in docs/adoption-measurements.md
 closeout_requirements:
   claims:
     workitems_closed:
@@ -76,4 +85,4 @@ closeout_requirements:
 known_constraints:
 - update canonical governed artifacts together when behavior or environment contracts change
 next_work:
-- implement scoped workitems and record execution evidence in this log
+- maintain the released graph and use the canonical prospective train for subsequent changes

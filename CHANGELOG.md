@@ -9,6 +9,11 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 - Linked the governed adoption workitems so exact-main closure advances without stranding successors.
 
+### Documentation
+
+- Closed the BCF 2.1 adoption record with provider timings, fail-closed proof,
+  release identity, governance amplification, and live consumer continuity.
+
 ## [0.3.0] - 2026-09-27
 
 ### Added
