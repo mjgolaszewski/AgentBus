@@ -20,6 +20,7 @@ workitems:
   status: IN_PROGRESS
   summary: deliver adopt released BCF 2.1 without rewriting application semantics
   acceptance:
+  - requires-workitem-closure:P01-P0-01
   - canonical governance validation and doctor diagnostics pass
   acceptance_evidence: [architecture-test, test, contract-test, security-dependency-audit]
 - id: P01-P0-03
@@ -27,6 +28,7 @@ workitems:
   status: TODO
   summary: deliver encode AgentBus assurance as claims dependencies producers and negative controls
   acceptance:
+  - requires-workitem-closure:P01-P0-02
   - every inherited proposition has an owning claim and executable producer
   acceptance_evidence: [architecture-test, test, contract-test, lint, typecheck]
 - id: P01-P0-04
@@ -34,6 +36,7 @@ workitems:
   status: TODO
   summary: deliver prove selective invalidation reuse early rejection and fail-closed ambiguity
   acceptance:
+  - requires-workitem-closure:P01-P0-03
   - representative selective execution reuse deterministic rejection and ambiguity cases pass
   acceptance_evidence: [architecture-test, test, contract-test]
 - id: P01-P0-05
@@ -41,5 +44,6 @@ workitems:
   status: TODO
   summary: deliver publish v0.3.0 and cut the superworkspace consumer over to an immutable pin
   acceptance:
+  - requires-workitem-closure:P01-P0-04
   - live state and identity survive cutover and embedded source is inactive
   acceptance_evidence: [runtime-smoke, release-smoke, security-sbom, security-vulnerability-scan]

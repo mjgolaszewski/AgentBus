@@ -5,6 +5,10 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Linked the governed adoption workitems so exact-main closure advances without stranding successors.
+
 ## [0.3.0] - 2026-09-27
 
 ### Added
