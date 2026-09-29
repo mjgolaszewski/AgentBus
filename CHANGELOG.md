@@ -5,6 +5,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-09-29
+
 ### Security
 
 - Bound routed Slack envelopes to the bot identity authenticated from the
@@ -16,8 +18,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
   existing databases to store the routing audience explicitly.
 - Moved new consumer-profile defaults to the XDG state directory while retaining
   `WEED_WORKSPACE` as a compatibility fallback for existing deployments.
-- Made the default test suite skip the dedicated Python 3.14 qualification node
-  when it runs under another supported interpreter.
+- Made the declared Python 3.14 range test portable while keeping live runtime
+  verification in its dedicated Python 3.14 producer.
 
 ### Documentation
 
@@ -71,7 +73,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 - Added the Slack Socket Mode service, authenticated local API, native launcher,
   Docker deployment, durable SQLite inbox, and simulated integration tests.
 
-[Unreleased]: https://github.com/mjgolaszewski/AgentBus/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/mjgolaszewski/AgentBus/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/mjgolaszewski/AgentBus/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/mjgolaszewski/AgentBus/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.3.0
 [0.2.0]: https://github.com/mjgolaszewski/AgentBus/compare/v0.1.0...v0.2.0
