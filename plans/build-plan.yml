@@ -75,3 +75,19 @@ phase_sequence:
       - make check
       - make test
       - make release-check
+  - phase_id: P02
+    build_block: "assurance_topology_patch"
+    objective: "release AgentBus 0.3.1 with one truthful BCF assurance graph"
+    hard_dependencies:
+      - "P01 closed on exact main"
+    tightly_scoped_deliverables:
+      - "restore Python 3.14 behavior proof as a separately identified BCF evidence producer"
+      - "remove duplicate architecture execution and give source integrity a truthful claim owner"
+      - "route retained project commands through canonical BCF gates and produce the 0.3.1 candidate"
+    parallelizable_workstreams:
+      - "assurance_topology"
+    verification_commands:
+      - make governance-validate
+      - make lint
+      - make python314-compatibility
+      - make release-check

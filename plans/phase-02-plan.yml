@@ -1,0 +1,37 @@
+document:
+  kind: execution_phase_plan
+  name: Phase 02 Plan
+  id: project-phase-02-plan
+  version: 1.0.0
+  generated_at_utc: '2026-09-29T00:00:00Z'
+  status: planned
+  path: plans/phase-02-plan.yml
+phase:
+  id: P02
+  build_block: assurance_topology_patch
+  planner: agentbus:signal-gardener
+  date: '2026-09-29'
+  scope_source:
+  - AGENTS.yml
+  - plans/product-spec.yml
+  - plans/build-plan.yml
+  - plans/phase-ledger.yml
+  - MEMORY.yml
+delivery_contract:
+  tightly_scoped_deliverables:
+  - BCF-owned Python 3.14 compatibility evidence
+  - Non-overlapping architecture and source-integrity claims
+  - Canonical compatibility command aliases and 0.3.1 release candidate
+  parallelizable_workstreams:
+  - id: P02-WS1
+    name: assurance_topology
+  hard_dependencies:
+  - P01 closed on exact main
+  docker_first_local_runtime: repo_native_validation_and_governance_commands
+  completeness_standard: full_completeness_for_declared_scope
+scope_lock:
+- order: 1
+  statement: keep the phase narrowly scoped to declared deliverables and update canonical
+    governed artifacts in the same change
+verification_plan:
+- make release-check

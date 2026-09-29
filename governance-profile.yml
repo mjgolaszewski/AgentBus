@@ -151,6 +151,7 @@ release_gate_profile:
       status: required
       command_policy: contract_tests
       rationale: public contracts and adapters have explicit checks
+    python314_compatibility: {target: python314-compatibility, status: required, command_policy: automated_tests, rationale: the supported client and service behavior runs under Python 3.14}
     security_secret_scan:
       target: security-secret-scan
       status: required
@@ -209,6 +210,7 @@ ci_profile:
   - governance-exposure-scan
   - governance-validate
   - lint
+  - python314-compatibility
   - release-smoke
   - runtime-smoke
   - security-dependency-audit

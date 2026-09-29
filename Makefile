@@ -3,16 +3,12 @@ UV ?= uv
 
 .PHONY: check test-client test-service release-build
 
-check:
-	$(UV) run --locked python scripts/check_source.py
+check: lint
 
-test-client:
-	PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 $(UV) run --locked --extra dev pytest tests/test_launcher.py
+test-client: test
 
-test-service:
-	PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 $(UV) run --locked --extra dev pytest tests/test_service.py
+test-service: contract-test
 
-release-build:
-	$(UV) run --locked python scripts/build_release.py
+release-build: release-smoke
 
 include Makefile.fragment
