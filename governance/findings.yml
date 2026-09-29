@@ -24,12 +24,12 @@ findings:
     disposition: remediation_completed
     provenance:
       producers: [{kind: human, id: external-reviewer}]
-      reviewer: {kind: model, id: agentbus:signal-gardener}
+      reviewer: {kind: human, id: external-reviewer}
       remediators: [{kind: model, id: agentbus:signal-gardener}]
       verifier: {kind: workflow, id: contract-test}
     proofs:
       - kind: test_node
         gate_id: contract-test
         node_id: tests.test_service::test_only_authenticated_agentbus_bot_can_supply_routing_metadata
-        negative_control_id: human-and-foreign-bot-envelope-spoof
+        negative_control_id: unauthenticated-envelope-routing-is-rejected
         supplemental_paths: [src/agentbus_service.py, CONTRACT.md, SECURITY.md]
