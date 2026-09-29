@@ -55,16 +55,43 @@ container smoke remain separate producers.
 
 ## Final result
 
-The final prospective train will append:
+The released BCF 2.1.4 wheel was verified at SHA-256
+`a5aae2050e7ccb6e371758ab270d8d1ae5533d425def5e509cc50809a96fc1be`.
+Upgrade installation passed strict validation, reconciliation converged after
+one apply round, a second reconciliation was clean, and `bcf doctor` reported
+Standard-v3 ready. AgentBus retains direct protected-main authority; it does
+not adopt a trusted controller or BCF release authority.
 
-- preflight, evidence, truth, and certification critical paths;
-- every producer's duration and observed parallelism;
-- executed, partially reused, and fully reused claim groups;
-- deterministic failures moved ahead of behavioral fan-out;
-- provider queue and scheduling latency;
-- the final workflow, job, and agent-facing command surface;
-- semantic change amplification across commits, pull requests, jobs, controller
-  transitions, compute, and operator intervention.
+The first reconciled prospective train observed the following local timings.
+These measurements establish the final graph shape; the exact final candidate
+is run again after this measurement record is committed.
 
-Final measurements are recorded only from the reconciled candidate bytes. A
-governed-byte change invalidates affected numbers and conclusions.
+| Stage | Wall clock |
+| --- | ---: |
+| Fixed-point normalization | 17.206 s |
+| Planning, setup, and reuse decisions | 11.965 s |
+| Behavioral producers and controls | 94.287 s |
+| Terminal truth | 16.466 s |
+| Locally knowable train | 139.924 s |
+
+All 18 behavioral producers and all 18 isolated negative controls passed. Their
+aggregate producer duration was 85.881 seconds; the longest single producer was
+static type checking at 17.334 seconds. Independent work ran concurrently in
+the canonical four-shard graph. The resulting local evidence bundle was
+`bba62d03a22d320dd0a78bf7046683af1c49522bc4ee35920df54473b62b6d9e`.
+Local receipts remain non-authoritative, so certification, merge eligibility,
+and exact-main truth remain provider-owned.
+
+BCF now derives the full path from semantic intent and exact commit/tree
+identity through normalization, affected-claim planning, evidence fan-out,
+negative controls, terminal truth, and provider-required lifecycle boundaries.
+The agent-facing governance command surface is one prospective-train command;
+agents no longer choose test roots, shard membership, gate order, evidence
+artifacts, or lifecycle transitions.
+
+The migration changed one pull request and three finalization commits before
+provider submission: two editorial commits and one released-runtime upgrade.
+It adds one governed workflow with cheap preflight, four parallel evidence
+shards, and terminal truth. No trusted-controller transition is introduced.
+Provider queue and hosted execution are recorded separately after the protected
+PR run because local evidence cannot substitute for those provider facts.
