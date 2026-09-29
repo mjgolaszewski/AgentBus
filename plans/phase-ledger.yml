@@ -4,7 +4,7 @@ document:
   id: "agentbus-phase-ledger"
   version: 1.0.0
   generated_at_utc: "2026-09-27T00:00:00Z"
-  status: active_phase_planned
+  status: active_phase_completed
   path: plans/phase-ledger.yml
 build_plan_mandate:
   format: yaml
@@ -24,7 +24,7 @@ active_phase:
   memory: MEMORY.yml
   spec: plans/product-spec.yml
   build_plan: plans/build-plan.yml
-  lifecycle_status: active
+  lifecycle_status: completed
   owner: "agentbus:signal-gardener"
   validation_commands:
     - make governance-validate
@@ -62,7 +62,7 @@ active_delivery_priorities:
 release_trains:
   release_1:
     target_version: "0.3.0"
-    status: active
+    status: completed
     focus:
       - governed_foundation
       - selective_assurance_graph

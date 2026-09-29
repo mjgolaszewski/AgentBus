@@ -89,9 +89,66 @@ The agent-facing governance command surface is one prospective-train command;
 agents no longer choose test roots, shard membership, gate order, evidence
 artifacts, or lifecycle transitions.
 
-The migration changed one pull request and three finalization commits before
-provider submission: two editorial commits and one released-runtime upgrade.
-It adds one governed workflow with cheap preflight, four parallel evidence
-shards, and terminal truth. No trusted-controller transition is introduced.
-Provider queue and hosted execution are recorded separately after the protected
-PR run because local evidence cannot substitute for those provider facts.
+## Provider proof and critical path
+
+The protected GitHub path exercised the same generated graph as the local
+train. The first complete pull-request run took 125 seconds from creation to
+completion. Its preflight took 27 seconds, its four evidence shards took 43,
+56, 46, and 40 seconds in parallel, and terminal truth took 31 seconds. The
+exact corrected `main` candidate took 132 seconds end to end: 33 seconds of
+preflight, evidence shards of 57, 44, 43, and 45 seconds, and 33 seconds of
+terminal truth. Provider scheduling gaps on that final run totaled about nine
+seconds; the BCF-controlled critical path was about 123 seconds.
+
+One pull-request run took 305 seconds because the provider's artifact download
+inside terminal truth stalled for 180 seconds. That wait is provider transport
+latency, not BCF execution time, and is excluded from the controlled critical
+path. Across the two successful pull-request runs, the deterministic failure,
+and the corrected exact-main run, GitHub recorded 965 job-seconds.
+
+The first merged candidate supplied no successor predicates for its workitem
+chain. Cheap preflight rejected it in 23 seconds and skipped all four evidence
+shards. The corrected canonical `requires-workitem-closure:` predicates then
+passed both pull-request and exact-main truth. A trial with the noncanonical
+`predecessors` field was rejected by schema validation before execution. These
+are the representative early-rejection and fail-closed ambiguity proofs.
+
+The claim planner distinguishes application-local, shared-contract, and
+unrelated changes through the semantic ownership and dependency graph. In this
+direct protected-main topology, however, ordinary pull-request and push events
+do not receive provider-authenticated prior evidence. Local receipts are
+deliberately ineligible. The planner therefore left all 18 applicable claims
+unresolved and executed their producers in four parallel shards. No evidence
+was reused because none was eligible. This is the minimum justified execution
+for the selected no-controller authority model; installing trusted-controller
+capability merely to obtain reuse would violate the adopter-owned boundary.
+
+## Release and consumer cutover
+
+AgentBus v0.3.0 was published from commit
+`9ceb0cd4916291b5fb3f65b81eda4c84bce1ad53`, tree
+`f33b9e7be7e484ded2f073945cc12dbef42b3319`. Its 3,133,999-byte source archive
+has SHA-256
+`d29b22066ccae21f54e46c9d85d1ddb53c996f670935e998333eb7a54e269e59`
+and passed GitHub artifact attestation verification. The superworkspace now
+consumes that archive through an exact lock containing archive, member, and
+mode hashes. Its final main run passed on Python 3.12 and 3.14.
+
+The live expand/contract cutover preserved the existing `.env`, SQLite inbox,
+454 messages, maximum cursor 886, one claim, the inbox UUID, and all six local
+persona profiles with their identities, chat IDs, and acknowledgement cursors.
+The restarted v0.3.0 service passed SQLite integrity, Slack connectivity, and a
+30-file drift audit. The embedded superworkspace source was removed only after
+that proof. Release media and the rollback snapshot remain on the shared
+network filesystem.
+
+## Governance amplification
+
+The standalone adoption used two pull requests, five feature or corrective
+commits, two merge commits, four AgentBus workflow runs, 21 provider jobs, one
+corrective intervention, and one immutable release. It used zero trusted
+controller transitions. The consumer cutover used one pull request and six
+provider jobs across feature, pull-request, and exact-main validation. The
+normal agent-facing governance surface remains one prospective-train command;
+BCF derives normalization, applicability, shard allocation, evidence, truth,
+and eligibility from semantic intent plus exact commit and tree identity.
