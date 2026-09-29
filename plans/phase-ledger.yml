@@ -16,11 +16,11 @@ build_plan_mandate:
     - completeness_standard
   completeness_standard: full_completeness_for_declared_scope
 active_phase:
-  id: P01
-  build_block: "existing_repo_adoption"
-  plan: plans/phase-01-plan.yml
-  workitems: plans/phase-01-workitems.yml
-  log: phases/phase-01-log.yml
+  id: P02
+  build_block: "assurance_topology_patch"
+  plan: plans/phase-02-plan.yml
+  workitems: plans/phase-02-workitems.yml
+  log: phases/phase-02-log.yml
   memory: MEMORY.yml
   spec: plans/product-spec.yml
   build_plan: plans/build-plan.yml
@@ -67,6 +67,13 @@ release_trains:
       - governed_foundation
       - selective_assurance_graph
       - standalone_release_and_consumer_cutover
+  release_2:
+    target_version: "0.3.1"
+    status: completed
+    focus:
+      - single_assurance_graph
+      - python_314_compatibility
+      - canonical_command_surface
 release_readiness:
   computed_by: bcf truth
   requirements_source: governance/evidence-policy.yml

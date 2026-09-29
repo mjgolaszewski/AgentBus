@@ -18,6 +18,7 @@ claim_model:
     client-tests: [&id065 tests/test_launcher.py]
     service-tests: [&id055 tests/test_service.py]
     architecture-tests: [&id051 tests/test_architecture.py]
+    compatibility-tests: [tests/test_python_compatibility.py, *id065, *id055]
     producer-code: [scripts/check_source.py, &id037 scripts/run_project_gate.py]
     release-code: [&id003 Dockerfile, .dockerignore, compose.yaml, .env.example, &id060 scripts/build_release.py, *id001]
     toolchain: [*id002, uv.lock, requirements-governance.txt]
@@ -75,6 +76,9 @@ claim_model:
     service-contract:
       producer: &id025 contract-test
       claims: [service-contract-valid]
+    python314-compatibility:
+      producer: python314-compatibility
+      claims: [python314-compatibility-valid]
     secrets:
       producer: &id026 security-secret-scan
       claims: [secrets-clean]
@@ -131,11 +135,11 @@ claim_model:
       qualification_scope: *id008
       profiles: [normal, *id009, self]
     source-quality-valid:
-      truth: project source satisfies deterministic lint rules
+      truth: tracked source is structurally valid and satisfies deterministic lint rules
       execution_group: source-quality
       legacy_gate: lint
       dependencies:
-        subject: [*id012, *id013, *id014]
+        subject: [whole-tree]
         detector: [*id014]
         test_population: []
         toolchain: [*id011]
@@ -155,7 +159,7 @@ claim_model:
       qualification_scope: *id008
       profiles: [normal, *id009, self]
     architecture-valid:
-      truth: the complete AgentBus boundary suite passes
+      truth: the architecture registry covers every production module
       execution_group: architecture
       legacy_gate: *id016
       dependencies:
@@ -272,6 +276,18 @@ claim_model:
         test_population: [service-tests]
         toolchain: [*id011]
         trust: []
+      qualification_scope: *id008
+      profiles: [normal, *id009, self]
+    python314-compatibility-valid:
+      truth: the declared AgentBus client and service behavior passes under Python 3.14
+      execution_group: python314-compatibility
+      legacy_gate: python314-compatibility
+      dependencies:
+        subject: [*id012, *id013, package-source]
+        detector: [*id014]
+        test_population: [compatibility-tests]
+        toolchain: [*id011]
+        trust: [*id036]
       qualification_scope: *id008
       profiles: [normal, *id009, self]
     secrets-clean:
@@ -461,12 +477,12 @@ gates:
         min_collected: 1
         min_executed: 1
         max_skipped: 0
-        selectors: [*id051]
+        selectors: ['tests/test_architecture.py::test_architecture_registry_covers_every_production_module']
         expected_node_manifest: governance/test-manifests/architecture-test.txt
         expected_nodes_mode: exact
         artifact_binding: *id042
     negative_controls:
-    - {id: loc-cap-detects-oversized-module, mutation: {path: *id039, yaml_path: *id052, value: 1}, oracle: {kind: *id044, node_ids: [*id053]}}
+    - {id: unregistered-production-module-is-rejected, mutation: {path: tests/test_architecture.py, search: '"src/agentbus_service.py": ("service", "service"),', replace: ''}, oracle: {kind: *id044, node_ids: ['tests.test_architecture::test_architecture_registry_covers_every_production_module']}}
   contract-test:
     invocation: {argv: [python3, *id037, *id025, --junit, &id054 .artifacts/junit/contract-test.xml], cwd: ., env: {}, required_env: []}
     evidence:
@@ -499,6 +515,22 @@ gates:
     - {id: unused-import-is-rejected, mutation: {path: *id043, search: import argparse, replace: 'import argparse
 
           import definitely_unused_agentbus_symbol'}, oracle: {kind: *id059, exit_codes: [1], stream: stdout, regex: F401|imported but unused}}
+    - {id: version-drift-is-rejected-at-source-boundary, mutation: {path: *id002, search: version = "0.3.1", replace: version = "9.9.9"}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: project version must match}}
+  python314-compatibility:
+    invocation: {argv: [python3, *id037, python314-compatibility, --junit, .artifacts/junit/python314-compatibility.xml], cwd: ., env: {}, required_env: []}
+    evidence:
+      kind: *id040
+      test_contract:
+        junit_xml: .artifacts/junit/python314-compatibility.xml
+        min_collected: 1
+        min_executed: 1
+        max_skipped: 0
+        selectors: [tests/test_python_compatibility.py, *id065, *id055]
+        expected_node_manifest: governance/test-manifests/python314-compatibility.txt
+        expected_nodes_mode: exact
+        artifact_binding: *id042
+    negative_controls:
+    - {id: unsupported-runtime-range-is-rejected, mutation: {path: *id002, search: requires-python = ">=3.12", replace: requires-python = ">=3.15"}, oracle: {kind: *id044, node_ids: ['tests.test_python_compatibility::test_declared_project_range_includes_selected_runtime']}}
   release-smoke:
     invocation: {argv: [python3, *id037, *id035], cwd: ., env: {}, required_env: []}
     evidence: {kind: gate}
@@ -521,7 +553,7 @@ gates:
       output_requirements:
       - {path: .artifacts/security/agentbus.cdx.json, media_type: application/vnd.cyclonedx+json, authority: *id042}
     negative_controls:
-    - {id: version-drift-blocks-sbom, mutation: {path: *id002, search: version = "0.3.0", replace: version = "9.9.9"}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: project version must match}}
+    - {id: non-json-sbom-is-rejected, mutation: {path: *id037, search: '"--output-format", "JSON"', replace: '"--output-format", "XML"'}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: SBOM output is not valid JSON}}
   security-secret-scan:
     invocation: {argv: [python3, *id037, *id026], cwd: ., env: {}, required_env: []}
     evidence: {kind: gate}
@@ -578,6 +610,7 @@ gate_catalog:
   typecheck: {target: *id015, status: *id066, command_policy: *id015, rationale: static analysis is wired before release-check is trusted}
   test: {target: test, status: *id066, command_policy: automated_tests, rationale: touched behavior has automated tests}
   contract_test: {target: *id025, status: *id066, command_policy: contract_tests, rationale: public contracts and adapters have explicit checks}
+  python314_compatibility: {target: python314-compatibility, status: *id066, command_policy: automated_tests, rationale: the supported client and service behavior runs under Python 3.14}
   security_secret_scan: {target: *id026, status: *id066, command_policy: security_secret_scan, rationale: pushed code is scanned for secrets}
   security_dependency_audit: {target: *id029, status: *id066, command_policy: security_dependency_audit, rationale: dependencies have a vulnerability audit lane}
   security_sbom: {target: *id030, status: *id066, command_policy: security_sbom, rationale: production-bound artifacts produce an SBOM}

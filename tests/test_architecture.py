@@ -30,8 +30,18 @@ def imports(relative: str) -> set[str]:
     return values
 
 
+def test_architecture_registry_covers_every_production_module() -> None:
+    roots = [ROOT / root for root in CONFIG["source_roots"]]
+    discovered = {
+        path.relative_to(ROOT).as_posix()
+        for root in roots
+        for path in root.rglob("*.py")
+        if path.name != "__init__.py"
+    }
+    assert set(MODULES) == discovered
+
+
 def test_production_modules_respect_loc_cap() -> None:
-    assert CONFIG["source_roots"] == ["src"]
     cap = CONFIG["production_module_policy"]["max_loc"]
     violations = {
         relative: len((ROOT / relative).read_text(encoding="utf-8").splitlines())

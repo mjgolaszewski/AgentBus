@@ -5,9 +5,13 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-29
+
 ### Fixed
 
 - Linked the governed adoption workitems so exact-main closure advances without stranding successors.
+- Consolidated source integrity, architecture, Python 3.14 compatibility, and
+  retained Make entry points into one truthful BCF assurance graph.
 
 ### Documentation
 
@@ -48,7 +52,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 - Added the Slack Socket Mode service, authenticated local API, native launcher,
   Docker deployment, durable SQLite inbox, and simulated integration tests.
 
-[Unreleased]: https://github.com/mjgolaszewski/AgentBus/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/mjgolaszewski/AgentBus/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/mjgolaszewski/AgentBus/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.3.0
 [0.2.0]: https://github.com/mjgolaszewski/AgentBus/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/mjgolaszewski/AgentBus/tree/v0.1.0

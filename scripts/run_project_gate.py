@@ -20,7 +20,7 @@ from packaging.requirements import Requirement
 ROOT = Path(__file__).resolve().parents[1]
 ARTIFACTS = ROOT / ".artifacts"
 TEST_GATES = {
-    "architecture-test": ["tests/test_architecture.py"],
+    "architecture-test": ["tests/test_architecture.py::test_architecture_registry_covers_every_production_module"],
     "architecture-module-size": ["tests/test_architecture.py::test_production_modules_respect_loc_cap"],
     "architecture-layer-membership": ["tests/test_architecture.py::test_production_modules_map_to_exactly_one_layer"],
     "architecture-context-membership": ["tests/test_architecture.py::test_production_modules_map_to_exactly_one_bounded_context"],
@@ -30,20 +30,31 @@ TEST_GATES = {
     "architecture-duplication": ["tests/test_architecture.py::test_cross_context_duplication_stays_below_declared_block_size"],
     "test": ["tests/test_launcher.py"],
     "contract-test": ["tests/test_service.py"],
+    "python314-compatibility": [
+        "tests/test_python_compatibility.py",
+        "tests/test_launcher.py",
+        "tests/test_service.py",
+    ],
 }
 TOKEN_PATTERN = re.compile(
     rb"(?:xox[baprs]-[A-Za-z0-9-]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----)"
 )
 
 
-def run(argv: list[str], *, capture: bool = False) -> subprocess.CompletedProcess[str]:
+def run(
+    argv: list[str], *, capture: bool = False, environment: dict[str, str] | None = None
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         argv,
         cwd=ROOT,
         check=False,
         text=True,
         capture_output=capture,
-        env={**os.environ, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"},
+        env={
+            **os.environ,
+            "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+            **(environment or {}),
+        },
     )
 
 
@@ -58,14 +69,17 @@ def require_success(result: subprocess.CompletedProcess[str]) -> None:
 
 def test_gate(gate: str, junit: Path) -> None:
     junit.parent.mkdir(parents=True, exist_ok=True)
-    require_success(run([
-        sys.executable,
-        "-m",
-        "pytest",
-        "-q",
-        *TEST_GATES[gate],
-        f"--junitxml={junit}",
-    ]))
+    pytest = ["python", "-m", "pytest"]
+    if gate == "python314-compatibility":
+        with tempfile.TemporaryDirectory(prefix="agentbus-python314-") as directory:
+            command = [
+                "uv", "run", "--python", "3.14", "--locked", "--extra", "dev",
+                *pytest, "-q", *TEST_GATES[gate], f"--junitxml={junit}",
+            ]
+            require_success(run(command, environment={"UV_PROJECT_ENVIRONMENT": directory}))
+        return
+    pytest[0] = sys.executable
+    require_success(run([*pytest, "-q", *TEST_GATES[gate], f"--junitxml={junit}"]))
 
 
 def secret_scan() -> None:
@@ -198,6 +212,7 @@ def main() -> int:
             parser.error("test gates require --junit")
         test_gate(args.gate, args.junit)
     elif args.gate == "lint":
+        require_success(run([sys.executable, "scripts/check_source.py"]))
         require_success(run([
             sys.executable, "-m", "ruff", "check", "src", "agentbus", "agentbus_service.py",
             "scripts/check_source.py", "scripts/build_release.py", "scripts/run_project_gate.py", "tests",
@@ -209,7 +224,6 @@ def main() -> int:
     elif args.gate == "security-dependency-audit":
         verify_declared_environment()
     elif args.gate == "security-sbom":
-        require_success(run([sys.executable, "scripts/check_source.py"]))
         output = ARTIFACTS / "security" / "agentbus.cdx.json"
         output.parent.mkdir(parents=True, exist_ok=True)
         require_success(run([
@@ -217,7 +231,10 @@ def main() -> int:
             "--pyproject", "pyproject.toml", "--output-reproducible",
             "--output-format", "JSON", "--output-file", str(output),
         ]))
-        json.loads(output.read_text(encoding="utf-8"))
+        try:
+            json.loads(output.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise SystemExit("SBOM output is not valid JSON") from exc
         print(output.relative_to(ROOT))
     elif args.gate == "security-vulnerability-scan":
         verify_declared_environment()

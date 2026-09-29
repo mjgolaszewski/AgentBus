@@ -244,7 +244,7 @@ workflows:
       kind: gate_shard
       shard_key: shard
       shard_count: 4
-      gates: [governance-validate, governance-exposure-scan, architecture-test, architecture-module-size, architecture-layer-membership, architecture-context-membership, architecture-import-boundaries, architecture-cqrs-side, architecture-router-thinness, architecture-duplication, lint, typecheck, test, contract-test, security-secret-scan, security-dependency-audit, security-sbom, security-vulnerability-scan, runtime-smoke, release-smoke, semantic-ownership]
+      gates: [governance-validate, governance-exposure-scan, architecture-test, architecture-module-size, architecture-layer-membership, architecture-context-membership, architecture-import-boundaries, architecture-cqrs-side, architecture-router-thinness, architecture-duplication, lint, typecheck, test, contract-test, python314-compatibility, security-secret-scan, security-dependency-audit, security-sbom, security-vulnerability-scan, runtime-smoke, release-smoke, semantic-ownership]
       components: [checkout-candidate, setup-python, install-governance, download-session, restore-session-modes, capture-shard, upload-receipts]
     produces: [governance-receipts]
     consumes: [evidence-session]

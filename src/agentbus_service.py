@@ -550,7 +550,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                 await client.aclose()
             store.close()
 
-    app = FastAPI(title="AgentBus", version="0.3.0", lifespan=lifespan,
+    app = FastAPI(title="AgentBus", version="0.3.1", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     auth = [Depends(authenticate)]

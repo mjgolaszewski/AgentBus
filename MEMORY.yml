@@ -52,7 +52,7 @@ environment_facts:
     - all governance, memory, specs, plans, workitem ledgers, and phase logs are YAML-native
     - observability contracts are scaffolded under contracts/observability/v1/
     - structural anti-drift gates are scaffolded for module size, layer ownership, bounded-context ownership, CQRS side rules, router thinness, and duplication
-    - application behavior was extracted from superworkspace-tools history and characterized by 63 tests on Python 3.12 and 3.14
+    - application behavior is characterized on Python 3.12 with a pinned Python 3.14 compatibility subprocess in the primary BCF evidence lane
     - BCF 2.1.4 Standard profile contract v3 governs the repository through the canonical prospective train
     - AgentBus v0.3.0 is published from commit 9ceb0cd4916291b5fb3f65b81eda4c84bce1ad53 and the superworkspace consumes its attested immutable archive
     - direct protected-main authority is retained without trusted-controller or BCF release authority
@@ -62,9 +62,9 @@ environment_facts:
     build_plan: plans/build-plan.yml
     active_phase_ledger: plans/phase-ledger.yml
     phase_history: plans/phase-history.yml
-    active_phase_plan: plans/phase-01-plan.yml
-    active_workitem_ledger: plans/phase-01-workitems.yml
-    active_phase_log: phases/phase-01-log.yml
+    active_phase_plan: plans/phase-02-plan.yml
+    active_workitem_ledger: plans/phase-02-workitems.yml
+    active_phase_log: phases/phase-02-log.yml
 known_constraints:
   - preserve the public CLI HTTP protocol SQLite state and deployment behavior during governance adoption
   - use only immutable released BCF artifacts and their published digests
@@ -91,6 +91,6 @@ references:
     - plans/product-spec.yml
     - plans/build-plan.yml
   execution:
-    - plans/phase-01-plan.yml
-    - plans/phase-01-workitems.yml
-    - phases/phase-01-log.yml
+    - plans/phase-02-plan.yml
+    - plans/phase-02-workitems.yml
+    - phases/phase-02-log.yml

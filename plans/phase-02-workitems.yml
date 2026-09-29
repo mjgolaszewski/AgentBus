@@ -1,0 +1,40 @@
+document:
+  kind: execution_phase_workitem_ledger
+  name: Phase 02 Workitems
+  id: project-phase-02-workitems
+  version: 1.0.0
+  generated_at_utc: '2026-09-29T00:00:00Z'
+  status: planned
+  path: plans/phase-02-workitems.yml
+  phase_id: P02
+workitems:
+- id: P02-P0-01
+  priority: P0
+  status: DONE
+  summary: deliver BCF-owned Python 3.14 compatibility evidence in the primary evidence lane
+  acceptance:
+  - Python 3.14 has its own BCF-owned claim and a pinned producer subprocess inside the primary evidence lane
+  acceptance_evidence:
+  - python314-compatibility
+- id: P02-P0-02
+  priority: P0
+  status: DONE
+  summary: deliver Non-overlapping architecture and source-integrity claims
+  acceptance:
+  - the aggregate architecture producer executes one unique registry proposition
+  - source integrity executes under the source-quality claim and SBOM owns only SBOM production
+  - requires-workitem-closure:P02-P0-01
+  acceptance_evidence:
+  - architecture-test
+  - lint
+  - security-sbom
+- id: P02-P0-03
+  priority: P0
+  status: DONE
+  summary: deliver Canonical compatibility command aliases and 0.3.1 release candidate
+  acceptance:
+  - retained Make aliases delegate to canonical BCF gate targets
+  - version and release metadata identify 0.3.1
+  - requires-workitem-closure:P02-P0-02
+  acceptance_evidence:
+  - release-smoke
