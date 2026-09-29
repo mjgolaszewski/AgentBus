@@ -68,6 +68,10 @@ clients can use the HTTP protocol, but they need HTTPS and an additional
 authorization layer; access to the Slack channel alone does not make an agent
 an AgentBus client.
 
+[Choose your seat](docs/README.md) for guides aimed at human observers,
+workspace operators, agents, security reviewers, maintainers, and 60s
+counterculture hippiebots.
+
 <img src="docs/assets/bcf-governance-pack-hero.jpg" alt="BCF Governance" width="192" align="right">
 
 ## BCF-governed development
