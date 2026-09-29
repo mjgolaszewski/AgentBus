@@ -14,12 +14,6 @@ resource_classes:
     hosted: true
     python_version: '3.12'
     capabilities: [python, git]
-  candidate-python-314:
-    runner: ubuntu-24.04
-    trust: candidate
-    hosted: true
-    python_version: '3.14'
-    capabilities: [python, git]
   trusted-control:
     runner: ubuntu-24.04
     trust: trusted
@@ -36,8 +30,7 @@ artifacts:
   runtime-receipts: {path: .artifacts/bcf/sessions, kind: lane-input, scope: run-attempt, retention_days: 30}
   prior-evidence-transport: {path: .artifacts/bcf/prior-evidence, kind: control, scope: run-attempt, retention_days: 30}
   governance-receipts: {path: .artifacts/bcf/sessions, kind: lane-input, scope: run-attempt, retention_days: 30}
-  python314-receipts: {path: .artifacts/bcf/sessions, kind: lane-input, scope: run-attempt, retention_days: 30}
-conditions: {prior-evidence-enabled: inputs.use_prior_evidence == true, prior-evidence-disabled: inputs.use_prior_evidence != true, evidence-prerequisites-green: needs.preflight.result == 'success' && needs.evidence.result == 'success' && needs.python314-compatibility.result == 'success', evidence-prerequisites-with-prior: needs.preflight.result == 'success' && needs.evidence.result == 'success' && needs.python314-compatibility.result == 'success' && inputs.use_prior_evidence == true, evidence-prerequisites-without-prior: needs.preflight.result == 'success' && needs.evidence.result == 'success' && needs.python314-compatibility.result == 'success' && inputs.use_prior_evidence != true, always-step: always()}
+conditions: {prior-evidence-enabled: inputs.use_prior_evidence == true, prior-evidence-disabled: inputs.use_prior_evidence != true, evidence-prerequisites-green: needs.preflight.result == 'success' && needs.evidence.result == 'success', evidence-prerequisites-with-prior: needs.preflight.result == 'success' && needs.evidence.result == 'success' && inputs.use_prior_evidence == true, evidence-prerequisites-without-prior: needs.preflight.result == 'success' && needs.evidence.result == 'success' && inputs.use_prior_evidence != true, always-step: always()}
 commands:
   preflight:
     argv: ['{python}', scripts/preflight_governance.py, --repo-root, ., --mode, '{env:BCF_PREFLIGHT_MODE}', --python, '{python}', --artifact-root, .artifacts/bcf, --expected-producer, structural-evidence, --expected-producer, quality-evidence, --expected-producer, security-evidence, --expected-producer, runtime-evidence, --format, text]
@@ -48,11 +41,11 @@ commands:
     cwd: .
     environment: {BCF_TRUTH_MODE: '${{ github.event_name == ''pull_request'' && ''pr'' || ''closure'' }}'}
   v3-preflight:
-    argv: ['{python}', scripts/preflight_governance.py, --repo-root, ., --evaluation-mode, '${{ inputs.evaluation_mode || (github.event_name == ''push'' && ''pr'' || ''pr'') }}', --evaluation-target, '${{ inputs.evaluation_target || '''' }}', --python, '{python}', --artifact-root, .artifacts/bcf, --expected-producer, evidence, --expected-producer, python314-compatibility, --format, text]
+    argv: ['{python}', scripts/preflight_governance.py, --repo-root, ., --evaluation-mode, '${{ inputs.evaluation_mode || (github.event_name == ''push'' && ''pr'' || ''pr'') }}', --evaluation-target, '${{ inputs.evaluation_target || '''' }}', --python, '{python}', --artifact-root, .artifacts/bcf, --expected-producer, evidence, --format, text]
     cwd: .
     environment: {}
   v3-preflight-with-prior:
-    argv: ['{python}', scripts/preflight_governance.py, --repo-root, ., --evaluation-mode, '${{ inputs.evaluation_mode || (github.event_name == ''push'' && ''pr'' || ''pr'') }}', --evaluation-target, '${{ inputs.evaluation_target || '''' }}', --python, '{python}', --artifact-root, .artifacts/bcf, --expected-producer, evidence, --expected-producer, python314-compatibility, --prior-evidence-dir, .artifacts/bcf/prior-evidence, --format, text]
+    argv: ['{python}', scripts/preflight_governance.py, --repo-root, ., --evaluation-mode, '${{ inputs.evaluation_mode || (github.event_name == ''push'' && ''pr'' || ''pr'') }}', --evaluation-target, '${{ inputs.evaluation_target || '''' }}', --python, '{python}', --artifact-root, .artifacts/bcf, --expected-producer, evidence, --prior-evidence-dir, .artifacts/bcf/prior-evidence, --format, text]
     cwd: .
     environment: {}
   v3-capture-shard:
@@ -168,21 +161,12 @@ step_components:
     environment: {}
     produces: []
     consumes: [governance-receipts]
-  download-python314-receipts:
-    kind: action
-    name: Download the Python 3.14 compatibility receipts
-    action: download-artifact
-    condition: evidence-prerequisites-green
-    with: {name: 'bcf-python314-receipts-${{ github.run_id }}-${{ github.run_attempt }}', path: .artifacts/bcf/fan-in}
-    environment: {}
-    produces: []
-    consumes: [python314-receipts]
   restore-receipt-modes:
     kind: command
     name: Restore private evidence-session modes
     condition: evidence-prerequisites-green
     command: v3-restore-receipt-modes
-    restores_private_artifacts: [governance-receipts, python314-receipts]
+    restores_private_artifacts: [governance-receipts]
     environment: {}
     produces: []
     consumes: []
@@ -260,7 +244,7 @@ workflows:
       kind: gate_shard
       shard_key: shard
       shard_count: 4
-      gates: [governance-validate, governance-exposure-scan, architecture-test, architecture-module-size, architecture-layer-membership, architecture-context-membership, architecture-import-boundaries, architecture-cqrs-side, architecture-router-thinness, architecture-duplication, lint, typecheck, test, contract-test, security-secret-scan, security-dependency-audit, security-sbom, security-vulnerability-scan, runtime-smoke, release-smoke, semantic-ownership]
+      gates: [governance-validate, governance-exposure-scan, architecture-test, architecture-module-size, architecture-layer-membership, architecture-context-membership, architecture-import-boundaries, architecture-cqrs-side, architecture-router-thinness, architecture-duplication, lint, typecheck, test, contract-test, python314-compatibility, security-secret-scan, security-dependency-audit, security-sbom, security-vulnerability-scan, runtime-smoke, release-smoke, semantic-ownership]
       components: [checkout-candidate, setup-python, install-governance, download-session, restore-session-modes, capture-shard, upload-receipts]
     produces: [governance-receipts]
     consumes: [evidence-session]
@@ -275,29 +259,12 @@ workflows:
         - {shard: 1, display_name: Evidence shard 1}
         - {shard: 2, display_name: Evidence shard 2}
         - {shard: 3, display_name: Evidence shard 3}
-  - id: python314-compatibility
-    display_name: Python 3.14 Compatibility Evidence
-    semantic_role: python314-compatibility-evidence
-    resource_class: candidate-python-314
-    trust: candidate
-    needs: [preflight]
-    condition: success
-    timeout_minutes: 45
-    permissions: {contents: read}
-    checkout: true
-    components: [checkout, python, governance-dependencies, download-evidence, upload-evidence, restore-private-modes]
-    executor:
-      kind: gate_group
-      gates: [python314-compatibility]
-    produces: [python314-receipts]
-    consumes: [evidence-session]
-    required: true
   - id: governance-truthfulness
     display_name: Terminal Governance Truth
     semantic_role: terminal-governance-truth
     resource_class: candidate-python
     trust: candidate
-    needs: [preflight, evidence, python314-compatibility]
+    needs: [preflight, evidence]
     condition: always
     timeout_minutes: 45
     permissions: {contents: read}
@@ -306,9 +273,9 @@ workflows:
     executor:
       kind: terminal_truth
       command: v3-truth
-      components: [checkout-candidate, setup-python, install-governance, download-receipts, download-python314-receipts, restore-receipt-modes, truth, truth-with-prior, upload-truth]
+      components: [checkout-candidate, setup-python, install-governance, download-receipts, restore-receipt-modes, truth, truth-with-prior, upload-truth]
     produces: [truth-report]
-    consumes: [governance-receipts, python314-receipts]
+    consumes: [governance-receipts]
     required: true
 policy:
   exact_gate_once: true

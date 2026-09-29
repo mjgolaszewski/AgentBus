@@ -19,7 +19,7 @@ phase:
   - MEMORY.yml
 delivery_contract:
   tightly_scoped_deliverables:
-  - BCF-owned Python 3.14 compatibility evidence
+  - BCF-owned Python 3.14 compatibility evidence in the primary evidence lane
   - Non-overlapping architecture and source-integrity claims
   - Canonical compatibility command aliases and 0.3.1 release candidate
   parallelizable_workstreams:

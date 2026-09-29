@@ -11,9 +11,9 @@ workitems:
 - id: P02-P0-01
   priority: P0
   status: IN_PROGRESS
-  summary: deliver BCF-owned Python 3.14 compatibility evidence
+  summary: deliver BCF-owned Python 3.14 compatibility evidence in the primary evidence lane
   acceptance:
-  - Python 3.14 has its own BCF-owned claim, producer, runtime resource, receipt, and terminal-truth dependency
+  - Python 3.14 has its own BCF-owned claim and a pinned producer subprocess inside the primary evidence lane
   acceptance_evidence:
   - python314-compatibility
 - id: P02-P0-02

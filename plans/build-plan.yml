@@ -81,7 +81,7 @@ phase_sequence:
     hard_dependencies:
       - "P01 closed on exact main"
     tightly_scoped_deliverables:
-      - "restore Python 3.14 behavior proof as a separately identified BCF evidence producer"
+      - "restore Python 3.14 behavior proof inside a governed primary-lane producer subprocess"
       - "remove duplicate architecture execution and give source integrity a truthful claim owner"
       - "route retained project commands through canonical BCF gates and produce the 0.3.1 candidate"
     parallelizable_workstreams:

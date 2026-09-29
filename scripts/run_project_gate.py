@@ -41,14 +41,20 @@ TOKEN_PATTERN = re.compile(
 )
 
 
-def run(argv: list[str], *, capture: bool = False) -> subprocess.CompletedProcess[str]:
+def run(
+    argv: list[str], *, capture: bool = False, environment: dict[str, str] | None = None
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         argv,
         cwd=ROOT,
         check=False,
         text=True,
         capture_output=capture,
-        env={**os.environ, "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"},
+        env={
+            **os.environ,
+            "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1",
+            **(environment or {}),
+        },
     )
 
 
@@ -63,14 +69,17 @@ def require_success(result: subprocess.CompletedProcess[str]) -> None:
 
 def test_gate(gate: str, junit: Path) -> None:
     junit.parent.mkdir(parents=True, exist_ok=True)
-    require_success(run([
-        sys.executable,
-        "-m",
-        "pytest",
-        "-q",
-        *TEST_GATES[gate],
-        f"--junitxml={junit}",
-    ]))
+    pytest = ["python", "-m", "pytest"]
+    if gate == "python314-compatibility":
+        with tempfile.TemporaryDirectory(prefix="agentbus-python314-") as directory:
+            command = [
+                "uv", "run", "--python", "3.14", "--locked", "--extra", "dev",
+                *pytest, "-q", *TEST_GATES[gate], f"--junitxml={junit}",
+            ]
+            require_success(run(command, environment={"UV_PROJECT_ENVIRONMENT": directory}))
+        return
+    pytest[0] = sys.executable
+    require_success(run([*pytest, "-q", *TEST_GATES[gate], f"--junitxml={junit}"]))
 
 
 def secret_scan() -> None:

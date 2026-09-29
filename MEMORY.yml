@@ -52,7 +52,7 @@ environment_facts:
     - all governance, memory, specs, plans, workitem ledgers, and phase logs are YAML-native
     - observability contracts are scaffolded under contracts/observability/v1/
     - structural anti-drift gates are scaffolded for module size, layer ownership, bounded-context ownership, CQRS side rules, router thinness, and duplication
-    - application behavior is characterized on Python 3.12 with a separately identified BCF evidence producer for Python 3.14 compatibility
+    - application behavior is characterized on Python 3.12 with a pinned Python 3.14 compatibility subprocess in the primary BCF evidence lane
     - BCF 2.1.4 Standard profile contract v3 governs the repository through the canonical prospective train
     - AgentBus v0.3.0 is published from commit 9ceb0cd4916291b5fb3f65b81eda4c84bce1ad53 and the superworkspace consumes its attested immutable archive
     - direct protected-main authority is retained without trusted-controller or BCF release authority
