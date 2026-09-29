@@ -1,0 +1,79 @@
+document:
+  kind: execution_phase_log
+  name: Phase 01 Log
+  id: agentbus-phase-01-log
+  version: 1.0.0
+  generated_at_utc: '2026-09-27T00:00:00Z'
+  status: active
+  path: phases/phase-01-log.yml
+phase:
+  id: P01
+  build_block: existing_repo_adoption
+summary:
+  outcome: active
+  highlights:
+  - AgentBus history was extracted into a public standalone repository without changing its external protocol
+  - 70 application and architecture tests pass on Python 3.12 and the preserved 63 application tests pass on Python 3.14
+  - BCF 2.1.0 Lite was installed only as a bootstrap while released adopter fixes are awaited
+workitems:
+- id: P01-P0-01
+  status: DONE
+  summary: deliver characterize inherited architecture tests CI controls and release boundaries
+- id: P01-P0-02
+  status: IN_PROGRESS
+  summary: deliver adopt released BCF 2.1 without rewriting application semantics
+- id: P01-P0-03
+  status: TODO
+  summary: deliver encode AgentBus assurance as claims dependencies producers and negative controls
+- id: P01-P0-04
+  status: TODO
+  summary: deliver prove selective invalidation reuse early rejection and fail-closed ambiguity
+- id: P01-P0-05
+  status: TODO
+  summary: deliver publish v0.3.0 and cut the superworkspace consumer over to an immutable pin
+execution_evidence:
+  planned_commands:
+  - make governance-validate
+  - make check
+  - make test
+  - make release-check
+  executed_commands:
+  - command: PYTHONHASHSEED=0 uv run --locked --extra dev pytest
+    result: 63 passed on Python 3.12 and 63 passed on Python 3.14
+  - command: docker build and container runtime smoke
+    result: pinned Python image built and ran as UID 10001 with writable SQLite data path
+  - command: make governance-validate and bcf doctor
+    result: specialized Lite bootstrap passes validation and doctor diagnostics
+  - command: project Standard producer suite
+    result: lint typecheck architecture client service dependency SBOM vulnerability and container gates pass locally
+  - command: bcf cleanup --repo-root .
+    result: no deterministic cleanup proposed; current active plan and phase require semantic closeout after adoption
+  notes:
+  - inherited BCF installation was absent; source CI mixed AgentBus with unrelated superworkspace checks
+  - baseline and standalone timings are recorded in docs/adoption-measurements.md
+  - BCF 2.1.0 adopter defects 311 through 316 prevent final Standard certification; unreleased candidate bytes are not accepted
+closeout_requirements:
+  claims:
+    workitems_closed:
+      required_evidence:
+      - governance-validate
+    required_suites_green:
+      required_evidence: []
+    architecture_gates_green:
+      required_evidence: []
+    health_checks_green:
+      required_evidence: []
+    security_review_complete:
+      required_evidence: []
+    findings_resolved:
+      required_evidence:
+      - governance-validate
+  reconciliation:
+    required_evidence:
+    - governance-exposure-scan
+    - governance-validate
+  finding_registry: governance/findings.yml
+known_constraints:
+- update canonical governed artifacts together when behavior or environment contracts change
+next_work:
+- implement scoped workitems and record execution evidence in this log

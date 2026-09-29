@@ -1,0 +1,1 @@
+tests.test_architecture::test_production_modules_map_to_exactly_one_bounded_context

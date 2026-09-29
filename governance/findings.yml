@@ -1,0 +1,10 @@
+document:
+  kind: finding_registry
+  name: "AgentBus Finding Registry"
+  id: "agentbus-findings"
+  version: 1.0.0
+  generated_at_utc: "2026-09-27T00:00:00Z"
+  status: active
+  path: governance/findings.yml
+reviews: []
+findings: []

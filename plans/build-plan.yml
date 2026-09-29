@@ -1,0 +1,77 @@
+document:
+  kind: machine_readable_build_plan
+  name: "AgentBus Build Plan"
+  id: "agentbus-build-plan"
+  version: 1.0.0
+  generated_at_utc: "2026-09-27T00:00:00Z"
+  status: active
+  path: plans/build-plan.yml
+planning_contract:
+  format: yaml
+  mandatory_properties:
+    - tightly_scoped_deliverables
+    - parallelizable_workstreams
+    - hard_dependency_ordering
+    - docker_first_local_runtime
+    - ast_architecture_tests
+    - strict_boundaries
+    - observability_reference_model
+    - completeness_standard
+  completeness_standard: full_completeness_for_declared_scope
+planning_inputs:
+  date: "2026-09-27"
+  planner: "codex"
+  primary_source_of_truth: plans/product-spec.yml
+  governance_references:
+    - AGENTS.yml
+    - MEMORY.yml
+    - plans/phase-ledger.yml
+global_delivery_rules:
+  - change units default to the smallest valid vertical slice with low blast radius
+  - every behavior change must update specs, plans, MEMORY, and tests together
+  - preserve public contracts unless an explicit instruction and migration note authorize a breaking change
+  - release gates must run in a declared runtime environment
+  - governed artifacts must pass structural schema validation before semantic cross-artifact validation
+  - architecture boundaries must be encoded in tests, not left as convention-only prose
+  - backend delivery defaults to CQRS-lite with strict ports unless repo governance changes it explicitly
+  - "backend delivery follows contract-first sequencing: contracts, ports, tests, use case, router, and infrastructure only as required"
+  - governance changes must pass semantic validation, not only YAML parse checks
+  - observability changes must preserve the shared telemetry and logging contract baseline
+  - active phase lifecycle uses the governed taxonomy and records control metadata when work is blocked, paused, or abandoned
+  - governed build artifacts must follow the template-pack naming and validation conventions
+  - completed release trains must preserve governed phase history for each declared phase
+  - new abstractions require proven reuse across at least two real call sites unless explicitly authorized
+  - emergency red-CI and release-blocking fixes must use the governed hotfix lane
+  - lite hotfix mode is reserved for a single-commit repair with no public-contract or security-scope change; all other hotfixes use full mode
+global_gates:
+  - id: G1
+    name: governed_foundation
+    applies_before: release_1
+    required_completion_criteria:
+      - existing application assurance and provider boundaries are inventoried
+      - BCF 2.1 Standard profile contract v3 owns the canonical assurance graph
+      - deterministic preflight rejects graph and configuration defects before evidence fan-out
+      - selective behavioral producers preserve every unique application proposition
+      - the exact reconciled candidate passes the canonical prospective train
+phase_sequence:
+  - phase_id: P01
+    build_block: "existing_repo_adoption"
+    objective: "forward-port AgentBus into released BCF 2.1 Standard governance and publish v0.3.0"
+    hard_dependencies: []
+    tightly_scoped_deliverables:
+      - "characterize inherited behavior, tests, CI, security controls, release paths, and boundaries"
+      - "install immutable BCF 2.1 and replace bootstrap values with AgentBus contracts"
+      - "model CLI, HTTP, routing, persistence, Slack, security, packaging, and runtime claims"
+      - "prove selective invalidation, evidence reuse, early rejection, and fail-closed ambiguity"
+      - "reconcile and prospectively prove exact v0.3.0 candidate bytes"
+      - "publish the release and migrate the superworkspace consumer to an immutable pin"
+    parallelizable_workstreams:
+      - "existing_repo_inventory"
+      - "application_contract_and_gate_implementation"
+      - "documentation_and_release_packaging"
+      - "consumer_expand_contract_cutover"
+    verification_commands:
+      - make governance-validate
+      - make check
+      - make test
+      - make release-check

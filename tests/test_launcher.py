@@ -1,19 +1,18 @@
 """Launcher regressions using temporary state and local HTTP servers only."""
 
+import io
+import json
+import os
+import signal
+import threading
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib.machinery import SourceFileLoader
 from importlib.util import module_from_spec, spec_from_loader
-import io
-import json
-import os
 from pathlib import Path
-import signal
-import threading
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
-
 
 LAUNCHER = Path(__file__).resolve().parents[1] / "agentbus"
 TOKEN = "test-agentbus-token-never-use-in-production"
@@ -410,3 +409,11 @@ def test_onboard_derives_repo_and_records_rich_persona(launcher, tmp_path, monke
         "working_style": "map the terrain, test assumptions, then leave a clear trail",
         "signature": "finds the one loose wire in a dark machine room",
     }.items()
+
+
+def test_public_cli_operation_inventory_matches_parser_surface(launcher):
+    assert set(launcher.CLI_OPERATIONS) == {
+        "serve", "start", "stop", "status", "autostart", "send", "read",
+        "onboard", "persona", "agents", "inbox", "ack", "rebind", "claim", "reply",
+    }
+    assert all(callable(operation) for operation in launcher.CLI_OPERATIONS.values())

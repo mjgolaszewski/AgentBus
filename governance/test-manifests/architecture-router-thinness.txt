@@ -1,0 +1,1 @@
+tests.test_architecture::test_http_routers_remain_thin_transport_adapters

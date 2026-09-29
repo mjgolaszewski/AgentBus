@@ -1,10 +1,11 @@
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim-bookworm@sha256:392307d22300de8b5986851a12d9176dfc0fc073e65bf6523ebd7dcbeb23564e
 
 RUN pip install --no-cache-dir uv==0.12.9
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 COPY agentbus_service.py ./
+COPY src/ ./src/
 RUN useradd --uid 10001 --create-home agentbus \
     && mkdir /data && chown agentbus:agentbus /data
 USER agentbus

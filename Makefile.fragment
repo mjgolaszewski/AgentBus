@@ -1,0 +1,83 @@
+SHELL := /bin/bash
+PYTHON ?= python3
+BCF_EVIDENCE_DIR ?= .artifacts/bcf
+
+.PHONY: governance-truthfulness release-check architecture-context-membership architecture-cqrs-side architecture-duplication architecture-import-boundaries architecture-layer-membership architecture-module-size architecture-router-thinness architecture-test contract-test governance-exposure-scan governance-validate lint release-smoke runtime-smoke security-dependency-audit security-sbom security-secret-scan security-vulnerability-scan semantic-ownership test typecheck
+
+governance-truthfulness:
+	$(PYTHON) scripts/governance_truth.py --repo-root . --evidence-dir $(BCF_EVIDENCE_DIR)
+
+architecture-context-membership:
+	@cd . && $(PYTHON) scripts/run_project_gate.py architecture-context-membership --junit .artifacts/junit/architecture-context-membership.xml
+
+architecture-cqrs-side:
+	@cd . && $(PYTHON) scripts/run_project_gate.py architecture-cqrs-side --junit .artifacts/junit/architecture-cqrs-side.xml
+
+architecture-duplication:
+	@cd . && $(PYTHON) scripts/run_project_gate.py architecture-duplication --junit .artifacts/junit/architecture-duplication.xml
+
+architecture-import-boundaries:
+	@cd . && $(PYTHON) scripts/run_project_gate.py architecture-import-boundaries --junit .artifacts/junit/architecture-import-boundaries.xml
+
+architecture-layer-membership:
+	@cd . && $(PYTHON) scripts/run_project_gate.py architecture-layer-membership --junit .artifacts/junit/architecture-layer-membership.xml
+
+architecture-module-size:
+	@cd . && $(PYTHON) scripts/run_project_gate.py architecture-module-size --junit .artifacts/junit/architecture-module-size.xml
+
+architecture-router-thinness:
+	@cd . && $(PYTHON) scripts/run_project_gate.py architecture-router-thinness --junit .artifacts/junit/architecture-router-thinness.xml
+
+architecture-test:
+	@cd . && $(PYTHON) scripts/run_project_gate.py architecture-test --junit .artifacts/junit/architecture-test.xml
+
+contract-test:
+	@cd . && $(PYTHON) scripts/run_project_gate.py contract-test --junit .artifacts/junit/contract-test.xml
+
+governance-exposure-scan:
+	@cd . && $(PYTHON) scripts/check_governance_exposure.py --repo-root .
+
+governance-validate:
+	@cd . && $(PYTHON) scripts/validate_governance_yaml.py --repo-root .
+
+lint:
+	@cd . && $(PYTHON) scripts/run_project_gate.py lint
+
+release-smoke:
+	@cd . && $(PYTHON) scripts/run_project_gate.py release-smoke
+
+runtime-smoke:
+	@cd . && $(PYTHON) scripts/run_project_gate.py runtime-smoke
+
+security-dependency-audit:
+	@cd . && $(PYTHON) scripts/run_project_gate.py security-dependency-audit
+
+security-sbom:
+	@cd . && $(PYTHON) scripts/run_project_gate.py security-sbom
+
+security-secret-scan:
+	@cd . && $(PYTHON) scripts/run_project_gate.py security-secret-scan
+
+security-vulnerability-scan:
+	@cd . && $(PYTHON) scripts/run_project_gate.py security-vulnerability-scan
+
+semantic-ownership:
+	@cd . && $(PYTHON) scripts/semantic_ownership.py --repo-root .
+
+test:
+	@cd . && $(PYTHON) scripts/run_project_gate.py test --junit .artifacts/junit/test.xml
+
+typecheck:
+	@cd . && $(PYTHON) scripts/run_project_gate.py typecheck
+
+release-check:
+	@mkdir -p $(BCF_EVIDENCE_DIR)
+	@preflight_output="$$($(PYTHON) scripts/preflight_governance.py --repo-root . --mode release --python $(PYTHON) --artifact-root $(BCF_EVIDENCE_DIR) --expected-producer local --local-producer-id local --format text)" || exit $$?; \
+	printf '%s\n' "$$preflight_output"; \
+	session="$$(printf '%s\n' "$$preflight_output" | tail -n 1)"; \
+	test -n "$$session" && test -f "$$session" || { echo 'preflight did not produce an evidence session' >&2; exit 1; }; \
+	session_dir="$${session%/evidence-session.json}"; \
+	for gate in architecture-context-membership architecture-cqrs-side architecture-duplication architecture-import-boundaries architecture-layer-membership architecture-module-size architecture-router-thinness architecture-test contract-test governance-exposure-scan governance-validate lint release-smoke runtime-smoke security-dependency-audit security-sbom security-secret-scan security-vulnerability-scan semantic-ownership test typecheck; do \
+		$(PYTHON) scripts/governance_evidence.py --repo-root . run --gate $$gate --output "$$session_dir/$$gate" --python $(PYTHON) --session-manifest "$$session" || exit $$?; \
+	done; \
+	$(PYTHON) scripts/governance_truth.py --repo-root . --evidence-dir "$$session_dir"

@@ -4,3 +4,31 @@
 __pycache__/
 .pytest_cache/
 .ruff_cache/
+.artifacts/
+
+# BEGIN BCF GOVERNANCE
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+node_modules/
+dist/
+build/
+coverage/
+artifacts/
+.artifacts/
+governance/archive/phase-artifacts/*
+!governance/archive/phase-artifacts/.gitkeep
+logs/
+*.log
+.env
+.env.*
+!.env.example
+!.env.*.example
+.DS_Store
+Thumbs.db
+*.sqlite3
+*.db
+# END BCF GOVERNANCE

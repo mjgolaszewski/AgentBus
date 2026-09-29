@@ -1,0 +1,1 @@
+tests.test_architecture::test_command_and_query_populations_are_closed

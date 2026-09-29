@@ -1,0 +1,253 @@
+"""Consumer-owned TypeScript Compiler API discovery for SOIP.
+
+Copyright 2026 Michael Golaszewski.
+Licensed under the MIT License.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import shutil
+import subprocess
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Iterable
+
+from .semantic_adoption_dependencies import SemanticDependencyError, resolve_dependency_file
+from .semantic_source_paths import candidate_source_files
+
+
+class TypeScriptDiscoveryError(RuntimeError):
+    """Raised when the declared compiler environment cannot produce facts."""
+
+
+@dataclass(frozen=True)
+class TypeScriptContract:
+    node_executable: str
+    tsconfig: str
+    package_lock: str
+    source_roots: tuple[str, ...]
+    browser_contract_roots: tuple[str, ...]
+
+
+def _safe_relative(value: object, *, field: str) -> str:
+    if not isinstance(value, str) or not value:
+        raise TypeScriptDiscoveryError(f"{field} must be a non-empty path")
+    path = Path(value)
+    if path.is_absolute() or ".." in path.parts:
+        raise TypeScriptDiscoveryError(f"{field} must stay inside the repository")
+    return path.as_posix()
+
+
+def contract_from_mapping(payload: object) -> TypeScriptContract:
+    """Decode the closed consumer compiler contract."""
+    if not isinstance(payload, dict):
+        raise TypeScriptDiscoveryError("typescript_engine must be an object")
+    expected = {
+        "node_executable",
+        "tsconfig",
+        "package_lock",
+        "source_roots",
+        "browser_contract_roots",
+    }
+    if set(payload) != expected:
+        raise TypeScriptDiscoveryError("typescript_engine has unknown or missing fields")
+    roots = payload["source_roots"]
+    browser_roots = payload["browser_contract_roots"]
+    if not isinstance(roots, list) or not roots:
+        raise TypeScriptDiscoveryError("typescript_engine.source_roots must be non-empty")
+    if not isinstance(browser_roots, list):
+        raise TypeScriptDiscoveryError(
+            "typescript_engine.browser_contract_roots must be a list"
+        )
+    node = payload["node_executable"]
+    if not isinstance(node, str) or not node or any(value in node for value in ("/", "\\")):
+        raise TypeScriptDiscoveryError(
+            "typescript_engine.node_executable must be a command name"
+        )
+    return TypeScriptContract(
+        node_executable=node,
+        tsconfig=_safe_relative(payload["tsconfig"], field="typescript_engine.tsconfig"),
+        package_lock=_safe_relative(
+            payload["package_lock"], field="typescript_engine.package_lock"
+        ),
+        source_roots=tuple(
+            sorted(
+                {
+                    _safe_relative(value, field="typescript_engine.source_roots")
+                    for value in roots
+                }
+            )
+        ),
+        browser_contract_roots=tuple(
+            sorted(
+                {
+                    _safe_relative(
+                        value, field="typescript_engine.browser_contract_roots"
+                    )
+                    for value in browser_roots
+                }
+            )
+        ),
+    )
+
+
+def tracked_typescript_files(repo_root: Path) -> list[Path]:
+    """Discover the TypeScript population present in the proposed candidate tree."""
+    return candidate_source_files(
+        repo_root,
+        ("*.ts", "*.tsx", "*.mts", "*.cts"),
+        label="TypeScript",
+        error=TypeScriptDiscoveryError,
+        allow_empty=True,
+    )
+
+
+def _inside(relative: str, roots: tuple[str, ...]) -> bool:
+    return any(root == "." or relative == root or relative.startswith(root.rstrip("/") + "/") for root in roots)
+
+
+def _json_object(path: Path, *, label: str) -> dict[str, Any]:
+    if path.is_symlink() or not path.is_file():
+        raise TypeScriptDiscoveryError(f"{label} must be a regular file")
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        raise TypeScriptDiscoveryError(f"cannot read {label}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise TypeScriptDiscoveryError(f"{label} must contain an object")
+    return value
+
+
+def _compiler_version(repo_root: Path, contract: TypeScriptContract) -> str:
+    lock = _json_object(repo_root / contract.package_lock, label="TypeScript package lock")
+    modules = (repo_root / contract.package_lock).parent / "node_modules"
+    try:
+        package_path = resolve_dependency_file(repo_root, modules, modules / "typescript/package.json")
+    except SemanticDependencyError as exc:
+        raise TypeScriptDiscoveryError(f"installed TypeScript package is unsafe: {exc}") from exc
+    package = _json_object(
+        package_path,
+        label="installed TypeScript package",
+    )
+    packages = lock.get("packages")
+    locked = packages.get("node_modules/typescript") if isinstance(packages, dict) else None
+    locked_version = locked.get("version") if isinstance(locked, dict) else None
+    installed_version = package.get("version")
+    if not isinstance(locked_version, str) or not locked_version:
+        raise TypeScriptDiscoveryError("package lock does not pin node_modules/typescript")
+    if installed_version != locked_version:
+        raise TypeScriptDiscoveryError(
+            "installed TypeScript version does not match the package lock"
+        )
+    return locked_version
+
+
+def discover_typescript_source(
+    repo_root: Path,
+    contract: TypeScriptContract,
+    discovered_files: Iterable[Path],
+    *,
+    timeout_seconds: int = 300,
+) -> dict[str, Any]:
+    """Analyze only the pre-discovered files using the declared local toolchain."""
+    repo_root = repo_root.resolve()
+    node = shutil.which(contract.node_executable)
+    if node is None:
+        raise TypeScriptDiscoveryError(
+            f"declared Node executable is unavailable: {contract.node_executable}"
+        )
+    node_path = Path(node)
+    if not node_path.is_file():
+        raise TypeScriptDiscoveryError("declared Node executable is not a file")
+    tsconfig = repo_root / contract.tsconfig
+    if tsconfig.is_symlink() or not tsconfig.is_file():
+        raise TypeScriptDiscoveryError("declared tsconfig must be a regular file")
+    locked_version = _compiler_version(repo_root, contract)
+    tracked = list(discovered_files)
+    selected = []
+    for path in tracked:
+        resolved = path.resolve()
+        try:
+            relative = resolved.relative_to(repo_root).as_posix()
+        except ValueError as exc:
+            raise TypeScriptDiscoveryError("TypeScript source escapes repository") from exc
+        if _inside(relative, contract.source_roots):
+            selected.append(resolved)
+    if not selected:
+        raise TypeScriptDiscoveryError("declared TypeScript roots select zero tracked files")
+    analyzer = Path(__file__).with_name("semantic_ownership_typescript.mjs")
+    try:
+        result = subprocess.run(
+            [
+                str(node_path),
+                str(analyzer),
+                "--repo-root",
+                str(repo_root),
+                "--tsconfig",
+                contract.tsconfig,
+                "--package-lock",
+                contract.package_lock,
+                "--tracked-files-json",
+                json.dumps([path.relative_to(repo_root).as_posix() for path in tracked]),
+                "--files",
+                *(str(path) for path in selected),
+            ],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=timeout_seconds,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise TypeScriptDiscoveryError(
+            f"TypeScript Compiler API discovery could not execute: {exc}"
+        ) from exc
+    if result.returncode != 0:
+        diagnostic = result.stderr.strip() or result.stdout.strip()
+        raise TypeScriptDiscoveryError(
+            f"TypeScript Compiler API discovery failed: {diagnostic}"
+        )
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        raise TypeScriptDiscoveryError(
+            "TypeScript Compiler API discovery emitted malformed JSON"
+        ) from exc
+    if not isinstance(payload, dict) or payload.get("language") != "typescript":
+        raise TypeScriptDiscoveryError("TypeScript discovery emitted an invalid inventory")
+    if payload.get("compiler_version") != locked_version:
+        raise TypeScriptDiscoveryError("TypeScript analyzer did not use the locked compiler")
+    analyzed = payload.get("files")
+    if not isinstance(analyzed, list) or not all(isinstance(row, str) for row in analyzed):
+        raise TypeScriptDiscoveryError("TypeScript analyzer omitted its source closure")
+    allowed = {path.relative_to(repo_root).as_posix() for path in tracked}
+    if not set(analyzed) <= allowed:
+        raise TypeScriptDiscoveryError("TypeScript compiler closure contains untracked source")
+    def file_row(relative: str) -> dict[str, str]:
+        path = repo_root / relative
+        parts = Path(relative).parts
+        if "node_modules" in parts:
+            modules = repo_root.joinpath(*parts[:parts.index("node_modules") + 1])
+            try:
+                path = resolve_dependency_file(repo_root, modules, path)
+            except SemanticDependencyError as exc:
+                raise TypeScriptDiscoveryError(f"TypeScript compiler dependency is unsafe: {exc}") from exc
+        if path.is_symlink() or not path.is_file() or not path.resolve().is_relative_to(repo_root):
+            raise TypeScriptDiscoveryError("TypeScript compiler input must be a safe repository file")
+        return {"path": relative, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+    payload["files"] = [file_row(relative) for relative in sorted(set(analyzed))]
+    inputs = set(analyzed) | set(payload.get("compiler_inputs", [])) | {contract.tsconfig, contract.package_lock}
+    package_json = (Path(contract.package_lock).parent / "package.json").as_posix()
+    if (repo_root / package_json).is_file():
+        inputs.add(package_json)
+    payload["typescript_inputs"] = [file_row(relative) for relative in sorted(inputs)]
+    payload["toolchain"] = {
+        "node_executable_sha256": hashlib.sha256(node_path.read_bytes()).hexdigest(),
+        "node_version": payload.get("node_version"),
+        "typescript_version": locked_version,
+        "tsconfig": contract.tsconfig,
+        "package_lock": contract.package_lock,
+    }
+    return payload

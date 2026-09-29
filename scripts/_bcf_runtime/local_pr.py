@@ -1,0 +1,774 @@
+"""Canonical local pull-request context and validation."""
+
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import tempfile
+import time
+from typing import Any, Callable, Iterator, Mapping
+from contextlib import contextmanager
+
+from .ci_graph_contracts import CIGraphError, validate_ci_graph
+from .ci_graph_post_merge import post_merge_evaluation
+from .ci_authority_pins import verify_provider_workflow_authority
+from .ci_controller_policy import graph_controller_policy_path
+from .ci_authority_prospective_lanes import (
+    ProspectiveLaneError,
+    prospective_policy_binding,
+    provider_boundaries,
+    terminal_boundaries,
+)
+from .ci_exact_main_truth import validate_exact_main_truth_payload
+from .ci_github_identity import GitHubControllerError
+from .ci_graph_execution import local_gate_job_environments
+from .controller_custody_prospective import validate_controller_custody_graph
+from .evaluation_scope import (
+    EvaluationIntent,
+    EvaluationScopeError,
+    evaluation_scope,
+)
+from .evidence_execution import EvidenceError
+from .evidence_scheduling import receipt_duration_ms
+from .evidence_sessions import allocate_session, local_producer_identity
+from .evidence_workitem_lifecycle import (
+    WorkitemContractError,
+    validate_evaluation_authored_ready,
+)
+from .governance_evidence import capture_gate
+from .governance_truth import TruthfulnessError, derive_truth
+from .preflight import PreflightError, run_preflight
+from .ci_authority_prospective_telemetry import (
+    ProspectiveTelemetryError,
+    elapsed_ms as _elapsed_ms,
+    validate_train_telemetry,
+)
+from .ci_github_api import GitHubAPI
+from .routine_controller_provider import effective_controller_authority
+from .trusted_controller_compatibility import classify_trusted_controller_applicability
+from .routine_controller_rotation import alternate_policy_lane_contract
+from .scaffold_governance_artifacts import ReconcileError, reconcile_steps
+
+
+class LocalPRError(ValueError):
+    """Raised before validation when local and remote PR identity cannot agree."""
+
+
+Runner = Callable[..., subprocess.CompletedProcess[str]]
+
+
+BOUNDARY_CHAIN = (
+    "preflight",
+    "controller_compatibility",
+    "pr_evidence",
+    "certification",
+    "merge",
+    "exact_main",
+    "controller_lifecycle",
+    "bounded_or_phase_truth",
+    "finalizer",
+    "publisher",
+    "successor_or_release_eligibility",
+)
+
+
+class ProspectiveValidationError(ValueError):
+    """The exact candidate has a mechanically knowable downstream rejection."""
+
+
+@dataclass(frozen=True)
+class LocalPRContext:
+    remote: str
+    default_branch: str
+    base_sha: str
+    head_sha: str
+    head_ref: str
+
+    def as_dict(self) -> dict[str, str]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class CandidateIdentity:
+    commit_sha: str
+    tree_sha: str
+    base_sha: str
+
+    def as_dict(self) -> dict[str, str]:
+        return asdict(self)
+
+
+def _run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(command, check=False, capture_output=True, text=True, **kwargs)
+
+
+def _checked(
+    runner: Runner,
+    command: list[str],
+    *,
+    cwd: Path,
+) -> str:
+    result = runner(command, cwd=cwd)
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip() or "command failed"
+        raise LocalPRError(f"{' '.join(command)}: {detail}")
+    return result.stdout.strip()
+
+
+def resolve_local_pr_context(
+    repo_root: Path,
+    *,
+    remote: str = "origin",
+    runner: Runner = _run,
+) -> LocalPRContext:
+    """Resolve/fetch remote default branch and prove current HEAD descends from it."""
+
+    repo_root = repo_root.resolve()
+    symbolic = _checked(
+        runner,
+        ["git", "ls-remote", "--symref", remote, "HEAD"],
+        cwd=repo_root,
+    )
+    prefix = "ref: refs/heads/"
+    default_branch = ""
+    for line in symbolic.splitlines():
+        if line.startswith(prefix) and line.endswith("\tHEAD"):
+            default_branch = line[len(prefix) : -len("\tHEAD")]
+            break
+    if not default_branch or "/" in default_branch and default_branch.startswith("../"):
+        raise LocalPRError("remote HEAD did not identify a safe default branch")
+    remote_ref = f"refs/remotes/{remote}/{default_branch}"
+    _checked(
+        runner,
+        [
+            "git",
+            "fetch",
+            "--no-tags",
+            remote,
+            f"refs/heads/{default_branch}:{remote_ref}",
+        ],
+        cwd=repo_root,
+    )
+    base_sha = _checked(runner, ["git", "rev-parse", "--verify", remote_ref], cwd=repo_root)
+    head_sha = _checked(runner, ["git", "rev-parse", "--verify", "HEAD"], cwd=repo_root)
+    ancestry = runner(
+        ["git", "merge-base", "--is-ancestor", base_sha, head_sha], cwd=repo_root
+    )
+    if ancestry.returncode != 0:
+        raise LocalPRError("current HEAD does not descend from the fetched default branch")
+    head_ref = _checked(
+        runner, ["git", "branch", "--show-current"], cwd=repo_root
+    ) or "detached-head"
+    return LocalPRContext(
+        remote=remote,
+        default_branch=default_branch,
+        base_sha=base_sha,
+        head_sha=head_sha,
+        head_ref=head_ref,
+    )
+
+
+def _pr_environment_values(
+    context: LocalPRContext, *, event_path: str | None = None
+) -> dict[str, str]:
+    values = {
+        "BCF_ENFORCE_PR_CHANGELOG": "true",
+        "BCF_PR_BASE_SHA": context.base_sha,
+        "GITHUB_BASE_REF": context.default_branch,
+        "GITHUB_EVENT_NAME": "pull_request",
+        "GITHUB_HEAD_REF": context.head_ref,
+        "GITHUB_SHA": context.head_sha,
+    }
+    if event_path is not None:
+        values["GITHUB_EVENT_PATH"] = event_path
+    return values
+
+
+def run_local_pr_validation(
+    repo_root: Path,
+    *,
+    command: tuple[str, ...],
+    remote: str = "origin",
+    runner: Runner = _run,
+) -> subprocess.CompletedProcess[str]:
+    """Run exact argv with the same base and event identity used by remote PR CI."""
+
+    if not command or any(not value for value in command):
+        raise LocalPRError("local PR validation requires non-empty exact argv")
+    context = resolve_local_pr_context(repo_root, remote=remote, runner=runner)
+    event = {
+        "pull_request": {
+            "base": {"ref": context.default_branch, "sha": context.base_sha},
+            "head": {"ref": context.head_ref, "sha": context.head_sha},
+        },
+        "repository": {"default_branch": context.default_branch},
+    }
+    with tempfile.TemporaryDirectory(prefix="bcf-local-pr-") as temporary:
+        event_path = Path(temporary) / "event.json"
+        event_path.write_text(json.dumps(event, sort_keys=True) + "\n", encoding="utf-8")
+        environment = os.environ.copy()
+        environment.update(_pr_environment_values(context, event_path=str(event_path)))
+        return runner(list(command), cwd=repo_root.resolve(), env=environment)
+
+
+def _candidate_identity(
+    repo_root: Path, context: LocalPRContext, *, runner: Runner
+) -> CandidateIdentity:
+    head = _checked(runner, ["git", "rev-parse", "--verify", "HEAD"], cwd=repo_root)
+    tree = _checked(runner, ["git", "rev-parse", "--verify", "HEAD^{tree}"], cwd=repo_root)
+    status = _checked(
+        runner,
+        ["git", "status", "--porcelain=v1", "--untracked-files=all", "--ignored=no"],
+        cwd=repo_root,
+    )
+    if status:
+        raise ProspectiveValidationError("prospective validation requires a clean committed tree")
+    if head != context.head_sha:
+        raise ProspectiveValidationError("local PR context does not bind current HEAD")
+    return CandidateIdentity(head, tree, context.base_sha)
+
+
+@contextmanager
+def _pr_environment(context: LocalPRContext) -> Iterator[None]:
+    values = _pr_environment_values(context)
+    previous = {key: os.environ.get(key) for key in values}
+    os.environ.update(values)
+    try:
+        yield
+    finally:
+        for key, value in previous.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
+def _changed_paths(
+    repo_root: Path, identity: CandidateIdentity, *, runner: Runner
+) -> tuple[str, ...]:
+    output = _checked(
+        runner,
+        ["git", "diff", "--name-only", identity.base_sha, identity.commit_sha],
+        cwd=repo_root,
+    )
+    return tuple(sorted(value for value in output.splitlines() if value))
+
+
+def _confirm_unchanged(
+    repo_root: Path,
+    *,
+    initial_context: LocalPRContext,
+    initial_identity: CandidateIdentity,
+    remote: str,
+    runner: Runner,
+) -> None:
+    current_context = resolve_local_pr_context(repo_root, remote=remote, runner=runner)
+    if current_context != initial_context:
+        raise ProspectiveValidationError(
+            "remote PR base or local branch identity changed during validation"
+        )
+    current_identity = _candidate_identity(repo_root, current_context, runner=runner)
+    if current_identity != initial_identity:
+        raise ProspectiveValidationError(
+            "candidate commit or tree changed during validation"
+        )
+
+
+def _capture_planned_evidence(
+    repo_root: Path,
+    *,
+    python_executable: Path,
+    session_manifest: Path,
+    session_root: Path,
+    producers: tuple[str, ...],
+    producer_environments: dict[str, dict[str, str]],
+) -> list[dict[str, Any]]:
+    observations: list[dict[str, Any]] = []
+    for producer in producers:
+        environment = {
+            name: value.replace("${{ github.workspace }}", str(repo_root))
+            for name, value in producer_environments[producer].items()
+        }
+        receipt = capture_gate(
+            repo_root,
+            producer,
+            session_root / producer,
+            python_executable=python_executable,
+            session_manifest=session_manifest,
+            job_environment=environment,
+        )
+        if not receipt.is_file():
+            raise ProspectiveValidationError(
+                f"local evidence producer {producer} emitted no receipt"
+            )
+        payload = json.loads(receipt.read_text(encoding="utf-8"))
+        if payload.get("result") != "passed":
+            producer_observations = payload.get("observations")
+            exit_code = (
+                producer_observations.get("exit_code")
+                if isinstance(producer_observations, dict)
+                else "unknown"
+            )
+            diagnostics = []
+            for suffix in ("stderr", "stdout"):
+                path = receipt.parent / f"{producer}.{suffix}.txt"
+                if path.is_file():
+                    value = path.read_text(
+                        encoding="utf-8", errors="replace"
+                    ).strip()
+                    if value:
+                        diagnostics.append(f"{suffix}: {value[-20000:]}")
+            raise ProspectiveValidationError(
+                f"local evidence producer {producer} failed with exit {exit_code}"
+                + (": " + " | ".join(diagnostics) if diagnostics else "")
+            )
+        duration = receipt_duration_ms(payload)
+        if duration is None:
+            raise ProspectiveValidationError(
+                f"local evidence producer {producer} emitted no valid duration"
+            )
+        observations.append(
+            {
+                "producer": producer,
+                "duration_ms": duration,
+                "claim_count": len(payload.get("claims") or ()),
+                "control_count": len(payload.get("behavioral_probes") or ()),
+            }
+        )
+    return observations
+
+
+def _require_truth(report: Mapping[str, Any], *, boundary: str) -> dict[str, Any]:
+    if report.get("status") != "pass":
+        detail = ", ".join(str(value) for value in report.get("issues") or ())
+        raise ProspectiveValidationError(
+            f"{boundary} rejected candidate: {detail or 'truth failed'}"
+        )
+    return dict(report)
+
+
+def _validate_train_telemetry(repo_root: Path, telemetry: dict[str, Any]) -> None:
+    try:
+        validate_train_telemetry(repo_root, telemetry)
+    except ProspectiveTelemetryError as exc:
+        raise ProspectiveValidationError(str(exc)) from exc
+
+
+def _run_prospective_train(
+    repo_root: Path,
+    *,
+    semantic_intent: str,
+    evaluation_target: str | None,
+    subject_commit: str,
+    subject_tree: str,
+    remote: str = "origin",
+    python_executable: Path,
+    execute_evidence: bool = True,
+    controller_authority: Mapping[str, Any] | None = None,
+    runner: Runner = _run,
+) -> dict[str, Any]:
+    """Walk every knowable boundary while preserving provider-required authority."""
+
+    root = repo_root.resolve()
+    context = resolve_local_pr_context(root, remote=remote, runner=runner)
+    identity = _candidate_identity(root, context, runner=runner)
+    measurements: list[dict[str, Any]] = []
+    if re.fullmatch(r"[a-f0-9]{40}", subject_commit) is None or re.fullmatch(
+        r"[a-f0-9]{40}", subject_tree
+    ) is None:
+        raise ProspectiveValidationError("prospective train subject identity is malformed")
+    if (subject_commit, subject_tree) != (identity.commit_sha, identity.tree_sha):
+        raise ProspectiveValidationError(
+            "prospective train subject does not match the exact committed tree"
+        )
+    try:
+        requested_scope = evaluation_scope(
+            semantic_intent,
+            target=evaluation_target,
+            phase_id="P00",
+            subject_commit=subject_commit,
+        )
+        validate_evaluation_authored_ready(
+            root, intent=requested_scope.intent.value, target=requested_scope.target_id
+        )
+    except (EvaluationScopeError, WorkitemContractError) as exc:
+        raise ProspectiveValidationError(str(exc)) from exc
+    try:
+        reconcile_started = time.monotonic_ns()
+        for step in reconcile_steps(root, python_executable):
+            step.check()
+        reconcile_duration = _elapsed_ms(reconcile_started)
+        measurements.extend(
+            [
+                {"stage": "fixed_point", "status": "observed", "duration_ms": reconcile_duration},
+                {"stage": "normalization", "status": "observed", "duration_ms": reconcile_duration},
+            ]
+        )
+        evaluation, custody_contract = validate_controller_custody_graph(root, python_executable=python_executable)
+        post_merge_mode, post_merge_target = evaluation.mode, evaluation.target
+    except (
+        CIGraphError,
+        GitHubControllerError,
+        ReconcileError,
+        PreflightError,
+        TruthfulnessError,
+        EvidenceError,
+    ) as exc:
+        raise ProspectiveValidationError(str(exc)) from exc
+    expected_target = (
+        requested_scope.target_id
+        if requested_scope.intent is EvaluationIntent.WORKITEM_CERTIFICATION
+        else None
+    )
+    if (post_merge_mode, post_merge_target) != (
+        requested_scope.intent.value,
+        expected_target,
+    ):
+        raise ProspectiveValidationError(
+            "prospective train intent/target does not match canonical post-merge authority"
+        )
+    changed_paths = _changed_paths(root, identity, runner=runner)
+    custody_state = str(custody_contract.get("custody_state", "managed_controller"))
+    try:
+        transition_class, policy_identity = prospective_policy_binding(
+            root,
+            lane=evaluation.lane,
+            custody_state=custody_state,
+            changed_paths=changed_paths,
+            base_sha=identity.base_sha,
+            base_tree=_checked(
+                runner,
+                ["git", "rev-parse", "--verify", f"{identity.base_sha}^{{tree}}"],
+                cwd=root,
+            ),
+            candidate_sha=identity.commit_sha,
+            candidate_tree=identity.tree_sha,
+        )
+    except ProspectiveLaneError as exc:
+        raise ProspectiveValidationError(str(exc)) from exc
+    boundaries: list[dict[str, Any]] = []
+
+    with tempfile.TemporaryDirectory(prefix="bcf-prospective-") as temporary:
+        artifact_root = Path(temporary) / "evidence"
+        with _pr_environment(context):
+            try:
+                preflight_started = time.monotonic_ns()
+                preflight = run_preflight(
+                    root,
+                    mode="pr",
+                    python_executable=python_executable,
+                    evaluation_mode="pr",
+                )
+                preflight_duration = _elapsed_ms(preflight_started)
+            except (PreflightError, EvidenceError) as exc:
+                raise ProspectiveValidationError(str(exc)) from exc
+        if preflight.get("status") != "pass":
+            raise ProspectiveValidationError("canonical PR preflight did not pass")
+        measurements.extend(
+            [
+                {"stage": "planning", "status": "observed", "duration_ms": preflight_duration},
+                {"stage": "reuse", "status": "included", "parent": "planning"},
+                {"stage": "setup", "status": "included", "parent": "planning"},
+            ]
+        )
+        boundaries.append({"id": "preflight", "state": "proved", "authority": "local"})
+        controller = preflight.get("self_controller")
+        controller_state = (
+            "not_adopted"
+            if evaluation.lane == "direct_protected_main"
+            else "ordinary_executable"
+            if custody_state == "ordinary_executable_controller"
+            else classify_trusted_controller_applicability(
+                root, target_commit=str(controller_authority["controller_commit_sha"])
+            ).state.value
+            if controller_authority is not None
+            else str(controller.get("status"))
+            if isinstance(controller, dict)
+            else "current"
+        )
+        if controller_state not in {
+            "current", "pending_rotation", "not_adopted", "ordinary_executable"
+        }:
+            raise ProspectiveValidationError(
+                f"controller compatibility is not admissible: {controller_state}"
+            )
+        transition_requirement = (
+            "direct_protected_main"
+            if controller_state == "not_adopted"
+            else "ordinary_exact_main"
+            if controller_state == "ordinary_executable"
+            else "no_transition"
+            if controller_state == "current"
+            else str(controller.get("transition_requirement"))
+            if isinstance(controller, dict)
+            and controller.get("transition_requirement") == "alternate_lane_required"
+            else "alternate_lane_required"
+            if transition_class == "protected_policy_change"
+            else "provider_routine_transition_required"
+        )
+        boundaries.append(
+            {
+                "id": "controller_compatibility",
+                "state": "proved",
+                "authority": "installed_controller_parser",
+                "controller_state": controller_state,
+                "transition_class": transition_class,
+                "transition_requirement": transition_requirement,
+                "policy_identity": policy_identity,
+                "effective_controller_source": (
+                    "direct_graph_policy"
+                    if controller_state == "not_adopted"
+                    else "declared_executable_controller"
+                    if controller_state == "ordinary_executable"
+                    else "provider_authenticated" if controller_authority is not None
+                    else "source_policy"
+                ),
+                **(
+                    {"alternate_lane": alternate_policy_lane_contract()}
+                    if transition_requirement == "alternate_lane_required"
+                    else {}
+                ),
+                "release_authority": False,
+                "controller_custody_contract": custody_contract,
+            }
+        )
+        if not execute_evidence:
+            report = {
+                "schema_version": "1.0",
+                "status": "deterministic_front_door_pass",
+                "subject": identity.as_dict(),
+                "changed_paths": list(changed_paths),
+                "post_merge_evaluation": evaluation.as_dict(),
+                "boundaries": boundaries,
+                "provider_authority_substituted": False,
+            }
+            _confirm_unchanged(
+                root,
+                initial_context=context,
+                initial_identity=identity,
+                remote=remote,
+                runner=runner,
+            )
+            return report
+
+        verification_plan = preflight["verification_plan"]
+        nodes = verification_plan["execution_dag"]["nodes"]
+        producers = tuple(str(node["producer"]) for node in nodes)
+        if len(producers) != len(set(producers)) or any(not value for value in producers):
+            raise ProspectiveValidationError(
+                "planned local producer topology is incomplete or ambiguous"
+            )
+        try:
+            producer_environments = local_gate_job_environments(
+                validate_ci_graph(root).graph, producers
+            )
+        except CIGraphError as exc:
+            raise ProspectiveValidationError(str(exc)) from exc
+        try:
+            session = allocate_session(
+                root,
+                artifact_root,
+                producers,
+                expected_producers=["prospective-local"],
+                producer_identity=local_producer_identity(root, "prospective-local"),
+                verification_plan=verification_plan,
+            )
+        except EvidenceError as exc:
+            raise ProspectiveValidationError(str(exc)) from exc
+        try:
+            evidence_started = time.monotonic_ns()
+            producer_observations = _capture_planned_evidence(
+                root,
+                python_executable=python_executable,
+                session_manifest=session.manifest_path,
+                session_root=session.root,
+                producers=producers,
+                producer_environments=producer_environments,
+            ) or []
+            evidence_duration = _elapsed_ms(evidence_started)
+            measurements.extend(
+                [
+                    {"stage": "producers", "status": "observed", "duration_ms": evidence_duration},
+                    {"stage": "positive_tests", "status": "included", "parent": "producers"},
+                    {"stage": "controls", "status": "included", "parent": "producers"},
+                ]
+            )
+            truth_started = time.monotonic_ns()
+            pr_truth = _require_truth(
+                derive_truth(root, session.root, evaluation_mode="pr"),
+                boundary="PR truth",
+            )
+            pr_truth_duration = _elapsed_ms(truth_started)
+        except (EvidenceError, TruthfulnessError) as exc:
+            raise ProspectiveValidationError(str(exc)) from exc
+        if pr_truth.get("merge_eligibility") != "eligible":
+            raise ProspectiveValidationError("local PR truth is not merge eligible")
+        boundaries.append(
+            {
+                "id": "pr_evidence",
+                "state": "proved_non_authoritative",
+                "authority": "local_exact_tree_receipts",
+                "producers": list(producers),
+                "bundle_sha256": pr_truth["bundle_sha256"],
+            }
+        )
+        boundaries.extend(
+            [{"id": "certification", "state": "provider_required"},
+             {"id": "merge", "state": "provider_required"},
+             *provider_boundaries(
+                 evaluation,
+                 controller_state=controller_state,
+                 transition_class=transition_class,
+                 policy_identity=policy_identity,
+                 controller_probe=(
+                     custody_contract.get("no_transition_callback_probe")
+                 ),
+             )]
+        )
+        if transition_requirement == "alternate_lane_required":
+            boundaries[-1]["alternate_lane"] = alternate_policy_lane_contract()
+        try:
+            bounded_truth_started = time.monotonic_ns()
+            bounded_truth = _require_truth(
+                derive_truth(
+                    root,
+                    session.root,
+                    evaluation_mode=post_merge_mode,
+                    evaluation_target=post_merge_target,
+                ),
+                boundary="post-merge semantic truth projection",
+            )
+            bounded_truth_duration = _elapsed_ms(bounded_truth_started)
+        except TruthfulnessError as exc:
+            raise ProspectiveValidationError(str(exc)) from exc
+        subject = {"commit_sha": identity.commit_sha, "tree_sha": identity.tree_sha}
+        try:
+            proposition = validate_exact_main_truth_payload(
+                bounded_truth, subject=subject
+            )
+        except GitHubControllerError as exc:
+            raise ProspectiveValidationError(str(exc)) from exc
+        proposition_sha256 = hashlib.sha256(
+            json.dumps(proposition, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        boundaries.extend(
+            [{
+                "id": "bounded_or_phase_truth",
+                "state": "proved_semantics_provider_reexecution_required",
+                "proposition": proposition,
+            }, *terminal_boundaries(
+                evaluation,
+                proposition=proposition,
+                proposition_sha256=proposition_sha256,
+                bounded_truth=bounded_truth,
+            )]
+        )
+        measurements.extend(
+            [
+                {
+                    "stage": "truth",
+                    "status": "observed",
+                    "duration_ms": pr_truth_duration + bounded_truth_duration,
+                },
+                {"stage": "finalization", "status": "provider_required"},
+                {"stage": "publication", "status": "provider_required"},
+            ]
+        )
+    if tuple(item["id"] for item in boundaries) != BOUNDARY_CHAIN:
+        raise ProspectiveValidationError("prospective authority boundary inventory is not exact")
+    _confirm_unchanged(
+        root,
+        initial_context=context,
+        initial_identity=identity,
+        remote=remote,
+        runner=runner,
+    )
+    telemetry = {
+        "schema_version": "1.0",
+        "subject": {"commit_sha": identity.commit_sha, "tree_sha": identity.tree_sha},
+        "measurements": measurements,
+        "producer_observations": producer_observations,
+    }
+    _validate_train_telemetry(root, telemetry)
+    return {
+        "schema_version": "1.0",
+        "status": "prospectively_admissible_provider_proof_required",
+        "subject": identity.as_dict(),
+        "changed_paths": list(changed_paths),
+        "post_merge_evaluation": evaluation.as_dict(),
+        "boundaries": boundaries,
+        "provider_authority_substituted": False,
+        "telemetry": telemetry,
+        "ephemeral_state": {
+            "scope": "exact_prospective_run",
+            "state": "retired",
+        },
+    }
+
+
+def run_prospective_train(
+    repo_root: Path,
+    *,
+    semantic_intent: str,
+    evaluation_target: str | None,
+    subject_commit: str,
+    subject_tree: str,
+    remote: str = "origin",
+    python_executable: Path,
+    repository: str | None = None,
+    provider_api: GitHubAPI | None = None,
+    runner: Runner = _run,
+) -> dict[str, Any]:
+    """Execute the complete locally knowable chain; no partial public mode exists."""
+
+    try:
+        requested_scope = evaluation_scope(
+            semantic_intent,
+            target=evaluation_target,
+            phase_id="P00",
+            subject_commit=subject_commit,
+        )
+        validate_evaluation_authored_ready(
+            repo_root.resolve(), intent=requested_scope.intent.value, target=requested_scope.target_id
+        )
+    except (EvaluationScopeError, WorkitemContractError) as exc:
+        raise ProspectiveValidationError(str(exc)) from exc
+    controller_authority = None
+    try:
+        graph = validate_ci_graph(repo_root.resolve()).graph
+        lane = post_merge_evaluation(graph).lane
+    except CIGraphError as exc:
+        raise ProspectiveValidationError(str(exc)) from exc
+    if repository is not None and lane == "trusted_exact_main":
+        if provider_api is None:
+            raise ProspectiveValidationError(
+                "provider-authenticated prospective validation requires a provider API"
+            )
+        verify_provider_workflow_authority(
+            repo_root.resolve(),
+            authority_path=Path("governance/ci-authority.yml"),
+            api=provider_api,
+            repository=repository,
+        )
+        if graph_controller_policy_path(graph) is not None:
+            controller_authority = effective_controller_authority(
+                provider_api, repository=repository
+            )
+
+    return _run_prospective_train(
+        repo_root,
+        semantic_intent=semantic_intent,
+        evaluation_target=evaluation_target,
+        subject_commit=subject_commit,
+        subject_tree=subject_tree,
+        remote=remote,
+        python_executable=python_executable,
+        execute_evidence=True,
+        controller_authority=controller_authority,
+        runner=runner,
+    )

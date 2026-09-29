@@ -1,0 +1,1 @@
+tests.test_architecture::test_production_modules_respect_loc_cap

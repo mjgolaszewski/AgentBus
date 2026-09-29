@@ -1,0 +1,50 @@
+document:
+  kind: execution_phase_plan
+  name: Phase 01 Plan
+  id: agentbus-phase-01-plan
+  version: 1.0.0
+  generated_at_utc: '2026-09-27T00:00:00Z'
+  status: planned
+  path: plans/phase-01-plan.yml
+phase:
+  id: P01
+  build_block: existing_repo_adoption
+  planner: codex
+  date: '2026-09-27'
+  scope_source:
+  - AGENTS.yml
+  - plans/product-spec.yml
+  - plans/build-plan.yml
+  - plans/phase-ledger.yml
+  - MEMORY.yml
+delivery_contract:
+  tightly_scoped_deliverables:
+  - characterize inherited architecture tests CI controls and release boundaries
+  - adopt released BCF 2.1 without rewriting application semantics
+  - encode AgentBus assurance as claims dependencies producers and negative controls
+  - prove selective invalidation reuse early rejection and fail-closed ambiguity
+  - publish v0.3.0 and cut the superworkspace consumer over to an immutable pin
+  parallelizable_workstreams:
+  - id: P01-WS1
+    name: existing_repo_inventory
+  - id: P01-WS2
+    name: governance_artifact_install
+  - id: P01-WS3
+    name: gate_gap_analysis
+  - id: P01-WS4
+    name: prospective_train_and_release
+  - id: P01-WS5
+    name: superworkspace_consumer_cutover
+  hard_dependencies: []
+  docker_first_local_runtime: repo_native_validation_and_governance_commands
+  completeness_standard: full_completeness_for_declared_scope
+scope_lock:
+- order: 1
+  statement: preserve CLI API protocol state release and protection semantics unless BCF 2.1 explicitly supersedes a governance mechanism
+- order: 2
+  statement: do not install BCF self-authority or persistent trusted-controller capability in this adopter
+verification_plan:
+- make governance-validate
+- make check
+- make test
+- make release-check
