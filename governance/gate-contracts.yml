@@ -14,9 +14,10 @@ claim_model:
     governance: [AGENTS.yml, &id057 MEMORY.yml, &id039 architecture-boundaries.yml, governance/**, plans/**, phases/**, schemas/**, Makefile, Makefile.fragment, .gitignore]
     client-source: [agentbus, &id043 src/agentbus_client.py]
     service-source: [agentbus_service.py, &id056 src/agentbus_service.py, &id001 slack-app-manifest.json]
+    participation-contract: [contracts/participation/**, schemas/participation-contract.schema.json]
     package-source: [src/__init__.py, &id002 pyproject.toml, uv.lock]
     client-tests: [&id065 tests/test_launcher.py]
-    service-tests: [&id055 tests/test_service.py]
+    service-tests: [&id055 tests/test_service.py, tests/test_participation_contract.py]
     architecture-tests: [&id051 tests/test_architecture.py]
     compatibility-tests: [tests/test_python_compatibility.py, *id065, *id055]
     producer-code: [scripts/check_source.py, &id037 scripts/run_project_gate.py]
@@ -267,11 +268,11 @@ claim_model:
       qualification_scope: *id008
       profiles: [normal, *id009, self]
     service-contract-valid:
-      truth: HTTP Slack routing persistence and protocol behavior passes
+      truth: HTTP Slack routing persistence protocol behavior and participation contract pass
       execution_group: service-contract
       legacy_gate: *id025
       dependencies:
-        subject: [*id013]
+        subject: [*id013, participation-contract]
         detector: [*id014]
         test_population: [service-tests]
         toolchain: [*id011]
@@ -492,7 +493,7 @@ gates:
         min_collected: 1
         min_executed: 1
         max_skipped: 0
-        selectors: [*id055]
+        selectors: [*id055, tests/test_participation_contract.py]
         expected_node_manifest: governance/test-manifests/contract-test.txt
         expected_nodes_mode: exact
         artifact_binding: *id042

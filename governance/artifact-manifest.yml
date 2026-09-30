@@ -7,6 +7,7 @@ document:
   status: active
   path: governance/artifact-manifest.yml
 artifact_roots:
+  contracts: {path: contracts/, status: active, purpose: versioned product and observability contracts}
   audits: {path: audits/, status: active, purpose: codebase audit evidence and reports}
   docs: {path: docs/, status: active, purpose: user and operator documentation}
   governance: {path: governance/, status: active, purpose: governance policy and adoption records}
@@ -52,7 +53,7 @@ context_budgets:
     governance/gate-contracts.yml: {line_hard_cap: 800, kib_hard_cap: 96, intent: canonical executable gate contracts}
     governance/findings.yml: {line_hard_cap: 400, kib_hard_cap: 96, intent: canonical finding accounting}
     governance/repo-cleanup-contract.yml: {line_hard_cap: 90, kib_hard_cap: 12, intent: cleanup rules only}
-    plans/build-plan.yml: {line_hard_cap: 95, kib_hard_cap: 24, intent: active roadmap index}
+    plans/build-plan.yml: {line_hard_cap: 100, kib_hard_cap: 24, intent: active roadmap index}
     plans/phase-ledger.yml: {line_hard_cap: 95, kib_hard_cap: 16, intent: current phase state}
     plans/phase-history.yml: {line_hard_cap: 160, kib_hard_cap: 96, intent: evidence-backed compact history index}
     plans/product-spec.yml: {line_hard_cap: 40, kib_hard_cap: 8, intent: compact product intent}

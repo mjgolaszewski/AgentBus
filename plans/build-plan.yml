@@ -88,3 +88,10 @@ phase_sequence:
       - "document Slack retention, trust boundaries, and deliberately deferred product scope"
     parallelizable_workstreams: [transport_security, persistence_scaling, portability_and_documentation]
     verification_commands: [make governance-validate, make architecture-test, make lint, make typecheck, make test, make contract-test, make python314-compatibility]
+  - phase_id: P04
+    build_block: "operator_participation_plane"
+    objective: "deliver Issue #6 from the normative participation contract while preserving protocol 2"
+    hard_dependencies: ["P03 closed on exact main", "contracts/participation/v1/participation.contract.yml passes contract validation"]
+    tightly_scoped_deliverables: ["establish stable chat/session identity, versioned policy and separate operator authority", "deliver silent active polling, truthful presence and durable acknowledged controls", "preserve routing, claims, cursors and attribution across safe rename and restart", "prove contract adversarial obligations, compatibility and exact-tree BCF evidence"]
+    parallelizable_workstreams: [contract_and_migration, participation_and_policy, controls_and_presentation]
+    verification_commands: [make governance-validate, make architecture-test, make lint, make typecheck, make test, make contract-test, make release-check]

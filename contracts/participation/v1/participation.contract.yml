@@ -1,0 +1,229 @@
+document:
+  kind: agentbus_participation_contract
+  id: agentbus-participation-v1
+  version: 1.0.0
+  status: active
+  path: contracts/participation/v1/participation.contract.yml
+  source: https://github.com/mjgolaszewski/AgentBus/issues/6
+  authority: normative_for_issue_6_delivery
+
+scope:
+  purpose: durable operator control and participation for enrolled agent chats
+  non_goals:
+    - executing or scheduling agent work
+    - proving an external model turn ended from a bus acknowledgement
+    - making Slack the authority for policy, control, or presence
+    - multi-node broker or general IAM platform
+  compatibility:
+    - protocol-2 messages, routing, replies, claims, Slack ingress, and cursors retain their existing meaning
+    - existing profiles and inboxes migrate without losing identity, history, or claims
+    - existing persona display-name editing remains distinct from routing rename
+    - rollout may use expand-contract migration; old paths retire only after successor proof
+  migration_assumptions:
+    - existing chat_id UUIDs are stored in consumer profiles, not yet service-side identities
+    - legacy profiles lack session-bound credentials; migration needs an authenticated enrollment handoff and cannot infer authority from a name alone
+    - current shared bearer may retain legacy message access during expand-contract rollout but never grants operator mutation or target acknowledgement
+    - service-side durable state must be introduced before routing names become mutable
+
+architecture_constraints:
+  durable_owner: single_service_SQLite_for_sessions_policies_controls_receipts_aliases_and_audit
+  client_owner: local_profile_secret_custody_and_background_poll_worker
+  polling_boundary: "A foreground model call may return a semantic event; a supervised client worker continues checks below the reasoning boundary. A returned CLI process alone cannot prove active participation."
+  runtime_boundary: "AgentBus can observe its worker and session acknowledgements, not external model attention or turn termination."
+  authorization_boundary: "Operator capability stays outside ordinary agent configuration; a session-specific credential or proof of possession binds agent acknowledgements."
+  presentation_boundary: "Compact views project durable records; the service owns ordering and unsuppressible classifications."
+  transport_boundary: "Slack mirrors and transports ordinary messages; it never issues authoritative controls or updates presence."
+  governance_boundary: "Extend canonical CLI_OPERATIONS and API_OPERATIONS and BCF assurance claims; do not create parallel operation, evidence, or scheduling registries."
+  deployment_boundary: preserve_single_service_and_SQLite_until_measurement_justifies_change
+
+invariants:
+  - {id: INV-001, rule: "An active enrolled session MUST continue polling until its stop acknowledgement is durably committed and its receipt is returned; empty inbox, quiet mode, maximum backoff, timeout, transient failure, or completion of local work never ends participation."}
+  - {id: INV-002, rule: "Waits, empty reads, retries, heartbeats, and unchanged state remain below the reasoning boundary; unchanged empty cycles emit no model-visible output."}
+  - {id: INV-003, rule: "Agent-visible output contains semantic deltas and minimal known-success receipts; complete durable history remains independently available."}
+  - {id: INV-004, rule: "Policy resolution is deterministic global then repo then chat, with provenance; sessions record effective, delivered, and acknowledged revisions, and material policy changes require exact-revision acknowledgement."}
+  - {id: INV-005, rule: "A normal stop proceeds durable issue, delivery, explicit target acknowledgement, durable commit, receipt return, polling cessation, then agent end-turn; retry after a lost response returns the committed receipt."}
+  - {id: INV-006, rule: "Bus stop state proves bus participation only; external runtime termination and unrelated work completion require their own authority."}
+  - {id: INV-007, rule: "Controls and required policy transitions precede ordinary traffic and cannot be hidden by filters, cursors, backlog, compaction, or budgets; their acknowledgements are separate from message acknowledgement."}
+  - {id: INV-008, rule: "chat_id is stable identity; route and display name are mutable; rename preserves session, cursors, claims, policy, controls, and attribution while reserving former routes."}
+  - {id: INV-009, rule: "Operator mutation requires authority separate from ordinary send bearer and sender labels; target acknowledgement binds to the exact chat and session."}
+  - {id: INV-010, rule: "Presence derives only from target participation; operator reads, Slack traffic, and other principals cannot refresh it; client contact and semantic acknowledgement remain distinct."}
+  - {id: INV-011, rule: "Stop-all snapshots current enrolled sessions, including overdue sessions, at issue time and keeps one receipt per target; one target cannot acknowledge another."}
+  - {id: INV-012, rule: "Restart preserves policy, controls, acknowledgements, stopped state, and aliases; restart alone never reactivates a stopped session."}
+  - {id: INV-013, rule: "Control checks have a hard maximum interval independent of inbox backoff; jitter stays inside declared bounds."}
+  - {id: INV-014, rule: "Only newly relevant semantic traffic resets inbox backoff; unchanged unacknowledged state cannot induce a busy loop."}
+  - {id: INV-015, rule: "Presentation compaction never suppresses controls, required policy, direct blockers or requests, or claimed work, and never changes durable history."}
+  - {id: INV-016, rule: "Every policy or control mutation and acknowledgement is reconstructable by stable identity, actor, target, revision, timestamps, and resulting state."}
+
+primitives:
+  stable_chat_identity:
+    identity: chat_id_uuid
+    fields: [chat_id, repo, current_route, display_name, reserved_aliases, rename_history]
+    authority: service_persistence
+  participation_session:
+    identity: session_id
+    fields: [session_id, chat_id, state, joined_at, last_client_contact_at, last_semantic_ack_at, effective_policy_revision, delivered_policy_revision, acknowledged_policy_revision]
+    states: [joining, active, overdue, stopping, stopped]
+    authority: service_persistence
+  policy_revision:
+    identity: immutable_scope_revision
+    scopes: [global, repo, chat]
+    fields: [initial_interval, backoff_rule, max_interval, control_check_max, jitter_bound, overdue_grace, presentation_budget, actor, created_at]
+    authority: service_persistence
+  effective_policy:
+    identity: digest_of_resolved_values_and_sources
+    resolution_order: [global, repo, chat]
+    authority: deterministic_projection
+  policy_acknowledgement:
+    identity: session_id_plus_effective_revision
+    authority: target_session
+    idempotent: true
+  operator_control:
+    identity: control_id
+    kinds: [stop_end_turn, nudge, checkpoint_request, temporary_policy_override]
+    authority: operator
+  control_target_receipt:
+    identity: control_id_plus_session_id
+    states: [issued, delivered, acknowledged, effective]
+    authority: service_persistence
+  presence_observation:
+    authority: derived_projection
+    fields: [session_state, last_client_contact_at, last_semantic_ack_at, current_backoff, next_expected_check_at, overdue_duration, overdue_reason, effective_policy_revision, acknowledged_policy_revision, outstanding_controls]
+  routing_alias:
+    identity: repo_plus_former_route
+    authority: service_persistence
+  compact_delivery_view:
+    authority: projection_over_complete_durable_records
+
+contracts:
+  join_and_resume:
+    first_join: [resolve_or_create_chat_id, create_session, resolve_policy, deliver_identity_and_policy, require_exact_policy_ack, admit_ordinary_participation]
+    changed_policy_on_resume: require_exact_policy_ack_before_ordinary_participation
+    stopped_session: requires_explicit_legal_resume_or_new_session_transition
+    adoption_instruction: "Remain actively polling while joined. Backoff changes frequency, never permission to disengage. Stop polling and end the turn only after an authorized stop is explicitly acknowledged and the bus confirms the receipt."
+  policy:
+    writes: operator_only_revisioned_and_audited
+    read: effective_values_with_sources_current_backoff_expected_check_overdue_reason_and_outstanding_controls
+    ack: exact_session_and_effective_revision_idempotent
+    invalid_ack: reject_unknown_stale_or_inapplicable_revision
+    default_timing: measured_before_release_not_guessed_in_contract
+  poll:
+    owner: supervised_client_worker_below_reasoning_boundary
+    internal: [wait, bounded_backoff, jitter, control_probe, retry, policy_detection, participation_check_in, compact_rendering]
+    semantic_returns: [MESSAGE, CONTROL, POLICY_CHANGED, ATTENTION_REQUIRED]
+    timeout: internal_nonsemantic_event
+    empty_unchanged_cycle: zero_model_visible_output
+    automatic_acknowledgements: none
+    semantic_return: worker_continues_polling_after_model_visible_event
+    control_check_interval: never_exceeds_effective_control_check_max
+    reset_backoff_on: newly_relevant_semantic_traffic_only
+  stop:
+    issue_authority: operator_only
+    target_resolution: stable_chat_and_session_ids_at_issue_time
+    multi_target: one_independent_receipt_per_snapshotted_session
+    sequence: [durable_issue, delivery, explicit_target_ack, durable_ack_commit, receipt_return, polling_ceases, external_agent_ends_turn]
+    delivery_failure: pending
+    ack_persistence_uncertain: retain_polling_and_recover_by_idempotent_retry
+    lost_ack_response: return_same_committed_receipt_on_retry
+    silence: never_success
+    external_turn_ended: unknown_without_external_authority
+  rename:
+    mutation: atomic_collision_check_and_route_update
+    preserves: [chat_id, session_id, cursors, claims, policy_state, controls, receipts, audit_history]
+    old_route: reserved_alias_to_same_chat_id
+    history: preserve_original_written_names
+    authority_checks: resolve_alias_to_stable_identity_before_authorization
+  presence:
+    source: target_client_participation_only
+    distinguish: [active_compliant, overdue, control_pending, stopping, stopped, degraded_or_unreachable_when_knowable]
+    prohibited_refreshers: [operator_read, Slack_event, another_principal]
+    overdue_recontact: may_deliver_full_policy_reminder
+  presentation:
+    default: compact_semantic_delta
+    full_detail: explicit_json_or_verbose_request
+    budget_unit: bytes_or_characters_not_model_tokens
+    priority: [control, required_policy, direct_blocker, direct_request_or_question_or_handoff, claimed_work, actionable_broadcast, informational, replaceable_status]
+    unsuppressible: [control, required_policy, direct_blocker, direct_actionable_request, claimed_work]
+    durable_history: complete_unchanged
+    quiet_mode: suppress_routine_presentation_only
+  authority:
+    operator_capability: distinct_from_ordinary_agent_bearer_and_unavailable_to_agent_clients
+    agent_ack: session_specific_proof_of_possession_bound_to_exact_chat_and_session
+    legacy_profile_enrollment: requires_authenticated_handoff_not_name_only
+    sender_label: never_authority
+    Slack: visibility_or_transport_only
+  optional_controls:
+    nudge: requests_prompt_check_but_cannot_wake_ended_external_runtime
+    temporary_policy_override: bounded_revision_with_deterministic_expiry_and_reversion
+    checkpoint_request: structured_report_not_completion_proof
+    claim_recovery: atomic_audited_release_or_reassignment_without_undoing_external_work
+    quiesce: future_separate_admission_control_contract
+
+failure_codes:
+  - POLICY_UNKNOWN_REVISION
+  - POLICY_STALE_ACK
+  - POLICY_ACK_REQUIRED
+  - SESSION_NOT_ACTIVE
+  - SESSION_STOPPED
+  - SESSION_OVERDUE
+  - CONTROL_NOT_FOUND
+  - CONTROL_NOT_TARGETED
+  - CONTROL_ALREADY_ACKNOWLEDGED
+  - CONTROL_ACK_PERSISTENCE_UNCERTAIN
+  - OPERATOR_AUTH_REQUIRED
+  - RENAME_COLLISION
+  - RENAME_ALIAS_RESERVED
+  - POLL_TRANSPORT_DEGRADED
+  - CONTROL_DELIVERY_PENDING
+failure_rule: uncertain_state_never_counts_as_success
+
+proof_obligations:
+  - {id: PO-01, proves: [INV-001, INV-002, INV-013], scenario: empty_cycles_are_silent_and_max_backoff_continues_indefinitely_with_bounded_control_checks}
+  - {id: PO-02, proves: [INV-004], scenario: first_join_and_policy_change_require_exact_revision_ack}
+  - {id: PO-03, proves: [INV-005, INV-012], scenario: stop_ack_commits_before_poll_exit_and_lost_response_retry_returns_same_receipt_across_restart}
+  - {id: PO-04, proves: [INV-007, INV-015], scenario: backlog_filters_cursors_and_tiny_budget_cannot_suppress_control_or_direct_action}
+  - {id: PO-05, proves: [INV-008], scenario: pending_stop_survives_rename_and_old_alias_cannot_be_captured}
+  - {id: PO-06, proves: [INV-009], scenario: ordinary_bearer_sender_spoof_and_cross_session_ack_cannot_mutate_operator_control}
+  - {id: PO-07, proves: [INV-010], scenario: operator_reads_and_Slack_events_cannot_refresh_target_presence}
+  - {id: PO-08, proves: [INV-011], scenario: stop_all_snapshots_exact_active_and_overdue_targets_with_independent_receipts}
+  - {id: PO-09, proves: [INV-014], scenario: unchanged_unacknowledged_mail_does_not_reset_backoff_repeatedly}
+  - {id: PO-10, proves: [INV-003, INV-015], scenario: compact_output_preserves_full_durable_history_and_actionable_content}
+  - {id: PO-11, proves: [INV-006], scenario: stop_ack_never_claims_external_turn_termination_or_task_completion}
+  - {id: PO-12, proves: [INV-016], scenario: policy_control_and_claim_recovery_audit_reconstructs_actor_target_revision_and_result}
+  - {id: PO-13, proves: [INV-012], scenario: restart_at_issue_delivery_ack_and_effect_boundaries_preserves_truth_and_stopped_does_not_reactivate}
+  - {id: PO-14, proves: [INV-013], scenario: transport_degradation_does_not_authorize_turn_termination}
+  - {id: PO-15, proves: [INV-008], scenario: historical_attribution_survives_rename_without_message_rewrite}
+  - {id: PO-16, proves: [INV-016], scenario: claim_recovery_cannot_create_two_current_claimants}
+  - {id: PO-17, proves: [INV-001, INV-002], scenario: supervised_worker_keeps_control_checks_running_while_model_processes_a_semantic_return}
+  - {id: PO-18, proves: [INV-009], scenario: legacy_name_and_shared_bearer_cannot_enroll_or_ack_as_an_existing_session_without_handoff}
+  - {id: PO-19, proves: [INV-008], scenario: protocol_2_messages_routing_claims_replies_Slack_ingress_cursors_and_existing_profiles_remain_compatible}
+  - {id: PO-20, proves: [INV-016], scenario: every_new_public_CLI_and_API_operation_is_in_the_canonical_closed_inventories_and_BCF_evidence_graph}
+  - {id: PO-21, proves: [INV-005, INV-016], scenario: control_status_distinguishes_issued_delivered_acknowledged_and_effective_per_target}
+  - {id: PO-22, proves: [INV-004, INV-005], scenario: policy_and_control_acknowledgements_are_exact_revision_or_target_and_idempotent}
+  - {id: PO-23, proves: [INV-013], scenario: maximum_jitter_and_inbox_backoff_never_delay_controls_beyond_control_check_max}
+  - {id: PO-24, proves: [INV-011], scenario: stop_all_snapshot_does_not_prevent_later_joins}
+
+implementation_order:
+  - {id: IU-001, unit: freeze_contract_and_migration_assumptions, depends_on: []}
+  - {id: IU-002, unit: stable_identity_and_sessions, depends_on: [IU-001]}
+  - {id: IU-003, unit: policy_store_resolution_and_ack, depends_on: [IU-002]}
+  - {id: IU-004, unit: operator_authorization_boundary, depends_on: [IU-001]}
+  - {id: IU-005, unit: presence_and_check_in, depends_on: [IU-002, IU-003]}
+  - {id: IU-006, unit: silent_policy_aware_poll, depends_on: [IU-003, IU-005]}
+  - {id: IU-007, unit: durable_controls_and_per_target_receipts, depends_on: [IU-002, IU-004]}
+  - {id: IU-008, unit: stop_ack_and_restart_recovery, depends_on: [IU-006, IU-007]}
+  - {id: IU-009, unit: rename_alias_continuity, depends_on: [IU-002, IU-007]}
+  - {id: IU-010, unit: compact_presentation, depends_on: [IU-006]}
+  - {id: IU-011, unit: operator_status_and_explain, depends_on: [IU-005, IU-007, IU-008]}
+  - {id: IU-012, unit: optional_controls_and_claim_recovery, depends_on: [IU-009, IU-011]}
+  - {id: IU-013, unit: docs_migration_and_full_vertical_proof, depends_on: [IU-002, IU-003, IU-004, IU-005, IU-006, IU-007, IU-008, IU-009, IU-010, IU-011, IU-012]}
+
+acceptance_gates:
+  G-IDENTITY: [INV-008, PO-05, PO-15]
+  G-POLICY: [INV-004, PO-02]
+  G-CONTROL: [INV-005, INV-007, INV-011, PO-03, PO-04, PO-08]
+  G-AUTHORITY: [INV-009, PO-06]
+  G-POLL: [INV-001, INV-002, INV-013, INV-014, PO-01, PO-09, PO-14]
+  G-TOKEN: [INV-003, INV-015, PO-10]
+  G-RECOVERY: [INV-012, PO-13]
+  G-COMPAT: [PO-05, PO-15, PO-19]
+  G-GOVERNANCE: [INV-016, PO-12, PO-20]
