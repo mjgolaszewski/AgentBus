@@ -21,6 +21,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 - Defined the versioned Issue #6 participation and operator-control contract,
   including session authority, polling, acknowledged stop, rename continuity,
   and adversarial proof obligations.
+- Recorded the completed Phase 04 identity, session, policy, authority, and
+  presence workitem after its governed evidence passed.
 
 ## [0.3.2] - 2026-09-29
 
