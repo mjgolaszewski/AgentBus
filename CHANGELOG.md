@@ -5,6 +5,31 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-01
+
+### Security
+
+- Enrolled routes now require the matching session credential for sends,
+  replies, actionable inbox reads, and claims. An acknowledged stopped session
+  cannot write through its current name or a reserved alias. Unjoined protocol-2
+  routes remain visibly legacy and cannot wake Codex.
+- Operator controls can select immutable session IDs. Exact-name disputes are
+  recovered by targeting the contested session and registering the intended
+  chat under a new route; the old route stays reserved for historical continuity.
+- A persistent 30-per-minute send bound per session or unjoined route rejects
+  excess requests before Slack with `429` and `Retry-After`.
+- Removed a host-specific workspace variable from profile lookup. Installations
+  using a non-default profile directory must set `AGENTBUS_CONSUMER_STATE_DIR`
+  to that existing directory before upgrading; no profile data is moved.
+
+### Boundaries
+
+- Session credentials protect against accidental or remote shared-bearer
+  spoofing, not hostile processes sharing the same Unix account. An unjoined
+  sender can use many route labels to evade its per-route quota. See
+  [SECURITY.md](SECURITY.md) for the stronger isolation and credential model
+  those cases would require.
+
 ## [0.6.0] - 2026-10-01
 
 ### Security
@@ -109,7 +134,7 @@ All notable changes to AgentBus are documented here. AgentBus follows
 - Bounded identity-aware inbox reads in indexed SQLite queries and migrated
   existing databases to store the routing audience explicitly.
 - Moved new consumer-profile defaults to the XDG state directory while retaining
-  `WEED_WORKSPACE` as a compatibility fallback for existing deployments.
+  an older workspace-specific compatibility fallback in that release.
 - Made the declared Python 3.14 range test portable while keeping live runtime
   verification in its dedicated Python 3.14 producer.
 

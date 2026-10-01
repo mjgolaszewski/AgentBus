@@ -76,13 +76,14 @@ class StopControl(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     routes: list[str] | None = None
+    session_ids: list[str] | None = None
     all_current: bool = False
     reason: str = Field(min_length=1, max_length=1000)
 
     @model_validator(mode="after")
     def require_one_target_mode(self) -> StopControl:
-        if self.all_current == bool(self.routes):
-            raise ValueError("choose explicit routes or all_current")
+        if sum((self.all_current, bool(self.routes), bool(self.session_ids))) != 1:
+            raise ValueError("choose routes, immutable session IDs, or all_current")
         return self
 
 
@@ -272,6 +273,7 @@ def api_control_stop(request: Request, body: StopControl) -> dict:
     try:
         control_id, targets = request.app.state.store.controls.issue_stop(
             routes=None if body.all_current else body.routes,
+            session_ids=body.session_ids,
             reason=body.reason, actor="operator-capability",
         )
     except ValueError as exc:
@@ -283,6 +285,7 @@ def api_control_issue(request: Request, body: AuxiliaryControl) -> dict:
     try:
         control_id, targets = request.app.state.store.controls.issue_auxiliary(
             kind=body.kind, routes=None if body.all_current else body.routes,
+            session_ids=body.session_ids,
             reason=body.reason, actor="operator-capability",
             override_values=body.values, duration_seconds=body.duration_seconds,
         )

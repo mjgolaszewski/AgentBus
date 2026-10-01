@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local service lifecycle and HTTP client for the superworkspace AgentBus."""
+"""Local service lifecycle and HTTP client for AgentBus."""
 
 from __future__ import annotations
 
@@ -34,11 +34,8 @@ def now() -> str:
 
 def consumer_state_dir(values: dict[str, str]) -> Path:
     configured = values.get("AGENTBUS_CONSUMER_STATE_DIR")
-    legacy_workspace = values.get("WEED_WORKSPACE")
     xdg_state = Path(values.get("XDG_STATE_HOME", "~/.local/state")).expanduser()
-    default = Path(legacy_workspace) / ".superworkspace-tools/agentbus" \
-        if legacy_workspace else xdg_state / "agentbus/consumers"
-    state = Path(configured or default).expanduser()
+    state = Path(configured or xdg_state / "agentbus/consumers").expanduser()
     if state.is_symlink() or (state.exists() and not state.is_dir()):
         raise ClientError(f"Refusing unsafe AgentBus consumer state directory {state}.")
     return state
@@ -94,18 +91,17 @@ def load_profile(values: dict[str, str], identity: str, *, save_migration: bool 
     try:
         profile = json.loads(path.read_text())
     except FileNotFoundError:
-        legacy_path = None
-        if ":" in identity:
-            repo, name = identity.split(":", 1)
-            candidate = identity_path(values, repo)
-            if name == "weed" and candidate.is_file() and not candidate.is_symlink():
-                legacy_path = candidate
-        if legacy_path is None:
+        if ":" not in identity:
+            raise ClientError(f"Unknown AgentBus identity {identity!r}; run `agentbus onboard`.") from None
+        legacy_path = identity_path(values, identity.split(":", 1)[0])
+        if legacy_path.is_symlink() or not legacy_path.is_file():
             raise ClientError(f"Unknown AgentBus identity {identity!r}; run `agentbus onboard`.") from None
         try:
             profile = json.loads(legacy_path.read_text())
         except (ValueError, OSError):
             raise ClientError(f"Cannot read valid profile {legacy_path}.") from None
+        if not isinstance(profile, dict) or profile.get("identity") != identity:
+            raise ClientError(f"Unknown AgentBus identity {identity!r}; run `agentbus onboard`.")
     except (ValueError, OSError):
         raise ClientError(f"Cannot read valid profile {path}.") from None
     if not isinstance(profile, dict):

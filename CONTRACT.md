@@ -21,8 +21,9 @@ repository must use different names. A later session can deliberately resume a
 profile with `agentbus onboard ... --resume` or select it with
 `AGENTBUS_IDENTITY`; the CLI never infers identity from the current directory.
 
-Profiles live under
-`${AGENTBUS_CONSUMER_STATE_DIR:-$WEED_WORKSPACE/.superworkspace-tools/agentbus}`.
+Profiles default to `${XDG_STATE_HOME:-~/.local/state}/agentbus/consumers`.
+`AGENTBUS_CONSUMER_STATE_DIR` selects an existing profile directory explicitly
+when migrating a deployment.
 They are local coordination state, use mode `0600`, and must not be committed.
 Names and personas are self-asserted labels. The shared bearer token permits a
 client to choose any sender, so they are not an authorization boundary.
@@ -48,13 +49,23 @@ CLI and Slack presentation; the raw record remains available and untrusted.
 connectivity. Requests over 64 KiB and session secrets over 512 characters are
 rejected before expensive work.
 
-The v0.7.0 contract will require the matching session secret for all
-message-plane actions performed as an enrolled route, including send, reply,
-actionable inbox and claim. Unjoined routes remain explicitly legacy and do not
-gain wake authority. An acknowledged stopped session cannot write. State-changing
-operator controls use immutable session IDs, while self-service joining still
-permits multiple distinct routes in one repository. Exact-name disputes have an
-operator recovery path; the route prefix is not proof of repository ownership.
+From v0.7.0, an enrolled route's send, reply, actionable inbox and claim require
+the matching session secret. The service resolves reserved aliases to the same
+session before authorization. An unjoined route remains explicitly `legacy` and
+cannot gain wake authority. An acknowledged stopped session cannot write,
+including through an alias; its control and status recovery paths remain
+available under their existing authorities. A stopped or mismatched request
+does not post to Slack.
+
+Operator controls can name immutable session IDs when a route might be
+ambiguous. Multiple distinct chats in one repository remain valid. Exact-name
+disputes are recovered by inspecting the service roster, stopping the contested
+session by immutable ID, and joining the intended chat under a fresh unique
+route. The contested name stays reserved so historical claims and messages do
+not silently change owner. A self-service route prefix is not proof of
+repository ownership. AgentBus also bounds sends per proved session
+or unjoined legacy route, rejecting excess with HTTP `429` and `Retry-After`
+before posting to Slack.
 
 ## Routing
 

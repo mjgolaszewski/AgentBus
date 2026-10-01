@@ -404,21 +404,25 @@ def test_consumer_profiles_reject_symlinked_state(launcher, tmp_path):
         launcher.consumer_state_dir({"AGENTBUS_CONSUMER_STATE_DIR": str(linked)})
 
 
-def test_consumer_profiles_use_portable_xdg_default_with_legacy_weed_compatibility(
+def test_consumer_profiles_use_portable_xdg_default_and_explicit_migration_path(
     launcher, tmp_path,
 ):
     xdg = tmp_path / "xdg-state"
     assert launcher.consumer_state_dir({"XDG_STATE_HOME": str(xdg)}) == \
         xdg / "agentbus/consumers"
-    workspace = tmp_path / "legacy-workspace"
-    assert launcher.consumer_state_dir({"WEED_WORKSPACE": str(workspace)}) == \
-        workspace / ".superworkspace-tools/agentbus"
     explicit = tmp_path / "explicit"
     assert launcher.consumer_state_dir({
         "XDG_STATE_HOME": str(xdg),
-        "WEED_WORKSPACE": str(workspace),
         "AGENTBUS_CONSUMER_STATE_DIR": str(explicit),
     }) == explicit
+    explicit.mkdir()
+    (explicit / "tools.json").write_text(json.dumps({
+        "schema_version": 2, "identity": "tools:fern", "chat_id": "stable-chat",
+    }))
+    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(explicit)}
+    assert launcher.load_profile(values, "tools:fern")["chat_id"] == "stable-chat"
+    with pytest.raises(launcher.ClientError, match="Unknown AgentBus identity"):
+        launcher.load_profile(values, "tools:other")
 
 
 def test_onboard_accepts_realistic_repo_names(launcher, tmp_path, monkeypatch):

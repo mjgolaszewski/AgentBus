@@ -1,7 +1,7 @@
 document:
   kind: agentbus_participation_contract
   id: agentbus-participation-v1
-  version: 1.3.0
+  version: 1.4.0
   status: active
   path: contracts/participation/v1/participation.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/6
@@ -66,6 +66,10 @@ invariants:
   - {id: INV-024, rule: "Only session-assured agent messages or verified Slack-human messages may cause an ordinary Codex wake. A legacy message remains readable without launching a turn; controls retain independent operator authority."}
   - {id: INV-025, rule: "Transport size limits and visibly escaped presentation cannot alter the stored full-history record or hide required control and direct work. Sanitized text remains untrusted data."}
   - {id: INV-026, rule: "A message may name only a known relevant Slack thread parent; database files are created private before SQLite opens them; unauthenticated health reveals only liveness."}
+  - {id: INV-027, rule: "An enrolled route's send, reply, actionable inbox, and claim require proof for that exact session or one of its reserved aliases. The shared API bearer and a caller-supplied route never establish enrolled identity; unjoined legacy routes remain visibly labelled during rollout."}
+  - {id: INV-028, rule: "After a stop acknowledgement commits, the service rejects message-plane writes by that session, including aliases, and an unproved caller cannot bypass the stop by using its route. Control and status recovery remain readable under their existing authorities."}
+  - {id: INV-029, rule: "Multiple independent chat sessions may belong to one repository. Operator controls can target immutable session IDs to avoid route ambiguity; an operator can recover a disputed exact-name collision without treating self-service enrollment as repository ownership proof."}
+  - {id: INV-030, rule: "The service bounds send rate per proved session or unjoined legacy route, returns 429 with Retry-After on excess, and does not post a rate-rejected request to Slack. This bound is independent of Slack's own rate response."}
 
 primitives:
   stable_chat_identity:
@@ -113,6 +117,14 @@ primitives:
     values: [session, slack-human, legacy]
     authority: service_verified_session_or_Slack_ingress_only
     historical_default: legacy
+  message_principal:
+    authority: service_session_credential_or_explicit_legacy_tier
+    fields: [session_id, chat_id, routes, liveness, assurance]
+    caller_sender_label: never_authority
+  send_rate_bucket:
+    identity: proved_session_or_unjoined_legacy_route
+    authority: single_service_SQLite
+    rejection: HTTP_429_with_Retry_After_without_Slack_post
   routing_alias:
     identity: repo_plus_former_route
     authority: service_persistence
@@ -182,7 +194,12 @@ contracts:
     message_session_header: X-AgentBus-Session-Token
     joined_client_behavior: attach_existing_profile_secret_automatically
     old_client_behavior: usable_as_legacy_without_ordinary_Codex_wake
-    enrolled_route_enforcement: subsequent_version_after_expansion_proof
+    enrolled_route_enforcement: required_for_send_reply_actionable_inbox_and_claim
+    stopped_session_writes: HTTP_423_after_acknowledged_stop
+    unjoined_legacy_routes: readable_and_sendable_with_visible_legacy_assurance_and_one_time_upgrade_notice
+    ambiguous_route_controls: operator_exact_session_id_supported
+    disputed_name: operator_targets_contested_session_by_immutable_ID_and_legitimate_chat_joins_under_a_new_unique_route_while_contested_history_stays_reserved
+    send_rate: per_proved_session_or_unjoined_legacy_route_with_429_Retry_After
     route_grammar: lowercase_repo_colon_name_for_new_writes
     human_sender_namespace: Slack_ingress_only
     raw_history: unchanged_and_available_from_cursor_zero
@@ -247,6 +264,10 @@ proof_obligations:
   - {id: PO-33, proves: [INV-022, INV-023], scenario: spoofed_human_and_noncanonical_agent_senders_are_rejected_while_historical_records_remain_readable}
   - {id: PO-34, proves: [INV-023, INV-024], scenario: verified_session_and_Slack_human_assurance_are_service_derived_and_legacy_messages_cannot_wake_Codex}
   - {id: PO-35, proves: [INV-025, INV-026], scenario: unsafe_text_and_oversized_input_are_bounded_without_changing_raw_history_or_controls_and_unknown_threads_fail_closed}
+  - {id: PO-36, proves: [INV-027], scenario: shared_bearer_other_session_and_alias_spoofs_cannot_send_reply_read_actionable_inbox_or_claim_for_an_enrolled_chat_while_unjoined_legacy_routes_remain_labelled}
+  - {id: PO-37, proves: [INV-028], scenario: acknowledged_stop_rejects_current_and_alias_writes_without_blocking_control_receipt_or_status_recovery}
+  - {id: PO-38, proves: [INV-029], scenario: distinct_chats_in_one_repo_keep_independent_sessions_and_exact_session_control_targeting_and_operator_dispute_recovery_are_unambiguous}
+  - {id: PO-39, proves: [INV-030], scenario: per_principal_send_limit_returns_429_retry_after_without_post_and_reopens_after_the_window}
 
 implementation_order:
   - {id: IU-001, unit: freeze_contract_and_migration_assumptions, depends_on: []}
@@ -262,6 +283,9 @@ implementation_order:
   - {id: IU-011, unit: operator_status_and_explain, depends_on: [IU-005, IU-007, IU-008]}
   - {id: IU-012, unit: optional_controls_and_claim_recovery, depends_on: [IU-009, IU-011]}
   - {id: IU-013, unit: docs_migration_and_full_vertical_proof, depends_on: [IU-002, IU-003, IU-004, IU-005, IU-006, IU-007, IU-008, IU-009, IU-010, IU-011, IU-012]}
+  - {id: IU-014, unit: enrolled_message_principal_and_stop_enforcement, depends_on: [IU-002, IU-008, IU-009]}
+  - {id: IU-015, unit: exact_session_target_and_dispute_recovery, depends_on: [IU-011, IU-014]}
+  - {id: IU-016, unit: bounded_send_rate_and_retry_contract, depends_on: [IU-014]}
 
 acceptance_gates:
   G-IDENTITY: [INV-008, PO-05, PO-15]
@@ -273,3 +297,6 @@ acceptance_gates:
   G-RECOVERY: [INV-012, PO-13]
   G-COMPAT: [PO-05, PO-15, PO-19, PO-25]
   G-GOVERNANCE: [INV-016, PO-12, PO-20]
+  G-MESSAGE-PRINCIPAL: [INV-027, INV-028, PO-36, PO-37]
+  G-EXACT-TARGET: [INV-029, PO-38]
+  G-RATE: [INV-030, PO-39]

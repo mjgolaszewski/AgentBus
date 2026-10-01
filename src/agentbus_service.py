@@ -27,6 +27,7 @@ from slack_sdk.socket_mode.response import SocketModeResponse
 
 from src.agentbus_claim_recovery_service import ClaimRecoveryStore
 from src.agentbus_control_store_service import ControlStore
+from src.agentbus_message_authorization_service import require_message_route
 from src.agentbus_participation_api_service import (
     UPGRADE_NOTICE,
     api_claim_recovery,
@@ -49,11 +50,12 @@ from src.agentbus_participation_api_service import (
     authenticate_operator,
     upgrade_notice,
 )
-from src.agentbus_participation_store_service import ParticipationStore
+from src.agentbus_participation_store_service import ParticipationStore, StoppedMessageSession
 from src.agentbus_presentation_service import visible_text
 from src.agentbus_reply_policy_service import validate_reply
 from src.agentbus_request_limits_service import RequestBodyLimit
 from src.agentbus_send_policy_service import SessionAuthorityError, validate_new_send
+from src.agentbus_send_rate_service import SendRateExceeded, SendRateStore
 from src.agentbus_settings_service import Settings
 
 LOGGER = logging.getLogger("agentbus")
@@ -241,6 +243,7 @@ class MessageStore:
         )
         self._db.commit()
         self.participation = ParticipationStore(self._db, self._lock)
+        self.send_rate = SendRateStore(self._db, self._lock)
         self.controls = ControlStore(self._db, self._lock, self.participation)
         self.claim_recovery = ClaimRecoveryStore(self._db, self._lock)
 
@@ -601,10 +604,15 @@ async def api_send(request: Request, message: SendMessage,
                    x_agentbus_session_token: Annotated[str | None, Header()] = None) -> Message:
     settings = request.app.state.settings
     try:
-        validate_new_send(request.app.state.store, settings.slack_channel, message,
-                          x_agentbus_session_token)
+        rate_key = validate_new_send(request.app.state.store, settings.slack_channel, message,
+                                     x_agentbus_session_token)
+        request.app.state.store.send_rate.reserve(rate_key)
     except KeyError:
         raise HTTPException(422, "reply parent does not exist in this inbox") from None
+    except StoppedMessageSession as exc:
+        raise HTTPException(423, str(exc)) from None
+    except SendRateExceeded as exc:
+        raise HTTPException(429, str(exc), headers={"Retry-After": str(exc.retry_after)}) from None
     except SessionAuthorityError as exc:
         raise HTTPException(403, str(exc)) from None
     except PermissionError as exc:
@@ -644,8 +652,10 @@ def api_inbox(request: Request, identity: Annotated[str, Query(pattern=IDENTIFIE
               after: Annotated[int, Query(ge=0)] = 0,
               limit: Annotated[int, Query(ge=1, le=200)] = 100,
               thread_ts: Annotated[str | None, Query(pattern=SLACK_TS)] = None,
-              context: bool = False) -> InboxPage:
+              context: bool = False,
+              x_agentbus_session_token: Annotated[str | None, Header()] = None) -> InboxPage:
     settings = request.app.state.settings
+    require_message_route(request.app.state.store, identity, x_agentbus_session_token)
     page = request.app.state.store.inbox(
         settings.slack_channel, identity, after, limit, thread_ts, context
     )
@@ -656,8 +666,10 @@ def api_inbox(request: Request, identity: Annotated[str, Query(pattern=IDENTIFIE
     return page
 
 
-def api_claim(request: Request, cursor: int, claim: ClaimRequest) -> Claim:
+def api_claim(request: Request, cursor: int, claim: ClaimRequest,
+              x_agentbus_session_token: Annotated[str | None, Header()] = None) -> Claim:
     settings = request.app.state.settings
+    require_message_route(request.app.state.store, claim.identity, x_agentbus_session_token)
     try:
         result = request.app.state.store.claim(settings.slack_channel, cursor, claim.identity)
     except KeyError:
@@ -733,7 +745,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                 await client.aclose()
             store.close()
 
-    app = FastAPI(title="AgentBus", version="0.6.0", lifespan=lifespan,
+    app = FastAPI(title="AgentBus", version="0.7.0", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     app.add_middleware(RequestBodyLimit)

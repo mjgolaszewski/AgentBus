@@ -76,22 +76,30 @@ def test_stop_targets_and_operator_queries_use_existing_api(tmp_path, monkeypatc
     assert operator.control_stop(stop, VALUES) == 0
     all_current = parse_args(["control-stop", "--all", "--reason", "stand down"])
     assert operator.control_stop(all_current, VALUES) == 0
+    exact = parse_args(["control-stop", "--session-id", "session-1", "--reason", "dispute"])
+    assert operator.control_stop(exact, VALUES) == 0
     assert calls[:2] == [
         ("/v1/controls/stop", {"routes": ["agentbus:one", "agentbus:two"],
                                "all_current": False, "reason": "stand down"}, "operator-only-capability"),
         ("/v1/controls/stop", {"routes": None, "all_current": True,
                                "reason": "stand down"}, "operator-only-capability"),
     ]
+    assert calls[2] == (
+        "/v1/controls/stop",
+        {"routes": None, "session_ids": ["session-1"], "all_current": False,
+         "reason": "dispute"},
+        "operator-only-capability",
+    )
     issue = parse_args(["control-issue", "--kind", "nudge", "--to", "agentbus:one",
                         "--reason", "please check in"])
     assert operator.control_issue(issue, VALUES) == 0
-    assert calls[2] == ("/v1/controls", {
+    assert calls[3] == ("/v1/controls", {
         "kind": "nudge", "routes": ["agentbus:one"], "all_current": False,
         "reason": "please check in",
     }, "operator-only-capability")
     assert operator.control_status(parse_args(["control-status", "control-1"]), VALUES) == 0
     assert operator.session_presence(parse_args(["session-presence", "session-1"]), VALUES) == 0
-    assert calls[3:] == [
+    assert calls[4:] == [
         ("/v1/controls/control-1", None, "operator-only-capability"),
         ("/v1/sessions/session-1/presence", None, "operator-only-capability"),
     ]
