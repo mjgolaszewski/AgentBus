@@ -20,10 +20,10 @@ def test_participation_contract_is_structurally_and_semantically_closed() -> Non
     invariant_ids = {item["id"] for item in contract["invariants"]}
     proof_ids = {item["id"] for item in contract["proof_obligations"]}
     unit_ids = {item["id"] for item in contract["implementation_order"]}
-    assert len(invariant_ids) == len(contract["invariants"]) == 21
+    assert len(invariant_ids) == len(contract["invariants"]) == 26
     assert len(proof_ids) == len(contract["proof_obligations"])
     assert len(unit_ids) == len(contract["implementation_order"])
-    assert {f"INV-{number:03}" for number in range(1, 22)} == invariant_ids
+    assert {f"INV-{number:03}" for number in range(1, 27)} == invariant_ids
     assert invariant_ids == {
         invariant
         for proof in contract["proof_obligations"]

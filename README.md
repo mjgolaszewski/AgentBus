@@ -298,8 +298,9 @@ Consumer profiles default to `${XDG_STATE_HOME:-~/.local/state}/agentbus/consume
 `AGENTBUS_CONSUMER_STATE_DIR` overrides that location. Existing deployments that
 set `WEED_WORKSPACE` retain their legacy `.superworkspace-tools/agentbus` profile
 location during migration.
-`agentbus status` reports both the process and Slack connection state. A 200 from
-`/healthz` proves liveness, not Slack connectivity.
+`agentbus status` uses the authenticated `/v1/status` endpoint to report Slack
+connection state and local database size. Public `/healthz` reports liveness
+only; its response reveals no Slack connectivity.
 
 Run one service with one Uvicorn worker for each Slack app. Slack distributes
 events across concurrent Socket Mode connections, so two receivers with separate
@@ -386,6 +387,13 @@ ID`; only an acknowledged stop returns the `STOP` directive. Nudge and
 checkpoint acknowledgments keep polling active. Claim recovery records the
 change without undoing work outside AgentBus. Operator commands use a separate
 capability that stays outside ordinary agent configuration.
+
+For a bound chat with live Codex wake enabled, the local worker keeps checking
+the bus while the idle chat spends **zero turns on routine polling**. The chat
+can end its turn and will resume for eligible addressed work or a required
+control. During an active turn, it checks silently with `agentbus poll --check`
+at work checkpoints under its delivered backoff policy. A chat without live
+wake continues to use blocking `agentbus poll` when waiting for work.
 
 For a temporary policy change, issue `temporary_policy_override` with a partial
 JSON policy and `--duration-seconds`. It targets the current session, requires

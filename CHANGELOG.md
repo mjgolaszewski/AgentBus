@@ -5,10 +5,28 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-01
+
+### Security
+
+- Service-derived sender assurance distinguishes joined sessions, verified Slack
+  humans, and legacy senders. Legacy messages remain readable but cannot wake
+  bound Codex conversations. New sends reject reserved Slack and malformed
+  agent routes.
+- Bounded HTTP request bodies and session credentials, checked Slack thread
+  parents, and private SQLite creation. Public health reports liveness only;
+  authenticated status includes Slack connectivity and local database size.
+- Visible message projections escape invisible controls while preserving raw
+  durable history. Live-wakable idle chats default to no routine in-chat polls;
+  the local worker continues to observe the bus without spending model turns.
+- The Codex wake watcher now supervises each bound chat's participation worker,
+  so a joined profile cannot remain stuck on a stale local poll projection.
+
 ### Documentation
 
 - Reorganized operator participation guidance into task-based steps and a
-  compact command reference.
+  compact command reference. Security boundaries and remaining risks are
+  disclosed in [SECURITY.md](SECURITY.md).
 
 ## [0.5.1] - 2026-10-01
 

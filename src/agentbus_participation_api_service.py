@@ -35,8 +35,8 @@ class EnrollSession(BaseModel):
     repo: str = Field(min_length=1, max_length=64)
     route: str = Field(min_length=3, max_length=80)
     display_name: str = Field(min_length=1, max_length=120)
-    session_secret: str = Field(min_length=32, repr=False)
-    handoff_token: str | None = Field(default=None, min_length=32, repr=False)
+    session_secret: str = Field(min_length=32, max_length=512, repr=False)
+    handoff_token: str | None = Field(default=None, min_length=32, max_length=512, repr=False)
 
 
 class IssueProfileHandoff(BaseModel):
@@ -56,8 +56,8 @@ class IssueSessionRotation(BaseModel):
 class RotateSessionSecret(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    rotation_token: str = Field(min_length=32, repr=False)
-    new_session_secret: str = Field(min_length=32, repr=False)
+    rotation_token: str = Field(min_length=32, max_length=512, repr=False)
+    new_session_secret: str = Field(min_length=32, max_length=512, repr=False)
 
 
 class AcknowledgePolicy(BaseModel):

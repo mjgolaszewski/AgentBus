@@ -59,25 +59,25 @@ environment_facts:
     - routed Slack envelopes are admitted only from the bot identity authenticated from the configured bot token
     - new consumer profiles use the XDG state directory while WEED_WORKSPACE remains a compatibility fallback
     - identity-aware inbox reads filter and page in indexed SQLite queries with legacy audience migration
-    - Phase 04 delivers contract-governed operator participation and an optional host-owned Codex wake adapter; no AgentBus core turn authority is granted
+    - Phase 04 delivers operator participation and optional host-owned Codex wake without granting core turn authority; Phase 05 adds service-derived assurance separating legacy from wake-eligible traffic
   active_artifacts:
     spec: plans/product-spec.yml
     build_plan: plans/build-plan.yml
     active_phase_ledger: plans/phase-ledger.yml
     phase_history: plans/phase-history.yml
-    active_phase_plan: plans/phase-04-plan.yml
-    active_workitem_ledger: plans/phase-04-workitems.yml
-    active_phase_log: phases/phase-04-log.yml
+    active_phase_plan: plans/phase-05-plan.yml
+    active_workitem_ledger: plans/phase-05-workitems.yml
+    active_phase_log: phases/phase-05-log.yml
 known_constraints:
   - preserve the public CLI HTTP protocol SQLite state and deployment behavior during governance adoption
-  - use only immutable released BCF artifacts and their published digests
-  - keep provider authority boundaries and avoid persistent trusted-controller capability
+  - use only immutable released BCF artifacts and digests; preserve provider boundaries without persistent trusted-controller capability
   - specialize repo_identity_provider and repo_observability_backend in the observability contracts before production use
   - per-agent credentials signed federation clustering and multi-tenant authorization remain outside the same-workspace product scope
   - Slack retention and the local SQLite copy must both be approved for transported data
   - Issue 6 operator control and participation behavior must derive from the versioned participation contract; no operator authority from sender labels or ordinary bearer tokens
   - legacy protocol-2 clients receive one upgrade notice per inbox identity, with repeatable instructions on explicit info reads; ordinary message pages stay unchanged
   - Issue 8 Codex wake is optional host-owned adapter behavior from contracts/codex-wake/v1/codex-wake.contract.yml; AgentBus core never owns threads, credentials, or turn lifecycle
+  - live-wakable idle chats spend zero turns on routine in-chat polling; the local worker continues and unchanged observations start no model turn
 reusable_commands:
   - make governance-validate
   - make architecture-test

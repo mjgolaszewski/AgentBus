@@ -22,6 +22,11 @@ MODULES = {
     "src/agentbus_codex_rpc_client.py": ("client", "client"),
     "src/agentbus_codex_wake_client.py": ("client", "client"),
     "src/agentbus_claim_recovery_service.py": ("service", "service"),
+    "src/agentbus_message_assurance_service.py": ("service", "service"),
+    "src/agentbus_presentation_service.py": ("service", "service"),
+    "src/agentbus_reply_policy_service.py": ("service", "service"),
+    "src/agentbus_request_limits_service.py": ("service", "service"),
+    "src/agentbus_settings_service.py": ("service", "service"),
     "src/agentbus_service.py": ("service", "service"),
     "src/agentbus_participation_service.py": ("service", "service"),
     "src/agentbus_participation_store_service.py": ("service", "service"),
@@ -119,7 +124,7 @@ def test_http_routers_remain_thin_transport_adapters() -> None:
         for node in tree("src/agentbus_service.py").body
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("api_")
     }
-    assert set(handlers) == {"api_health", "api_send", "api_read", "api_info", "api_inbox", "api_claim"}
+    assert set(handlers) == {"api_health", "api_status", "api_send", "api_read", "api_info", "api_inbox", "api_claim"}
     for handler in handlers.values():
         branches = sum(isinstance(node, (ast.If, ast.Match, ast.Try)) for node in ast.walk(handler))
         loops = sum(isinstance(node, (ast.For, ast.AsyncFor, ast.While)) for node in ast.walk(handler))

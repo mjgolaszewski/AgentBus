@@ -1,0 +1,44 @@
+document:
+  kind: execution_phase_plan
+  name: Phase 05 Plan
+  id: project-phase-05-plan
+  version: 1.0.0
+  generated_at_utc: '2026-10-01T00:00:00Z'
+  status: active
+  path: plans/phase-05-plan.yml
+phase:
+  id: P05
+  build_block: security_provenance_foundation
+  planner: codex
+  date: '2026-10-01'
+  scope_source:
+  - AGENTS.yml
+  - plans/product-spec.yml
+  - plans/build-plan.yml
+  - plans/phase-ledger.yml
+  - MEMORY.yml
+delivery_contract:
+  tightly_scoped_deliverables:
+  - service-derived sender assurance and legacy wake exclusion
+  - route, thread, request, secret, storage, and status hardening
+  - governed exact-candidate proof and public release
+  parallelizable_workstreams:
+  - id: P05-WS1
+    name: provenance_and_ingress
+  - id: P05-WS2
+    name: compatibility_and_docs
+  hard_dependencies:
+  - P04 closed on exact main
+  docker_first_local_runtime: repo_native_validation_and_governance_commands
+  completeness_standard: full_completeness_for_declared_scope
+scope_lock:
+- order: 1
+  statement: keep the phase narrowly scoped to declared deliverables and update canonical
+    governed artifacts in the same change
+verification_plan:
+- make governance-validate
+- make architecture-test
+- make lint
+- make typecheck
+- make test
+- make release-check

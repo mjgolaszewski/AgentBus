@@ -109,3 +109,12 @@ def api(values: dict[str, str], path: str, payload: dict | None = None, *,
         raise ClientError("Cannot reach AgentBus. Check `agentbus status` and AGENTBUS_URL.") from None
     except (ValueError, UnicodeDecodeError):
         raise ClientError("AgentBus returned invalid JSON. Check AGENTBUS_URL.") from None
+
+
+def profile_session_token(profile: dict) -> str | None:
+    """Use the private joined credential automatically; a local label alone is legacy."""
+    session = profile.get("participation")
+    if not isinstance(session, dict):
+        return None
+    token = session.get("session_secret")
+    return token if isinstance(token, str) and token else None

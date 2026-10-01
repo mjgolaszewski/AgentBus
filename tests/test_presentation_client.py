@@ -27,7 +27,9 @@ def test_control_policy_direct_request_and_claimed_work_ignore_tiny_budget():
     for event in (
         {"kind": "CONTROL", "control": {"control_id": "stop-1", "kind": "stop_end_turn",
                                         "reason": "Stand down"}},
-        {"kind": "POLICY_CHANGED", "revision": "revision-2"},
+        {"kind": "POLICY_CHANGED", "revision": "revision-2", "values": {
+            "initial_interval_seconds": 60, "backoff_factor": 2, "max_interval_seconds": 1920,
+        }},
         message_event(kind="blocker", audience="direct", reason="addressed to this identity"),
         message_event(reason="claimed by this identity"),
     ):
@@ -41,3 +43,13 @@ def test_broadcast_can_compact_and_full_record_is_unchanged():
     before = json.dumps(event, sort_keys=True)
     assert len(render_event(event, json_mode=False, budget_bytes=24).encode()) <= 24
     assert json.dumps(event, sort_keys=True) == before
+
+
+def test_untrusted_directional_and_control_characters_are_visible_escapes():
+    event = message_event()
+    event["message"]["text"] = "trusted\u202eabc\u200b\x1b[31m"
+    for mode in (False, True):
+        rendered = render_event(event, json_mode=mode, budget_bytes=None)
+        assert "\u202e" not in rendered and "\u200b" not in rendered and "\x1b" not in rendered
+        assert "\\u202e" in rendered and "\\u200b" in rendered and "\\u001b" in rendered
+    assert event["message"]["text"] == "trusted\u202eabc\u200b\x1b[31m"

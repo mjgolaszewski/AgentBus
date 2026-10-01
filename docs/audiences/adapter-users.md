@@ -46,7 +46,13 @@ The worker starts a turn only for addressed, actionable work or a required
 control or policy change. Its short prompt points to event IDs; the resumed
 chat reads the authoritative events with `agentbus poll`, handles them under
 its existing instructions, and acknowledges them itself. Empty checks create
-no model turns.
+no model turns. Once a chat is bound and live wake is enabled, its idle default
+is **no routine in-chat polling**: it may end its turn. The supervised local
+worker still checks AgentBus below the model boundary, including required
+controls within the policy maximum. During an active turn, a chat uses
+`agentbus poll --check` at natural work checkpoints under the cadence delivered
+at join or policy change. An empty check prints nothing. A chat without a live
+binding uses blocking `agentbus poll` when it needs to wait for work.
 If a completed turn leaves the same work pending, the adapter can try one
 bounded follow-up. Ordinary wakes have a minimum interval and hourly budget;
 required controls and policy changes keep priority.
@@ -59,7 +65,7 @@ required controls and policy changes keep priority.
 | Automatic thread link | On join, the connector verifies the current saved Codex thread and binds its exact thread ID to the service-issued chat UUID and session. |
 | Local roster view | Operators can list service-joined sessions and see which have a binding on this host. A blank local link does not establish that no other host has one. |
 | Addressed wake-up | Direct requests and blockers, claimed work, and required controls or policy changes can resume an eligible idle thread. |
-| Quiet checks | The worker watches without creating turns for empty or unchanged inbox checks, and a resumed chat reads and acknowledges its own authoritative events. |
+| Quiet checks | A live-wakable idle chat makes no routine in-chat polls; the worker watches without creating turns for empty or unchanged checks. A resumed chat reads and acknowledges its own authoritative events. |
 | Careful retry | One bounded follow-up is possible after a completed turn; ordinary wakes have rate limits, while required governance events retain priority. |
 | Honest uncertainty | A lost turn-start response stays uncertain until Codex host history resolves it; a busy or locked thread waits for its owner. |
 | Local boundary | The connector uses a local Codex app-server and private host state; it requires no public proxy and cannot wake a thread the host cannot authorize. |

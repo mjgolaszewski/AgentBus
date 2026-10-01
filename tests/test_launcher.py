@@ -259,13 +259,28 @@ def test_start_does_not_spawn_second_receiver_when_service_is_running(launcher, 
 
 def test_health_status_does_not_hold_lock_needed_to_stop_service(launcher, project, tmp_path, monkeypatch):
     def health(_values, path):
-        assert path == "/healthz"
+        assert path == "/v1/status"
         with (tmp_path / "service.lock").open("a") as other_command:
             launcher.fcntl.flock(other_command, launcher.fcntl.LOCK_EX | launcher.fcntl.LOCK_NB)
         return {"status": "ok", "slack_connected": False}
 
     monkeypatch.setattr(launcher, "api", health)
     assert launcher.lifecycle("status", project, {"AGENTBUS_STATE_DIR": str(tmp_path)}) == 0
+
+
+def test_active_poll_check_returns_silently_when_worker_has_no_event(launcher, tmp_path, monkeypatch, capsys):
+    from src import agentbus_poll_client as poll
+
+    profile = {"identity": "agentbus:flower", "participation": {"session_id": "s1", "stopped": False}}
+    path = tmp_path / "agentbus:flower.json"
+    path.write_text(json.dumps(profile))
+    monkeypatch.setattr(launcher, "configuration", lambda **_kwargs: (tmp_path, {}))
+    monkeypatch.setattr(launcher, "checked_profile", lambda _values, _identity: (profile, {}))
+    monkeypatch.setattr(launcher, "identity_path", lambda _values, _identity: path)
+    monkeypatch.setattr(poll, "ensure_worker", lambda *_args: None)
+    monkeypatch.setattr(poll, "peek_event", lambda *_args, **_kwargs: None)
+    assert launcher.main(["poll", "--check", "--identity", "agentbus:flower"]) == 0
+    assert capsys.readouterr().out == ""
 
 
 def test_failed_start_removes_pid_record_and_keeps_credentials_out_of_argv(launcher, project, tmp_path, monkeypatch):
@@ -297,7 +312,7 @@ def test_failed_start_removes_pid_record_and_keeps_credentials_out_of_argv(launc
 def test_send_reads_stdin_and_preserves_thread_and_recipient(launcher, monkeypatch, capsys):
     captured = []
     monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), {}))
-    monkeypatch.setattr(launcher, "api", lambda values, path, payload=None: captured.append((path, payload)) or {"ok": True})
+    monkeypatch.setattr(launcher, "api", lambda values, path, payload=None, **_kwargs: captured.append((path, payload)) or {"ok": True})
     monkeypatch.setattr(launcher.sys, "stdin", io.StringIO("first line\nsecond line\n"))
     assert launcher.main(["send", "-", "--sender", "writer", "--recipient", "reviewer",
                           "--thread-ts", "123.456", "--correlation-id", "task-1"]) == 0
@@ -354,7 +369,7 @@ def test_inbox_after_zero_is_stateless_and_ack_is_bounded(launcher, tmp_path, mo
     values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
     monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
 
-    def fake_api(_values, path, payload=None):
+    def fake_api(_values, path, payload=None, **_kwargs):
         if path == "/v1/info":
             return {"inbox_id": "inbox-1", "channel": "C123", "high_water_cursor": 50}
         assert "after=0" in path
@@ -508,7 +523,8 @@ def test_join_retries_with_same_session_secret_and_keeps_legacy_uuid(launcher, t
         if len(attempts) == 1:
             raise launcher.ClientError("transport uncertain")
         return {"chat_id": chat_id, "session_id": "session-1", "revision": "revision-1",
-                "values": {}, "sources": {}, "ack_required": True}
+                "values": {"initial_interval_seconds": 60, "backoff_factor": 2,
+                           "max_interval_seconds": 1920}, "sources": {}, "ack_required": True}
 
     monkeypatch.setattr(launcher, "api", fake_api)
     enrolled = []

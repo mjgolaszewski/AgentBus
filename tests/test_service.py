@@ -78,7 +78,9 @@ def event(text="Human reply", ts="1700000001.000001", **changes):
 
 def test_auth_health_and_invalid_messages_never_contact_slack(service):
     client, app, requests = service
-    assert client.get("/healthz").json() == {"status": "ok", "slack_connected": True}
+    assert client.get("/healthz").json() == {"status": "ok"}
+    assert client.get("/v1/status").status_code == 401
+    assert client.get("/v1/status", headers=AUTH).json()["slack_connected"] is True
     for headers in ({}, {"Authorization": "Bearer wrong"}, {"Authorization": "Basic local-test-secret"}):
         assert client.get("/v1/messages", headers=headers).status_code == 401
         assert client.post("/v1/messages", headers=headers, json={"sender": "agent-a", "text": "hello"}).status_code == 401
@@ -99,8 +101,9 @@ def test_public_api_operation_inventory_owns_registered_routes(settings):
         for route in app.routes
         for method in getattr(route, "methods", set())
     }
-    assert set(API_OPERATIONS) == {"health", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "rotation_grant", "session_rotate_secret", "session_presence", "session_roster", "session_policy_ack", "session_policy_explain", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename"}
+    assert set(API_OPERATIONS) == {"health", "status", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "rotation_grant", "session_rotate_secret", "session_presence", "session_roster", "session_policy_ack", "session_policy_explain", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename"}
     assert routes[("GET", "/healthz")] is API_OPERATIONS["health"]
+    assert routes[("GET", "/v1/status")] is API_OPERATIONS["status"]
     assert routes[("POST", "/v1/messages")] is API_OPERATIONS["send"]
     assert routes[("GET", "/v1/messages")] is API_OPERATIONS["read"]
     assert routes[("GET", "/v1/info")] is API_OPERATIONS["info"]
@@ -120,6 +123,76 @@ def test_public_api_operation_inventory_owns_registered_routes(settings):
     assert routes[("GET", "/v1/controls/{control_id}")] is API_OPERATIONS["control_status"]
     assert routes[("POST", "/v1/controls/{control_id}/targets/{session_id}/ack")] is API_OPERATIONS["control_ack"]
     assert routes[("POST", "/v1/sessions/{session_id}/rename")] is API_OPERATIONS["session_rename"]
+
+
+def test_request_limit_rejects_before_slack_and_private_database(service, settings):
+    client, _app, requests = service
+    assert settings.db_path.stat().st_mode & 0o777 == 0o600
+    oversized = b"x" * 65537
+    assert client.post("/v1/messages", headers=AUTH, content=oversized).status_code == 413
+    assert client.post("/v1/sessions", headers=AUTH, json={
+        "repo": "agentbus", "route": "agentbus:flower", "display_name": "Flower",
+        "session_secret": "x" * 513,
+    }).status_code == 422
+    assert requests == []
+
+
+def test_sender_assurance_is_service_derived_and_legacy_remains_readable(service):
+    client, app, _requests = service
+    store = app.state.store.participation
+    store.set_policy(scope="global", scope_key="*", values={
+        "initial_interval_seconds": 60, "backoff_factor": 2,
+        "max_interval_seconds": 1920, "control_check_max_seconds": 60,
+        "jitter_fraction": 0, "overdue_grace_seconds": 120,
+        "presentation_budget_bytes": None,
+    }, actor="operator")
+    secret = "session-secret-with-at-least-32-characters"
+    _chat, session, revision = store.enroll(
+        repo="agentbus", route="agentbus:flower", display_name="Flower", session_secret=secret,
+    )
+    store.acknowledge_policy(session, secret, revision)
+    body = {"sender": "agentbus:flower", "recipient": "agentbus:peer", "text": "Verified"}
+    spoof = client.post("/v1/messages", headers=AUTH, json={**body, "sender_assurance": "session"})
+    assert spoof.status_code == 422
+    wrong = client.post("/v1/messages", headers={**AUTH, "X-AgentBus-Session-Token": "wrong"}, json=body)
+    assert wrong.status_code == 403
+    verified = client.post("/v1/messages", headers={**AUTH, "X-AgentBus-Session-Token": secret}, json=body)
+    assert verified.status_code == 201
+    assert verified.json()["sender_assurance"] == "session"
+    legacy = client.post("/v1/messages", headers=AUTH, json={**body, "text": "Old client"})
+    assert legacy.status_code == 201
+    assert legacy.json()["sender_assurance"] == "legacy"
+    assert [item["sender_assurance"] for item in client.get("/v1/messages", headers=AUTH).json()["messages"]] == [
+        "session", "legacy",
+    ]
+    assert client.post("/v1/messages", headers=AUTH,
+                       json={**body, "sender": "slack:U123"}).status_code == 422
+    assert client.post("/v1/messages", headers=AUTH,
+                       json={**body, "sender": "AgentBus:Flower"}).status_code == 422
+
+
+def test_thread_parent_must_exist_before_slack_post(service):
+    client, app, requests = service
+    body = {"sender": "agent-a", "recipient": "agent-b", "text": "reply",
+            "thread_ts": "1700000999.000001"}
+    assert client.post("/v1/messages", headers=AUTH, json=body).status_code == 422
+    assert requests == []
+    app.state.store.append(CHANNEL, body["thread_ts"],
+                           SendMessage(sender="agent-b", recipient="agent-a", text="root"))
+    assert client.post("/v1/messages", headers=AUTH, json=body).status_code == 201
+
+
+def test_slack_display_escapes_invisible_controls_but_history_is_raw(service):
+    client, _app, requests = service
+    raw = "look\u202eaway\u200b\x1b[31m"
+    posted = client.post("/v1/messages", headers=AUTH,
+                         json={"sender": "agent-a", "recipient": "agent-b", "text": raw})
+    assert posted.status_code == 201
+    blocks = json.loads(requests[0].content)["blocks"]
+    display = blocks[1]["text"]["text"]
+    assert "\u202e" not in display and "\u200b" not in display and "\x1b" not in display
+    assert "\\u202e" in display and "\\u200b" in display and "\\u001b" in display
+    assert posted.json()["text"] == raw
 
 
 def test_operator_policy_write_is_separate_from_message_bearer(service):
@@ -456,6 +529,8 @@ def test_temporary_policy_override_requires_operator_and_exact_session_ack(servi
 
 def test_send_roundtrip_and_plain_text_blocks_preserve_mentions_and_unicode(service):
     client, app, requests = service
+    app.state.store.append(CHANNEL, "1699999999.000001",
+                           SendMessage(sender="agent-a", recipient="agent-b", text="Thread root"))
     text = '<@U123> <!channel> https://example.com/a?b=c&d=e &lt; 🐍 ```code```'
     body = {"sender": "agent-a", "recipient": "agent-b", "text": text, "repo": "org/repo",
             "kind": "question", "correlation_id": "task-1", "thread_ts": "1699999999.000001"}
@@ -479,7 +554,7 @@ def test_send_roundtrip_and_plain_text_blocks_preserve_mentions_and_unicode(serv
     app.state.socket.emit(event(payload["text"], ts=response.json()["slack_ts"],
                                 subtype="bot_message", bot_id="B123", thread_ts=body["thread_ts"]))
     page = client.get("/v1/messages", headers=AUTH).json()
-    assert page["messages"] == [response.json()]
+    assert page["messages"][-1] == response.json()
     assert app.state.socket.acknowledgements == ["event-1"]
 
 

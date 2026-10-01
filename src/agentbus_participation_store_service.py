@@ -80,6 +80,7 @@ class ParticipationStore:
                 )
             """)
             db.execute("CREATE INDEX IF NOT EXISTS participation_sessions_chat ON participation_sessions(chat_id, state)")
+            db.execute("CREATE INDEX IF NOT EXISTS participation_sessions_secret ON participation_sessions(secret_sha256)")
             db.execute("""
                 CREATE TABLE IF NOT EXISTS poll_policy_revisions (
                     revision_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -584,6 +585,23 @@ class ParticipationStore:
 
     def same_chat(self, first_route: str, second_route: str) -> bool:
         return second_route in self.routes_for(first_route)
+
+    def session_for_secret(self, secret: str, route: str) -> sqlite3.Row:
+        """Resolve an optional message-plane proof without trusting a sender label."""
+        if len(secret) > 512:
+            raise PermissionError("session credential exceeds maximum length")
+        digest = hashlib.sha256(secret.encode()).hexdigest()
+        with self._lock:
+            row = self._db.execute(
+                "SELECT s.*, c.current_route FROM participation_sessions AS s "
+                "JOIN chat_identities AS c ON c.chat_id = s.chat_id "
+                "WHERE s.secret_sha256 = ?", (digest,),
+            ).fetchone()
+            if row is None or route not in self.routes_for(row["current_route"]):
+                raise PermissionError("session authority does not match sender")
+            if row["state"] not in {"active", "overdue", "stopping"}:
+                raise PermissionError("session is not active")
+            return row
 
     def _authorized_session(self, session_id: str, secret: str) -> sqlite3.Row:
         session = self._db.execute(

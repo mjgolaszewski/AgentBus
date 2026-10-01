@@ -1,8 +1,4 @@
-"""A local, authenticated message log backed by one Slack channel.
-
-Run a single worker with ``uvicorn agentbus_service:create_app --factory``.
-Agent names are self-reported labels, not authenticated Slack identities.
-"""
+"""An authenticated Slack-backed message log with service-derived sender assurance."""
 
 from __future__ import annotations
 
@@ -16,14 +12,13 @@ import sqlite3
 import threading
 import uuid
 from contextlib import asynccontextmanager
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated, Callable, Literal
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError, model_validator
 from slack_sdk import WebClient
 from slack_sdk.socket_mode import SocketModeClient
 from slack_sdk.socket_mode.client import BaseSocketModeClient
@@ -32,6 +27,7 @@ from slack_sdk.socket_mode.response import SocketModeResponse
 
 from src.agentbus_claim_recovery_service import ClaimRecoveryStore
 from src.agentbus_control_store_service import ControlStore
+from src.agentbus_message_assurance_service import valid_new_message_routes
 from src.agentbus_participation_api_service import (
     UPGRADE_NOTICE,
     api_claim_recovery,
@@ -55,47 +51,16 @@ from src.agentbus_participation_api_service import (
     upgrade_notice,
 )
 from src.agentbus_participation_store_service import ParticipationStore
+from src.agentbus_presentation_service import visible_text
+from src.agentbus_reply_policy_service import validate_reply
+from src.agentbus_request_limits_service import RequestBodyLimit
+from src.agentbus_settings_service import Settings
 
 LOGGER = logging.getLogger("agentbus")
 IDENTIFIER = r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$"
 SLACK_TS = r"^[0-9]{1,20}\.[0-9]{1,20}$"
 MAX_TEXT = 6000
 ACTIONABLE_KINDS = {"question", "request", "blocker", "handoff"}
-
-
-@dataclass(frozen=True)
-class Settings:
-    api_token: str = field(repr=False)
-    slack_bot_token: str = field(repr=False)
-    slack_app_token: str = field(repr=False)
-    slack_channel: str
-    db_path: Path
-    operator_token: str | None = field(default=None, repr=False)
-
-    @classmethod
-    def from_env(cls) -> Settings:
-        names = ("API_TOKEN", "SLACK_BOT_TOKEN", "SLACK_APP_TOKEN", "SLACK_CHANNEL")
-        values = {name.lower(): os.environ.get(f"AGENTBUS_{name}", "").strip() for name in names}
-        missing = [f"AGENTBUS_{name}" for name in names if not values[name.lower()]]
-        if missing:
-            raise ValueError("Missing required configuration: " + ", ".join(missing))
-        if not re.fullmatch(r"[!-~]{32,}", values["api_token"]):
-            raise ValueError("AGENTBUS_API_TOKEN must contain at least 32 printable non-whitespace ASCII characters")
-        if not values["slack_bot_token"].startswith("xoxb-"):
-            raise ValueError("AGENTBUS_SLACK_BOT_TOKEN must be a bot token (xoxb-)")
-        if not values["slack_app_token"].startswith("xapp-"):
-            raise ValueError("AGENTBUS_SLACK_APP_TOKEN must be an app token (xapp-)")
-        if not re.fullmatch(r"[CG][A-Z0-9]+", values["slack_channel"]):
-            raise ValueError("AGENTBUS_SLACK_CHANNEL must be a channel ID, not a name")
-        state = Path(os.environ.get("XDG_STATE_HOME", str(Path(os.path.expanduser("~")) / ".local/state")))
-        db_path = Path(os.environ.get("AGENTBUS_DB_PATH", str(state / "agentbus/messages.sqlite3")))
-        operator_token = os.environ.get("AGENTBUS_OPERATOR_TOKEN", "").strip() or None
-        if operator_token is not None:
-            if not re.fullmatch(r"[!-~]{32,}", operator_token):
-                raise ValueError("AGENTBUS_OPERATOR_TOKEN must contain at least 32 printable non-whitespace ASCII characters")
-            if hmac.compare_digest(operator_token, values["api_token"]):
-                raise ValueError("AGENTBUS_OPERATOR_TOKEN must differ from AGENTBUS_API_TOKEN")
-        return cls(**values, db_path=db_path.expanduser(), operator_token=operator_token)
 
 
 def encode_envelope(message: SendMessage) -> str:
@@ -109,6 +74,7 @@ def encode_envelope(message: SendMessage) -> str:
 
 class SendMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    _sender_assurance: str = PrivateAttr(default="legacy")
 
     sender: str = Field(pattern=IDENTIFIER)
     recipient: str = Field(default="all", pattern=IDENTIFIER)
@@ -152,6 +118,7 @@ class Message(SendMessage):
     cursor: int
     slack_ts: str
     received_at: str
+    sender_assurance: Literal["session", "slack-human", "legacy"] = "legacy"
 
 
 class MessagePage(BaseModel):
@@ -196,6 +163,8 @@ class MessageStore:
 
     def __init__(self, path: Path):
         path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        descriptor = os.open(path, os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0), 0o600)
+        os.close(descriptor)
         self._lock = threading.RLock()
         self._db = sqlite3.connect(path, check_same_thread=False, timeout=5)
         self._db.row_factory = sqlite3.Row
@@ -219,6 +188,8 @@ class MessageStore:
         columns = {
             row["name"] for row in self._db.execute("PRAGMA table_info(messages)").fetchall()
         }
+        if "sender_assurance" not in columns:
+            self._db.execute("ALTER TABLE messages ADD COLUMN sender_assurance TEXT NOT NULL DEFAULT 'legacy'")
         if "audience" not in columns:
             self._db.execute("ALTER TABLE messages ADD COLUMN audience TEXT")
             for row in self._db.execute("SELECT cursor, payload FROM messages").fetchall():
@@ -291,17 +262,24 @@ class MessageStore:
     @staticmethod
     def _message(row: sqlite3.Row) -> Message:
         return Message(**json.loads(row["payload"]), cursor=row["cursor"],
-                       slack_ts=row["slack_ts"], received_at=row["received_at"])
+                       slack_ts=row["slack_ts"], received_at=row["received_at"],
+                       sender_assurance=row["sender_assurance"])
 
     def append(self, channel: str, slack_ts: str, message: SendMessage) -> Message:
         with self._lock, self._db:
             self._db.execute("""
                 INSERT OR IGNORE INTO messages
-                    (channel, slack_ts, thread_ts, recipient, audience, received_at, payload)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                    (channel, slack_ts, thread_ts, recipient, audience, received_at, payload, sender_assurance)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (channel, slack_ts, message.thread_ts, message.recipient,
                   message.audience, datetime.now(timezone.utc).isoformat(),
-                  message.model_dump_json()))
+                  message.model_dump_json(), message._sender_assurance))
+            if message._sender_assurance == "session":
+                self._db.execute(
+                    "UPDATE messages SET sender_assurance = 'session' "
+                    "WHERE channel = ? AND slack_ts = ? AND sender_assurance = 'legacy'",
+                    (channel, slack_ts),
+                )
             row = self._db.execute("SELECT * FROM messages WHERE channel = ? AND slack_ts = ?",
                                    (channel, slack_ts)).fetchone()
             return self._message(row)
@@ -450,21 +428,13 @@ class MessageStore:
         return InboxPage(messages=shown, next_cursor=next_cursor, has_more=has_more)
 
     def validate_reply(self, channel: str, message: SendMessage) -> None:
-        if message.reply_to_cursor is None:
-            return
-        parent = self.message(channel, message.reply_to_cursor)
-        if parent is None:
-            raise KeyError(message.reply_to_cursor)
-        same_chat = self.participation.same_chat
-        allowed = same_chat(parent.sender, message.sender) or parent.audience == "broadcast" or \
-                  (parent.audience == "direct" and same_chat(parent.recipient, message.sender)) or \
-                  (parent.audience == "unrouted" and
-                   (claimant := self.claimant(channel, parent.cursor)) is not None and
-                   same_chat(claimant, message.sender))
-        if not allowed:
-            raise PermissionError("sender is not an intended responder for the parent message")
-        if not same_chat(message.recipient, parent.sender) or message.audience != "direct":
-            raise ValueError("replies must be direct messages to the parent sender")
+        validate_reply(self, channel, message)
+
+    def message_by_ts(self, channel: str, slack_ts: str) -> Message | None:
+        with self._lock:
+            row = self._db.execute("SELECT * FROM messages WHERE channel = ? AND slack_ts = ?",
+                                   (channel, slack_ts)).fetchone()
+            return self._message(row) if row else None
 
     def close(self) -> None:
         with self._lock:
@@ -495,7 +465,9 @@ def normalize_event(event: dict, channel: str, trusted_bot_id: str) -> tuple[str
                     envelope.pop("audience", None)
                     envelope.pop("reply_to_cursor", None)
                 envelope["thread_ts"] = thread_ts
-                return ts, SendMessage.model_validate(envelope)
+                message = SendMessage.model_validate(envelope)
+                if not message.sender.startswith("slack:"):
+                    return ts, message
         except (ValueError, RecursionError):
             pass
     identity = event.get("bot_id") or event.get("user") or "unknown"
@@ -503,12 +475,16 @@ def normalize_event(event: dict, channel: str, trusted_bot_id: str) -> tuple[str
     # Human messages can exceed the API's send limit, including escaped Unicode.
     text = text.encode("utf-8", errors="replace").decode("utf-8").strip()[:MAX_TEXT]
     try:
-        return ts, SendMessage(sender=f"slack:{identity}", text=text, thread_ts=thread_ts,
-                               audience="unrouted")
+        message = SendMessage(sender=f"slack:{identity}", text=text, thread_ts=thread_ts,
+                              audience="unrouted")
+        message._sender_assurance = "slack-human" if event.get("user") and not event.get("bot_id") else "legacy"
+        return ts, message
     except ValidationError:
         # Even 3000 astral Unicode characters fit as JSON surrogate pairs.
-        return ts, SendMessage(sender=f"slack:{identity}", text=text[:3000], thread_ts=thread_ts,
-                               audience="unrouted")
+        message = SendMessage(sender=f"slack:{identity}", text=text[:3000], thread_ts=thread_ts,
+                              audience="unrouted")
+        message._sender_assurance = "slack-human" if event.get("user") and not event.get("bot_id") else "legacy"
+        return ts, message
 
 
 class SlackReceiver:
@@ -570,8 +546,9 @@ class SlackPoster:
         blocks: list[dict[str, object]] = [
             {"type": "context", "elements": [{"type": "plain_text", "text": label, "emoji": False}]}
         ]
-        blocks.extend({"type": "section", "text": {"type": "plain_text", "text": message.text[i:i + 3000], "emoji": False}}
-                      for i in range(0, len(message.text), 3000))
+        display = visible_text(message.text)
+        blocks.extend({"type": "section", "text": {"type": "plain_text", "text": display[i:i + 3000], "emoji": False}}
+                      for i in range(0, len(display), 3000))
         payload = {"channel": self.settings.slack_channel, "text": encode_envelope(message), "blocks": blocks,
                    "parse": "none", "mrkdwn": False, "unfurl_links": False, "unfurl_media": False}
         if message.thread_ts:
@@ -612,12 +589,26 @@ def authenticate(request: Request,
 
 
 def api_health(request: Request) -> dict:
-    return {"status": "ok", "slack_connected": request.app.state.socket.is_connected()}
+    return {"status": "ok"}
 
 
-async def api_send(request: Request, message: SendMessage) -> Message:
+def api_status(request: Request) -> dict:
+    return {"status": "ok", "slack_connected": request.app.state.socket.is_connected(),
+            "database_bytes": request.app.state.settings.database_bytes()}
+
+
+async def api_send(request: Request, message: SendMessage,
+                   x_agentbus_session_token: Annotated[str | None, Header()] = None) -> Message:
     if message.audience == "unrouted":
         raise HTTPException(422, "unrouted audience is reserved for Slack ingestion")
+    if not valid_new_message_routes(message.sender, message.recipient):
+        raise HTTPException(422, "new messages require canonical agent routes")
+    if x_agentbus_session_token:
+        try:
+            request.app.state.store.participation.session_for_secret(x_agentbus_session_token, message.sender)
+        except PermissionError as exc:
+            raise HTTPException(403, str(exc)) from None
+        message._sender_assurance = "session"
     settings = request.app.state.settings
     try:
         request.app.state.store.validate_reply(settings.slack_channel, message)
@@ -693,6 +684,7 @@ def api_claim(request: Request, cursor: int, claim: ClaimRequest) -> Claim:
 # callables below. The governance inventory and runtime dispatch cannot drift.
 API_OPERATIONS: dict[str, Callable[..., object]] = {
     "health": api_health,
+    "status": api_status,
     "send": api_send,
     "read": api_read,
     "info": api_info,
@@ -748,11 +740,13 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                 await client.aclose()
             store.close()
 
-    app = FastAPI(title="AgentBus", version="0.5.1", lifespan=lifespan,
+    app = FastAPI(title="AgentBus", version="0.6.0", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
+    app.add_middleware(RequestBodyLimit)
     auth = [Depends(authenticate)]
     app.add_api_route("/healthz", API_OPERATIONS["health"], methods=["GET"])
+    app.add_api_route("/v1/status", API_OPERATIONS["status"], methods=["GET"], dependencies=auth)
     app.add_api_route("/v1/messages", API_OPERATIONS["send"], methods=["POST"],
                       dependencies=auth, response_model=Message, status_code=201)
     app.add_api_route("/v1/messages", API_OPERATIONS["read"], methods=["GET"],
