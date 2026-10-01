@@ -33,6 +33,7 @@ from slack_sdk.socket_mode.response import SocketModeResponse
 from src.agentbus_claim_recovery_service import ClaimRecoveryStore
 from src.agentbus_control_store_service import ControlStore
 from src.agentbus_participation_api_service import (
+    UPGRADE_NOTICE,
     api_claim_recovery,
     api_control_ack,
     api_control_issue,
@@ -41,13 +42,16 @@ from src.agentbus_participation_api_service import (
     api_policy_effective,
     api_policy_set,
     api_profile_handoff,
+    api_rotation_grant,
     api_session_check_in,
     api_session_enroll,
     api_session_policy_ack,
     api_session_policy_explain,
     api_session_presence,
     api_session_rename,
+    api_session_rotate_secret,
     authenticate_operator,
+    upgrade_notice,
 )
 from src.agentbus_participation_store_service import ParticipationStore
 
@@ -56,13 +60,6 @@ IDENTIFIER = r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$"
 SLACK_TS = r"^[0-9]{1,20}\.[0-9]{1,20}$"
 MAX_TEXT = 6000
 ACTIONABLE_KINDS = {"question", "request", "blocker", "handoff"}
-UPGRADE_NOTICE = (
-    "Your AgentBus client does not advertise participation-v1. Update it from "
-    "https://github.com/mjgolaszewski/AgentBus, then ask the operator for a profile handoff. "
-    "Run `agentbus join --identity REPO:NAME --handoff-file PRIVATE_FILE`, acknowledge the "
-    "delivered policy revision, and use `agentbus poll`. Legacy messaging still works, "
-    "but this client cannot receive acknowledged stop controls."
-)
 
 
 @dataclass(frozen=True)
@@ -613,10 +610,6 @@ def authenticate(request: Request,
                             headers={"WWW-Authenticate": "Bearer"})
 
 
-def upgrade_notice(request: Request) -> str | None:
-    return None if request.headers.get("X-AgentBus-Client-Capabilities") == "participation-v1" else UPGRADE_NOTICE
-
-
 def api_health(request: Request) -> dict:
     return {"status": "ok", "slack_connected": request.app.state.socket.is_connected()}
 
@@ -708,6 +701,7 @@ API_OPERATIONS: dict[str, Callable[..., object]] = {
     "policy_effective": api_policy_effective,
     "session_enroll": api_session_enroll,
     "profile_handoff": api_profile_handoff,
+    "rotation_grant": api_rotation_grant,
     "session_presence": api_session_presence,
     "session_policy_ack": api_session_policy_ack,
     "session_policy_explain": api_session_policy_explain,
@@ -717,6 +711,7 @@ API_OPERATIONS: dict[str, Callable[..., object]] = {
     "control_status": api_control_status,
     "control_ack": api_control_ack,
     "session_rename": api_session_rename,
+    "session_rotate_secret": api_session_rotate_secret,
     "claim_recovery": api_claim_recovery,
 }
 
@@ -751,7 +746,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                 await client.aclose()
             store.close()
 
-    app = FastAPI(title="AgentBus", version="0.4.0", lifespan=lifespan,
+    app = FastAPI(title="AgentBus", version="0.4.1", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     auth = [Depends(authenticate)]
@@ -776,6 +771,10 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                       dependencies=auth, status_code=201)
     app.add_api_route("/v1/sessions/profile-handoffs", API_OPERATIONS["profile_handoff"],
                       methods=["POST"], dependencies=[Depends(authenticate_operator)], status_code=201)
+    app.add_api_route("/v1/sessions/{session_id}/rotation-grants", API_OPERATIONS["rotation_grant"],
+                      methods=["POST"], dependencies=[Depends(authenticate_operator)], status_code=201)
+    app.add_api_route("/v1/sessions/{session_id}/rotate-secret", API_OPERATIONS["session_rotate_secret"],
+                      methods=["POST"], dependencies=auth)
     app.add_api_route("/v1/sessions/{session_id}/presence", API_OPERATIONS["session_presence"],
                       methods=["GET"], dependencies=[Depends(authenticate_operator)])
     app.add_api_route("/v1/sessions/{session_id}/policy", API_OPERATIONS["session_policy_explain"],

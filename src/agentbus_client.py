@@ -23,6 +23,9 @@ from src.agentbus_transport_client import ClientError, api, configuration
 
 NAME_RE = r"^[a-z0-9][a-z0-9-]{0,31}$"
 REPO_RE = r"^[a-z0-9][a-z0-9._-]{0,63}$"
+PUBLIC_PERSONA_KEYS = ("schema_version", "chat_id", "identity", "repo", "name",
+                       "display_name", "role", "voice", "remit", "values",
+                       "working_style", "signature", "persona_file")
 
 
 def now() -> str:
@@ -487,7 +490,8 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
                 raise ClientError("Persona fields must not be blank.")
             profile.update(changes)
             save_profile(values, profile)
-        print(json.dumps(profile, indent=2, ensure_ascii=False) if ns.json else adoption_block(profile))
+        public = {key: profile.get(key) for key in PUBLIC_PERSONA_KEYS}
+        print(json.dumps(public, indent=2, ensure_ascii=False) if ns.json else adoption_block(profile))
         return 0
     if ns.command == "inbox":
         identity = resolve_identity(ns.identity)
@@ -636,6 +640,18 @@ def cli_issue_handoff(ns: argparse.Namespace, project: Path, values: dict[str, s
     return _execute_command(ns, project, values)
 
 
+def cli_issue_rotation(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    from src.agentbus_rotation_client import issue_rotation
+
+    return issue_rotation(resolve_identity(ns.identity), ns.output, values)
+
+
+def cli_rotate_secret(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    from src.agentbus_rotation_client import rotate_secret
+
+    return rotate_secret(resolve_identity(ns.identity), ns.rotation_file, ns.replace_pending, values)
+
+
 def cli_join(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
     return _execute_command(ns, project, values)
 
@@ -738,6 +754,8 @@ CLI_OPERATIONS = {
     "claim": cli_claim,
     "reply": cli_reply,
     "issue-handoff": cli_issue_handoff,
+    "issue-rotation": cli_issue_rotation,
+    "rotate-secret": cli_rotate_secret,
     "join": cli_join,
     "policy-ack": cli_policy_ack,
     "check-in": cli_check_in,

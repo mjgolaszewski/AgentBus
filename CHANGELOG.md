@@ -5,6 +5,16 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-01
+
+### Security
+
+- Restricted `agentbus persona --json` to public persona fields so participation
+  credentials and pending private handoffs never appear in its output.
+- Added operator-authorized, one-use session credential rotation. Rotation
+  revokes the old credential while preserving chat and session identity,
+  policy acknowledgment, controls, cursors, and Codex wake binding.
+
 ### Documentation
 
 - Updated the participation architecture and audience index to describe the

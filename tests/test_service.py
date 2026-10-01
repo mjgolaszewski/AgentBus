@@ -99,7 +99,7 @@ def test_public_api_operation_inventory_owns_registered_routes(settings):
         for route in app.routes
         for method in getattr(route, "methods", set())
     }
-    assert set(API_OPERATIONS) == {"health", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "session_presence", "session_policy_ack", "session_policy_explain", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename"}
+    assert set(API_OPERATIONS) == {"health", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "rotation_grant", "session_rotate_secret", "session_presence", "session_policy_ack", "session_policy_explain", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename"}
     assert routes[("GET", "/healthz")] is API_OPERATIONS["health"]
     assert routes[("POST", "/v1/messages")] is API_OPERATIONS["send"]
     assert routes[("GET", "/v1/messages")] is API_OPERATIONS["read"]
@@ -111,6 +111,8 @@ def test_public_api_operation_inventory_owns_registered_routes(settings):
     assert routes[("GET", "/v1/policy/effective")] is API_OPERATIONS["policy_effective"]
     assert routes[("GET", "/v1/sessions/{session_id}/policy")] is API_OPERATIONS["session_policy_explain"]
     assert routes[("POST", "/v1/sessions")] is API_OPERATIONS["session_enroll"]
+    assert routes[("POST", "/v1/sessions/{session_id}/rotation-grants")] is API_OPERATIONS["rotation_grant"]
+    assert routes[("POST", "/v1/sessions/{session_id}/rotate-secret")] is API_OPERATIONS["session_rotate_secret"]
     assert routes[("POST", "/v1/sessions/{session_id}/policy-ack")] is API_OPERATIONS["session_policy_ack"]
     assert routes[("POST", "/v1/sessions/{session_id}/check-in")] is API_OPERATIONS["session_check_in"]
     assert routes[("POST", "/v1/controls/stop")] is API_OPERATIONS["control_stop"]
@@ -239,6 +241,42 @@ def test_existing_profile_handoff_requires_operator_and_preserves_uuid(service):
                        json={"current_backoff_seconds": "NaN"}).status_code == 422
     assert client.post("/v1/sessions", headers=AUTH, json=enrollment).json()["session_id"] == joined.json()["session_id"]
     assert client.post("/v1/sessions", headers=AUTH, json={**enrollment, "session_secret": "other" * 10}).status_code == 409
+
+
+def test_operator_grant_rotates_only_the_exact_enrolled_session(service):
+    client, app, _ = service
+    app.state.settings = replace(app.state.settings, operator_token="operator-secret-with-at-least-32-characters")
+    operator = {"Authorization": "Bearer operator-secret-with-at-least-32-characters"}
+    participation = app.state.store.participation
+    participation.set_policy(scope="global", scope_key="*", values={
+        "initial_interval_seconds": 60, "backoff_factor": 2,
+        "max_interval_seconds": 1920, "control_check_max_seconds": 60,
+        "jitter_fraction": 0, "overdue_grace_seconds": 120,
+        "presentation_budget_bytes": None,
+    }, actor="operator")
+    old = "old-session-secret-with-at-least-32-characters"
+    new = "new-session-secret-with-at-least-32-characters"
+    chat_id, session_id, revision = participation.enroll(
+        repo="agentbus", route="agentbus:flower", display_name="Flower", session_secret=old,
+    )
+    participation.acknowledge_policy(session_id, old, revision)
+    grants = f"/v1/sessions/{session_id}/rotation-grants"
+    assert client.post(grants, headers=AUTH, json={"chat_id": chat_id}).status_code == 401
+    assert client.post(grants, headers=operator, json={"chat_id": str(uuid.uuid4())}).status_code == 409
+    issued = client.post(grants, headers=operator, json={"chat_id": chat_id})
+    assert issued.status_code == 201
+    token = issued.json()["rotation_token"]
+    rotate = f"/v1/sessions/{session_id}/rotate-secret"
+    body = {"rotation_token": token, "new_session_secret": new}
+    assert client.post(rotate, headers=AUTH,
+                       json={"rotation_token": "wrong" * 8, "new_session_secret": new}).status_code == 409
+    committed = client.post(rotate, headers=AUTH, json=body)
+    assert committed.status_code == 200
+    assert client.post(rotate, headers=AUTH, json=body).json() == committed.json()
+    check_in = f"/v1/sessions/{session_id}/check-in"
+    assert client.post(check_in, headers={**AUTH, "X-AgentBus-Session-Token": old}, json={}).status_code == 401
+    assert client.post(check_in, headers={**AUTH, "X-AgentBus-Session-Token": new}, json={}).status_code == 200
+    assert participation.session_state(session_id)["acknowledged_policy_revision"] == revision
 
 
 def test_operator_stop_is_snapshotted_prioritized_and_target_acknowledged(service):

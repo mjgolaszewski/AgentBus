@@ -8,6 +8,18 @@ from typing import Annotated, Literal
 from fastapi import Header, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+UPGRADE_NOTICE = (
+    "Your AgentBus client does not advertise participation-v1. Update it from "
+    "https://github.com/mjgolaszewski/AgentBus, then ask the operator for a profile handoff. "
+    "Run `agentbus join --identity REPO:NAME --handoff-file PRIVATE_FILE`, acknowledge the "
+    "delivered policy revision, and use `agentbus poll`. Legacy messaging still works, "
+    "but this client cannot receive acknowledged stop controls."
+)
+
+
+def upgrade_notice(request: Request) -> str | None:
+    return None if request.headers.get("X-AgentBus-Client-Capabilities") == "participation-v1" else UPGRADE_NOTICE
+
 
 class SetPolicyRevision(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -33,6 +45,19 @@ class IssueProfileHandoff(BaseModel):
     chat_id: str
     repo: str = Field(min_length=1, max_length=64)
     route: str = Field(min_length=3, max_length=80)
+
+
+class IssueSessionRotation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    chat_id: str
+
+
+class RotateSessionSecret(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    rotation_token: str = Field(min_length=32, repr=False)
+    new_session_secret: str = Field(min_length=32, repr=False)
 
 
 class AcknowledgePolicy(BaseModel):
@@ -170,6 +195,26 @@ def api_profile_handoff(request: Request, body: IssueProfileHandoff) -> dict:
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from None
     return {"handoff_token": token, "expires_in_seconds": 600}
+
+
+def api_rotation_grant(request: Request, session_id: str, body: IssueSessionRotation) -> dict:
+    try:
+        token = request.app.state.store.participation.issue_session_rotation(
+            chat_id=body.chat_id, session_id=session_id, actor="operator-capability",
+        )
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from None
+    return {"rotation_token": token, "expires_in_seconds": 600}
+
+
+def api_session_rotate_secret(request: Request, session_id: str, body: RotateSessionSecret) -> dict:
+    try:
+        receipt = request.app.state.store.participation.rotate_session_secret(
+            session_id=session_id, token=body.rotation_token, new_secret=body.new_session_secret,
+        )
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from None
+    return {"receipt": receipt, "session_id": session_id}
 
 
 def api_session_presence(request: Request, session_id: str) -> dict:

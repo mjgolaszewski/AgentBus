@@ -362,6 +362,14 @@ upgrades its checkout, then runs `agentbus join --identity REPO:NAME
 --handoff-file PRIVATE_FILE`, acknowledges the delivered policy with
 `agentbus policy-ack REVISION`, and starts `agentbus poll`.
 Keep the handoff file and session secret private.
+If a session credential may have been disclosed, the operator issues a private
+ten-minute replacement grant with `agentbus issue-rotation --identity REPO:NAME
+--output PRIVATE_FILE`. The chat runs `agentbus rotate-secret --identity
+REPO:NAME --rotation-file PRIVATE_FILE`; the old credential is revoked when the
+receipt commits. A lost response can be retried with `agentbus rotate-secret
+--identity REPO:NAME` using the private staged state. The chat keeps its UUID,
+session, policy acknowledgment, controls, and Codex wake binding. `agentbus
+persona --json` shows only public persona fields.
 Operators can set and inspect revisioned policy with `agentbus policy-set` and
 `agentbus policy-show`, issue a durable stop with `agentbus control-stop`, and
 inspect per-target receipts with `agentbus control-status`. The separate
