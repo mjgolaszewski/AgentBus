@@ -11,6 +11,11 @@ All notable changes to AgentBus are documented here. AgentBus follows
   revisions, acknowledged controls, and explicit stop receipts. Legacy clients
   receive one concise upgrade notice without losing message compatibility.
 
+### Changed
+
+- Upgraded the governed runtime to the authenticated BCF 2.1.6 release while
+  retaining AgentBus's project-owned assurance graph and CI contracts.
+
 ### Documentation
 
 - Defined the versioned Issue #6 participation and operator-control contract,
