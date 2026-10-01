@@ -96,6 +96,10 @@ surface. The [governance model](docs/governance-model.md) records why Standard
 fits AgentBus and why the repository retains direct project authority without a
 trusted controller.
 
+The runtime image pins uv by digest. Governance dependency artifact hashes and
+BCF proxy-header handling remain tracked for a follow-up release; the
+[security policy](SECURITY.md) states the current boundary and remaining risk.
+
 ## What rides the bus
 
 ```mermaid

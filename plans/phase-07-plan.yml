@@ -20,10 +20,8 @@ phase:
 delivery_contract:
   tightly_scoped_deliverables:
   - pin the Docker uv bootstrap to an immutable multiarch image digest
-  - adopt released BCF generated-workflow-input fix through canonical upgrade machinery
-  - adopt released BCF governance dependency locking without hand-editing generated
-    files
-  - adopt released BCF proxy-header handling while preserving provider authority boundaries
+  - adopt released BCF direct-main and generated-workflow-input fixes through canonical upgrade machinery
+  - disclose remaining F14 governance dependency hash and F15 proxy-header risk in release notes and security guidance
   - prove exact candidate and isolated release archive before consumer cutover
   parallelizable_workstreams:
   - id: P07-WS1
@@ -34,14 +32,15 @@ delivery_contract:
     name: release_evidence
   hard_dependencies:
   - P06 closed on exact main and v0.7.0 published
-  - BCF workflow-input, governance dependency-lock, and proxy-header fixes released
-    with immutable custody
+  - BCF direct-main and workflow-input fixes released with immutable custody
   docker_first_local_runtime: repo_native_validation_and_governance_commands
   completeness_standard: full_completeness_for_declared_scope
 scope_lock:
 - order: 1
   statement: keep the phase narrowly scoped to declared deliverables and update canonical
     governed artifacts in the same change
+- order: 2
+  statement: do not claim F14 governance hashes or F15 proxy-header remediation in v0.7.1; retain their P08 producer-owned acceptance obligations
 verification_plan:
 - make governance-validate
 - make architecture-test

@@ -11,8 +11,15 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 - Bootstrap the runtime container with uv 0.12.9 from an immutable official
   multi-architecture image digest rather than an unverified `pip install`.
-- BCF producer fixes for generated workflow inputs, governance dependency
-  locking, and proxy-header handling remain release prerequisites.
+- Require the released BCF direct-main comparison and generated workflow-input
+  fixes before this version can pass its exact PR and protected-main train.
+
+### Remaining risk
+
+- F14 governance dependency artifacts remain version-pinned without transitive
+  hash locking. F15 proxy-header handling remains a BCF-owned follow-up with
+  no known current exposure. Both are explicit v0.7.2 prerequisites; see
+  [SECURITY.md](SECURITY.md) for the boundary and stronger condition.
 
 ## [0.7.0] - 2026-10-01
 

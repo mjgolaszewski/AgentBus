@@ -20,41 +20,27 @@ workitems:
 - id: P07-P0-02
   priority: P0
   status: TODO
-  summary: deliver adopt released BCF generated-workflow-input fix through canonical
-    upgrade machinery
+  summary: deliver adopt released BCF direct-main and generated-workflow-input fixes through canonical upgrade machinery
   acceptance:
-  - adopt released BCF generated-workflow-input fix through canonical upgrade machinery_is_complete
+  - released BCF #347/#348 installed through canonical machinery without hand-edited generated files
   acceptance_evidence:
   - test
   - contract-test
 - id: P07-P0-03
   priority: P0
   status: TODO
-  summary: deliver adopt released BCF governance dependency locking without hand-editing
-    generated files
+  summary: deliver disclose remaining F14 governance dependency hash and F15 proxy-header risk in release notes and security guidance
   acceptance:
-  - adopt released BCF governance dependency locking without hand-editing generated
-    files_is_complete
+  - release and security docs state remaining risk, reason for deferral, and stronger condition for each finding
   acceptance_evidence:
   - test
   - contract-test
 - id: P07-P0-04
   priority: P0
   status: TODO
-  summary: deliver adopt released BCF proxy-header handling while preserving provider
-    authority boundaries
+  summary: deliver prove exact candidate and isolated release archive before consumer cutover
   acceptance:
-  - adopt released BCF proxy-header handling while preserving provider authority boundaries_is_complete
-  acceptance_evidence:
-  - test
-  - contract-test
-- id: P07-P0-05
-  priority: P0
-  status: TODO
-  summary: deliver prove exact candidate and isolated release archive before consumer
-    cutover
-  acceptance:
-  - prove exact candidate and isolated release archive before consumer cutover_is_complete
+  - exact prospective, protected PR and main truth pass before published archive custody and isolated verification
   acceptance_evidence:
   - test
   - contract-test
