@@ -54,6 +54,6 @@ context_budgets:
     governance/findings.yml: {line_hard_cap: 400, kib_hard_cap: 96, intent: canonical finding accounting}
     governance/repo-cleanup-contract.yml: {line_hard_cap: 90, kib_hard_cap: 12, intent: cleanup rules only}
     plans/build-plan.yml: {line_hard_cap: 100, kib_hard_cap: 24, intent: active roadmap index}
-    plans/phase-ledger.yml: {line_hard_cap: 95, kib_hard_cap: 16, intent: current phase state}
+    plans/phase-ledger.yml: {line_hard_cap: 105, kib_hard_cap: 16, intent: current phase state}
     plans/phase-history.yml: {line_hard_cap: 160, kib_hard_cap: 96, intent: evidence-backed compact history index}
     plans/product-spec.yml: {line_hard_cap: 40, kib_hard_cap: 8, intent: compact product intent}

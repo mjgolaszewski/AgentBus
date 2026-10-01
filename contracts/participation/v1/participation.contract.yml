@@ -19,6 +19,8 @@ scope:
     - existing profiles and inboxes migrate without losing identity, history, or claims
     - existing persona display-name editing remains distinct from routing rename
     - rollout may use expand-contract migration; old paths retire only after successor proof
+    - legacy clients without participation capability retain protocol-2 messaging and receive actionable upgrade instructions once per inbox identity via an idempotent delivery marker or on explicit info reads without altering stored message envelopes or repeating instructions on ordinary message pages
+    - a client reporting its prior acknowledged backoff during policy tightening must receive the new policy; observed backoff is evidence of client state, not a precondition for policy delivery
   migration_assumptions:
     - existing chat_id UUIDs are stored in consumer profiles, not yet service-side identities
     - legacy profiles lack session-bound credentials; migration needs an authenticated enrollment handoff and cannot infer authority from a name alone
@@ -53,6 +55,7 @@ invariants:
   - {id: INV-014, rule: "Only newly relevant semantic traffic resets inbox backoff; unchanged unacknowledged state cannot induce a busy loop."}
   - {id: INV-015, rule: "Presentation compaction never suppresses controls, required policy, direct blockers or requests, or claimed work, and never changes durable history."}
   - {id: INV-016, rule: "Every policy or control mutation and acknowledgement is reconstructable by stable identity, actor, target, revision, timestamps, and resulting state."}
+  - {id: INV-017, rule: "A client without participation capability MUST receive upgrade instructions once per inbox identity or on explicit info reads while legacy messaging remains usable; ordinary message pages MUST NOT repeat the notice; capability advertisement is a presentation hint, never authority."}
 
 primitives:
   stable_chat_identity:
@@ -201,6 +204,8 @@ proof_obligations:
   - {id: PO-22, proves: [INV-004, INV-005], scenario: policy_and_control_acknowledgements_are_exact_revision_or_target_and_idempotent}
   - {id: PO-23, proves: [INV-013], scenario: maximum_jitter_and_inbox_backoff_never_delay_controls_beyond_control_check_max}
   - {id: PO-24, proves: [INV-011], scenario: stop_all_snapshot_does_not_prevent_later_joins}
+  - {id: PO-25, proves: [INV-017], scenario: old_client_reads_show_upgrade_instructions_new_client_reads_stay_quiet_and_protocol_2_message_bytes_are_unchanged}
+  - {id: PO-26, proves: [INV-006, INV-007, INV-016], scenario: nudge_and_checkpoint_controls_share_durable_target_receipts_require_explicit_ack_and_never_stop_participation_without_stop_kind}
 
 implementation_order:
   - {id: IU-001, unit: freeze_contract_and_migration_assumptions, depends_on: []}
@@ -220,10 +225,10 @@ implementation_order:
 acceptance_gates:
   G-IDENTITY: [INV-008, PO-05, PO-15]
   G-POLICY: [INV-004, PO-02]
-  G-CONTROL: [INV-005, INV-007, INV-011, PO-03, PO-04, PO-08]
+  G-CONTROL: [INV-005, INV-007, INV-011, PO-03, PO-04, PO-08, PO-26]
   G-AUTHORITY: [INV-009, PO-06]
   G-POLL: [INV-001, INV-002, INV-013, INV-014, PO-01, PO-09, PO-14]
   G-TOKEN: [INV-003, INV-015, PO-10]
   G-RECOVERY: [INV-012, PO-13]
-  G-COMPAT: [PO-05, PO-15, PO-19]
+  G-COMPAT: [PO-05, PO-15, PO-19, PO-25]
   G-GOVERNANCE: [INV-016, PO-12, PO-20]

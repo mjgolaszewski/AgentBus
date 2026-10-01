@@ -222,8 +222,12 @@ file.
 ```
 
 `agentbus serve` runs in the foreground. The native service listens on
-`127.0.0.1:8766` by default. It stores its database, process record, and log in
-`.state/`; `AGENTBUS_STATE_DIR` or `AGENTBUS_DB_PATH` can relocate that state.
+`127.0.0.1:8766` by default. Fresh checkouts store the database, process record,
+and log under `${XDG_STATE_HOME:-~/.local/state}/agentbus`; an existing checkout
+with `.state/` keeps using it. `AGENTBUS_STATE_DIR` or `AGENTBUS_DB_PATH` can set
+the location explicitly. Keep the SQLite database on the service host's local
+filesystem; SQLite WAL is unsuitable for a network share. Remote clients can
+reach the one service over HTTPS instead of sharing its database file.
 Consumer profiles default to `${XDG_STATE_HOME:-~/.local/state}/agentbus/consumers`;
 `AGENTBUS_CONSUMER_STATE_DIR` overrides that location. Existing deployments that
 set `WEED_WORKSPACE` retain their legacy `.superworkspace-tools/agentbus` profile
@@ -273,6 +277,46 @@ agentbus persona
 
 Persona metadata helps agents maintain recognizable working behavior. It is not
 an authorization boundary.
+Once joined, `agentbus rename --identity REPO:OLD --name NEW` changes a chat's
+routing name while keeping its UUID, persona, cursor, pending controls, and
+old-address alias. A lost response can be retried with the same new name.
+
+## Operator participation (Issue #6 candidate)
+
+The participation branch adds a durable operator policy and stop path. A joined
+chat acknowledges its exact policy revision, then `agentbus poll` waits for a
+message, policy change, or control. Empty checks stay silent, and a background
+worker continues control checks after a message returns to the agent. A stop
+requires that chat's explicit `agentbus ack-control ID` receipt.
+Ordinary messages still carry no control authority.
+The default poll view applies the configured UTF-8 byte budget only to
+replaceable message text. Controls, required policy changes, direct actionable
+work, and claimed work remain complete; `agentbus poll --json` shows the full
+durable event.
+
+Existing profiles keep their chat UUID through an operator-issued, short-lived
+handoff. The operator runs `agentbus issue-handoff --identity REPO:NAME
+--output PRIVATE_FILE` and privately gives the file to that chat. The chat
+upgrades its checkout, then runs `agentbus join --identity REPO:NAME
+--handoff-file PRIVATE_FILE`, acknowledges the delivered policy with
+`agentbus policy-ack REVISION`, and starts `agentbus poll`.
+Keep the handoff file and session secret private.
+Operators can set and inspect revisioned policy with `agentbus policy-set` and
+`agentbus policy-show`, issue a durable stop with `agentbus control-stop`, and
+inspect per-target receipts with `agentbus control-status`. The separate
+operator capability stays outside ordinary agent configuration.
+An abandoned unrouted claim can be released or reassigned with
+`agentbus claim-recovery`; the durable audit records what changed without
+claiming to undo any work outside AgentBus.
+Nudge and checkpoint requests use `agentbus control-issue`; their acknowledgments
+keep polling active. Only an acknowledged stop returns the `STOP` directive.
+
+Older clients can still send, read, claim, and reply using protocol 2. Their
+first legacy inbox read for an identity includes upgrade instructions; later
+ordinary inbox reads and message pages do not repeat them. An explicit legacy
+`/v1/info` read also shows the instructions. The notice is a presentation hint,
+not an authorization credential. Until a chat joins, the service cannot prove
+that it receives and acknowledges operator stop controls.
 
 ## Send, route, and reply
 

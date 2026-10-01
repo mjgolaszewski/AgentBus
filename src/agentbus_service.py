@@ -30,11 +30,38 @@ from slack_sdk.socket_mode.client import BaseSocketModeClient
 from slack_sdk.socket_mode.request import SocketModeRequest
 from slack_sdk.socket_mode.response import SocketModeResponse
 
+from src.agentbus_claim_recovery_service import ClaimRecoveryStore
+from src.agentbus_control_store_service import ControlStore
+from src.agentbus_participation_api_service import (
+    api_claim_recovery,
+    api_control_ack,
+    api_control_issue,
+    api_control_status,
+    api_control_stop,
+    api_policy_effective,
+    api_policy_set,
+    api_profile_handoff,
+    api_session_check_in,
+    api_session_enroll,
+    api_session_policy_ack,
+    api_session_presence,
+    api_session_rename,
+    authenticate_operator,
+)
+from src.agentbus_participation_store_service import ParticipationStore
+
 LOGGER = logging.getLogger("agentbus")
 IDENTIFIER = r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$"
 SLACK_TS = r"^[0-9]{1,20}\.[0-9]{1,20}$"
 MAX_TEXT = 6000
 ACTIONABLE_KINDS = {"question", "request", "blocker", "handoff"}
+UPGRADE_NOTICE = (
+    "Your AgentBus client does not advertise participation-v1. Update it from "
+    "https://github.com/mjgolaszewski/AgentBus, then ask the operator for a profile handoff. "
+    "Run `agentbus join --identity REPO:NAME --handoff-file PRIVATE_FILE`, acknowledge the "
+    "delivered policy revision, and use `agentbus poll`. Legacy messaging still works, "
+    "but this client cannot receive acknowledged stop controls."
+)
 
 
 @dataclass(frozen=True)
@@ -44,6 +71,7 @@ class Settings:
     slack_app_token: str = field(repr=False)
     slack_channel: str
     db_path: Path
+    operator_token: str | None = field(default=None, repr=False)
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -62,7 +90,13 @@ class Settings:
             raise ValueError("AGENTBUS_SLACK_CHANNEL must be a channel ID, not a name")
         state = Path(os.environ.get("XDG_STATE_HOME", str(Path(os.path.expanduser("~")) / ".local/state")))
         db_path = Path(os.environ.get("AGENTBUS_DB_PATH", str(state / "agentbus/messages.sqlite3")))
-        return cls(**values, db_path=db_path.expanduser())
+        operator_token = os.environ.get("AGENTBUS_OPERATOR_TOKEN", "").strip() or None
+        if operator_token is not None:
+            if not re.fullmatch(r"[!-~]{32,}", operator_token):
+                raise ValueError("AGENTBUS_OPERATOR_TOKEN must contain at least 32 printable non-whitespace ASCII characters")
+            if hmac.compare_digest(operator_token, values["api_token"]):
+                raise ValueError("AGENTBUS_OPERATOR_TOKEN must differ from AGENTBUS_API_TOKEN")
+        return cls(**values, db_path=db_path.expanduser(), operator_token=operator_token)
 
 
 def encode_envelope(message: SendMessage) -> str:
@@ -136,6 +170,7 @@ class InboxPage(BaseModel):
     messages: list[InboxMessage]
     next_cursor: int
     has_more: bool
+    upgrade_notice: str | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class ClaimRequest(BaseModel):
@@ -154,6 +189,7 @@ class Info(BaseModel):
     channel: str
     high_water_cursor: int
     features: list[str]
+    upgrade_notice: str | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class MessageStore:
@@ -165,6 +201,7 @@ class MessageStore:
         self._db = sqlite3.connect(path, check_same_thread=False, timeout=5)
         self._db.row_factory = sqlite3.Row
         path.chmod(0o600)
+        self._db.execute("PRAGMA foreign_keys=ON")
         self._db.execute("PRAGMA journal_mode=WAL")
         self._db.execute("PRAGMA synchronous=FULL")
         self._db.execute("""
@@ -198,6 +235,13 @@ class MessageStore:
             )
         """)
         self._db.execute("""
+            CREATE TABLE IF NOT EXISTS legacy_upgrade_notices (
+                channel TEXT NOT NULL,
+                identity TEXT NOT NULL,
+                PRIMARY KEY(channel, identity)
+            )
+        """)
+        self._db.execute("""
             CREATE TABLE IF NOT EXISTS claims (
                 channel TEXT NOT NULL,
                 cursor INTEGER NOT NULL,
@@ -217,7 +261,33 @@ class MessageStore:
             "CREATE INDEX IF NOT EXISTS messages_inbox_route "
             "ON messages(channel, audience, recipient, cursor)"
         )
+        self._db.execute(
+            "CREATE INDEX IF NOT EXISTS messages_thread_cursor "
+            "ON messages(channel, thread_ts, cursor)"
+        )
+        self._db.execute(
+            "CREATE INDEX IF NOT EXISTS claims_inbox_identity "
+            "ON claims(channel, identity, cursor)"
+        )
         self._db.commit()
+        self.participation = ParticipationStore(self._db, self._lock)
+        self.controls = ControlStore(self._db, self._lock, self.participation)
+        self.claim_recovery = ClaimRecoveryStore(self._db, self._lock)
+
+    def first_legacy_notice(self, channel: str, identity: str) -> bool:
+        """Return an onboarding notice once per legacy inbox identity."""
+        with self._lock, self._db:
+            seen = self._db.execute(
+                "SELECT 1 FROM legacy_upgrade_notices WHERE channel = ? AND identity = ?",
+                (channel, identity),
+            ).fetchone()
+            if seen:
+                return False
+            inserted = self._db.execute(
+                "INSERT OR IGNORE INTO legacy_upgrade_notices(channel, identity) VALUES (?, ?)",
+                (channel, identity),
+            )
+            return inserted.rowcount == 1
 
     @staticmethod
     def _message(row: sqlite3.Row) -> Message:
@@ -296,37 +366,79 @@ class MessageStore:
 
     def inbox(self, channel: str, identity: str, after: int = 0, limit: int = 100,
               thread_ts: str | None = None, context: bool = False) -> InboxPage:
-        clauses = ["m.channel = ?", "m.cursor > ?"]
-        params: list[str | int] = [channel, after]
+        routes = self.participation.routes_for(identity)
+        route_marks = ",".join("?" for _ in routes)
+        clauses: list[str] = []
+        params: list[str | int] = []
         if thread_ts is not None:
-            clauses.append("(m.thread_ts = ? OR m.slack_ts = ?)")
-            params.extend((thread_ts, thread_ts))
-        if not context:
-            clauses.append(
-                "((m.audience = 'direct' AND m.recipient = ?) "
-                "OR m.audience = 'broadcast' "
-                "OR (m.audience = 'informational' AND m.recipient = ?) "
-                "OR c.identity = ?)"
+            # Thread lookup is selective even when this identity has a huge
+            # unrelated backlog. Include the root by its Slack timestamp.
+            source = (
+                "(SELECT cursor FROM messages WHERE channel = ? AND thread_ts = ? AND cursor > ? "
+                "UNION SELECT cursor FROM messages WHERE channel = ? AND slack_ts = ? AND cursor > ?) "
+                "AS candidate JOIN messages AS m ON m.cursor = candidate.cursor"
             )
-            params.extend((identity, identity, identity))
+            params.extend((channel, thread_ts, after, channel, thread_ts, after))
+            if not context:
+                clauses.append(
+                    f"((m.audience IN ('direct', 'informational') AND m.recipient IN ({route_marks})) "
+                    "OR (m.audience = 'broadcast' AND m.recipient = 'all') "
+                    f"OR c.identity IN ({route_marks}))"
+                )
+                params.extend((*routes, *routes))
+        elif context:
+            source = "messages AS m"
+            clauses.extend(("m.channel = ?", "m.cursor > ?"))
+            params.extend((channel, after))
+        else:
+            # Each arm has a selective index. A busy channel with many messages
+            # for other chats should not force every poll to scan those rows.
+            direct = ("SELECT cursor FROM messages WHERE channel = ? AND audience = 'direct' "
+                      f"AND recipient IN ({route_marks}) AND cursor > ?")
+            informational = ("SELECT cursor FROM messages WHERE channel = ? AND audience = 'informational' "
+                             f"AND recipient IN ({route_marks}) AND cursor > ?")
+            broadcast = (
+                "SELECT cursor FROM messages WHERE channel = ? AND audience = 'broadcast' "
+                "AND recipient = 'all' AND cursor > ?"
+            )
+            claimed = f"SELECT cursor FROM claims WHERE channel = ? AND identity IN ({route_marks}) AND cursor > ?"
+            params.extend((channel, *routes, after, channel, *routes, after,
+                           channel, after, channel, *routes, after))
+            if thread_ts is None:
+                # A page needs at most limit+1 from each disjoint route class.
+                # Bound the candidate set even when this chat has a huge backlog.
+                page_limit = limit + 1
+                direct = f"SELECT cursor FROM ({direct} ORDER BY cursor LIMIT ?)"
+                informational = f"SELECT cursor FROM ({informational} ORDER BY cursor LIMIT ?)"
+                broadcast = f"SELECT cursor FROM ({broadcast} ORDER BY cursor LIMIT ?)"
+                claimed = f"SELECT cursor FROM ({claimed} ORDER BY cursor LIMIT ?)"
+                params = [channel, *routes, after, page_limit,
+                          channel, *routes, after, page_limit,
+                          channel, after, page_limit,
+                          channel, *routes, after, page_limit]
+            source = (
+                f"({direct} UNION {informational} UNION {broadcast} UNION {claimed}) AS candidate "
+                "JOIN messages AS m ON m.cursor = candidate.cursor"
+            )
+        where = " WHERE " + " AND ".join(clauses) if clauses else ""
         with self._lock:
             high = self._db.execute("SELECT COALESCE(MAX(cursor), 0) FROM messages WHERE channel = ?",
                                     (channel,)).fetchone()[0]
             rows = self._db.execute(
-                "SELECT m.*, c.identity AS claim_identity FROM messages AS m "
+                f"SELECT m.*, c.identity AS claim_identity FROM {source} "
                 "LEFT JOIN claims AS c ON c.channel = m.channel AND c.cursor = m.cursor "
-                "WHERE " + " AND ".join(clauses) + " ORDER BY m.cursor LIMIT ?",
+                + where + " ORDER BY m.cursor LIMIT ?",
                 (*params, limit + 1),
             ).fetchall()
         visible: list[InboxMessage] = []
         for row in rows:
             message = self._message(row)
             claim = row["claim_identity"]
-            actionable = (message.audience == "direct" and message.recipient == identity) or \
-                         message.audience == "broadcast" or claim == identity
-            reason = ("addressed to this identity" if message.audience == "direct" and message.recipient == identity
+            actionable = (message.audience == "direct" and message.recipient in routes) or \
+                         message.audience == "broadcast" or claim in routes
+            reason = ("addressed to this identity" if message.audience == "direct" and message.recipient in routes
                       else "explicit broadcast" if message.audience == "broadcast"
-                      else "claimed by this identity" if claim == identity
+                      else "claimed by this identity" if claim in routes
                       else f"claimed by {claim}" if claim
                       else f"addressed to {message.recipient}" if message.audience == "direct"
                       else "informational" if message.audience == "informational"
@@ -344,12 +456,15 @@ class MessageStore:
         parent = self.message(channel, message.reply_to_cursor)
         if parent is None:
             raise KeyError(message.reply_to_cursor)
-        allowed = parent.sender == message.sender or parent.audience == "broadcast" or \
-                  (parent.audience == "direct" and parent.recipient == message.sender) or \
-                  (parent.audience == "unrouted" and self.claimant(channel, parent.cursor) == message.sender)
+        same_chat = self.participation.same_chat
+        allowed = same_chat(parent.sender, message.sender) or parent.audience == "broadcast" or \
+                  (parent.audience == "direct" and same_chat(parent.recipient, message.sender)) or \
+                  (parent.audience == "unrouted" and
+                   (claimant := self.claimant(channel, parent.cursor)) is not None and
+                   same_chat(claimant, message.sender))
         if not allowed:
             raise PermissionError("sender is not an intended responder for the parent message")
-        if message.recipient != parent.sender or message.audience != "direct":
+        if not same_chat(message.recipient, parent.sender) or message.audience != "direct":
             raise ValueError("replies must be direct messages to the parent sender")
 
     def close(self) -> None:
@@ -497,6 +612,10 @@ def authenticate(request: Request,
                             headers={"WWW-Authenticate": "Bearer"})
 
 
+def upgrade_notice(request: Request) -> str | None:
+    return None if request.headers.get("X-AgentBus-Client-Capabilities") == "participation-v1" else UPGRADE_NOTICE
+
+
 def api_health(request: Request) -> dict:
     return {"status": "ok", "slack_connected": request.app.state.socket.is_connected()}
 
@@ -529,14 +648,17 @@ def api_read(request: Request, after: Annotated[int, Query(ge=0)] = 0,
              limit: Annotated[int, Query(ge=1, le=200)] = 100,
              thread_ts: Annotated[str | None, Query(pattern=SLACK_TS)] = None) -> MessagePage:
     settings = request.app.state.settings
-    return request.app.state.store.read(
+    page = request.app.state.store.read(
         settings.slack_channel, after, recipient, limit, thread_ts
     )
+    return page
 
 
 def api_info(request: Request) -> Info:
     settings = request.app.state.settings
-    return request.app.state.store.info(settings.slack_channel)
+    info = request.app.state.store.info(settings.slack_channel)
+    info.upgrade_notice = upgrade_notice(request)
+    return info
 
 
 def api_inbox(request: Request, identity: Annotated[str, Query(pattern=IDENTIFIER)],
@@ -545,9 +667,14 @@ def api_inbox(request: Request, identity: Annotated[str, Query(pattern=IDENTIFIE
               thread_ts: Annotated[str | None, Query(pattern=SLACK_TS)] = None,
               context: bool = False) -> InboxPage:
     settings = request.app.state.settings
-    return request.app.state.store.inbox(
+    page = request.app.state.store.inbox(
         settings.slack_channel, identity, after, limit, thread_ts, context
     )
+    if upgrade_notice(request) and request.app.state.store.first_legacy_notice(
+        settings.slack_channel, identity,
+    ):
+        page.upgrade_notice = UPGRADE_NOTICE
+    return page
 
 
 def api_claim(request: Request, cursor: int, claim: ClaimRequest) -> Claim:
@@ -576,6 +703,19 @@ API_OPERATIONS: dict[str, Callable[..., object]] = {
     "info": api_info,
     "inbox": api_inbox,
     "claim": api_claim,
+    "policy_set": api_policy_set,
+    "policy_effective": api_policy_effective,
+    "session_enroll": api_session_enroll,
+    "profile_handoff": api_profile_handoff,
+    "session_presence": api_session_presence,
+    "session_policy_ack": api_session_policy_ack,
+    "session_check_in": api_session_check_in,
+    "control_stop": api_control_stop,
+    "control_issue": api_control_issue,
+    "control_status": api_control_status,
+    "control_ack": api_control_ack,
+    "session_rename": api_session_rename,
+    "claim_recovery": api_claim_recovery,
 }
 
 
@@ -624,5 +764,31 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                       dependencies=auth, response_model=InboxPage)
     app.add_api_route("/v1/messages/{cursor}/claim", API_OPERATIONS["claim"], methods=["POST"],
                       dependencies=auth, response_model=Claim)
+    app.add_api_route("/v1/messages/{cursor}/claim-recovery", API_OPERATIONS["claim_recovery"],
+                      methods=["POST"], dependencies=[Depends(authenticate_operator)])
+    app.add_api_route("/v1/policy/revisions", API_OPERATIONS["policy_set"], methods=["POST"],
+                      dependencies=[Depends(authenticate_operator)], status_code=201)
+    app.add_api_route("/v1/policy/effective", API_OPERATIONS["policy_effective"], methods=["GET"],
+                      dependencies=auth)
+    app.add_api_route("/v1/sessions", API_OPERATIONS["session_enroll"], methods=["POST"],
+                      dependencies=auth, status_code=201)
+    app.add_api_route("/v1/sessions/profile-handoffs", API_OPERATIONS["profile_handoff"],
+                      methods=["POST"], dependencies=[Depends(authenticate_operator)], status_code=201)
+    app.add_api_route("/v1/sessions/{session_id}/presence", API_OPERATIONS["session_presence"],
+                      methods=["GET"], dependencies=[Depends(authenticate_operator)])
+    app.add_api_route("/v1/sessions/{session_id}/policy-ack", API_OPERATIONS["session_policy_ack"],
+                      methods=["POST"], dependencies=auth)
+    app.add_api_route("/v1/sessions/{session_id}/check-in", API_OPERATIONS["session_check_in"],
+                      methods=["POST"], dependencies=auth)
+    app.add_api_route("/v1/controls/stop", API_OPERATIONS["control_stop"], methods=["POST"],
+                      dependencies=[Depends(authenticate_operator)], status_code=201)
+    app.add_api_route("/v1/controls", API_OPERATIONS["control_issue"], methods=["POST"],
+                      dependencies=[Depends(authenticate_operator)], status_code=201)
+    app.add_api_route("/v1/controls/{control_id}", API_OPERATIONS["control_status"], methods=["GET"],
+                      dependencies=[Depends(authenticate_operator)])
+    app.add_api_route("/v1/controls/{control_id}/targets/{session_id}/ack", API_OPERATIONS["control_ack"],
+                      methods=["POST"], dependencies=auth)
+    app.add_api_route("/v1/sessions/{session_id}/rename", API_OPERATIONS["session_rename"],
+                      methods=["POST"], dependencies=auth)
 
     return app

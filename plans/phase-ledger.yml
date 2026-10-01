@@ -4,7 +4,7 @@ document:
   id: "agentbus-phase-ledger"
   version: 1.0.0
   generated_at_utc: "2026-09-27T00:00:00Z"
-  status: active_phase_completed
+  status: active_phase_in_progress
   path: plans/phase-ledger.yml
 build_plan_mandate:
   format: yaml
@@ -16,15 +16,15 @@ build_plan_mandate:
     - completeness_standard
   completeness_standard: full_completeness_for_declared_scope
 active_phase:
-  id: P03
-  build_block: "transport_and_portability_hardening"
-  plan: plans/phase-03-plan.yml
-  workitems: plans/phase-03-workitems.yml
-  log: phases/phase-03-log.yml
+  id: P04
+  build_block: "operator_participation_plane"
+  plan: plans/phase-04-plan.yml
+  workitems: plans/phase-04-workitems.yml
+  log: phases/phase-04-log.yml
   memory: MEMORY.yml
   spec: plans/product-spec.yml
   build_plan: plans/build-plan.yml
-  lifecycle_status: completed
+  lifecycle_status: active
   owner: "agentbus:signal-gardener"
   validation_commands:
     - make governance-validate
@@ -58,7 +58,7 @@ operator_requirements_choices_disambiguations:
     statement: adopter governance must not install a persistent trusted controller or inherit BCF self-authority
 active_delivery_priorities:
   current_tranche:
-    - "existing_repo_adoption"
+    - "operator_participation_plane"
 release_trains:
   release_1:
     target_version: "0.3.0"
@@ -76,12 +76,20 @@ release_trains:
       - canonical_command_surface
   release_3:
     target_version: "0.3.2"
-    status: active
+    status: completed
     focus:
       - authenticated_slack_ingress
       - bounded_inbox_reads
       - portable_consumer_state
       - explicit_data_handling
+  release_4:
+    target_version: "0.4.0"
+    status: active
+    focus:
+      - mandatory_polling
+      - versioned_policy_and_operator_controls
+      - stable_identity_and_rename
+      - compact_agent_surface
 release_readiness:
   computed_by: bcf truth
   requirements_source: governance/evidence-policy.yml

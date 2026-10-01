@@ -4,13 +4,13 @@ document:
   id: project-phase-04-workitems
   version: 1.0.0
   generated_at_utc: '2026-09-30T00:00:00Z'
-  status: planned
+  status: active
   path: plans/phase-04-workitems.yml
   phase_id: P04
 workitems:
 - id: P04-P0-01
   priority: P0
-  status: TODO
+  status: IN_PROGRESS
   summary: Establish identity, sessions, policy, operator authority, and truthful presence from IU-001 through IU-005
   acceptance:
   - G-IDENTITY, G-POLICY, and G-AUTHORITY hold under the contract proof obligations
@@ -21,7 +21,7 @@ workitems:
   - contract-test
 - id: P04-P0-02
   priority: P0
-  status: TODO
+  status: IN_PROGRESS
   summary: Deliver worker polling, durable controls, acknowledged stop, rename, and compact views from IU-006 through IU-010
   acceptance:
   - G-CONTROL, G-POLL, G-TOKEN, and G-RECOVERY hold under the contract proof obligations
@@ -31,7 +31,7 @@ workitems:
   - contract-test
 - id: P04-P0-03
   priority: P0
-  status: TODO
+  status: IN_PROGRESS
   summary: Complete operator projections, optional controls, compatibility, and governed proof from IU-011 through IU-013
   acceptance:
   - G-COMPAT and G-GOVERNANCE hold under the contract proof obligations
