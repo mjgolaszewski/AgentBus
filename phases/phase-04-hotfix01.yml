@@ -1,0 +1,40 @@
+document:
+  kind: hotfix_execution_log
+  name: P04-HF01 Hotfix Log
+  id: project-phase-04-hotfix01
+  version: 1.0.0
+  generated_at_utc: '2026-10-01T00:00:00Z'
+  status: completed
+  path: phases/phase-04-hotfix01.yml
+hotfix:
+  id: P04-HF01
+  mode: full
+  related_phase_id: P04
+  hotfix_number: 1
+  summary: Declare the Phase 04 workitem successor chain so bounded closure does not
+    strand unfinished work
+execution_evidence:
+  planned_commands:
+  - bcf ci prospective-train
+  executed_commands: []
+  notes:
+  - Protected-main run 36853197127 failed Cheap Preflight because bounded target P04-P0-01 had no declared successor while P04-P0-02 and P04-P0-03 remain unfinished.
+  - P04-P0-02 logically depends on completed identity and policy P04-P0-01; P04-P0-03 logically depends on controls and polling P04-P0-02. Declare these exact edges in the canonical workitem acceptance ledger.
+  - BCF prospective train passed the predecessor candidate but did not catch the post-merge push-only bounded successor failure; BCF agent received the fixture and diagnosis.
+closeout_requirements:
+  claims:
+    required_suites_green:
+      required_evidence:
+      - test
+      - contract-test
+    security_review_complete:
+      required_evidence:
+      - governance-validate
+    health_checks_green:
+      required_evidence:
+      - runtime-smoke
+  reconciliation:
+    required_evidence:
+    - governance-validate
+    - governance-exposure-scan
+  finding_registry: governance/findings.yml
