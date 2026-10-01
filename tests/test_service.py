@@ -1,6 +1,8 @@
 import asyncio
 import json
 import sqlite3
+import uuid
+from dataclasses import replace
 
 import httpx
 import pytest
@@ -97,13 +99,241 @@ def test_public_api_operation_inventory_owns_registered_routes(settings):
         for route in app.routes
         for method in getattr(route, "methods", set())
     }
-    assert set(API_OPERATIONS) == {"health", "send", "read", "info", "inbox", "claim"}
+    assert set(API_OPERATIONS) == {"health", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "session_presence", "session_policy_ack", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename"}
     assert routes[("GET", "/healthz")] is API_OPERATIONS["health"]
     assert routes[("POST", "/v1/messages")] is API_OPERATIONS["send"]
     assert routes[("GET", "/v1/messages")] is API_OPERATIONS["read"]
     assert routes[("GET", "/v1/info")] is API_OPERATIONS["info"]
     assert routes[("GET", "/v1/inbox")] is API_OPERATIONS["inbox"]
     assert routes[("POST", "/v1/messages/{cursor}/claim")] is API_OPERATIONS["claim"]
+    assert routes[("POST", "/v1/messages/{cursor}/claim-recovery")] is API_OPERATIONS["claim_recovery"]
+    assert routes[("POST", "/v1/policy/revisions")] is API_OPERATIONS["policy_set"]
+    assert routes[("GET", "/v1/policy/effective")] is API_OPERATIONS["policy_effective"]
+    assert routes[("POST", "/v1/sessions")] is API_OPERATIONS["session_enroll"]
+    assert routes[("POST", "/v1/sessions/{session_id}/policy-ack")] is API_OPERATIONS["session_policy_ack"]
+    assert routes[("POST", "/v1/sessions/{session_id}/check-in")] is API_OPERATIONS["session_check_in"]
+    assert routes[("POST", "/v1/controls/stop")] is API_OPERATIONS["control_stop"]
+    assert routes[("POST", "/v1/controls")] is API_OPERATIONS["control_issue"]
+    assert routes[("GET", "/v1/controls/{control_id}")] is API_OPERATIONS["control_status"]
+    assert routes[("POST", "/v1/controls/{control_id}/targets/{session_id}/ack")] is API_OPERATIONS["control_ack"]
+    assert routes[("POST", "/v1/sessions/{session_id}/rename")] is API_OPERATIONS["session_rename"]
+
+
+def test_operator_policy_write_is_separate_from_message_bearer(service):
+    client, app, requests = service
+    app.state.settings = replace(app.state.settings, operator_token="operator-secret-with-at-least-32-characters")
+    body = {"scope": "global", "scope_key": "*", "values": {
+        "initial_interval_seconds": 60, "backoff_factor": 2,
+        "max_interval_seconds": 1920, "control_check_max_seconds": 60,
+        "jitter_fraction": 0, "overdue_grace_seconds": 120,
+        "presentation_budget_bytes": None,
+    }}
+    assert client.post("/v1/policy/revisions", headers=AUTH, json=body).status_code == 401
+    assert client.post("/v1/policy/revisions", headers={"Authorization": "Bearer wrong"}, json=body).status_code == 401
+    operator = {"Authorization": "Bearer operator-secret-with-at-least-32-characters"}
+    result = client.post("/v1/policy/revisions", headers=operator, json=body)
+    assert result.status_code == 201
+    assert result.json()["revision_id"] > 0
+    effective = client.get("/v1/policy/effective?repo=agentbus&chat_id=test", headers=AUTH)
+    assert effective.status_code == 200
+    assert effective.json()["values"] == body["values"]
+    assert effective.json()["sources"]["max_interval_seconds"] == "global"
+    assert requests == []
+
+
+def test_session_join_policy_ack_and_change_require_session_proof(service):
+    client, app, requests = service
+    app.state.settings = replace(app.state.settings, operator_token="operator-secret-with-at-least-32-characters")
+    operator = {"Authorization": "Bearer operator-secret-with-at-least-32-characters"}
+    values = {
+        "initial_interval_seconds": 60, "backoff_factor": 2,
+        "max_interval_seconds": 1920, "control_check_max_seconds": 60,
+        "jitter_fraction": 0, "overdue_grace_seconds": 120,
+        "presentation_budget_bytes": None,
+    }
+    assert client.post("/v1/policy/revisions", headers=operator, json={
+        "scope": "global", "scope_key": "*", "values": values,
+    }).status_code == 201
+    secret = "session-secret-with-at-least-32-characters"
+    enrollment = client.post("/v1/sessions", headers=AUTH, json={
+        "repo": "agentbus", "route": "agentbus:signal-gardener",
+        "display_name": "Signal Gardener", "session_secret": secret,
+    })
+    assert enrollment.status_code == 201
+    payload = enrollment.json()
+    session_id, revision = payload["session_id"], payload["revision"]
+    assert payload["ack_required"] is True
+    assert app.state.store.participation.session_state(session_id)["state"] == "joining"
+    ack_url = f"/v1/sessions/{session_id}/policy-ack"
+    assert client.post(ack_url, headers=AUTH, json={"revision": revision}).status_code == 401
+    session_headers = {**AUTH, "X-AgentBus-Session-Token": secret}
+    ack = client.post(ack_url, headers=session_headers, json={"revision": revision})
+    assert ack.status_code == 200
+    assert client.post(ack_url, headers=session_headers, json={"revision": revision}).json() == ack.json()
+    rename_url = f"/v1/sessions/{session_id}/rename"
+    assert client.post(rename_url, headers=AUTH, json={"route": "agentbus:new-name"}).status_code == 401
+    renamed = client.post(rename_url, headers=session_headers, json={"route": "agentbus:new-name"})
+    assert renamed.status_code == 200
+    assert renamed.json()["chat_id"] == payload["chat_id"]
+    assert renamed.json()["old_route"] == "agentbus:signal-gardener"
+    check_in = client.post(f"/v1/sessions/{session_id}/check-in", headers=session_headers)
+    assert check_in.status_code == 200
+    assert check_in.json()["ack_required"] is False
+    assert client.post("/v1/policy/revisions", headers=operator, json={
+        "scope": "chat", "scope_key": payload["chat_id"], "values": {"max_interval_seconds": 240},
+    }).status_code == 201
+    changed = client.post(f"/v1/sessions/{session_id}/check-in", headers=session_headers,
+                          json={"current_backoff_seconds": 1920})
+    assert changed.status_code == 200
+    assert changed.json()["ack_required"] is True
+    assert changed.json()["revision"] != revision
+    assert app.state.store.participation.session_state(session_id)["current_backoff_seconds"] == 1920
+    assert client.post(ack_url, headers=session_headers, json={"revision": revision}).status_code == 409
+    assert client.post(ack_url, headers=session_headers, json={"revision": changed.json()["revision"]}).status_code == 200
+    assert requests == []
+
+
+def test_existing_profile_handoff_requires_operator_and_preserves_uuid(service):
+    client, app, _ = service
+    app.state.settings = replace(app.state.settings, operator_token="operator-secret-with-at-least-32-characters")
+    operator = {"Authorization": "Bearer operator-secret-with-at-least-32-characters"}
+    values = {
+        "initial_interval_seconds": 60, "backoff_factor": 2,
+        "max_interval_seconds": 1920, "control_check_max_seconds": 60,
+        "jitter_fraction": 0, "overdue_grace_seconds": 120,
+        "presentation_budget_bytes": None,
+    }
+    assert client.post("/v1/policy/revisions", headers=operator, json={
+        "scope": "global", "scope_key": "*", "values": values,
+    }).status_code == 201
+    chat_id = str(uuid.uuid4())
+    body = {"chat_id": chat_id, "repo": "agentbus", "route": "agentbus:old"}
+    assert client.post("/v1/sessions/profile-handoffs", headers=AUTH, json=body).status_code == 401
+    handoff = client.post("/v1/sessions/profile-handoffs", headers=operator, json=body)
+    assert handoff.status_code == 201
+    secret = "session-secret-with-at-least-32-characters"
+    enrollment = {"repo": "agentbus", "route": "agentbus:old", "display_name": "Old",
+                  "session_secret": secret, "handoff_token": handoff.json()["handoff_token"]}
+    joined = client.post("/v1/sessions", headers=AUTH, json=enrollment)
+    assert joined.status_code == 201
+    assert joined.json()["chat_id"] == chat_id
+    presence_url = f"/v1/sessions/{joined.json()['session_id']}/presence"
+    assert client.get(presence_url, headers=AUTH).status_code == 401
+    presence = client.get(presence_url, headers=operator)
+    assert presence.status_code == 200
+    assert presence.json()["chat_id"] == chat_id
+    assert presence.json()["state"] == "joining"
+    session_headers = {**AUTH, "X-AgentBus-Session-Token": secret}
+    assert client.post(f"/v1/sessions/{joined.json()['session_id']}/policy-ack",
+                       headers=session_headers,
+                       json={"revision": joined.json()["revision"]}).status_code == 200
+    check_in_url = f"/v1/sessions/{joined.json()['session_id']}/check-in"
+    reported = client.post(check_in_url, headers=session_headers,
+                           json={"current_backoff_seconds": 120})
+    assert reported.status_code == 200
+    assert client.get(presence_url, headers=operator).json()["current_backoff_seconds"] == 120
+    assert client.post(check_in_url, headers=session_headers,
+                       json={"current_backoff_seconds": -1}).status_code == 409
+    assert client.post(check_in_url, headers=session_headers,
+                       json={"current_backoff_seconds": "NaN"}).status_code == 422
+    assert client.post("/v1/sessions", headers=AUTH, json=enrollment).json()["session_id"] == joined.json()["session_id"]
+    assert client.post("/v1/sessions", headers=AUTH, json={**enrollment, "session_secret": "other" * 10}).status_code == 409
+
+
+def test_operator_stop_is_snapshotted_prioritized_and_target_acknowledged(service):
+    client, app, requests = service
+    app.state.settings = replace(app.state.settings, operator_token="operator-secret-with-at-least-32-characters")
+    operator = {"Authorization": "Bearer operator-secret-with-at-least-32-characters"}
+    values = {
+        "initial_interval_seconds": 60, "backoff_factor": 2,
+        "max_interval_seconds": 1920, "control_check_max_seconds": 60,
+        "jitter_fraction": 0, "overdue_grace_seconds": 120,
+        "presentation_budget_bytes": None,
+    }
+    assert client.post("/v1/policy/revisions", headers=operator, json={
+        "scope": "global", "scope_key": "*", "values": values,
+    }).status_code == 201
+    sessions = []
+    for name in ("one", "two"):
+        secret = f"session-secret-for-{name}-with-at-least-32-characters"
+        enrolled = client.post("/v1/sessions", headers=AUTH, json={
+            "repo": "agentbus", "route": f"agentbus:{name}",
+            "display_name": name, "session_secret": secret,
+        }).json()
+        session_id = enrolled["session_id"]
+        headers = {**AUTH, "X-AgentBus-Session-Token": secret}
+        assert client.post(f"/v1/sessions/{session_id}/policy-ack", headers=headers, json={
+            "revision": enrolled["revision"],
+        }).status_code == 200
+        sessions.append((session_id, headers))
+    assert client.post("/v1/controls/stop", headers=AUTH, json={
+        "all_current": True, "reason": "end turns",
+    }).status_code == 401
+    assert client.post("/v1/controls/stop", headers=operator, json={
+        "reason": "missing explicit target mode",
+    }).status_code == 422
+    issued = client.post("/v1/controls/stop", headers=operator, json={
+        "all_current": True, "reason": "end turns",
+    })
+    assert issued.status_code == 201
+    control_id = issued.json()["control_id"]
+    assert set(issued.json()["target_session_ids"]) == {session for session, _ in sessions}
+    first_id, first_headers = sessions[0]
+    second_id, second_headers = sessions[1]
+    check = client.post(f"/v1/sessions/{first_id}/check-in", headers=first_headers)
+    assert check.status_code == 200
+    assert check.json()["controls"][0]["control_id"] == control_id
+    ack_url = f"/v1/controls/{control_id}/targets/{first_id}/ack"
+    assert client.post(ack_url, headers=second_headers).status_code == 401
+    ack = client.post(ack_url, headers=first_headers)
+    assert ack.status_code == 200 and ack.json()["directive"] == "STOP"
+    assert client.post(ack_url, headers=first_headers).json() == ack.json()
+    status = client.get(f"/v1/controls/{control_id}", headers=operator).json()["targets"]
+    assert {item["session_id"]: item["state"] for item in status} == {
+        first_id: "effective", second_id: "issued",
+    }
+    assert app.state.store.participation.session_state(first_id)["state"] == "stopped"
+    assert client.post(f"/v1/sessions/{first_id}/check-in", headers=first_headers).status_code == 409
+    assert requests == []
+
+
+def test_auxiliary_controls_need_operator_and_checkpoint_report_without_stopping(service):
+    client, app, _ = service
+    app.state.settings = replace(app.state.settings,
+                                 operator_token="operator-secret-with-at-least-32-characters")
+    operator = {"Authorization": "Bearer operator-secret-with-at-least-32-characters"}
+    values = {
+        "initial_interval_seconds": 60, "backoff_factor": 2,
+        "max_interval_seconds": 1920, "control_check_max_seconds": 60,
+        "jitter_fraction": 0, "overdue_grace_seconds": 120,
+        "presentation_budget_bytes": None,
+    }
+    assert client.post("/v1/policy/revisions", headers=operator, json={
+        "scope": "global", "scope_key": "*", "values": values,
+    }).status_code == 201
+    secret = "session-secret-with-at-least-32-characters"
+    joined = client.post("/v1/sessions", headers=AUTH, json={
+        "repo": "agentbus", "route": "agentbus:one", "display_name": "one",
+        "session_secret": secret,
+    }).json()
+    session_id = joined["session_id"]
+    session_headers = {**AUTH, "X-AgentBus-Session-Token": secret}
+    assert client.post(f"/v1/sessions/{session_id}/policy-ack", headers=session_headers,
+                       json={"revision": joined["revision"]}).status_code == 200
+    request = {"kind": "checkpoint_request", "routes": ["agentbus:one"], "reason": "status"}
+    assert client.post("/v1/controls", headers=AUTH, json=request).status_code == 401
+    issued = client.post("/v1/controls", headers=operator, json=request)
+    assert issued.status_code == 201
+    control_id = issued.json()["control_id"]
+    delivered = client.post(f"/v1/sessions/{session_id}/check-in", headers=session_headers)
+    assert delivered.json()["controls"][0]["kind"] == "checkpoint_request"
+    ack_url = f"/v1/controls/{control_id}/targets/{session_id}/ack"
+    assert client.post(ack_url, headers=session_headers).status_code == 409
+    report = {"activity": "reviewing CI", "blockers": [], "waiting_on": [], "work_refs": []}
+    acknowledged = client.post(ack_url, headers=session_headers, json={"report": report})
+    assert acknowledged.status_code == 200 and acknowledged.json()["directive"] == "CONTINUE"
+    assert app.state.store.participation.session_state(session_id)["state"] == "active"
+    assert client.post(f"/v1/sessions/{session_id}/check-in", headers=session_headers).status_code == 200
 
 
 def test_send_roundtrip_and_plain_text_blocks_preserve_mentions_and_unicode(service):
@@ -229,6 +459,39 @@ def test_inbox_bounds_sql_results_before_deserializing(settings, monkeypatch):
         assert [item.text for item in page.messages] == ["relevant 0", "relevant 1"]
         assert page.has_more is True
         assert deserialized == 3
+    finally:
+        store.close()
+
+
+def test_thread_inbox_uses_thread_candidates_and_preserves_routes_and_pagination(settings):
+    store = MessageStore(settings.db_path)
+    root = "1700000000.000001"
+    records = [
+        (root, "agent:one", "direct", None, "root"),
+        ("1700000001.000001", "agent:one", "direct", root, "direct reply"),
+        ("1700000002.000001", "agent:two", "direct", root, "foreign reply"),
+        ("1700000003.000001", "all", "broadcast", root, "broadcast reply"),
+        ("1700000004.000001", "agent:one", "informational", root, "informational reply"),
+        ("1700000005.000001", "agent:one", "direct", "1700000009.000001", "other thread"),
+    ]
+    try:
+        for ts, recipient, audience, thread, body in records:
+            store.append(CHANNEL, ts, SendMessage(sender="agent:sender", recipient=recipient,
+                                                  audience=audience, thread_ts=thread, text=body))
+        first = store.inbox(CHANNEL, "agent:one", thread_ts=root, limit=2)
+        assert [item.text for item in first.messages] == ["root", "direct reply"]
+        assert first.has_more is True
+        second = store.inbox(CHANNEL, "agent:one", after=first.next_cursor,
+                             thread_ts=root, limit=2)
+        assert [item.text for item in second.messages] == ["broadcast reply", "informational reply"]
+        assert second.has_more is False
+        context = store.inbox(CHANNEL, "agent:one", thread_ts=root, context=True)
+        assert [item.text for item in context.messages] == [
+            "root", "direct reply", "foreign reply", "broadcast reply", "informational reply",
+        ]
+        assert context.messages[2].actionable is False
+        indexes = {row["name"] for row in store._db.execute("PRAGMA index_list(messages)")}
+        assert "messages_thread_cursor" in indexes
     finally:
         store.close()
 
@@ -465,6 +728,46 @@ def test_direct_message_is_not_actionable_by_another_agent(service):
     assert right_reply.status_code == 201
 
 
+def test_legacy_clients_receive_additive_upgrade_instructions_without_message_breakage(service):
+    client, _, _ = service
+    sent = client.post("/v1/messages", headers=AUTH, json={
+        "sender": "agentbus:old", "recipient": "agentbus:peer", "audience": "direct",
+        "kind": "request", "text": "Please upgrade", "reply_to_cursor": None,
+    })
+    assert sent.status_code == 201
+    modern = {**AUTH, "X-AgentBus-Client-Capabilities": "participation-v1"}
+    assert "upgrade_notice" not in client.get("/v1/inbox", headers=modern,
+                                               params={"identity": "agentbus:old"}).json()
+    old_inbox = client.get("/v1/inbox", headers=AUTH, params={"identity": "agentbus:old"}).json()
+    assert "agentbus join" in old_inbox["upgrade_notice"]
+    assert "acknowledged stop controls" in old_inbox["upgrade_notice"]
+    assert "upgrade_notice" in client.get("/v1/info", headers=AUTH).json()
+    assert "upgrade_notice" not in client.get("/v1/inbox", headers=AUTH,
+                                               params={"identity": "agentbus:old"}).json()
+    assert "upgrade_notice" not in client.get("/healthz").json()
+    legacy_read = client.get("/v1/messages", headers=AUTH).json()
+    modern_read = client.get("/v1/messages", headers=modern).json()
+    assert legacy_read["messages"] == modern_read["messages"]
+    assert legacy_read["messages"][0]["text"] == "Please upgrade"
+    assert "upgrade_notice" not in legacy_read
+    assert "upgrade_notice" not in client.get("/v1/inbox", headers=modern,
+                                               params={"identity": "agentbus:old"}).json()
+    assert "upgrade_notice" not in client.get("/v1/info", headers=modern).json()
+
+
+def test_legacy_upgrade_notice_is_durable_across_service_restart(settings):
+    first = MessageStore(settings.db_path)
+    assert first.first_legacy_notice(settings.slack_channel, "agentbus:old") is True
+    writes = first._db.total_changes
+    assert first.first_legacy_notice(settings.slack_channel, "agentbus:old") is False
+    assert first._db.total_changes == writes
+    first.close()
+    restarted = MessageStore(settings.db_path)
+    assert restarted.first_legacy_notice(settings.slack_channel, "agentbus:old") is False
+    assert restarted.first_legacy_notice(settings.slack_channel, "agentbus:other") is True
+    restarted.close()
+
+
 def test_unrouted_slack_message_requires_atomic_claim_before_reply(service):
     client, app, _ = service
     app.state.socket.emit(event("Could someone inspect this?"))
@@ -481,6 +784,51 @@ def test_unrouted_slack_message_requires_atomic_claim_before_reply(service):
     inbox = client.get("/v1/inbox", headers=AUTH,
                        params={"identity": "tools:weed"}).json()["messages"]
     assert inbox[0]["actionable"] is True and inbox[0]["action_reason"] == "claimed by this identity"
+
+
+def test_claim_recovery_requires_operator_and_changes_exact_current_claim(service):
+    client, app, _ = service
+    app.state.settings = replace(app.state.settings,
+                                 operator_token="operator-secret-with-at-least-32-characters")
+    operator = {"Authorization": "Bearer operator-secret-with-at-least-32-characters"}
+    app.state.socket.emit(event("Could someone inspect this?"))
+    cursor = client.get("/v1/messages", headers=AUTH).json()["messages"][0]["cursor"]
+    assert client.post(f"/v1/messages/{cursor}/claim", headers=AUTH,
+                       json={"identity": "agentbus:old"}).status_code == 200
+    url = f"/v1/messages/{cursor}/claim-recovery"
+    payload = {"new_identity": "agentbus:new", "reason": "old chat ended"}
+    assert client.post(url, headers=AUTH, json=payload).status_code == 401
+    changed = client.post(url, headers=operator, json=payload)
+    assert changed.status_code == 200
+    assert changed.json()["previous_identity"] == "agentbus:old"
+    assert app.state.store.claimant(CHANNEL, cursor) == "agentbus:new"
+    assert client.post(url, headers=operator,
+                       json={**payload, "new_identity": "bad identity"}).status_code == 422
+
+
+def test_inbox_paginates_mixed_route_classes_without_skipping_claimed_work(service):
+    _, app, _ = service
+    store = app.state.store
+    expected = []
+    for number in range(120):
+        audience = ("direct", "informational", "broadcast", "unrouted")[number % 4]
+        recipient = "agentbus:flower" if audience in {"direct", "informational"} else "all"
+        sender = "slack:human" if audience == "unrouted" else "agentbus:peer"
+        message = store.append(CHANNEL, f"1800000000.{number:06d}", SendMessage(
+            sender=sender, recipient=recipient, text=f"item {number}", audience=audience,
+        ))
+        if audience == "unrouted":
+            store.claim(CHANNEL, message.cursor, "agentbus:flower")
+        expected.append(message.cursor)
+    seen = []
+    cursor = 0
+    while True:
+        page = store.inbox(CHANNEL, "agentbus:flower", after=cursor, limit=7)
+        seen.extend(item.cursor for item in page.messages)
+        cursor = page.next_cursor
+        if not page.has_more:
+            break
+    assert seen == expected
 
 
 def test_v1_envelopes_remain_compatible_and_new_human_messages_are_unrouted():

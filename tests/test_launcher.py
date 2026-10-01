@@ -41,6 +41,7 @@ def project(tmp_path, monkeypatch):
     root.mkdir()
     (root / "pyproject.toml").write_text("[project]\nname = 'test'\n")
     monkeypatch.setenv("AGENTBUS_PROJECT_DIR", str(root))
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path / "xdg-state"))
     return root
 
 
@@ -58,7 +59,9 @@ def http_service(responder):
         def handle_request(self):
             body = self.rfile.read(int(self.headers.get("Content-Length", "0")))
             request = {"method": self.command, "path": self.path,
-                       "authorization": self.headers.get("Authorization"), "body": body}
+                       "authorization": self.headers.get("Authorization"),
+                       "capabilities": self.headers.get("X-AgentBus-Client-Capabilities"),
+                       "body": body}
             received.append(request)
             status, headers, payload = responder(request)
             self.send_response(status)
@@ -98,8 +101,23 @@ def test_configuration_treats_shell_syntax_as_data_and_environment_wins(launcher
     assert values["AGENTBUS_API_TOKEN"] == literal
     assert values["AGENTBUS_SLACK_CHANNEL"] == "C_ENVIRONMENT"
     assert values["AGENTBUS_URL"] == "http://127.0.0.1:9876"
-    assert Path(values["AGENTBUS_DB_PATH"]).parent == project / ".state"
+    assert Path(values["AGENTBUS_DB_PATH"]).parent == project.parent / "xdg-state/agentbus"
     assert not marker.exists()
+
+
+def test_configuration_keeps_existing_checkout_database_location(launcher, project):
+    (project / ".state").mkdir()
+    _, values = launcher.configuration()
+    assert Path(values["AGENTBUS_DB_PATH"]) == project / ".state/messages.sqlite3"
+
+
+def test_operator_capability_is_not_loaded_into_ordinary_client_configuration(launcher, project, monkeypatch):
+    (project / ".env").write_text("AGENTBUS_OPERATOR_TOKEN=service-only-secret\n")
+    monkeypatch.setenv("AGENTBUS_OPERATOR_TOKEN", "explicit-operator-secret")
+    _, ordinary = launcher.configuration()
+    _, service = launcher.configuration(include_operator=True)
+    assert "AGENTBUS_OPERATOR_TOKEN" not in ordinary
+    assert service["AGENTBUS_OPERATOR_TOKEN"] == "explicit-operator-secret"
 
 
 @pytest.mark.parametrize("line", [f"NOT_AGENTBUS={TOKEN}", f"AGENTBUS_API_TOKEN='{TOKEN}"])
@@ -118,6 +136,7 @@ def test_api_post_preserves_body_and_uses_bearer_header(launcher):
     assert len(received) == 1
     assert received[0]["method"] == "POST"
     assert received[0]["authorization"] == f"Bearer {TOKEN}"
+    assert received[0]["capabilities"] == "participation-v1"
     assert json.loads(received[0]["body"]) == payload
     assert TOKEN not in received[0]["path"]
 
@@ -277,7 +296,7 @@ def test_failed_start_removes_pid_record_and_keeps_credentials_out_of_argv(launc
 
 def test_send_reads_stdin_and_preserves_thread_and_recipient(launcher, monkeypatch, capsys):
     captured = []
-    monkeypatch.setattr(launcher, "configuration", lambda: (Path("/unused"), {}))
+    monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), {}))
     monkeypatch.setattr(launcher, "api", lambda values, path, payload=None: captured.append((path, payload)) or {"ok": True})
     monkeypatch.setattr(launcher.sys, "stdin", io.StringIO("first line\nsecond line\n"))
     assert launcher.main(["send", "-", "--sender", "writer", "--recipient", "reviewer",
@@ -291,7 +310,7 @@ def test_send_reads_stdin_and_preserves_thread_and_recipient(launcher, monkeypat
 
 def test_read_encodes_filter_query_without_leaking_token(launcher, monkeypatch):
     captured = []
-    monkeypatch.setattr(launcher, "configuration", lambda: (Path("/unused"), {"AGENTBUS_API_TOKEN": TOKEN}))
+    monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), {"AGENTBUS_API_TOKEN": TOKEN}))
     monkeypatch.setattr(launcher, "api", lambda values, path, payload=None: captured.append(path) or {"messages": []})
     assert launcher.main(["read", "--after", "17", "--limit", "3", "--recipient", "agent:one",
                           "--thread-ts", "123.456"]) == 0
@@ -305,7 +324,7 @@ def test_read_encodes_filter_query_without_leaking_token(launcher, monkeypatch):
 def test_onboard_creates_unique_chat_profiles_for_same_repo(launcher, tmp_path, monkeypatch, capsys):
     state = tmp_path / "consumers"
     values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
-    monkeypatch.setattr(launcher, "configuration", lambda: (Path("/unused"), values))
+    monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
     monkeypatch.setattr(launcher, "api", lambda _values, path, payload=None: {
         "protocol_version": 2, "inbox_id": "inbox-1", "channel": "C123", "high_water_cursor": 42,
     })
@@ -333,7 +352,7 @@ def test_inbox_after_zero_is_stateless_and_ack_is_bounded(launcher, tmp_path, mo
                "service_url": "http://127.0.0.1:8766", "ack_cursor": 8, "observed_cursor": 10}
     (state / "tools:weed.json").write_text(json.dumps(profile))
     values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
-    monkeypatch.setattr(launcher, "configuration", lambda: (Path("/unused"), values))
+    monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
 
     def fake_api(_values, path, payload=None):
         if path == "/v1/info":
@@ -353,7 +372,7 @@ def test_inbox_after_zero_is_stateless_and_ack_is_bounded(launcher, tmp_path, mo
 
 def test_cli_rejects_ambiguous_actionable_send_before_api(launcher, monkeypatch, capsys):
     called = []
-    monkeypatch.setattr(launcher, "configuration", lambda: (Path("/unused"), {}))
+    monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), {}))
     monkeypatch.setattr(launcher, "api", lambda *args, **kwargs: called.append(args))
     assert launcher.main(["send", "Who owns this?", "--sender", "tools:weed",
                           "--kind", "question"]) == 1
@@ -390,7 +409,7 @@ def test_consumer_profiles_use_portable_xdg_default_with_legacy_weed_compatibili
 def test_onboard_accepts_realistic_repo_names(launcher, tmp_path, monkeypatch):
     state = tmp_path / "state"
     values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
-    monkeypatch.setattr(launcher, "configuration", lambda: (Path("/unused"), values))
+    monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
     monkeypatch.setattr(launcher, "api", lambda *_args, **_kwargs: {
         "inbox_id": "inbox-1", "channel": "C123", "high_water_cursor": 9,
     })
@@ -406,7 +425,7 @@ def test_onboard_accepts_realistic_repo_names(launcher, tmp_path, monkeypatch):
 def test_onboard_derives_repo_and_records_rich_persona(launcher, tmp_path, monkeypatch):
     state = tmp_path / "state"
     values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
-    monkeypatch.setattr(launcher, "configuration", lambda: (Path("/unused"), values))
+    monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
     monkeypatch.setattr(launcher, "current_repo", lambda: "some_repo")
     monkeypatch.setattr(launcher, "api", lambda *_args, **_kwargs: {
         "inbox_id": "inbox-1", "channel": "C123", "high_water_cursor": 9,
@@ -429,8 +448,164 @@ def test_onboard_derives_repo_and_records_rich_persona(launcher, tmp_path, monke
 
 
 def test_public_cli_operation_inventory_matches_parser_surface(launcher):
+    import argparse
+
+    from src.agentbus_parser_client import build_parser
+
     assert set(launcher.CLI_OPERATIONS) == {
         "serve", "start", "stop", "status", "autostart", "send", "read",
         "onboard", "persona", "agents", "inbox", "ack", "rebind", "claim", "reply",
+        "issue-handoff", "join", "policy-ack", "check-in", "ack-control", "poll",
+        "policy-set", "policy-show", "control-stop", "control-status", "session-presence",
+        "rename",
+        "claim-recovery",
+        "control-issue",
     }
     assert all(callable(operation) for operation in launcher.CLI_OPERATIONS.values())
+    command_action = next(action for action in build_parser()._actions
+                          if isinstance(action, argparse._SubParsersAction))
+    assert set(command_action.choices) == set(launcher.CLI_OPERATIONS)
+
+
+def test_join_retries_with_same_session_secret_and_keeps_legacy_uuid(launcher, tmp_path, monkeypatch, capsys):
+    state = tmp_path / "profiles"
+    state.mkdir()
+    identity = "agentbus:old"
+    chat_id = "f149a35a-7467-49a7-b14e-f542e691379f"
+    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
+    profile = {"schema_version": 2, "identity": identity, "chat_id": chat_id,
+               "repo": "agentbus", "display_name": "Old", "inbox_id": "inbox-1",
+               "channel": "C123", "service_url": values["AGENTBUS_URL"]}
+    (state / f"{identity}.json").write_text(json.dumps(profile))
+    handoff = tmp_path / "handoff"
+    handoff.write_text("one-use-operator-handoff-token-with-entropy")
+    handoff.chmod(0o600)
+    monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
+    attempts = []
+
+    def fake_api(_values, path, payload=None, **_kwargs):
+        if path == "/v1/info":
+            return {"inbox_id": "inbox-1", "channel": "C123"}
+        attempts.append(payload)
+        if len(attempts) == 1:
+            raise launcher.ClientError("transport uncertain")
+        return {"chat_id": chat_id, "session_id": "session-1", "revision": "revision-1",
+                "values": {}, "sources": {}, "ack_required": True}
+
+    monkeypatch.setattr(launcher, "api", fake_api)
+    assert launcher.main(["join", "--identity", identity, "--handoff-file", str(handoff)]) == 1
+    pending = json.loads((state / f"{identity}.json").read_text())["participation_pending"]
+    assert launcher.main(["join", "--identity", identity]) == 0
+    committed = json.loads((state / f"{identity}.json").read_text())
+    assert attempts[0]["session_secret"] == attempts[1]["session_secret"] == pending["session_secret"]
+    assert committed["chat_id"] == chat_id and committed["participation"]["session_id"] == "session-1"
+    assert "participation_pending" not in committed
+    capsys.readouterr()
+
+
+def test_policy_ack_updates_local_budget_after_exact_revision_receipt(launcher, tmp_path, monkeypatch, capsys):
+    from src import agentbus_poll_client as poll
+
+    state = tmp_path / "profiles"
+    state.mkdir()
+    identity = "agentbus:flower"
+    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
+    profile = {"schema_version": 2, "identity": identity, "chat_id": "chat-1",
+               "repo": "agentbus", "inbox_id": "inbox-1", "channel": "C123",
+               "service_url": values["AGENTBUS_URL"],
+               "participation": {"session_id": "session-1", "session_secret": "x" * 32,
+                                 "policy_values": {"presentation_budget_bytes": None}}}
+    path = state / f"{identity}.json"
+    path.write_text(json.dumps(profile))
+    updated = {"presentation_budget_bytes": 32}
+    poll.change_spool(path, profile, lambda spool: poll._append(spool, {
+        "kind": "POLICY_CHANGED", "id": "revision-2", "revision": "revision-2",
+        "values": updated, "sources": {},
+    }))
+    monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
+    monkeypatch.setattr(launcher, "api", lambda _values, route, *_args, **_kwargs:
+                        {"inbox_id": "inbox-1", "channel": "C123"} if route == "/v1/info"
+                        else {"receipt": "receipt-2"})
+    monkeypatch.setattr(poll, "ensure_worker", lambda *_args: None)
+    assert launcher.main(["policy-ack", "--identity", identity, "revision-2"]) == 0
+    assert json.loads(path.read_text())["participation"]["policy_values"] == updated
+    assert poll.peek_event(path, profile) is None
+    assert capsys.readouterr().out == "ACK receipt-2 POLICY\n"
+
+
+def test_poll_cli_uses_budgeted_default_and_full_json_on_demand(launcher, tmp_path, monkeypatch, capsys):
+    from src import agentbus_poll_client as poll
+
+    state = tmp_path / "profiles"
+    state.mkdir()
+    identity = "agentbus:flower"
+    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
+    profile = {"schema_version": 2, "identity": identity, "chat_id": "chat-1",
+               "repo": "agentbus", "inbox_id": "inbox-1", "channel": "C123",
+               "service_url": values["AGENTBUS_URL"],
+               "participation": {"session_id": "session-1", "session_secret": "x" * 32,
+                                 "policy_values": {"presentation_budget_bytes": 32}}}
+    path = state / f"{identity}.json"
+    path.write_text(json.dumps(profile))
+    monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
+    monkeypatch.setattr(launcher, "api", lambda *_args, **_kwargs:
+                        {"inbox_id": "inbox-1", "channel": "C123"})
+    monkeypatch.setattr(poll, "ensure_worker", lambda *_args: None)
+
+    def queue(cursor):
+        poll.change_spool(path, profile, lambda spool: poll._append(spool, {
+            "kind": "MESSAGE", "id": str(cursor), "message": {
+                "cursor": cursor, "sender": "agentbus:peer", "recipient": identity,
+                "kind": "message", "audience": "informational", "text": "🌼" * 100,
+            },
+        }))
+
+    queue(1)
+    assert launcher.main(["poll", "--identity", identity]) == 0
+    assert len(capsys.readouterr().out.strip().encode("utf-8")) <= 32
+    queue(2)
+    assert launcher.main(["poll", "--identity", identity, "--json"]) == 0
+    assert json.loads(capsys.readouterr().out)["message"]["text"] == "🌼" * 100
+
+
+def test_auxiliary_control_ack_does_not_stop_client_polling(launcher, tmp_path, monkeypatch, capsys):
+    from src import agentbus_poll_client as poll
+
+    state = tmp_path / "profiles"
+    state.mkdir()
+    identity = "agentbus:flower"
+    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
+    profile = {"schema_version": 2, "identity": identity, "chat_id": "chat-1",
+               "repo": "agentbus", "inbox_id": "inbox-1", "channel": "C123",
+               "service_url": values["AGENTBUS_URL"],
+               "participation": {"session_id": "session-1", "session_secret": "x" * 32}}
+    path = state / f"{identity}.json"
+    path.write_text(json.dumps(profile))
+    poll.change_spool(path, profile, lambda spool: poll._append(spool, {
+        "kind": "CONTROL", "id": "nudge-1",
+        "control": {"control_id": "nudge-1", "kind": "nudge", "reason": "check in"},
+    }))
+    monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
+    monkeypatch.setattr(launcher, "api", lambda _values, route, *_args, **_kwargs:
+                        {"inbox_id": "inbox-1", "channel": "C123"} if route == "/v1/info"
+                        else {"receipt": "nudge-receipt", "directive": "CONTINUE"})
+    assert launcher.main(["ack-control", "--identity", identity, "nudge-1"]) == 0
+    assert json.loads(path.read_text())["participation"].get("stopped") is None
+    assert poll.peek_event(path, profile) is None
+    assert capsys.readouterr().out == "ACK nudge-receipt RECORDED\n"
+    report_file = tmp_path / "checkpoint.json"
+    report = {"activity": "reviewing CI", "blockers": [], "waiting_on": [], "work_refs": []}
+    report_file.write_text(json.dumps(report))
+    payloads = []
+
+    def checkpoint_api(_values, route, payload=None, **_kwargs):
+        if route == "/v1/info":
+            return {"inbox_id": "inbox-1", "channel": "C123"}
+        payloads.append(payload)
+        return {"receipt": "checkpoint-receipt", "directive": "CONTINUE"}
+
+    monkeypatch.setattr(launcher, "api", checkpoint_api)
+    assert launcher.main(["ack-control", "--identity", identity, "checkpoint-1",
+                          "--report-file", str(report_file)]) == 0
+    assert payloads == [{"report": report}]
+    assert json.loads(path.read_text())["participation"].get("stopped") is None

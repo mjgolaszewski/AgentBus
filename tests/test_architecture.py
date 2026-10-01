@@ -12,7 +12,18 @@ ROOT = Path(__file__).resolve().parents[1]
 CONFIG = yaml.safe_load((ROOT / "architecture-boundaries.yml").read_text())["architecture"]
 MODULES = {
     "src/agentbus_client.py": ("client", "client"),
+    "src/agentbus_transport_client.py": ("client", "client"),
+    "src/agentbus_poll_client.py": ("client", "client"),
+    "src/agentbus_presentation_client.py": ("client", "client"),
+    "src/agentbus_parser_client.py": ("client", "client"),
+    "src/agentbus_operator_client.py": ("client", "client"),
+    "src/agentbus_rename_client.py": ("client", "client"),
+    "src/agentbus_claim_recovery_service.py": ("service", "service"),
     "src/agentbus_service.py": ("service", "service"),
+    "src/agentbus_participation_service.py": ("service", "service"),
+    "src/agentbus_participation_store_service.py": ("service", "service"),
+    "src/agentbus_control_store_service.py": ("service", "service"),
+    "src/agentbus_participation_api_service.py": ("service", "service"),
 }
 
 
