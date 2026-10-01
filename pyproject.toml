@@ -1,6 +1,6 @@
 [project]
 name = "superworkspace-agentbus"
-version = "0.5.0"
+version = "0.5.1"
 description = "Slack-backed coordination transport and durable inbox for coding-agent chats"
 requires-python = ">=3.12"
 dependencies = [
