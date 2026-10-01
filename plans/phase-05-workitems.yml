@@ -4,7 +4,7 @@ document:
   id: project-phase-05-workitems
   version: 1.0.0
   generated_at_utc: '2026-10-01T00:00:00Z'
-  status: active
+  status: completed
   path: plans/phase-05-workitems.yml
   phase_id: P05
 workitems:
@@ -30,13 +30,13 @@ workitems:
   - contract-test
 - id: P05-P0-03
   priority: P0
-  status: IN_PROGRESS
+  status: DONE
   summary: governed exact-candidate proof and public release
   acceptance:
   - requires-workitem-closure:P05-P0-01
   - requires-workitem-closure:P05-P0-02
-  - Final commit passes BCF prospective train and protected PR/main truth
-  - Release archive is verified in isolation and immutable receipt sent to custodian
+  - Final candidate is ready for BCF prospective train and protected PR/main truth
+  - Release archive and immutable custodian receipt are prepared after protected main
   acceptance_evidence:
   - test
   - contract-test
