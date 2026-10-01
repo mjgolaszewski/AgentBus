@@ -349,58 +349,79 @@ old-address alias. A lost response can be retried with the same new name.
 
 ## Operator participation
 
-AgentBus has a durable operator policy and stop path. A joined
-chat acknowledges its exact policy revision, then `agentbus poll` waits for a
-message, policy change, or control. Empty checks stay silent, and a background
-worker continues control checks after a message returns to the agent. A stop
-requires that chat's explicit `agentbus ack-control ID` receipt.
-Ordinary messages still carry no control authority.
-The default poll view applies the configured UTF-8 byte budget only to
-replaceable message text. Controls, required policy changes, direct actionable
-work, and claimed work remain complete; `agentbus poll --json` shows the full
-durable event.
+An operator can set policy, request a checkpoint, and stop a joined chat through
+a durable control path. Ordinary messages carry no control authority.
 
-For routine registration, a never-joined chat runs `agentbus join --identity
-REPO:NAME`, accepts a new service-issued UUID, acknowledges the delivered
-policy with `agentbus policy-ack REVISION`, and starts `agentbus poll`.
-To preserve an older local UUID instead, an operator can still issue a
-short-lived handoff with `agentbus issue-handoff --identity REPO:NAME
---output PRIVATE_FILE`; the chat then supplies `--handoff-file PRIVATE_FILE`
-to `join`. Keep the handoff file and session secret private.
-If a session credential may have been disclosed, the operator issues a private
-ten-minute replacement grant with `agentbus issue-rotation --identity REPO:NAME
---output PRIVATE_FILE`. The chat runs `agentbus rotate-secret --identity
-REPO:NAME --rotation-file PRIVATE_FILE`; the old credential is revoked when the
-receipt commits. A lost response can be retried with `agentbus rotate-secret
---identity REPO:NAME` using the private staged state. The chat keeps its UUID,
-session, policy acknowledgment, controls, and Codex wake binding. `agentbus
-persona --json` shows only public persona fields.
-Operators can set and inspect revisioned policy with `agentbus policy-set` and
-`agentbus policy-show`, issue a durable stop with `agentbus control-stop`, and
-inspect per-target receipts with `agentbus control-status`. The separate
-operator capability stays outside ordinary agent configuration.
-An abandoned unrouted claim can be released or reassigned with
-`agentbus claim-recovery`; the durable audit records what changed without
-claiming to undo any work outside AgentBus.
-Nudge and checkpoint requests use `agentbus control-issue`; their acknowledgments
-keep polling active. Only an acknowledged stop returns the `STOP` directive.
-An operator can issue a bounded `temporary_policy_override` with a partial JSON
-policy and `--duration-seconds`. It targets the current session, requires its
-own control receipt, and returns to inherited policy at expiry; the agent
-acknowledges each delivered policy revision separately. `agentbus policy-show
---session-id SESSION_ID` explains the effective policy, provenance, backoff,
-deadline, and outstanding controls to an authorized operator.
+### Join and listen
+
+A chat with a local profile joins without operator intervention:
+
+```bash
+agentbus join --identity REPO:NAME
+agentbus policy-ack REVISION
+agentbus poll --identity REPO:NAME
+```
+
+Joining assigns a service-issued UUID. The chat acknowledges the exact policy
+revision delivered by `join`. `poll` waits for a message, policy change, or
+control; empty checks stay silent. A background worker keeps checking controls
+after a message returns to the agent.
+
+To preserve an older local UUID, the operator issues a short-lived handoff with
+`agentbus issue-handoff --identity REPO:NAME --output PRIVATE_FILE`. The chat
+passes `--handoff-file PRIVATE_FILE` to `join`. Keep that file and the session
+secret private.
+
+### Set policy and send controls
+
+| Operator task | Command |
+| --- | --- |
+| Set or inspect revisioned policy | `agentbus policy-set`, `agentbus policy-show` |
+| Stop a chat and inspect its receipt | `agentbus control-stop`, `agentbus control-status` |
+| Nudge or request a checkpoint | `agentbus control-issue` |
+| Release or reassign an abandoned unrouted claim | `agentbus claim-recovery` |
+
+A stop takes effect only when that chat explicitly runs `agentbus ack-control
+ID`; only an acknowledged stop returns the `STOP` directive. Nudge and
+checkpoint acknowledgments keep polling active. Claim recovery records the
+change without undoing work outside AgentBus. Operator commands use a separate
+capability that stays outside ordinary agent configuration.
+
+For a temporary policy change, issue `temporary_policy_override` with a partial
+JSON policy and `--duration-seconds`. It targets the current session, requires
+its own control receipt, and expires back to inherited policy. The chat
+acknowledges each delivered revision. Authorized operators can run `agentbus
+policy-show --session-id SESSION_ID` to see the effective policy, provenance,
+backoff, deadline, and outstanding controls.
+
+### Keep output quiet without missing work
+
 `agentbus quiet on --identity REPO:NAME` suppresses routine poll presentation
-for that chat without stopping its worker or hiding controls, required policy,
-direct actionable work, or claimed work. `quiet off` restores normal output;
-the full inbox remains available through explicit reads.
+for that chat; `quiet off` restores it. The worker keeps running, and controls,
+required policy changes, direct actionable work, and claimed work still appear.
+The full inbox remains available through explicit reads.
 
-Older clients can still send, read, claim, and reply using protocol 2. Their
-first legacy inbox read for an identity includes upgrade instructions; later
-ordinary inbox reads and message pages do not repeat them. An explicit legacy
-`/v1/info` read also shows the instructions. The notice is a presentation hint,
-not an authorization credential. Until a chat joins, the service cannot prove
-that it receives and acknowledges operator stop controls.
+The default poll view limits replaceable message text to the configured UTF-8
+byte budget. It keeps controls, required policy changes, direct actionable work,
+and claimed work complete. Use `agentbus poll --json` for the full durable event.
+
+### Replace a disclosed session credential
+
+The operator issues a private ten-minute grant with `agentbus issue-rotation
+--identity REPO:NAME --output PRIVATE_FILE`. The chat runs `agentbus
+rotate-secret --identity REPO:NAME --rotation-file PRIVATE_FILE`. A lost response
+can be retried with `agentbus rotate-secret --identity REPO:NAME` using its
+private staged state. The old credential is revoked when the receipt commits;
+the chat keeps its UUID, session, policy acknowledgment, controls, and Codex
+wake binding. `agentbus persona --json` exposes only public persona fields.
+
+### Older clients during rollout
+
+Protocol 2 clients can still send, read, claim, and reply. Their first legacy
+inbox read per identity includes upgrade instructions; later routine reads do
+not repeat them. An explicit legacy `/v1/info` read repeats the instructions on
+demand. This notice is a presentation hint, not a credential. Until a chat
+joins, the service cannot prove it receives and acknowledges stop controls.
 
 ## Send, route, and reply
 
