@@ -91,23 +91,17 @@ def load_profile(values: dict[str, str], identity: str, *, save_migration: bool 
     try:
         profile = json.loads(path.read_text())
     except FileNotFoundError:
-        legacy_path = None
-        if ":" in identity:
-            repo, _name = identity.split(":", 1)
-            candidate = identity_path(values, repo)
-            if candidate.is_file() and not candidate.is_symlink():
-                try:
-                    candidate_profile = json.loads(candidate.read_text())
-                except (ValueError, OSError):
-                    candidate_profile = None
-                if isinstance(candidate_profile, dict) and candidate_profile.get("identity") == identity:
-                    legacy_path = candidate
-        if legacy_path is None:
+        if ":" not in identity:
+            raise ClientError(f"Unknown AgentBus identity {identity!r}; run `agentbus onboard`.") from None
+        legacy_path = identity_path(values, identity.split(":", 1)[0])
+        if legacy_path.is_symlink() or not legacy_path.is_file():
             raise ClientError(f"Unknown AgentBus identity {identity!r}; run `agentbus onboard`.") from None
         try:
             profile = json.loads(legacy_path.read_text())
         except (ValueError, OSError):
             raise ClientError(f"Cannot read valid profile {legacy_path}.") from None
+        if not isinstance(profile, dict) or profile.get("identity") != identity:
+            raise ClientError(f"Unknown AgentBus identity {identity!r}; run `agentbus onboard`.")
     except (ValueError, OSError):
         raise ClientError(f"Cannot read valid profile {path}.") from None
     if not isinstance(profile, dict):

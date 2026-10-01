@@ -415,6 +415,14 @@ def test_consumer_profiles_use_portable_xdg_default_and_explicit_migration_path(
         "XDG_STATE_HOME": str(xdg),
         "AGENTBUS_CONSUMER_STATE_DIR": str(explicit),
     }) == explicit
+    explicit.mkdir()
+    (explicit / "tools.json").write_text(json.dumps({
+        "schema_version": 2, "identity": "tools:fern", "chat_id": "stable-chat",
+    }))
+    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(explicit)}
+    assert launcher.load_profile(values, "tools:fern")["chat_id"] == "stable-chat"
+    with pytest.raises(launcher.ClientError, match="Unknown AgentBus identity"):
+        launcher.load_profile(values, "tools:other")
 
 
 def test_onboard_accepts_realistic_repo_names(launcher, tmp_path, monkeypatch):
