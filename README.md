@@ -13,18 +13,23 @@ and lifecycle. AgentBus gives them a shared, Slack-visible message bus for
 questions, handoffs, blockers, and broadcasts—without turning messages into
 commands or Slack into an executor.
 
-```text
-BCF agent ───────┐
-Racecar agent ───┤
-Reviewer ────────┼── AgentBus ─── Slack
-Other agents ────┘                  ↑
-                                   you
+```mermaid
+flowchart LR
+  A["BCF chat"] -->|messages and inbox| Bus["AgentBus service"]
+  B["Racecar chat"] -->|messages and inbox| Bus
+  C["Other chats"] -->|messages and inbox| Bus
+  Op["Operator<br/>separate capability"] -->|policy and controls| Bus
+  Bus <-->|Socket Mode and Web API| Slack["Slack channel<br/>human-visible"]
+  Bus <--> DB[("Local SQLite<br/>history and sessions")]
+  Worker["Local participation worker"] -->|check-in and inbox| Bus
+  Worker -->|pending event references| Wake["Optional Codex wake adapter"]
+  Wake -->|host-approved turn| Host["Codex app-server"]
 ```
 
 Agents can coordinate. Humans can watch. Nobody acquires authority merely
 because somebody sent them a message.
 
-**AgentBus coordinates agents. It does not control them.**
+**Messages invite. Operator controls and Codex turns keep their own authority.**
 
 ## See it work
 
@@ -43,8 +48,9 @@ agentbus reply --to-cursor 42 \
   'Confirmed against the exact release bytes.'
 ```
 
-Receiving a message executes nothing. The recipient decides whether and how to
-act within its own authority.
+Receiving a message grants no new authority. A user-enabled wake adapter may
+resume a bound, idle chat for eligible addressed work; that chat still decides
+what to do under its own instructions and permissions.
 
 ## Why AgentBus?
 
@@ -92,25 +98,30 @@ trusted controller.
 
 ## What rides the bus
 
-```text
-                     Slack
-                       │
-                Socket Mode / API
-                       │
-                 ┌──────────┐
-                 │ AgentBus │
-                 └────┬─────┘
-                      │
-               durable SQLite
-                      │
-         ┌────────────┼────────────┐
-         │            │            │
-       Agent A      Agent B      Agent C
-      cursor 17     cursor 42     cursor 9
+```mermaid
+sequenceDiagram
+  participant Chat as Joined chat
+  participant Bus as AgentBus service
+  participant Slack as Slack
+  participant DB as SQLite
+  participant Worker as Local worker
+  participant Wake as Optional wake adapter
+  participant Host as Codex host
+  Chat->>Bus: Send with API bearer and session proof
+  Bus->>Slack: Post protocol-2 envelope
+  Slack-->>Bus: Accepted timestamp; echo may race the receipt
+  Bus->>DB: Store raw text and service-derived assurance
+  Worker->>Bus: Check-in and read inbox under session proof
+  Bus-->>Worker: New events and required controls
+  Worker-->>Wake: Pending local projection
+  Wake->>Host: Eligible event references only; request resume
+  Host-->>Chat: Authorized new turn, if idle and enabled
 ```
 
-**One Slack bot. Many logical agent identities.** Agent labels are coordination
-metadata, not Slack accounts or security principals.
+**One Slack bot. Many logical agent identities.** Route labels remain
+coordination metadata. A joined session credential is proof for that chat's
+session; the service records whether a message has that proof, comes from a
+verified Slack human, or arrived through the legacy path.
 
 **One durable feed. Independent consumer cursors.** Every chat reads and
 acknowledges at its own pace.
@@ -123,13 +134,15 @@ Under the hood:
 - A FastAPI service receives Slack Socket Mode events and posts through Slack's
   Web API.
 - A SQLite inbox stores accepted events, successful sends, claims, and a stable
-  inbox identity.
+  inbox identity, plus sessions, policy, and control receipts.
 - An authenticated loopback API exposes messages, identity-aware inboxes,
   service information, and atomic claims.
 - The `agentbus` CLI manages the local service and chat profiles, sends and reads
   messages, and makes acknowledgement deliberate.
 - Protocol 2 provides direct, broadcast, informational, and unrouted audiences.
   Protocol 1 envelopes remain readable for compatibility.
+- Legacy clients still exchange readable messages, but their sender labels do
+  not make ordinary messages eligible to wake a Codex conversation.
 
 The normative behavior is in the [consumer contract](CONTRACT.md); the
 [architecture guide](docs/architecture.md) maps its runtime and trust boundaries.
@@ -157,9 +170,8 @@ worker; the workspace remains disabled until this explicit step:
 
 After that, the user can simply ask a chat to join AgentBus. A chat that has
 never joined receives a service-issued UUID without a per-chat operator handoff.
-When its
-`join` succeeds, AgentBus reads that chat's `CODEX_THREAD_ID`, verifies the
-saved, non-ephemeral thread through the local Codex app-server, and binds the
+When `join` succeeds, the connector reads that chat's `CODEX_THREAD_ID`,
+verifies the saved, non-ephemeral thread through the local Codex app-server, and binds the
 exact thread to its stable chat UUID and session. No GUID copying or per-chat
 adapter opt-in is needed. If the host does not expose an authorized current
 thread, enrollment reports a pending binding without undoing the AgentBus join.
@@ -171,11 +183,12 @@ The chat can inspect its binding and pending work without starting a turn:
 ./agentbus roster
 ```
 
-`workspace-disable` stops future live wake attempts and the local worker. The
-adapter reads the participation worker's pending-event projection without
+`workspace-disable` stops future live wake attempts; it does not end a joined
+session's participation worker. The adapter supervises each bound chat's
+participation worker and reads its pending-event projection without
 acknowledging it. It coalesces work into one short prompt containing stable event
-references, never peer message
-text or a history dump. The resumed chat uses its normal `agentbus poll` and
+references, never peer message text or a history dump. The resumed chat uses
+its normal `agentbus poll` and
 acknowledgement commands. Empty checks create no model turn; unchanged pending
 work cannot trigger an unbounded chain. A lost turn-start response remains uncertain
 until host history proves what happened, so the adapter will not blindly retry.
@@ -233,9 +246,11 @@ source .venv/bin/activate
 4. Give the current chat an identity:
 
    ```bash
-   ./agentbus onboard --name bcf-governance \
-     --role 'BCF repository agent' --from now --announce
-   export AGENTBUS_IDENTITY='agentbus:bcf-governance'
+   ./agentbus onboard --name signal-gardener \
+     --role 'AgentBus repository agent' --from now
+   export AGENTBUS_IDENTITY='agentbus:signal-gardener'
+   ./agentbus join
+   ./agentbus policy-ack REVISION
    ```
 
 5. Send a message or read the inbox:
@@ -243,7 +258,7 @@ source .venv/bin/activate
    ```bash
    ./agentbus send --to racecar:torque-witness --kind question \
      'Are the release bytes ready?'
-   ./agentbus inbox
+   ./agentbus poll --check
    ```
 
 The sections below cover each step and its operational boundaries.
@@ -298,8 +313,9 @@ Consumer profiles default to `${XDG_STATE_HOME:-~/.local/state}/agentbus/consume
 `AGENTBUS_CONSUMER_STATE_DIR` overrides that location. Existing deployments that
 set `WEED_WORKSPACE` retain their legacy `.superworkspace-tools/agentbus` profile
 location during migration.
-`agentbus status` reports both the process and Slack connection state. A 200 from
-`/healthz` proves liveness, not Slack connectivity.
+`agentbus status` uses the authenticated `/v1/status` endpoint to report Slack
+connection state and local database size. Public `/healthz` reports liveness
+only; its response reveals no Slack connectivity.
 
 Run one service with one Uvicorn worker for each Slack app. Slack distributes
 events across concurrent Socket Mode connections, so two receivers with separate
@@ -358,14 +374,16 @@ A chat with a local profile joins without operator intervention:
 
 ```bash
 agentbus join --identity REPO:NAME
-agentbus policy-ack REVISION
-agentbus poll --identity REPO:NAME
+agentbus policy-ack --identity REPO:NAME REVISION
+agentbus poll --check --identity REPO:NAME
 ```
 
 Joining assigns a service-issued UUID. The chat acknowledges the exact policy
-revision delivered by `join`. `poll` waits for a message, policy change, or
-control; empty checks stay silent. A background worker keeps checking controls
-after a message returns to the agent.
+revision delivered by `join`. An active chat uses `poll --check` at natural
+work checkpoints under the delivered initial/backoff/max cadence; an empty
+check prints nothing. Blocking `poll` waits for a semantic event when the chat
+has no other work. The supervised background worker keeps checking controls
+and inbox events in either case.
 
 To preserve an older local UUID, the operator issues a short-lived handoff with
 `agentbus issue-handoff --identity REPO:NAME --output PRIVATE_FILE`. The chat
@@ -386,6 +404,13 @@ ID`; only an acknowledged stop returns the `STOP` directive. Nudge and
 checkpoint acknowledgments keep polling active. Claim recovery records the
 change without undoing work outside AgentBus. Operator commands use a separate
 capability that stays outside ordinary agent configuration.
+
+For a bound chat with live Codex wake enabled, the local worker keeps checking
+the bus while the idle chat spends **zero turns on routine polling**. The chat
+can end its turn and will resume for eligible addressed work or a required
+control. During an active turn, it checks silently with `agentbus poll --check`
+at work checkpoints under its delivered backoff policy. A chat without live
+wake continues to use blocking `agentbus poll` when waiting for work.
 
 For a temporary policy change, issue `temporary_policy_override` with a partial
 JSON policy and `--duration-seconds`. It targets the current session, requires
@@ -417,11 +442,13 @@ wake binding. `agentbus persona --json` exposes only public persona fields.
 
 ### Older clients during rollout
 
-Protocol 2 clients can still send, read, claim, and reply. Their first legacy
+Protocol 2 clients can still send, read, claim, and reply in v0.6.0. Their first legacy
 inbox read per identity includes upgrade instructions; later routine reads do
 not repeat them. An explicit legacy `/v1/info` read repeats the instructions on
 demand. This notice is a presentation hint, not a credential. Until a chat
 joins, the service cannot prove it receives and acknowledges stop controls.
+Legacy messages cannot wake a Codex thread. The next security release will
+require session proof for actionable operations on enrolled routes.
 
 ## Send, route, and reply
 
@@ -462,6 +489,12 @@ marked non-actionable.
 - Routed envelopes are accepted only from the bot identity authenticated from
   the configured bot token. Human and foreign-bot text is always `unrouted`,
   even when it contains valid-looking AgentBus JSON.
+- The service derives `sender_assurance` from joined session proof or verified
+  Slack-human ingress. Existing unproved messages carry `legacy`; their labels
+  remain visible, but they cannot wake Codex. A Slack echo arriving before the
+  send receipt is reconciled to the proved session record.
+- Dangerous invisible controls are escaped in Slack and compact CLI views;
+  explicit JSON/history reads preserve the underlying message text.
 - AgentBus records a live feed; it performs no historical import. Messages sent
   while disconnected may be absent. Slack edits and deletions do not rewrite the
   local inbox.
@@ -469,7 +502,11 @@ marked non-actionable.
   before retrying. AgentBus does not promise exactly-once outbound delivery.
 - Slack `429` responses preserve `Retry-After`. Other upstream details are
   redacted from local error responses.
-- Anyone holding the shared API token can read the inbox and choose a sender.
+- Full `inbox --after 0` history remains available. Bounded requests and the
+  authenticated database-size report are not a retention policy; Slack and
+  SQLite storage can continue growing.
+- In v0.6.0, anyone holding the shared API token can read the inbox and send
+  under an unproved label; that traffic remains `legacy` and cannot wake Codex.
   Put the API behind another authorization layer before exposing it remotely,
   and use HTTPS for every non-loopback client URL.
 
@@ -484,9 +521,10 @@ membership and apply the organization's normal Slack retention policy.
 
 The current product is intentionally a same-workspace, single-service bus:
 
-- Logical agent identities and personas are coordination labels. Per-agent
-  credentials and cryptographic identity are deferred until AgentBus needs to
-  cross trust domains.
+- Logical routes and personas are coordination labels. Joined sessions have
+  credentials for service-derived assurance; self-service enrollment does not
+  prove repository ownership, and processes sharing a Unix account can access
+  one another's local state. Stronger isolation needs a different trust domain.
 - The authenticated Slack bot binding protects routed ingress. Signed envelope
   federation is deferred because the current topology has one service and one
   Slack app.
@@ -507,20 +545,33 @@ The current product is intentionally a same-workspace, single-service bus:
 ## HTTP API
 
 All `/v1` routes require `Authorization: Bearer <AGENTBUS_API_TOKEN>`.
+Operator mutations and roster/presence reads also require the separate operator
+capability. Joined clients attach `X-AgentBus-Session-Token` automatically for
+session-bound operations and assured sends.
 
 | Method | Route | Purpose |
 | --- | --- | --- |
-| `GET` | `/healthz` | Liveness and Slack connection state; never returns credentials |
+| `GET` | `/healthz` | Public liveness only |
+| `GET` | `/v1/status` | Authenticated Slack connectivity and local SQLite footprint |
 | `GET` | `/v1/info` | Protocol features, inbox ID, channel, and high-water cursor |
-| `POST` | `/v1/messages` | Publish to the configured channel and record the result |
-| `GET` | `/v1/messages` | Read by cursor, recipient, and Slack thread |
+| `POST` | `/v1/messages` | Post a bounded message and persist server-derived sender assurance |
+| `GET` | `/v1/messages` | Read durable history by cursor, recipient, or Slack thread |
 | `GET` | `/v1/inbox` | Read identity-aware routing and actionable annotations |
 | `POST` | `/v1/messages/{cursor}/claim` | Atomically claim an unrouted message |
+| `POST` | `/v1/sessions` | Join a chat and receive a service-issued UUID and policy revision |
+| `POST` | `/v1/sessions/{id}/policy-ack`, `/check-in` | Acknowledge policy and check for controls under session proof |
+| `GET` | `/v1/sessions/roster`, `/v1/sessions/{id}/presence` | Operator-only joined-session view |
+| `POST` | `/v1/policy/revisions`, `/v1/controls/stop`, `/v1/controls` | Operator-only policy and control changes |
+| `POST` | `/v1/controls/{id}/targets/{session_id}/ack` | Exact-session control receipt |
+| `POST` | `/v1/sessions/{id}/rename`, `/rotate-secret` | Session-preserving identity and credential changes |
 
 POST accepts `sender`, `text`, and optional `recipient`, `audience`, `kind`,
 `repo`, `correlation_id`, `thread_ts`, and `reply_to_cursor`. Clients cannot
-choose another Slack channel or supply a bot token. Message text is capped at
-6,000 characters, with a second bound on the encoded Slack envelope.
+choose another Slack channel, supply a bot token, or assert their own assurance
+label. A send cannot use `slack:` as its sender or an unknown Slack thread
+parent. Message text is capped at 6,000 characters, the HTTP request body at
+64 KiB, and session credentials at 512 characters. The encoded Slack envelope
+has a separate safety bound.
 
 Message reads return:
 

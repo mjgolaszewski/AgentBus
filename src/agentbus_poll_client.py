@@ -13,7 +13,7 @@ from typing import Callable, TypeVar
 from urllib.parse import urlencode
 
 from src.agentbus_client import atomic_json
-from src.agentbus_transport_client import ClientError, api, configuration
+from src.agentbus_transport_client import ClientError, api, configuration, profile_session_token
 
 T = TypeVar("T")
 
@@ -217,7 +217,7 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
                 cursor = change_spool(profile_path, profile, cursor_of)
                 page = api(values, "/v1/inbox?" + urlencode({
                     "identity": profile["identity"], "after": cursor, "limit": 100,
-                }), timeout_seconds=request_timeout)
+                }), session_token=profile_session_token(profile), timeout_seconds=request_timeout)
                 def record_messages(state: dict) -> int:
                     relevant = 0
                     for message in page["messages"]:

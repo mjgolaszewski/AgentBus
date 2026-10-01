@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlencode
 
-from src.agentbus_transport_client import ClientError, api, configuration
+from src.agentbus_transport_client import ClientError, api, configuration, profile_session_token
 
 NAME_RE = r"^[a-z0-9][a-z0-9-]{0,31}$"
 REPO_RE = r"^[a-z0-9][a-z0-9._-]{0,63}$"
@@ -217,7 +217,7 @@ def lifecycle(command: str, project: Path, values: dict[str, str]) -> int:
     if command == "status":
         print(f"Local process: {running_process(state) or 'stopped'}")
         try:
-            print(json.dumps(api(values, "/healthz"), indent=2))
+            print(json.dumps(api(values, "/v1/status"), indent=2))
             return 0
         except ClientError as exc:
             print(str(exc))
@@ -323,8 +323,7 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
         profile.pop("participation_pending", None)
         save_profile(values, profile)
         print(json.dumps({key: result[key] for key in ("chat_id", "session_id", "revision", "values", "sources", "ack_required")}, indent=2))
-        # Workspace opt-in is durable, but each exact host-thread binding must
-        # be verified from the joining chat's own Codex environment.
+        # Bind only the current host-verifiable Codex thread.
         from src.agentbus_codex_wake_client import enroll_current
         try:
             wake = enroll_current(values, identity)
@@ -332,10 +331,9 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
                 print(json.dumps({"codex_wake": wake}))
         except ClientError as exc:
             print(f"Codex wake enrollment pending: {exc}", file=sys.stderr)
-        print(f"Acknowledge the exact revision with `agentbus policy-ack --identity {identity} {result['revision']}`. "
-              "Then use `agentbus poll`. Keep polling while joined; backoff changes frequency, not permission "
-              "to disengage. Stop polling and end the turn only after an authorized stop is explicitly "
-              "acknowledged and AgentBus confirms its receipt.")
+        cadence = result["values"]
+        print(f"Acknowledge with `agentbus policy-ack --identity {identity} {result['revision']}`. Active-turn checks: `agentbus poll --check --identity {identity}` at work checkpoints; "
+              f"back off {cadence['initial_interval_seconds']}s ×{cadence['backoff_factor']} to {cadence['max_interval_seconds']}s after quiet checks. Idle live-wakable chats end turns; the worker keeps checking. Empty checks print nothing.")
         return 0
     if ns.command == "policy-ack":
         identity = resolve_identity(ns.identity)
@@ -382,6 +380,8 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
                     print(rendered)
                 if event["kind"] == "MESSAGE":
                     retire_event(path, profile, "MESSAGE", event["id"])
+                return 0
+            if ns.check:
                 return 0
             time.sleep(0.25)
     if ns.command == "check-in":
@@ -504,7 +504,7 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
             query["thread_ts"] = ns.thread_ts
         if ns.context:
             query["context"] = "true"
-        result = api(values, "/v1/inbox?" + urlencode(query))
+        result = api(values, "/v1/inbox?" + urlencode(query), session_token=profile_session_token(profile))
         if not historical and result["messages"]:
             profile["observed_cursor"] = max(int(profile.get("observed_cursor", 0)),
                                              max(item["cursor"] for item in result["messages"]))
@@ -532,8 +532,8 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
         result = {"identity": identity, "inbox_id": info["inbox_id"], "ack_cursor": cursor}
     elif ns.command == "claim":
         identity = resolve_identity(ns.identity)
-        checked_profile(values, identity)
-        result = api(values, f"/v1/messages/{ns.cursor}/claim", {"identity": identity})
+        profile, _ = checked_profile(values, identity)
+        result = api(values, f"/v1/messages/{ns.cursor}/claim", {"identity": identity}, session_token=profile_session_token(profile))
     elif ns.command == "reply":
         identity = resolve_identity(ns.identity)
         profile, _ = checked_profile(values, identity)
@@ -548,7 +548,7 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
             "correlation_id": parent.get("correlation_id"),
             "thread_ts": parent.get("thread_ts") or parent["slack_ts"],
             "reply_to_cursor": ns.to_cursor,
-        })
+        }, session_token=profile_session_token(profile))
     elif ns.command == "send":
         if bool(ns.identity) == bool(ns.sender):
             raise ClientError("Use exactly one of --identity or --sender.")
@@ -581,7 +581,7 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
             payload["reply_to_cursor"] = ns.reply_to_cursor
         if payload["text"] == "-":
             payload["text"] = sys.stdin.read()
-        result = api(values, "/v1/messages", payload)
+        result = api(values, "/v1/messages", payload, session_token=profile_session_token(send_profile or {}))
     else:  # legacy raw read
         query = {key: value for key, value in vars(ns).items() if key != "command" and value is not None}
         result = api(values, "/v1/messages?" + urlencode(query))

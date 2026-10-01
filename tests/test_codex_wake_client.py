@@ -74,11 +74,44 @@ def put(profile_path: Path, profile: dict, *events: dict) -> None:
 
 def message(cursor: int, *, recipient: str = "agentbus:signal-gardener",
             audience: str = "direct", kind: str = "request", text: str = "private peer text",
-            action_reason: str | None = None) -> dict:
+            action_reason: str | None = None, assurance: str = "session") -> dict:
     return {"kind": "MESSAGE", "id": str(cursor), "message": {
         "cursor": cursor, "recipient": recipient, "audience": audience,
         "kind": kind, "text": text, "action_reason": action_reason,
+        "sender_assurance": assurance,
     }}
+
+
+def test_legacy_message_cannot_wake_bound_chat(setup):
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, "thread-one", lambda: host)
+    put(path, profile, message(1, assurance="legacy"))
+    assert wake.status(values, identity)["eligible"] == []
+    assert wake.run_once(values, identity, host_factory=lambda: host)["status"] == "no_action"
+    assert all(name != "start" for name, _ in host.calls)
+
+
+def test_watch_all_supervises_poll_worker_before_wake_projection(monkeypatch, tmp_path):
+    profile_path = tmp_path / "agentbus:flower.json"
+    profile_path.write_text(json.dumps({
+        "identity": "agentbus:flower", "chat_id": str(uuid.uuid4()),
+        "participation": {"session_id": "s1", "stopped": False},
+    }))
+    binding = tmp_path / "binding.json"
+    binding.write_text("{}")
+    checks = iter((True, False))
+    calls = []
+    monkeypatch.setattr(wake, "workspace_status", lambda _values: {"enabled": next(checks)})
+    monkeypatch.setattr(wake, "consumer_state_dir", lambda _values: tmp_path)
+    monkeypatch.setattr(wake, "_state_path", lambda *_args: binding)
+    monkeypatch.setattr(wake, "ensure_worker", lambda path, _values: calls.append(("poll", path)))
+    def observe(_values, identity, **_kwargs):
+        calls.append(("wake", identity))
+        return {"status": "no_action"}
+    monkeypatch.setattr(wake, "run_once", observe)
+    monkeypatch.setattr(wake.time, "sleep", lambda _interval: None)
+    wake.watch_all({}, interval=2)
+    assert calls == [("poll", profile_path), ("wake", "agentbus:flower")]
 
 
 def test_dry_run_filters_noise_and_does_not_call_host(setup):

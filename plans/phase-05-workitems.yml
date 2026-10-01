@@ -1,0 +1,42 @@
+document:
+  kind: execution_phase_workitem_ledger
+  name: Phase 05 Workitems
+  id: project-phase-05-workitems
+  version: 1.0.0
+  generated_at_utc: '2026-10-01T00:00:00Z'
+  status: completed
+  path: plans/phase-05-workitems.yml
+  phase_id: P05
+workitems:
+- id: P05-P0-01
+  priority: P0
+  status: DONE
+  summary: service-derived sender assurance and legacy wake exclusion
+  acceptance:
+  - Session proof and verified Slack humans are the only ordinary wake-eligible senders
+  - Legacy traffic remains readable; reserved or noncanonical new routes are rejected
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P05-P0-02
+  priority: P0
+  status: DONE
+  summary: route, thread, request, secret, storage, and status hardening
+  acceptance:
+  - Unknown thread parents fail before Slack post and request/secret bounds reject cheaply
+  - Raw history survives escaped presentation and authenticated status owns connectivity detail
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P05-P0-03
+  priority: P0
+  status: DONE
+  summary: governed exact-candidate proof and public release
+  acceptance:
+  - requires-workitem-closure:P05-P0-01
+  - requires-workitem-closure:P05-P0-02
+  - Final candidate is ready for BCF prospective train and protected PR/main truth
+  - Release archive and immutable custodian receipt are prepared after protected main
+  acceptance_evidence:
+  - test
+  - contract-test

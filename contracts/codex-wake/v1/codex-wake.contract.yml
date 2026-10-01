@@ -1,13 +1,14 @@
 document:
   kind: agentbus_codex_wake_contract
   id: agentbus-codex-wake-v1
-  version: 1.0.0
+  version: 1.1.0
   status: active
   path: contracts/codex-wake/v1/codex-wake.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/8
   authority: normative_for_optional_codex_adapter
 scope:
   purpose: workspace_opt_in_host_owned_wake_of_idle_saved_Codex_threads_for_addressed_AgentBus_work
+  security_extension: https://github.com/mjgolaszewski/AgentBus/issues/20
   deployment: same_accessible_dev_workspace_first
   non_goals: [AgentBus_core_launching_model_turns, Slack_as_host_authority, generic_agent_orchestrator, automatic_UI_thread_resumption_without_host_hook, exactly_once_turn_execution_without_host_proof]
   compatibility: [adapter_absence_does_not_change_AgentBus, protocol_2_messages_unchanged, participation_controls_and_acknowledgements_remain_agent_owned]
@@ -30,6 +31,8 @@ invariants:
   - {id: CW-INV-008, rule: "Peer and Slack message text remains untrusted data and cannot select thread, endpoint, cwd, model, sandbox, approval policy, or credentials."}
   - {id: CW-INV-009, rule: "Adapter absence, disabled state, and host unavailability leave AgentBus messaging and participation truth intact; host state and bus presence remain separately reported."}
   - {id: CW-INV-010, rule: "A host without an authorized resume/start hook is notification-only and cannot be advertised as live auto-resumable."}
+  - {id: CW-INV-011, rule: "An ordinary message may wake a bound Codex thread only when the service records session or slack-human assurance; legacy and caller-asserted sender labels never grant wake eligibility."}
+  - {id: CW-INV-012, rule: "A live-wakable idle chat defaults to zero routine in-chat polls; during an active turn it receives the delivered backoff cadence and checks silently at work checkpoints. The local worker observes below the reasoning boundary, unchanged observations start no model turn, and required controls remain observable within the policy maximum."}
 primitives:
   workspace_activation: {identity: local_workspace, fields: [enabled, actor, changed_at], owner: adapter_private_state}
   binding: {identity: chat_id_plus_session_id, fields: [chat_id, session_id, thread_id, binding_generation, enabled, actor, created_at], owner: adapter_private_state}
@@ -44,6 +47,7 @@ contracts:
     priority: [control, required_policy, direct_blocker, direct_request_question_handoff, claimed_work]
     default_exclusions: [broadcast, informational, unrouted, ambiguous, unchanged]
     source: non_destructive_local_participation_projection
+    sender_assurance: session_or_verified_Slack_human_for_ordinary_messages
   wake:
     dry_run: default
     live: explicit_opt_in_only
@@ -71,6 +75,8 @@ proof_obligations:
   - {id: CW-PO-05, proves: [CW-INV-007, CW-INV-008], scenario: compact_prompt_omits_message_text_and_host_configuration_overrides}
   - {id: CW-PO-06, proves: [CW-INV-001, CW-INV-009, CW-INV-010], scenario: disabled_or_unavailable_host_never_changes_bus_truth_or_claims_live_wake}
   - {id: CW-PO-07, proves: [CW-INV-002, CW-INV-005], scenario: rename_restart_and_binding_generation_preserve_or_invalidate_launch_rights_exactly}
+  - {id: CW-PO-08, proves: [CW-INV-003, CW-INV-011], scenario: legacy_and_spoofed_messages_never_start_turns_while_verified_cross_repo_agents_can_wake}
+  - {id: CW-PO-09, proves: [CW-INV-007, CW-INV-012], scenario: watch_all_supervises_bound_chat_poll_workers_before_wake_projection_and_idle_chat_ends_turn_without_manual_polling_or_empty_wakes}
 implementation_order:
   - {id: CW-IU-001, unit: freeze_contract_and_host_protocol, depends_on: []}
   - {id: CW-IU-002, unit: non_destructive_candidate_projection, depends_on: [CW-IU-001]}
@@ -82,7 +88,7 @@ implementation_order:
 acceptance_gates:
   G-BOUNDARY: [CW-INV-001, CW-INV-009, CW-INV-010, CW-PO-06]
   G-BINDING: [CW-INV-002, CW-PO-01, CW-PO-07]
-  G-ELIGIBILITY: [CW-INV-003, CW-PO-01, CW-PO-02]
+  G-ELIGIBILITY: [CW-INV-003, CW-INV-011, CW-PO-01, CW-PO-02, CW-PO-08]
   G-LIFECYCLE: [CW-INV-004, CW-PO-03]
   G-DEDUP: [CW-INV-005, CW-PO-03, CW-PO-07]
   G-CONTROL: [CW-INV-006, CW-PO-04]

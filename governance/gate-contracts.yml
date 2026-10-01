@@ -13,7 +13,7 @@ claim_model:
   dependency_sets:
     governance: [AGENTS.yml, &id057 MEMORY.yml, &id039 architecture-boundaries.yml, governance/**, plans/**, phases/**, schemas/**, Makefile, Makefile.fragment, .gitignore]
     client-source: [agentbus, &id043 src/agentbus_client.py, src/agentbus_transport_client.py, src/agentbus_poll_client.py, src/agentbus_presentation_client.py, src/agentbus_parser_client.py, src/agentbus_operator_client.py, src/agentbus_rename_client.py, src/agentbus_codex_rpc_client.py, src/agentbus_codex_wake_client.py]
-    service-source: [agentbus_service.py, &id056 src/agentbus_service.py, src/agentbus_participation_service.py, src/agentbus_participation_store_service.py, src/agentbus_control_store_service.py, src/agentbus_claim_recovery_service.py, src/agentbus_participation_api_service.py, &id001 slack-app-manifest.json]
+    service-source: [agentbus_service.py, &id056 src/agentbus_service.py, src/agentbus_participation_service.py, src/agentbus_participation_store_service.py, src/agentbus_control_store_service.py, src/agentbus_claim_recovery_service.py, src/agentbus_participation_api_service.py, src/agentbus_message_assurance_service.py, src/agentbus_presentation_service.py, src/agentbus_reply_policy_service.py, src/agentbus_request_limits_service.py, src/agentbus_send_policy_service.py, src/agentbus_settings_service.py, &id001 slack-app-manifest.json]
     participation-contract: [contracts/participation/**, schemas/participation-contract.schema.json]
     codex-wake-contract: [contracts/codex-wake/**, schemas/codex-wake-contract.schema.json]
     package-source: [src/__init__.py, &id002 pyproject.toml, uv.lock]
@@ -525,7 +525,7 @@ gates:
     - {id: unused-import-is-rejected, mutation: {path: *id043, search: import argparse, replace: 'import argparse
 
           import definitely_unused_agentbus_symbol'}, oracle: {kind: *id059, exit_codes: [1], stream: stdout, regex: F401|imported but unused}}
-    - {id: version-drift-is-rejected-at-source-boundary, mutation: {path: *id002, search: version = "0.5.1", replace: version = "9.9.9"}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: project version must match}}
+    - {id: version-drift-is-rejected-at-source-boundary, mutation: {path: *id002, search: version = "0.6.0", replace: version = "9.9.9"}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: project version must match}}
   python314-compatibility:
     invocation: {argv: [python3, *id037, python314-compatibility, --junit, .artifacts/junit/python314-compatibility.xml], cwd: ., env: {}, required_env: []}
     evidence:

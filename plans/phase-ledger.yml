@@ -11,11 +11,11 @@ build_plan_mandate:
   required_fields: [tightly_scoped_deliverables, parallelizable_workstreams, hard_dependencies, docker_first_local_runtime, completeness_standard]
   completeness_standard: full_completeness_for_declared_scope
 active_phase:
-  id: P04
-  build_block: "operator_participation_plane"
-  plan: plans/phase-04-plan.yml
-  workitems: plans/phase-04-workitems.yml
-  log: phases/phase-04-log.yml
+  id: P05
+  build_block: "security_provenance_foundation"
+  plan: plans/phase-05-plan.yml
+  workitems: plans/phase-05-workitems.yml
+  log: phases/phase-05-log.yml
   memory: MEMORY.yml
   spec: plans/product-spec.yml
   build_plan: plans/build-plan.yml
@@ -54,8 +54,9 @@ operator_requirements_choices_disambiguations:
     statement: adopter governance must not install a persistent trusted controller or inherit BCF self-authority
 active_delivery_priorities:
   current_tranche:
-    - "operator_participation_plane"
-    - "optional_codex_host_wake_adapter"
+    - "security_provenance_foundation"
+    - "security_identity_enforcement"
+    - "producer_supply_chain_hardening"
 release_trains:
   release_1:
     target_version: "0.3.0"
@@ -88,6 +89,9 @@ release_trains:
       - stable_identity_and_rename
       - compact_agent_surface
       - optional_codex_host_wake
+  release_5: {target_version: "0.6.0", status: active, focus: [sender_provenance, legacy_wake_exclusion, bounded_ingress, private_status]}
+  release_6: {target_version: "0.7.0", status: planned, focus: [enrolled_route_proof, session_targeting, rate_limits]}
+  release_7: {target_version: "0.7.1", status: planned, focus: [pinned_uv_bootstrap, released_bcf_producer_fixes]}
 release_readiness:
   computed_by: bcf truth
   requirements_source: governance/evidence-policy.yml

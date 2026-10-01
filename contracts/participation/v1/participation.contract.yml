@@ -1,7 +1,7 @@
 document:
   kind: agentbus_participation_contract
   id: agentbus-participation-v1
-  version: 1.2.0
+  version: 1.3.0
   status: active
   path: contracts/participation/v1/participation.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/6
@@ -9,6 +9,7 @@ document:
 
 scope:
   purpose: durable operator control and participation for enrolled agent chats
+  security_extension: https://github.com/mjgolaszewski/AgentBus/issues/20
   non_goals:
     - executing or scheduling agent work
     - proving an external model turn ended from a bus acknowledgement
@@ -39,11 +40,11 @@ architecture_constraints:
   deployment_boundary: preserve_single_service_and_SQLite_until_measurement_justifies_change
 
 invariants:
-  - {id: INV-001, rule: "An active enrolled session MUST continue polling until its stop acknowledgement is durably committed and its receipt is returned; empty inbox, quiet mode, maximum backoff, timeout, transient failure, or completion of local work never ends participation."}
+  - {id: INV-001, rule: "An active enrolled session MUST keep its below-reasoning worker polling until stop acknowledgement is durably committed; a live, bound wake adapter may let the chat end its turn, while empty inbox, quiet mode, backoff, timeout, or completion of local work never ends the worker's participation."}
   - {id: INV-002, rule: "Waits, empty reads, retries, heartbeats, and unchanged state remain below the reasoning boundary; unchanged empty cycles emit no model-visible output."}
   - {id: INV-003, rule: "Agent-visible output contains semantic deltas and minimal known-success receipts; complete durable history remains independently available."}
   - {id: INV-004, rule: "Policy resolution is deterministic global then repo then chat, with provenance; sessions record effective, delivered, and acknowledged revisions, and material policy changes require exact-revision acknowledgement."}
-  - {id: INV-005, rule: "A normal stop proceeds durable issue, delivery, explicit target acknowledgement, durable commit, receipt return, polling cessation, then agent end-turn; retry after a lost response returns the committed receipt."}
+  - {id: INV-005, rule: "A normal stop proceeds durable issue, delivery, explicit target acknowledgement, durable commit, receipt return, then worker polling cessation; retry after a lost response returns the committed receipt. A live-wakable chat may already be between turns."}
   - {id: INV-006, rule: "Bus stop state proves bus participation only; external runtime termination and unrelated work completion require their own authority."}
   - {id: INV-007, rule: "Controls and required policy transitions precede ordinary traffic and cannot be hidden by filters, cursors, backlog, compaction, or budgets; their acknowledgements are separate from message acknowledgement."}
   - {id: INV-008, rule: "chat_id is stable identity; route and display name are mutable; rename preserves session, cursors, claims, policy, controls, and attribution while reserving former routes."}
@@ -60,6 +61,11 @@ invariants:
   - {id: INV-019, rule: "An operator-authorized, one-use, expiring rotation grant MUST replace a compromised session credential atomically without requiring the old credential or changing chat/session identity, policy acknowledgement, controls, cursors, or wake binding. A lost response can retry with the same staged new secret and receipt; the old credential MUST fail immediately after commit."}
   - {id: INV-020, rule: "An operator roster MUST derive joined identities and session presence from service custody, without exposing credentials. Host conversation links MUST be identified as local adapter observations; absence of a local link MUST NOT imply absence on another host."}
   - {id: INV-021, rule: "A never-joined chat MAY enroll without per-chat operator intervention only by accepting a new service-issued UUID. A lost enrollment response MUST retry idempotently with its staged credential; a route collision with a different credential MUST fail closed. Existing joined sessions and explicit legacy-ID handoffs retain their identities."}
+  - {id: INV-022, rule: "Only verified Slack ingestion may mint a slack: sender; new agent routes are canonical lowercase repo:name values. Existing durable history is never rewritten to satisfy new input rules."}
+  - {id: INV-023, rule: "The service, never a caller-supplied field, assigns sender assurance as session, slack-human, or legacy. Updated clients attach their existing session proof automatically; old clients remain legible as legacy during expansion."}
+  - {id: INV-024, rule: "Only session-assured agent messages or verified Slack-human messages may cause an ordinary Codex wake. A legacy message remains readable without launching a turn; controls retain independent operator authority."}
+  - {id: INV-025, rule: "Transport size limits and visibly escaped presentation cannot alter the stored full-history record or hide required control and direct work. Sanitized text remains untrusted data."}
+  - {id: INV-026, rule: "A message may name only a known relevant Slack thread parent; database files are created private before SQLite opens them; unauthenticated health reveals only liveness."}
 
 primitives:
   stable_chat_identity:
@@ -103,6 +109,10 @@ primitives:
     authority: service_sessions_plus_explicitly_local_host_binding_projection
     fields: [chat_id, route, display_name, session_id, presence, local_codex_binding]
     credentials: excluded
+  sender_assurance:
+    values: [session, slack-human, legacy]
+    authority: service_verified_session_or_Slack_ingress_only
+    historical_default: legacy
   routing_alias:
     identity: repo_plus_former_route
     authority: service_persistence
@@ -114,7 +124,7 @@ contracts:
     first_join: [create_or_recover_server_issued_chat_id, create_session, resolve_policy, deliver_identity_and_policy, require_exact_policy_ack, admit_ordinary_participation]
     changed_policy_on_resume: require_exact_policy_ack_before_ordinary_participation
     stopped_session: requires_explicit_legal_resume_or_new_session_transition
-    adoption_instruction: "Remain actively polling while joined. Backoff changes frequency, never permission to disengage. Stop polling and end the turn only after an authorized stop is explicitly acknowledged and the bus confirms the receipt."
+    adoption_instruction: "Keep the below-reasoning worker active while joined. During an active turn, use silent agentbus poll --check at natural work checkpoints under the delivered initial/backoff/max policy; policy changes restate the cadence. When live-wakable and idle, end the turn without in-chat polling; the adapter resumes only for eligible work. Stop the worker only after an authorized stop is acknowledged and confirmed."
   policy:
     writes: operator_only_revisioned_and_audited
     read: effective_values_with_sources_current_backoff_expected_check_overdue_reason_and_outstanding_controls
@@ -168,6 +178,14 @@ contracts:
     credential_rotation: operator_grant_bound_to_existing_chat_and_session_with_atomic_old_secret_revocation_and_idempotent_client_retry
     sender_label: never_authority
     Slack: visibility_or_transport_only
+  security_expansion:
+    message_session_header: X-AgentBus-Session-Token
+    joined_client_behavior: attach_existing_profile_secret_automatically
+    old_client_behavior: usable_as_legacy_without_ordinary_Codex_wake
+    enrolled_route_enforcement: subsequent_version_after_expansion_proof
+    route_grammar: lowercase_repo_colon_name_for_new_writes
+    human_sender_namespace: Slack_ingress_only
+    raw_history: unchanged_and_available_from_cursor_zero
   optional_controls:
     nudge: requests_prompt_check_but_cannot_wake_ended_external_runtime
     temporary_policy_override: bounded_revision_with_deterministic_expiry_and_reversion
@@ -226,6 +244,9 @@ proof_obligations:
   - {id: PO-30, proves: [INV-008, INV-009, INV-012, INV-016, INV-019], scenario: operator_grant_rotates_exact_active_session_secret_once_with_restart_safe_retry_and_preserves_identity_policy_controls_and_wake_binding}
   - {id: PO-31, proves: [INV-009, INV-016, INV-020], scenario: operator_roster_lists_service_joined_sessions_with_live_presence_and_only_verified_local_conversation_links_without_credentials}
   - {id: PO-32, proves: [INV-008, INV-009, INV-021], scenario: self_service_first_join_replaces_untrusted_local_UUID_recovers_lost_response_and_rejects_route_collision_without_conferring_operator_authority}
+  - {id: PO-33, proves: [INV-022, INV-023], scenario: spoofed_human_and_noncanonical_agent_senders_are_rejected_while_historical_records_remain_readable}
+  - {id: PO-34, proves: [INV-023, INV-024], scenario: verified_session_and_Slack_human_assurance_are_service_derived_and_legacy_messages_cannot_wake_Codex}
+  - {id: PO-35, proves: [INV-025, INV-026], scenario: unsafe_text_and_oversized_input_are_bounded_without_changing_raw_history_or_controls_and_unknown_threads_fail_closed}
 
 implementation_order:
   - {id: IU-001, unit: freeze_contract_and_migration_assumptions, depends_on: []}

@@ -1,9 +1,11 @@
 # AgentBus consumer contract
 
-This document describes the released protocol-2 behavior. The
-[Issue #6 participation contract](contracts/participation/v1/participation.contract.yml)
-is normative for the planned operator control upgrade; its new session,
-authorization, polling, and stop behavior is not part of the current release.
+This document describes AgentBus's released behavior and its staged security
+upgrade. The [participation contract](contracts/participation/v1/participation.contract.yml)
+and [Codex wake contract](contracts/codex-wake/v1/codex-wake.contract.yml) govern
+their respective behavior. The Issue #20 security extension takes effect by
+release as described below; a later release must not be inferred from a
+service that has not yet been upgraded.
 
 AgentBus protocol 2 gives each coding-agent chat a stable local profile and makes
 message ownership explicit. A profile identifies one chat, not a repository or a
@@ -24,6 +26,35 @@ Profiles live under
 They are local coordination state, use mode `0600`, and must not be committed.
 Names and personas are self-asserted labels. The shared bearer token permits a
 client to choose any sender, so they are not an authorization boundary.
+
+## Staged message assurance
+
+The v0.6.0 expansion records provenance assigned by the service, never by a
+request body: `session` for a valid joined chat credential, `slack-human` for
+verified human Slack ingress, and `legacy` for older or unjoined message
+clients. Historical messages remain readable as legacy without rewriting their
+raw payload. Updated clients attach a joined profile's existing session secret
+automatically. The shared bearer still grants legacy transport access during
+this expansion; it does not authenticate an agent name. Legacy messages remain
+readable but cannot start an ordinary Codex wake. Genuine Slack-human and
+session-assured messages may wake only an explicitly enabled binding.
+
+Only Slack ingestion may mint a `slack:` sender. New API senders and addressed
+agent routes must use the canonical lowercase `repo:name` form. Noncanonical
+stored history stays intact. New messages can name only a known relevant Slack
+thread parent. Unsafe formatting characters are visibly escaped in ordinary
+CLI and Slack presentation; the raw record remains available and untrusted.
+`/healthz` reveals liveness only; authenticated status reports Slack
+connectivity. Requests over 64 KiB and session secrets over 512 characters are
+rejected before expensive work.
+
+The v0.7.0 contract will require the matching session secret for all
+message-plane actions performed as an enrolled route, including send, reply,
+actionable inbox and claim. Unjoined routes remain explicitly legacy and do not
+gain wake authority. An acknowledged stopped session cannot write. State-changing
+operator controls use immutable session IDs, while self-service joining still
+permits multiple distinct routes in one repository. Exact-name disputes have an
+operator recovery path; the route prefix is not proof of repository ownership.
 
 ## Routing
 

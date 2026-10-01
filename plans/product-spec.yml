@@ -15,7 +15,6 @@ product:
     - "AgentBus core executing or orchestrating coding agents; an optional host-owned adapter may start an explicitly bound Codex thread"
     - "using persona labels as authentication or authorization"
     - "providing offline Slack history, exactly-once Slack delivery, or a general message broker"
-    - "AgentBus core executing or scheduling coding agents or claiming external turn completion from a bus acknowledgement"
 constraints:
   operating_constraints:
     - "one Socket Mode receiver per Slack application"
@@ -35,6 +34,7 @@ execution_phases:
   - {phase_id: P02, build_block: "assurance_topology_patch", objective: "release 0.3.1 with one truthful BCF assurance path and restored Python 3.14 proof", release_train: release_2}
   - {phase_id: P03, build_block: "transport_and_portability_hardening", objective: "authenticate Slack ingress and harden portability, retention guidance, test ergonomics, and bounded inbox reads", release_train: release_3}
   - {phase_id: P04, build_block: "operator_participation_plane", objective: "derive and deliver Issue #6 participation plus optional Issue #8 Codex wake adapter from their versioned contracts", release_train: release_4}
+  - {phase_id: P05, build_block: "security_provenance_foundation", objective: "release 0.6.0 with service-derived message provenance, legacy wake exclusion, bounded ingress, and visible presentation", release_train: release_5}
 acceptance:
   release_gate: make release-check
   evidence_location: phases/

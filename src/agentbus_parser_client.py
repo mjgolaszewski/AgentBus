@@ -106,6 +106,7 @@ def build_parser() -> argparse.ArgumentParser:
     poll = commands.add_parser("poll", help="Wait silently for a semantic participation event")
     poll.add_argument("--identity")
     poll.add_argument("--json", action="store_true")
+    poll.add_argument("--check", action="store_true", help="Return silently when no semantic event is ready")
     quiet = commands.add_parser("quiet", help="Set this chat's persistent routine-output preference")
     quiet.add_argument("--identity")
     quiet.add_argument("mode", choices=("on", "off", "status"))
