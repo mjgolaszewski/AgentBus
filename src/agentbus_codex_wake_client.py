@@ -173,6 +173,21 @@ def _load(path: Path) -> WakeBinding:
     return WakeBinding(state)
 
 
+def local_binding_projection(values: dict[str, str], chat_id: str, session_id: str) -> dict | None:
+    """Describe this host's binding; it is not a service-global assertion."""
+    path = _state_path(values, chat_id)
+    if not path.exists():
+        return None
+    state = _load(path)
+    if state["chat_id"] != chat_id:
+        raise ClientError("Codex wake binding does not match its chat ID")
+    return {
+        "scope": "this_host", "thread_id": state["thread_id"],
+        "enabled": state["enabled"], "binding_generation": state["binding_generation"],
+        "session_matches": state["session_id"] == session_id,
+    }
+
+
 def _save(path: Path, state: WakeBinding) -> None:
     atomic_json(path, dict(state))
 

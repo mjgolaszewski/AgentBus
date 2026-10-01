@@ -99,7 +99,7 @@ def test_public_api_operation_inventory_owns_registered_routes(settings):
         for route in app.routes
         for method in getattr(route, "methods", set())
     }
-    assert set(API_OPERATIONS) == {"health", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "rotation_grant", "session_rotate_secret", "session_presence", "session_policy_ack", "session_policy_explain", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename"}
+    assert set(API_OPERATIONS) == {"health", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "rotation_grant", "session_rotate_secret", "session_presence", "session_roster", "session_policy_ack", "session_policy_explain", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename"}
     assert routes[("GET", "/healthz")] is API_OPERATIONS["health"]
     assert routes[("POST", "/v1/messages")] is API_OPERATIONS["send"]
     assert routes[("GET", "/v1/messages")] is API_OPERATIONS["read"]
@@ -241,6 +241,34 @@ def test_existing_profile_handoff_requires_operator_and_preserves_uuid(service):
                        json={"current_backoff_seconds": "NaN"}).status_code == 422
     assert client.post("/v1/sessions", headers=AUTH, json=enrollment).json()["session_id"] == joined.json()["session_id"]
     assert client.post("/v1/sessions", headers=AUTH, json={**enrollment, "session_secret": "other" * 10}).status_code == 409
+
+
+def test_self_service_join_and_operator_roster_are_separate_authorities(service):
+    client, app, _ = service
+    app.state.settings = replace(app.state.settings, operator_token="operator-secret-with-at-least-32-characters")
+    operator = {"Authorization": "Bearer operator-secret-with-at-least-32-characters"}
+    assert client.post("/v1/policy/revisions", headers=operator, json={
+        "scope": "global", "scope_key": "*", "values": {
+            "initial_interval_seconds": 60, "backoff_factor": 2,
+            "max_interval_seconds": 1920, "control_check_max_seconds": 60,
+            "jitter_fraction": 0, "overdue_grace_seconds": 120,
+            "presentation_budget_bytes": None,
+        },
+    }).status_code == 201
+    body = {"repo": "agentbus", "route": "agentbus:new-chat", "display_name": "New Chat",
+            "session_secret": "new-session-secret-with-at-least-32-characters"}
+    joined = client.post("/v1/sessions", headers=AUTH, json=body)
+    assert joined.status_code == 201
+    assert str(uuid.UUID(joined.json()["chat_id"])) == joined.json()["chat_id"]
+    assert client.post("/v1/sessions", headers=AUTH, json=body).json() == joined.json()
+    assert client.post("/v1/sessions", headers=AUTH, json={**body, "session_secret": "different" * 5}).status_code == 409
+    assert client.get("/v1/sessions/roster", headers=AUTH).status_code == 401
+    sessions = client.get("/v1/sessions/roster", headers=operator).json()["sessions"]
+    assert len(sessions) == 1
+    assert sessions[0]["route"] == body["route"]
+    assert sessions[0]["chat_id"] == joined.json()["chat_id"]
+    assert sessions[0]["state"] == "joining"
+    assert "secret" not in json.dumps(sessions)
 
 
 def test_operator_grant_rotates_only_the_exact_enrolled_session(service):

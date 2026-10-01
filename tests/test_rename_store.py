@@ -49,11 +49,10 @@ def test_rename_preserves_old_messages_claims_and_pending_stop(tmp_path) -> None
         sender="agentbus:new-name", recipient="peer:agent", audience="direct",
         text="Handled", reply_to_cursor=direct.cursor,
     ))
-    with pytest.raises(ValueError, match="already enrolled"):
-        store.participation.enroll(
-            repo="agentbus", route="agentbus:new-name", display_name="Imposter",
-            session_secret=SECRET,
-        )
+    assert store.participation.enroll(
+        repo="agentbus", route="agentbus:new-name", display_name="Imposter",
+        session_secret=SECRET,
+    ) == (chat_id, session_id, revision)
     with pytest.raises(ValueError, match="reserved"):
         store.participation.enroll(
             repo="agentbus", route="agentbus:old-name", display_name="Imposter",

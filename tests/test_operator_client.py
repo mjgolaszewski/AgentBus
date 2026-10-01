@@ -11,6 +11,32 @@ from src.agentbus_transport_client import ClientError
 VALUES = {"AGENTBUS_API_TOKEN": "ordinary-agent-bearer"}
 
 
+def test_roster_requires_operator_and_marks_host_binding_local(monkeypatch, capsys):
+    from src import agentbus_codex_wake_client as wake
+
+    calls = []
+    monkeypatch.setattr(operator, "api", lambda _values, path, **kwargs:
+                        calls.append((path, kwargs)) or {"sessions": [{
+                            "chat_id": "chat-one", "session_id": "session-one",
+                            "route": "agentbus:one", "state": "active_compliant",
+                        }]})
+    monkeypatch.setattr(wake, "local_binding_projection", lambda *_: {
+        "scope": "this_host", "thread_id": "thread-one", "enabled": True,
+        "binding_generation": 1, "session_matches": True,
+    })
+    monkeypatch.delenv("AGENTBUS_OPERATOR_TOKEN", raising=False)
+    with pytest.raises(ClientError, match="separate AGENTBUS_OPERATOR_TOKEN"):
+        operator.roster(parse_args(["roster"]), VALUES)
+    assert not calls
+    monkeypatch.setenv("AGENTBUS_OPERATOR_TOKEN", "operator-only-capability")
+    assert operator.roster(parse_args(["roster", "--json", "--all"]), VALUES) == 0
+    assert calls == [("/v1/sessions/roster?include_stopped=true",
+                      {"bearer_token": "operator-only-capability"})]
+    row = json.loads(capsys.readouterr().out)["sessions"][0]
+    assert row["local_codex_binding"]["thread_id"] == "thread-one"
+    assert row["local_codex_binding"]["scope"] == "this_host"
+
+
 def test_policy_set_requires_separate_operator_capability_and_reads_json_file(
     tmp_path, monkeypatch, capsys,
 ):

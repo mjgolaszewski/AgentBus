@@ -47,11 +47,13 @@ def test_join_requires_exact_session_policy_ack_and_survives_restart(tmp_path) -
     db, store = open_store(path)
     assert store.session_state(session_id)["acknowledged_policy_revision"] == revision
     assert store.acknowledge_policy(session_id, secret, revision) == receipt
+    assert store.enroll(
+        repo="agentbus", route="agentbus:signal-gardener",
+        display_name="Signal Gardener", session_secret=secret,
+    ) == (chat_id, session_id, revision)
     with pytest.raises(ValueError, match="already enrolled"):
-        store.enroll(
-            repo="agentbus", route="agentbus:signal-gardener",
-            display_name="Imposter", session_secret=secret,
-        )
+        store.enroll(repo="agentbus", route="agentbus:signal-gardener",
+                     display_name="Imposter", session_secret="x" * 32)
     assert store.contact(session_id, secret)
     store.set_policy(scope="repo", scope_key="agentbus", values={"max_interval_seconds": 600}, actor="operator")
     pending = store.session_state(session_id)
