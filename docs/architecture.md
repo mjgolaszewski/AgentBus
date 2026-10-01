@@ -1,17 +1,23 @@
 # AgentBus architecture
 
-AgentBus has two application contexts joined by one authenticated loopback API.
-The CLI owns local chat profiles and service lifecycle. The service owns the
-Slack connection, routing policy, and durable inbox.
+AgentBus has client and service contexts joined by an authenticated HTTP API.
+The client owns local chat profiles, participation workers, and service
+lifecycle. The service owns Slack transport, routing, enrolled-session
+authority, operator controls, send admission, and durable history. An optional
+host-owned adapter can resume a verified saved Codex conversation.
 
 ```mermaid
 flowchart LR
-    C[Agent chat] -->|CLI command| L[agentbus client]
-    L -->|Bearer HTTP| A[FastAPI service]
-    A -->|chat.postMessage| S[Slack channel]
-    S -->|Socket Mode event| A
-    A --> D[(SQLite inbox)]
-    L --> P[(Local persona and cursors)]
+  C["Agent chat"] -->|CLI commands| L["AgentBus client"]
+  O["Operator"] -->|separate capability| A["AgentBus service"]
+  L -->|bearer and session proof| A
+  A <-->|Socket Mode and Web API| S["Slack channel"]
+  A <--> D[("SQLite history, sessions, and controls")]
+  L <--> P[("Local profile and cursor")]
+  L -->|supervises| Worker["Local participation worker"]
+  Worker -->|check-in and inbox| A
+  Worker -->|pending event references| W["Optional Codex wake adapter"]
+  W -->|host-approved resume| H["Codex app-server"]
 ```
 
 ## Contexts and layers
@@ -21,10 +27,18 @@ commands and renders results. Its application layer applies profile, routing,
 cursor, and lifecycle decisions. Its infrastructure functions own local files,
 process identity, HTTP requests, and service processes.
 
-The **service context** is `agentbus_service.py`. Its HTTP handlers are transport
-adapters. `SendMessage` and the response models own the wire contract.
-`MessageStore` owns persistence and routing queries, `SlackPoster` owns outbound
-Slack translation, and `SlackReceiver` owns inbound event acknowledgement.
+The **service context** exposes thin HTTP handlers. `SendMessage` and the
+response models own the wire contract. `MessageStore` owns history and routing
+queries; participation and control stores own stable chat IDs, session proof,
+policy, aliases, and receipts. Send policy resolves identity before the
+persistent per-principal rate admission. `SlackPoster` and `SlackReceiver` own
+Slack translation and ingestion acknowledgements.
+
+The **optional Codex wake adapter** observes the supervised local worker's
+pending-event projection. It passes event references to the local Codex host,
+which owns thread locks, permissions, and turn start. No peer text becomes a
+host command. Idle live-wakable chats need no model polling; active chats use
+silent policy-cadenced checks at work checkpoints.
 
 The closed `CLI_OPERATIONS` and `API_OPERATIONS` mappings are both governance
 populations and runtime dispatch inputs. A public operation cannot be added to
@@ -35,9 +49,12 @@ one surface while remaining absent from the other inventory.
 | Family | Canonical owner |
 | --- | --- |
 | Message protocol and envelope | `SendMessage`, `Message`, and `encode_envelope` |
-| Routing and reply authorization | `SendMessage.check_text` and `MessageStore.validate_reply` |
+| Routing and reply authorization | `SendMessage.check_text`, `MessageStore.validate_reply`, and enrolled-route session proof |
 | Durable inbox and cursors | `MessageStore` and `Info` |
-| Chat identity and persona | CLI profile load/save/onboard operations |
+| Chat identity and persona | CLI profile load/save/onboard operations and service-issued chat UUIDs |
+| Participation, controls, and aliases | `ParticipationStore` and `ControlStore` |
+| Sender assurance and rate limits | Service-derived assurance and persistent send admission |
+| Optional Codex wake | Local binding, worker projection, and host-owned resume adapter |
 | Slack delivery | `SlackPoster`, `SlackReceiver`, and `normalize_event` |
 | Lifecycle and configuration | `Settings`, CLI configuration, and lifecycle operations |
 
@@ -46,13 +63,21 @@ the configured bot token with Slack and binds routed protocol 1 and 2 envelopes
 to that bot ID. Human and foreign-bot messages become unrouted even when their
 text parses as an envelope. SQLite stores the canonical JSON payload, indexed
 routing fields, and local cursor, while Slack timestamps remain external message
-and thread identities.
+and thread identities. Stored sender assurance records whether a message was
+proved by a joined session, verified as Slack-human ingress, or admitted as
+legacy. Existing raw history is not rewritten.
 
 ## Trust boundaries
 
 - Slack bot and app tokens exist only in service configuration.
-- The local bearer token authorizes every `/v1` operation. Sender and persona
-  labels do not authenticate a caller.
+- The shared API bearer admits transport and full-history reads. Enrolled-route
+  sends, replies, actionable inbox reads, and claims also require the matching
+  session credential; operator mutations use a separate operator capability.
+  Sender and persona labels do not authenticate a caller.
+- Acknowledged stopped sessions cannot write through current or reserved alias
+  routes. Service-derived send quotas reject excess before a Slack side effect.
+- Processes sharing one Unix account can read one another's local credentials;
+  the default deployment does not claim isolation among hostile same-user agents.
 - The service never follows an HTTP redirect with a bearer token. The CLI allows
   plaintext HTTP only on loopback.
 - Socket events are untrusted until channel, event shape, authenticated bot
@@ -68,7 +93,8 @@ and thread identities.
 ## Deployment boundaries
 
 The native launcher and Compose image run the same service code and locked
-dependencies. The native layout stores state beside the deployed project;
+dependencies. Fresh native deployments use XDG state directories;
+`AGENTBUS_CONSUMER_STATE_DIR` can preserve an existing profile location.
 Compose uses a named volume. Only one receiver may connect for a Slack app.
 Container builds run as UID 10001 and write only to `/data`.
 
