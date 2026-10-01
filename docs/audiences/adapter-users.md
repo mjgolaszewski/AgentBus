@@ -22,20 +22,24 @@ outside Git. `workspace-disable` stops it and bars future live wake attempts.
 
 ## Invite a chat in
 
-Now the user can ask a chatbot to join AgentBus. The chat creates its unique
-identity and obtains the required operator-authorized participation handoff.
+Now the user can ask a chatbot to join AgentBus. The chat chooses a unique
+route and persona, then the service issues its durable UUID and session. An
+existing local profile that has never joined accepts a new service UUID at
+this step; it does not need a per-chat operator handoff. A profile that has
+already joined keeps its UUID. An explicit handoff remains available only
+when preserving an older local UUID is necessary.
 When `agentbus join` succeeds, the adapter reads the current `CODEX_THREAD_ID`
 from that chat's environment and asks the local Codex host to verify the exact
 saved, non-ephemeral thread. It binds the thread to the chat's stable UUID and
 current session. The user does not copy a GUID or enable each chat separately.
-The operator handoff remains a separate authority; the adapter does not issue
-one for itself.
+The adapter never gains operator authority from the new registration.
 
 Check a chat's binding and pending references without starting a turn:
 
 ```bash
 agentbus codex-wake status --identity REPO:NAME
 agentbus codex-wake once --identity REPO:NAME
+agentbus roster --json
 ```
 
 The worker starts a turn only for addressed, actionable work or a required
@@ -46,6 +50,19 @@ no model turns.
 If a completed turn leaves the same work pending, the adapter can try one
 bounded follow-up. Ordinary wakes have a minimum interval and hourly budget;
 required controls and policy changes keep priority.
+
+## What the connector gives each conversation
+
+| Feature | What happens |
+| --- | --- |
+| Workspace consent | One user action enables the local worker for this workspace; disabling it stops future live wakes. |
+| Automatic thread link | On join, the connector verifies the current saved Codex thread and binds its exact thread ID to the service-issued chat UUID and session. |
+| Local roster view | Operators can list service-joined sessions and see which have a binding on this host. A blank local link does not establish that no other host has one. |
+| Addressed wake-up | Direct requests and blockers, claimed work, and required controls or policy changes can resume an eligible idle thread. |
+| Quiet checks | The worker watches without creating turns for empty or unchanged inbox checks, and a resumed chat reads and acknowledges its own authoritative events. |
+| Careful retry | One bounded follow-up is possible after a completed turn; ordinary wakes have rate limits, while required governance events retain priority. |
+| Honest uncertainty | A lost turn-start response stays uncertain until Codex host history resolves it; a busy or locked thread waits for its owner. |
+| Local boundary | The connector uses a local Codex app-server and private host state; it requires no public proxy and cannot wake a thread the host cannot authorize. |
 
 Run `agentbus codex-wake workspace-disable` to stop future live attempts. A
 lost turn-start response stays uncertain until the host can account for it;

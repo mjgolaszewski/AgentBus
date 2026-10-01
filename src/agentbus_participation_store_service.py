@@ -332,6 +332,18 @@ class ParticipationStore:
         session_id = str(uuid.uuid4())
         secret_digest = hashlib.sha256(session_secret.encode()).hexdigest()
         with self._lock, self._db:
+            if handoff_token is None:
+                existing = self._db.execute("""
+                    SELECT c.chat_id, s.session_id, s.secret_sha256, s.state
+                    FROM chat_identities AS c JOIN participation_sessions AS s ON s.chat_id = c.chat_id
+                    WHERE c.current_route = ? ORDER BY s.joined_at DESC LIMIT 1
+                """, (route,)).fetchone()
+                if existing is not None:
+                    if (existing["state"] != "stopped" and
+                            hmac.compare_digest(existing["secret_sha256"], secret_digest)):
+                        current = self.deliver_policy(existing["session_id"], session_secret)
+                        return existing["chat_id"], existing["session_id"], current.revision
+                    raise ValueError("route is already enrolled; choose another identity")
             if handoff_token is not None:
                 token_digest = hashlib.sha256(handoff_token.encode()).hexdigest()
                 handoff = self._db.execute(
@@ -449,6 +461,17 @@ class ParticipationStore:
         if row is None:
             raise KeyError(session_id)
         return row
+
+    def roster(self, *, include_stopped: bool = False) -> list[dict]:
+        """List service-joined sessions, projecting each session's current presence."""
+        with self._lock:
+            rows = self._db.execute("""
+                SELECT s.session_id, c.display_name FROM participation_sessions AS s
+                JOIN chat_identities AS c ON c.chat_id = s.chat_id
+                WHERE (? OR s.state != 'stopped') ORDER BY c.current_route, s.joined_at
+            """, (include_stopped,)).fetchall()
+            return [dict(self.presence(row["session_id"]), display_name=row["display_name"])
+                    for row in rows]
 
     def presence(self, session_id: str, *, observed_at: datetime | None = None) -> dict:
         """Project participation from target contact; an operator read writes nothing."""

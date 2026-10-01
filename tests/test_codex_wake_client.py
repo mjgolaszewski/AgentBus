@@ -149,9 +149,12 @@ def test_uncertain_start_requires_host_reconciliation(setup):
 def test_binding_stays_with_chat_id_on_rename_and_rejects_session_change(setup):
     values, identity, profile, path, host = setup
     wake.bind(values, identity, "thread-one", lambda: host)
+    linked = wake.local_binding_projection(values, profile["chat_id"], "session-one")
+    assert linked and linked["thread_id"] == "thread-one" and linked["session_matches"]
     profile["identity"] = "agentbus:new-name"
     assert wake.status(values, profile["identity"])["thread_id"] == "thread-one"
     profile["participation"]["session_id"] = "different-session"
+    assert wake.local_binding_projection(values, profile["chat_id"], "different-session")["session_matches"] is False
     with pytest.raises(ClientError, match="stale"):
         wake.status(values, profile["identity"])
 

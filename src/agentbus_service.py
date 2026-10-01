@@ -49,6 +49,7 @@ from src.agentbus_participation_api_service import (
     api_session_policy_explain,
     api_session_presence,
     api_session_rename,
+    api_session_roster,
     api_session_rotate_secret,
     authenticate_operator,
     upgrade_notice,
@@ -703,6 +704,7 @@ API_OPERATIONS: dict[str, Callable[..., object]] = {
     "profile_handoff": api_profile_handoff,
     "rotation_grant": api_rotation_grant,
     "session_presence": api_session_presence,
+    "session_roster": api_session_roster,
     "session_policy_ack": api_session_policy_ack,
     "session_policy_explain": api_session_policy_explain,
     "session_check_in": api_session_check_in,
@@ -746,7 +748,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                 await client.aclose()
             store.close()
 
-    app = FastAPI(title="AgentBus", version="0.4.1", lifespan=lifespan,
+    app = FastAPI(title="AgentBus", version="0.5.0", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     auth = [Depends(authenticate)]
@@ -777,6 +779,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                       methods=["POST"], dependencies=auth)
     app.add_api_route("/v1/sessions/{session_id}/presence", API_OPERATIONS["session_presence"],
                       methods=["GET"], dependencies=[Depends(authenticate_operator)])
+    app.add_api_route("/v1/sessions/roster", API_OPERATIONS["session_roster"], methods=["GET"], dependencies=[Depends(authenticate_operator)])
     app.add_api_route("/v1/sessions/{session_id}/policy", API_OPERATIONS["session_policy_explain"],
                       methods=["GET"], dependencies=[Depends(authenticate_operator)])
     app.add_api_route("/v1/sessions/{session_id}/policy-ack", API_OPERATIONS["session_policy_ack"],

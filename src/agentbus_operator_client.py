@@ -89,6 +89,27 @@ def session_presence(ns, values: dict[str, str]) -> int:
     return 0
 
 
+def roster(ns, values: dict[str, str]) -> int:
+    from src.agentbus_codex_wake_client import local_binding_projection
+
+    query = "?include_stopped=true" if ns.all else ""
+    response = api(values, f"/v1/sessions/roster{query}",
+                   bearer_token=_operator_token(values))
+    sessions = response["sessions"]
+    for session in sessions:
+        session["local_codex_binding"] = local_binding_projection(
+            values, session["chat_id"], session["session_id"])
+    if ns.json:
+        print(json.dumps(response, indent=2))
+    else:
+        print("ROUTE\tPRESENCE\tSESSION\tLOCAL_CODEX_THREAD")
+        for session in sessions:
+            binding = session["local_codex_binding"]
+            thread = binding["thread_id"] if binding and binding["session_matches"] else "—"
+            print(f"{session['route']}\t{session['state']}\t{session['session_id']}\t{thread}")
+    return 0
+
+
 def claim_recovery(ns, values: dict[str, str]) -> int:
     response = api(values, f"/v1/messages/{ns.cursor}/claim-recovery", {
         "new_identity": ns.to, "reason": ns.reason,

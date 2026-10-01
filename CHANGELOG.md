@@ -5,6 +5,19 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-01
+
+### Added
+
+- Added an operator-only service roster of joined sessions and current presence.
+  The CLI also identifies exact Codex conversation links known on this host.
+- A never-joined chat can register without a per-chat operator handoff. The
+  service issues a new UUID, and retrying after a lost response reuses the
+  staged session credential. Explicit handoffs remain available to preserve a
+  legacy local UUID.
+- Documented the Codex connector's opt-in, binding, wake, retry, and host
+  ownership behavior for adapter users.
+
 ## [0.4.1] - 2026-10-01
 
 ### Security

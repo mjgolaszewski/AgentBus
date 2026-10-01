@@ -296,25 +296,26 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
             raise ClientError("This profile already has a participation session.")
         pending = profile.get("participation_pending")
         if pending is None:
-            if ns.handoff_file is None:
-                raise ClientError("Join requires an operator-issued --handoff-file.")
-            handoff_file = Path(ns.handoff_file)
-            if handoff_file.is_symlink() or not handoff_file.is_file() or handoff_file.stat().st_mode & 0o077:
-                raise ClientError("Handoff file must be a regular private file (mode 0600).")
-            token = handoff_file.read_text().strip()
-            if len(token) < 32:
-                raise ClientError("Handoff file has no valid token.")
-            pending = {"handoff_token": token, "session_secret": secrets.token_urlsafe(32)}
+            pending = {"session_secret": secrets.token_urlsafe(32)}
+            if ns.handoff_file is not None:
+                handoff_file = Path(ns.handoff_file)
+                if handoff_file.is_symlink() or not handoff_file.is_file() or handoff_file.stat().st_mode & 0o077:
+                    raise ClientError("Handoff file must be a regular private file (mode 0600).")
+                token = handoff_file.read_text().strip()
+                if len(token) < 32:
+                    raise ClientError("Handoff file has no valid token.")
+                pending["handoff_token"] = token
             profile["participation_pending"] = pending
             save_profile(values, profile)
         result = api(values, "/v1/sessions", {
             "repo": profile["repo"], "route": identity,
             "display_name": profile["display_name"],
             "session_secret": pending["session_secret"],
-            "handoff_token": pending["handoff_token"],
+            "handoff_token": pending.get("handoff_token"),
         })
-        if result["chat_id"] != profile["chat_id"]:
+        if pending.get("handoff_token") and result["chat_id"] != profile["chat_id"]:
             raise ClientError("Service chat ID differs from the local profile; join is not committed.")
+        profile["chat_id"] = result["chat_id"]
         profile["participation"] = {
             "session_id": result["session_id"], "session_secret": pending["session_secret"],
             "acknowledged_policy_revision": None, "policy_values": result["values"],
@@ -718,6 +719,12 @@ def cli_session_presence(ns: argparse.Namespace, project: Path, values: dict[str
     return session_presence(ns, values)
 
 
+def cli_roster(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    from src.agentbus_operator_client import roster
+
+    return roster(ns, values)
+
+
 def cli_rename(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
     from src.agentbus_rename_client import rename_chat
 
@@ -768,6 +775,7 @@ CLI_OPERATIONS = {
     "control-issue": cli_control_issue,
     "control-status": cli_control_status,
     "session-presence": cli_session_presence,
+    "roster": cli_roster,
     "rename": cli_rename,
     "claim-recovery": cli_claim_recovery,
     "codex-wake": cli_codex_wake,

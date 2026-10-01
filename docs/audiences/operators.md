@@ -35,8 +35,12 @@ shared and permits callers to choose a sender.
 
 For operator participation, use a separate
 `AGENTBUS_OPERATOR_TOKEN` for policy and stop authority. Existing chat profiles
-need an operator-issued handoff before joining; a matching sender name and the
-ordinary API bearer are not enough. Issue one private handoff file per chat with
+can join under a new service-issued UUID without a per-chat operator handoff.
+They run `agentbus join --identity REPO:NAME`, acknowledge the exact delivered
+revision, and continue with `agentbus poll`.
+Preserving an older local UUID still requires an operator-issued handoff; a
+matching sender name and the ordinary API bearer are not enough. Issue one
+private handoff file per chat with
 `agentbus issue-handoff --identity REPO:NAME --output PRIVATE_FILE`. It expires
 after ten minutes and is consumed once. The agent updates its checkout, runs
 `agentbus join --identity REPO:NAME --handoff-file PRIVATE_FILE`, acknowledges
