@@ -17,7 +17,7 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Iterator, TypedDict, cast
+from typing import Any, Callable, Iterator
 
 from src.agentbus_client import atomic_json, checked_profile, consumer_state_dir, identity_path, resolve_identity
 from src.agentbus_codex_rpc_client import CodexAppServer, CodexHostError, CodexHostRejected, TurnStartUncertain
@@ -29,22 +29,8 @@ ACTION_KINDS = {"blocker", "request", "question", "handoff"}
 HostFactory = Callable[[], CodexAppServer]
 
 
-class WakeBinding(TypedDict):
-    """Canonical private state for one stable chat's host binding."""
-
-    schema_version: int
-    chat_id: str
-    session_id: str
-    thread_id: str
-    binding_generation: int
-    enabled: bool
-    actor: str
-    created_at: str
-    last_fingerprint: str | None
-    last_attempt: dict | None
-    wake_epoch: int
-    wake_history: list[str]
-    same_fingerprint_retries: int
+class WakeBinding(dict[str, Any]):
+    """Validated private state for one stable chat's host binding."""
 
 
 MAX_WAKES_PER_HOUR = 12
@@ -184,7 +170,7 @@ def _load(path: Path) -> WakeBinding:
             not isinstance(state["wake_history"], list) or
             not isinstance(state["same_fingerprint_retries"], int)):
         raise ClientError("Codex wake state has invalid rate or epoch fields")
-    return cast(WakeBinding, state)
+    return WakeBinding(state)
 
 
 def _save(path: Path, state: WakeBinding) -> None:
@@ -277,14 +263,14 @@ def bind(values: dict[str, str], identity: str, thread_id: str,
             return {"chat_id": prior["chat_id"], "session_id": prior["session_id"],
                     "thread_id": thread_id, "binding_generation": prior["binding_generation"],
                     "enabled": prior["enabled"]}
-        state: WakeBinding = {
+        state = WakeBinding({
             "schema_version": 1, "chat_id": profile["chat_id"],
             "session_id": session["session_id"], "thread_id": thread_id,
             "binding_generation": (prior["binding_generation"] + 1) if prior else 1,
             "enabled": enabled, "actor": "local-workspace-user" if auto_enable else "local-host-operator", "created_at": _now(),
             "last_fingerprint": None, "last_attempt": None,
             "wake_epoch": 0, "wake_history": [], "same_fingerprint_retries": 0,
-        }
+        })
         _save(path, state)
     return {"chat_id": state["chat_id"], "session_id": state["session_id"],
             "thread_id": thread_id, "binding_generation": state["binding_generation"],
