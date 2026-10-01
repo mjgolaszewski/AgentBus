@@ -159,7 +159,7 @@ def test_sender_assurance_is_service_derived_and_legacy_remains_readable(service
     verified = client.post("/v1/messages", headers={**AUTH, "X-AgentBus-Session-Token": secret}, json=body)
     assert verified.status_code == 201
     assert verified.json()["sender_assurance"] == "session"
-    legacy = client.post("/v1/messages", headers=AUTH, json={**body, "text": "Old client"})
+    legacy = client.post("/v1/messages", headers=AUTH, json={**body, "sender": "agentbus:older", "text": "Old client"})
     assert legacy.status_code == 201
     assert legacy.json()["sender_assurance"] == "legacy"
     assert [item["sender_assurance"] for item in client.get("/v1/messages", headers=AUTH).json()["messages"]] == [
@@ -169,6 +169,64 @@ def test_sender_assurance_is_service_derived_and_legacy_remains_readable(service
                        json={**body, "sender": "slack:U123"}).status_code == 422
     assert client.post("/v1/messages", headers=AUTH,
                        json={**body, "sender": "AgentBus:Flower"}).status_code == 422
+
+
+def test_enrolled_message_route_requires_its_own_session_for_send_inbox_and_claim(service):
+    client, app, requests = service
+    participation = app.state.store.participation
+    participation.set_policy(scope="global", scope_key="*", values={
+        "initial_interval_seconds": 60, "backoff_factor": 2,
+        "max_interval_seconds": 1920, "control_check_max_seconds": 60,
+        "jitter_fraction": 0, "overdue_grace_seconds": 120,
+        "presentation_budget_bytes": None,
+    }, actor="operator")
+    first = "first-session-secret-with-at-least-32-characters"
+    second = "second-session-secret-with-at-least-32-characters"
+    for route, secret in (("agentbus:flower", first), ("agentbus:seed", second)):
+        _chat, session, revision = participation.enroll(
+            repo="agentbus", route=route, display_name=route, session_secret=secret,
+        )
+        participation.acknowledge_policy(session, secret, revision)
+    body = {"sender": "agentbus:flower", "recipient": "agentbus:seed", "text": "hello"}
+    assert client.post("/v1/messages", headers=AUTH, json=body).status_code == 403
+    assert client.post("/v1/messages", headers={**AUTH, "X-AgentBus-Session-Token": second},
+                       json=body).status_code == 403
+    assert requests == []
+    assert client.post("/v1/messages", headers={**AUTH, "X-AgentBus-Session-Token": first},
+                       json=body).status_code == 201
+    inbox = "/v1/inbox?identity=agentbus:flower"
+    assert client.get(inbox, headers=AUTH).status_code == 403
+    assert client.get(inbox, headers={**AUTH, "X-AgentBus-Session-Token": second}).status_code == 403
+    assert client.get(inbox, headers={**AUTH, "X-AgentBus-Session-Token": first}).status_code == 200
+    app.state.store.append(CHANNEL, "1700000001.000001",
+                           SendMessage(sender="slack:U123", text="unrouted", audience="unrouted"))
+    claim = "/v1/messages/2/claim"
+    assert client.post(claim, headers=AUTH, json={"identity": "agentbus:flower"}).status_code == 403
+    assert client.post(claim, headers={**AUTH, "X-AgentBus-Session-Token": second},
+                       json={"identity": "agentbus:flower"}).status_code == 403
+    assert client.post(claim, headers={**AUTH, "X-AgentBus-Session-Token": first},
+                       json={"identity": "agentbus:flower"}).status_code == 200
+    participation.rename(session_id=participation.session_for_secret(first, "agentbus:flower")["session_id"],
+                         session_secret=first, new_route="agentbus:blossom")
+    assert client.get(inbox, headers=AUTH).status_code == 403
+    assert client.get(inbox, headers={**AUTH, "X-AgentBus-Session-Token": first}).status_code == 200
+
+
+def test_send_rate_rejects_before_slack_and_recovers_after_window(service, monkeypatch):
+    client, _app, requests = service
+    clock = [100.0]
+    monkeypatch.setattr("src.agentbus_send_rate_service.time.time", lambda: clock[0])
+    body = {"sender": "agentbus:legacy", "recipient": "agentbus:peer", "text": "bounded"}
+    for _ in range(30):
+        assert client.post("/v1/messages", headers=AUTH, json=body).status_code == 201
+    assert len(requests) == 30
+    denied = client.post("/v1/messages", headers=AUTH, json=body)
+    assert denied.status_code == 429
+    assert denied.headers["Retry-After"] == "20"
+    assert len(requests) == 30
+    clock[0] = 120.0
+    assert client.post("/v1/messages", headers=AUTH, json=body).status_code == 201
+    assert len(requests) == 31
 
 
 def test_thread_parent_must_exist_before_slack_post(service):
@@ -420,6 +478,20 @@ def test_operator_stop_is_snapshotted_prioritized_and_target_acknowledged(servic
     assert set(issued.json()["target_session_ids"]) == {session for session, _ in sessions}
     first_id, first_headers = sessions[0]
     second_id, second_headers = sessions[1]
+    exact = client.post("/v1/controls", headers=operator, json={
+        "kind": "nudge", "session_ids": [second_id], "reason": "exact chat",
+    })
+    assert exact.status_code == 201
+    assert exact.json()["target_session_ids"] == [second_id]
+    assert client.post("/v1/controls", headers=operator, json={
+        "kind": "nudge", "session_ids": [str(uuid.uuid4())], "reason": "unknown",
+    }).status_code == 409
+    assert client.post("/v1/sessions", headers=AUTH, json={
+        "repo": "agentbus", "route": "agentbus:one", "display_name": "disputed",
+        "session_secret": "distinct-session-secret-with-at-least-32-characters",
+    }).status_code == 409
+    app.state.store.participation.rename(first_id, first_headers["X-AgentBus-Session-Token"],
+                                         "agentbus:renamed")
     check = client.post(f"/v1/sessions/{first_id}/check-in", headers=first_headers)
     assert check.status_code == 200
     assert check.json()["controls"][0]["control_id"] == control_id
@@ -434,6 +506,22 @@ def test_operator_stop_is_snapshotted_prioritized_and_target_acknowledged(servic
     }
     assert app.state.store.participation.session_state(first_id)["state"] == "stopped"
     assert client.post(f"/v1/sessions/{first_id}/check-in", headers=first_headers).status_code == 409
+    assert client.post("/v1/sessions", headers=AUTH, json={
+        "repo": "agentbus", "route": "agentbus:one", "display_name": "disputed",
+        "session_secret": "distinct-session-secret-with-at-least-32-characters",
+    }).status_code == 409
+    replacement = client.post("/v1/sessions", headers=AUTH, json={
+        "repo": "agentbus", "route": "agentbus:legit-one", "display_name": "legitimate chat",
+        "session_secret": "distinct-session-secret-with-at-least-32-characters",
+    })
+    assert replacement.status_code == 201
+    for route in ("agentbus:one", "agentbus:renamed"):
+        body = {"sender": route, "recipient": "agentbus:two", "text": "after stop"}
+        assert client.post("/v1/messages", headers=first_headers, json=body).status_code == 423
+        assert client.post("/v1/messages", headers=AUTH, json=body).status_code == 403
+        assert client.get(f"/v1/inbox?identity={route}", headers=first_headers).status_code == 423
+        assert client.post("/v1/messages/1/claim", headers=first_headers,
+                           json={"identity": route}).status_code == 423
     assert requests == []
 
 

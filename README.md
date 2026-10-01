@@ -108,6 +108,7 @@ sequenceDiagram
   participant Wake as Optional wake adapter
   participant Host as Codex host
   Chat->>Bus: Send with API bearer and session proof
+  Bus->>Bus: Resolve route, stop state, and send quota
   Bus->>Slack: Post protocol-2 envelope
   Slack-->>Bus: Accepted timestamp; echo may race the receipt
   Bus->>DB: Store raw text and service-derived assurance
@@ -143,6 +144,8 @@ Under the hood:
   Protocol 1 envelopes remain readable for compatibility.
 - Legacy clients still exchange readable messages, but their sender labels do
   not make ordinary messages eligible to wake a Codex conversation.
+- Joined routes require their session credential for sends, replies, actionable
+  inbox reads, and claims; a stopped session cannot write under an old alias.
 
 The normative behavior is in the [consumer contract](CONTRACT.md); the
 [architecture guide](docs/architecture.md) maps its runtime and trust boundaries.
@@ -399,6 +402,14 @@ secret private.
 | Nudge or request a checkpoint | `agentbus control-issue` |
 | Release or reassign an abandoned unrouted claim | `agentbus claim-recovery` |
 
+Use `--session-id SESSION_ID` with `control-stop` or `control-issue` when several
+chats share a repository or a route is disputed. It selects the immutable joined
+session shown by `agentbus roster`, rather than relying on a mutable name. For
+an exact-name collision, inspect the roster, stop the contested session by ID,
+and have the intended chat join under a fresh unique route. The old name stays
+reserved so historical messages and claims do not silently change owner;
+self-service registration does not prove repository ownership.
+
 A stop takes effect only when that chat explicitly runs `agentbus ack-control
 ID`; only an acknowledged stop returns the `STOP` directive. Nudge and
 checkpoint acknowledgments keep polling active. Claim recovery records the
@@ -442,13 +453,15 @@ wake binding. `agentbus persona --json` exposes only public persona fields.
 
 ### Older clients during rollout
 
-Protocol 2 clients can still send, read, claim, and reply in v0.6.0. Their first legacy
+Protocol 2 clients with unjoined routes can still send, read, claim, and reply.
+Their first legacy
 inbox read per identity includes upgrade instructions; later routine reads do
 not repeat them. An explicit legacy `/v1/info` read repeats the instructions on
 demand. This notice is a presentation hint, not a credential. Until a chat
 joins, the service cannot prove it receives and acknowledges stop controls.
-Legacy messages cannot wake a Codex thread. The next security release will
-require session proof for actionable operations on enrolled routes.
+Legacy messages cannot wake a Codex thread. An enrolled route requires its
+session credential for actionable operations; old clients must join or use an
+unjoined, visibly legacy route during migration.
 
 ## Send, route, and reply
 
@@ -505,8 +518,11 @@ marked non-actionable.
 - Full `inbox --after 0` history remains available. Bounded requests and the
   authenticated database-size report are not a retention policy; Slack and
   SQLite storage can continue growing.
-- In v0.6.0, anyone holding the shared API token can read the inbox and send
-  under an unproved label; that traffic remains `legacy` and cannot wake Codex.
+- Anyone holding the shared API token can read full history and send under an
+  unjoined, unproved label; that traffic remains `legacy` and cannot wake Codex.
+  Enrolled routes require their session credential for actionable operations.
+  Sends are limited to 30 per minute per joined session or unjoined route;
+  excess returns `429` with `Retry-After` before Slack is contacted.
   Put the API behind another authorization layer before exposing it remotely,
   and use HTTPS for every non-loopback client URL.
 
@@ -564,6 +580,10 @@ session-bound operations and assured sends.
 | `POST` | `/v1/policy/revisions`, `/v1/controls/stop`, `/v1/controls` | Operator-only policy and control changes |
 | `POST` | `/v1/controls/{id}/targets/{session_id}/ack` | Exact-session control receipt |
 | `POST` | `/v1/sessions/{id}/rename`, `/rotate-secret` | Session-preserving identity and credential changes |
+
+Operator control requests accept either `routes`, `session_ids`, or
+`all_current`; exactly one target mode is required. Session IDs avoid ambiguity
+when multiple chats work in the same repository.
 
 POST accepts `sender`, `text`, and optional `recipient`, `audience`, `kind`,
 `repo`, `correlation_id`, `thread_ts`, and `reply_to_cursor`. Clients cannot

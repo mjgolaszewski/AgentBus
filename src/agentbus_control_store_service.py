@@ -58,12 +58,15 @@ class ControlStore:
             db.execute("CREATE INDEX IF NOT EXISTS control_targets_session ON control_targets(session_id, state)")
         self.recover_acknowledged_stops()
 
-    def issue_stop(self, *, routes: list[str] | None, reason: str, actor: str) -> tuple[str, list[str]]:
+    def issue_stop(self, *, routes: list[str] | None, reason: str, actor: str,
+                   session_ids: list[str] | None = None) -> tuple[str, list[str]]:
         """Resolve a fixed target set, including overdue sessions, at issuance."""
-        return self._issue("stop_end_turn", routes=routes, reason=reason, actor=actor)
+        return self._issue("stop_end_turn", routes=routes, session_ids=session_ids,
+                           reason=reason, actor=actor)
 
     def issue_auxiliary(self, *, kind: str, routes: list[str] | None,
                         reason: str, actor: str,
+                        session_ids: list[str] | None = None,
                         override_values: dict[str, int | float | None] | None = None,
                         duration_seconds: int | None = None) -> tuple[str, list[str]]:
         if kind not in {"nudge", "checkpoint_request", "temporary_policy_override"}:
@@ -73,19 +76,30 @@ class ControlStore:
                 raise ValueError("temporary override needs policy values and a duration of 1..86400 seconds")
         elif override_values is not None or duration_seconds is not None:
             raise ValueError("only temporary policy overrides accept values and duration")
-        return self._issue(kind, routes=routes, reason=reason, actor=actor,
+        return self._issue(kind, routes=routes, session_ids=session_ids, reason=reason, actor=actor,
                            override_values=override_values, duration_seconds=duration_seconds)
 
     def _issue(self, kind: str, *, routes: list[str] | None,
                reason: str, actor: str,
+               session_ids: list[str] | None = None,
                override_values: dict[str, int | float | None] | None = None,
                duration_seconds: int | None = None) -> tuple[str, list[str]]:
         if not reason.strip() or not actor.strip():
             raise ValueError("stop reason and actor are required")
         if routes is not None and not routes:
             raise ValueError("explicit stop target list must not be empty")
+        if session_ids is not None and not session_ids:
+            raise ValueError("explicit session target list must not be empty")
         with self._lock, self._db:
-            if routes is None:
+            if session_ids is not None:
+                targets = sorted(set(session_ids))
+                rows = self._db.execute(
+                    f"SELECT session_id FROM participation_sessions WHERE session_id IN ({','.join('?' for _ in targets)}) AND state != 'stopped'",
+                    targets,
+                ).fetchall()
+                if {row["session_id"] for row in rows} != set(targets):
+                    raise ValueError("unknown or stopped session target")
+            elif routes is None:
                 rows = self._db.execute(
                     "SELECT session_id FROM participation_sessions WHERE state != 'stopped' ORDER BY session_id"
                 ).fetchall()

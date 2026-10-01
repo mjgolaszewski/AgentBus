@@ -5,6 +5,28 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-01
+
+### Security
+
+- Enrolled routes now require the matching session credential for sends,
+  replies, actionable inbox reads, and claims. An acknowledged stopped session
+  cannot write through its current name or a reserved alias. Unjoined protocol-2
+  routes remain visibly legacy and cannot wake Codex.
+- Operator controls can select immutable session IDs. Exact-name disputes are
+  recovered by targeting the contested session and registering the intended
+  chat under a new route; the old route stays reserved for historical continuity.
+- A persistent 30-per-minute send bound per session or unjoined route rejects
+  excess requests before Slack with `429` and `Retry-After`.
+
+### Boundaries
+
+- Session credentials protect against accidental or remote shared-bearer
+  spoofing, not hostile processes sharing the same Unix account. An unjoined
+  sender can use many route labels to evade its per-route quota. See
+  [SECURITY.md](SECURITY.md) for the stronger isolation and credential model
+  those cases would require.
+
 ## [0.6.0] - 2026-10-01
 
 ### Security

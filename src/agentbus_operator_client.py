@@ -47,9 +47,11 @@ def policy_show(ns, values: dict[str, str]) -> int:
 
 
 def control_stop(ns, values: dict[str, str]) -> int:
-    response = api(values, "/v1/controls/stop", {
-        "routes": ns.to, "all_current": ns.all, "reason": ns.reason,
-    }, bearer_token=_operator_token(values))
+    payload = {"routes": ns.to, "all_current": ns.all, "reason": ns.reason}
+    if ns.session_id:
+        payload["session_ids"] = ns.session_id
+    response = api(values, "/v1/controls/stop", payload,
+                   bearer_token=_operator_token(values))
     print(json.dumps(response, indent=2))
     return 0
 
@@ -58,6 +60,8 @@ def control_issue(ns, values: dict[str, str]) -> int:
     payload = {
         "kind": ns.kind, "routes": ns.to, "all_current": ns.all, "reason": ns.reason,
     }
+    if ns.session_id:
+        payload["session_ids"] = ns.session_id
     if ns.kind == "temporary_policy_override":
         if not ns.values_file or ns.duration_seconds is None:
             raise ClientError("Temporary override needs --values-file and --duration-seconds.")

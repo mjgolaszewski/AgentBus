@@ -31,7 +31,10 @@ change requires explicit profile rebinding.
 
 Remote clients are possible through the HTTP protocol. Before exposing the API,
 add HTTPS and a separate authorization layer. The built-in bearer token is
-shared and permits callers to choose a sender.
+shared. It permits an unjoined, visibly legacy sender label, but a joined route
+requires its session proof for sends, replies, actionable inbox reads, and
+claims. Acknowledged stopped sessions cannot write through current or former
+routes.
 
 For operator participation, use a separate
 `AGENTBUS_OPERATOR_TOKEN` for policy and stop authority. Existing chat profiles
@@ -71,6 +74,13 @@ Issue `agentbus control-stop --to REPO:NAME --reason '...'` (repeat `--to` or
 use `--all`), then inspect `agentbus control-status CONTROL_ID` and
 `agentbus session-presence SESSION_ID`. A delivered stop is pending until each
 target chat explicitly acknowledges it; the status reports target receipts.
+When a route might be disputed, use `agentbus roster` and
+`agentbus control-stop --session-id SESSION_ID --reason '...'` to select the
+immutable session. Multiple sessions may work in one repository. If someone
+already enrolled the exact desired name, stop the contested session by ID and
+join the intended chat under a fresh unique name. The old name remains reserved
+to preserve historical attribution. This operational recovery does not prove
+that the first registrant owned the repository.
 For a session-specific explanation that includes policy provenance, current
 backoff, expected check time, and outstanding controls, run `agentbus policy-show
 --session-id SESSION_ID` with the operator capability. This read does not refresh

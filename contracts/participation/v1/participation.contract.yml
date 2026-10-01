@@ -198,7 +198,7 @@ contracts:
     stopped_session_writes: HTTP_423_after_acknowledged_stop
     unjoined_legacy_routes: readable_and_sendable_with_visible_legacy_assurance_and_one_time_upgrade_notice
     ambiguous_route_controls: operator_exact_session_id_supported
-    disputed_name: operator_recovery_with_stable_chat_and_session_record
+    disputed_name: operator_targets_contested_session_by_immutable_ID_and_legitimate_chat_joins_under_a_new_unique_route_while_contested_history_stays_reserved
     send_rate: per_proved_session_or_unjoined_legacy_route_with_429_Retry_After
     route_grammar: lowercase_repo_colon_name_for_new_writes
     human_sender_namespace: Slack_ingress_only

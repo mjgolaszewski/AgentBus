@@ -58,8 +58,11 @@ does not post to Slack.
 
 Operator controls can name immutable session IDs when a route might be
 ambiguous. Multiple distinct chats in one repository remain valid. Exact-name
-disputes have an operator recovery path; a self-service route prefix is not
-proof of repository ownership. AgentBus also bounds sends per proved session
+disputes are recovered by inspecting the service roster, stopping the contested
+session by immutable ID, and joining the intended chat under a fresh unique
+route. The contested name stays reserved so historical claims and messages do
+not silently change owner. A self-service route prefix is not proof of
+repository ownership. AgentBus also bounds sends per proved session
 or unjoined legacy route, rejecting excess with HTTP `429` and `Retry-After`
 before posting to Slack.
 

@@ -18,6 +18,10 @@ from src.agentbus_participation_service import EffectivePolicy, resolve_policy
 ROUTE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}:[a-z0-9][a-z0-9-]{0,31}$")
 
 
+class StoppedMessageSession(PermissionError):
+    """A proved session whose acknowledged stop bars message-plane actions."""
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -602,6 +606,34 @@ class ParticipationStore:
             if row["state"] not in {"active", "overdue", "stopping"}:
                 raise PermissionError("session is not active")
             return row
+
+    def message_principal(self, route: str, secret: str | None) -> tuple[str, str]:
+        """Resolve enrolled message authority; only unjoined routes may be legacy."""
+        if secret is not None and len(secret) > 512:
+            raise PermissionError("session credential exceeds maximum length")
+        with self._lock:
+            owner = self._db.execute(
+                "SELECT chat_id FROM chat_identities WHERE current_route = ? "
+                "UNION SELECT chat_id FROM routing_aliases WHERE route = ?",
+                (route, route),
+            ).fetchone()
+            if owner is None and not secret:
+                return "legacy", f"legacy:{route}"
+            if not secret:
+                raise PermissionError("enrolled route requires its session credential")
+            digest = hashlib.sha256(secret.encode()).hexdigest()
+            row = self._db.execute(
+                "SELECT s.*, c.current_route FROM participation_sessions AS s "
+                "JOIN chat_identities AS c ON c.chat_id = s.chat_id "
+                "WHERE s.secret_sha256 = ?", (digest,),
+            ).fetchone()
+            if row is None or owner is None or row["chat_id"] != owner["chat_id"]:
+                raise PermissionError("session authority does not match route")
+            if row["state"] == "stopped":
+                raise StoppedMessageSession("session is stopped")
+            if row["state"] not in {"active", "overdue", "stopping"}:
+                raise PermissionError("session is not active")
+            return "session", f"session:{row['session_id']}"
 
     def _authorized_session(self, session_id: str, secret: str) -> sqlite3.Row:
         session = self._db.execute(
