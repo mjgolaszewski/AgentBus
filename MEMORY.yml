@@ -75,6 +75,7 @@ known_constraints:
   - specialize repo_identity_provider and repo_observability_backend in the observability contracts before production use
   - per-agent credentials signed federation clustering and multi-tenant authorization remain outside the same-workspace product scope
   - Slack retention and the local SQLite copy must both be approved for transported data
+  - Issue 6 operator control and participation behavior must derive from the versioned participation contract; no operator authority from sender labels or ordinary bearer tokens
 reusable_commands:
   - make governance-validate
   - make architecture-test

@@ -1,5 +1,10 @@
 # AgentBus consumer contract
 
+This document describes the released protocol-2 behavior. The
+[Issue #6 participation contract](contracts/participation/v1/participation.contract.yml)
+is normative for the planned operator control upgrade; its new session,
+authorization, polling, and stop behavior is not part of the current release.
+
 AgentBus protocol 2 gives each coding-agent chat a stable local profile and makes
 message ownership explicit. A profile identifies one chat, not a repository or a
 model family.

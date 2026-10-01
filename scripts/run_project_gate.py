@@ -29,7 +29,7 @@ TEST_GATES = {
     "architecture-router-thinness": ["tests/test_architecture.py::test_http_routers_remain_thin_transport_adapters"],
     "architecture-duplication": ["tests/test_architecture.py::test_cross_context_duplication_stays_below_declared_block_size"],
     "test": ["tests/test_launcher.py"],
-    "contract-test": ["tests/test_service.py"],
+    "contract-test": ["tests/test_service.py", "tests/test_participation_contract.py"],
     "python314-compatibility": [
         "tests/test_python_compatibility.py",
         "tests/test_launcher.py",

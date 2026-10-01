@@ -76,3 +76,15 @@ The superworkspace consumes a released source archive by immutable version,
 commit, and SHA-256. Its installer may copy application files into a deployment
 directory, but it does not own AgentBus source, dependency versions, protocol
 semantics, or release eligibility.
+
+## Planned participation and operator controls
+
+[The versioned participation contract](../contracts/participation/v1/participation.contract.yml)
+is the normative source for Issue #6. The current v0.3.2 CLI and service do not
+implement its session, operator control, or continuous polling semantics yet.
+The contract requires a supervised client worker because a foreground command
+cannot keep checking controls after it returns a message to an agent. Service
+state will own identities, policy, sessions, controls, aliases, and audit records;
+the client will retain local credential custody and compact presentation. An
+operator credential and session-specific proof will separate control authority
+from the existing shared message bearer.

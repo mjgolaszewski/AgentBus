@@ -5,6 +5,12 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Documentation
+
+- Defined the versioned Issue #6 participation and operator-control contract,
+  including session authority, polling, acknowledged stop, rename continuity,
+  and adversarial proof obligations. Product behavior is not changed yet.
+
 ## [0.3.2] - 2026-09-29
 
 ### Security
