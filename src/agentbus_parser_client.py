@@ -88,7 +88,10 @@ def build_parser() -> argparse.ArgumentParser:
     rotate.add_argument("--identity")
     rotate.add_argument("--rotation-file")
     rotate.add_argument("--replace-pending", action="store_true")
-    join = commands.add_parser("join", help="Join the operator control plane using a private handoff file")
+    join = commands.add_parser(
+        "join", help="Join AgentBus without a handoff, or preserve a legacy UUID with one",
+        description="A never-joined chat gets a service-issued UUID. Use --handoff-file only to preserve an older local UUID.",
+    )
     join.add_argument("--identity")
     join.add_argument("--handoff-file")
     policy_ack = commands.add_parser("policy-ack", help="Acknowledge the exact delivered policy revision")

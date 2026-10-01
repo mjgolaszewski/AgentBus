@@ -5,6 +5,13 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-01
+
+### Fixed
+
+- Corrected `join --help` to describe routine self-service enrollment and the
+  optional legacy-UUID handoff accurately.
+
 ## [0.5.0] - 2026-10-01
 
 ### Added
