@@ -27,7 +27,6 @@ from slack_sdk.socket_mode.response import SocketModeResponse
 
 from src.agentbus_claim_recovery_service import ClaimRecoveryStore
 from src.agentbus_control_store_service import ControlStore
-from src.agentbus_message_assurance_service import valid_new_message_routes
 from src.agentbus_participation_api_service import (
     UPGRADE_NOTICE,
     api_claim_recovery,
@@ -54,6 +53,7 @@ from src.agentbus_participation_store_service import ParticipationStore
 from src.agentbus_presentation_service import visible_text
 from src.agentbus_reply_policy_service import validate_reply
 from src.agentbus_request_limits_service import RequestBodyLimit
+from src.agentbus_send_policy_service import SessionAuthorityError, validate_new_send
 from src.agentbus_settings_service import Settings
 
 LOGGER = logging.getLogger("agentbus")
@@ -599,21 +599,14 @@ def api_status(request: Request) -> dict:
 
 async def api_send(request: Request, message: SendMessage,
                    x_agentbus_session_token: Annotated[str | None, Header()] = None) -> Message:
-    if message.audience == "unrouted":
-        raise HTTPException(422, "unrouted audience is reserved for Slack ingestion")
-    if not valid_new_message_routes(message.sender, message.recipient):
-        raise HTTPException(422, "new messages require canonical agent routes")
-    if x_agentbus_session_token:
-        try:
-            request.app.state.store.participation.session_for_secret(x_agentbus_session_token, message.sender)
-        except PermissionError as exc:
-            raise HTTPException(403, str(exc)) from None
-        message._sender_assurance = "session"
     settings = request.app.state.settings
     try:
-        request.app.state.store.validate_reply(settings.slack_channel, message)
+        validate_new_send(request.app.state.store, settings.slack_channel, message,
+                          x_agentbus_session_token)
     except KeyError:
         raise HTTPException(422, "reply parent does not exist in this inbox") from None
+    except SessionAuthorityError as exc:
+        raise HTTPException(403, str(exc)) from None
     except PermissionError as exc:
         raise HTTPException(409, str(exc)) from None
     except ValueError as exc:

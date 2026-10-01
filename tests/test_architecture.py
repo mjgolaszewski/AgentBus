@@ -26,6 +26,7 @@ MODULES = {
     "src/agentbus_presentation_service.py": ("service", "service"),
     "src/agentbus_reply_policy_service.py": ("service", "service"),
     "src/agentbus_request_limits_service.py": ("service", "service"),
+    "src/agentbus_send_policy_service.py": ("service", "service"),
     "src/agentbus_settings_service.py": ("service", "service"),
     "src/agentbus_service.py": ("service", "service"),
     "src/agentbus_participation_service.py": ("service", "service"),
