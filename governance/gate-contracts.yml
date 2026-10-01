@@ -535,7 +535,7 @@ gates:
         min_collected: 1
         min_executed: 1
         max_skipped: 0
-        selectors: [tests/test_python_compatibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_claim_recovery.py, *id055]
+        selectors: [tests/test_python_compatibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_claim_recovery.py, *id055]
         expected_node_manifest: governance/test-manifests/python314-compatibility.txt
         expected_nodes_mode: exact
         artifact_binding: *id042
@@ -594,7 +594,7 @@ gates:
         min_collected: 1
         min_executed: 1
         max_skipped: 0
-        selectors: [*id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py]
+        selectors: [*id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py]
         expected_node_manifest: governance/test-manifests/test.txt
         expected_nodes_mode: exact
         artifact_binding: *id042
