@@ -1,0 +1,84 @@
+document:
+  kind: agentbus_codex_wake_contract
+  id: agentbus-codex-wake-v1
+  version: 1.0.0
+  status: active
+  path: contracts/codex-wake/v1/codex-wake.contract.yml
+  source: https://github.com/mjgolaszewski/AgentBus/issues/8
+  authority: normative_for_optional_codex_adapter
+scope:
+  purpose: workspace_opt_in_host_owned_wake_of_idle_saved_Codex_threads_for_addressed_AgentBus_work
+  deployment: same_accessible_dev_workspace_first
+  non_goals: [AgentBus_core_launching_model_turns, Slack_as_host_authority, generic_agent_orchestrator, automatic_UI_thread_resumption_without_host_hook, exactly_once_turn_execution_without_host_proof]
+  compatibility: [adapter_absence_does_not_change_AgentBus, protocol_2_messages_unchanged, participation_controls_and_acknowledgements_remain_agent_owned]
+architecture_constraints:
+  bus_owner: routing_claims_controls_policies_durable_messages_and_participation
+  adapter_owner: host_thread_bindings_wake_eligibility_launch_attempts_and_reconciliation
+  host_owner: saved_threads_credentials_runtime_permissions_turn_lifecycle
+  source: non_destructive_participation_event_projection_never_direct_SQLite
+  authority: explicit_workspace_opt_in_and_host_verified_private_binding_not_sender_label_or_shared_bearer
+  activation: workspace_disabled_by_default_and_live_requires_workspace_enablement
+  governance: existing_closed_CLI_population_and_BCF_claim_graph_own_public_behavior
+invariants:
+  - {id: CW-INV-001, rule: "Only a user-enabled workspace host adapter may resume or start a saved Codex thread; AgentBus core never holds Codex credentials or claims host lifecycle authority."}
+  - {id: CW-INV-002, rule: "After workspace opt-in, a joined chat may enroll its current host-verifiable saved thread without user-supplied IDs; binding joins stable chat_id and current participation session to that exact thread ID, with generation and local authorization; names and message senders cannot redirect it."}
+  - {id: CW-INV-003, rule: "Only correctly addressed direct actionable messages, claimed work, and required control or policy events are wake eligible by default; ambiguous, unrouted, broadcast, and informational traffic fails closed."}
+  - {id: CW-INV-004, rule: "Thread read, resume, turn acceptance, turn completion, and AgentBus acknowledgement are distinct observations and never inferred from one another."}
+  - {id: CW-INV-005, rule: "At most one adapter-owned launch attempt is in flight per binding; unchanged pending events do not cause repeated turns; uncertain launch outcomes require reconciliation before retry."}
+  - {id: CW-INV-006, rule: "Pending control and required policy events outrank ordinary work; adapter never acknowledges them, and a stopped participation session cannot launch ordinary work."}
+  - {id: CW-INV-007, rule: "Empty or unchanged observations consume zero model turns; one compact wake references authoritative pending events instead of injecting whole history or repeated reminders."}
+  - {id: CW-INV-008, rule: "Peer and Slack message text remains untrusted data and cannot select thread, endpoint, cwd, model, sandbox, approval policy, or credentials."}
+  - {id: CW-INV-009, rule: "Adapter absence, disabled state, and host unavailability leave AgentBus messaging and participation truth intact; host state and bus presence remain separately reported."}
+  - {id: CW-INV-010, rule: "A host without an authorized resume/start hook is notification-only and cannot be advertised as live auto-resumable."}
+primitives:
+  workspace_activation: {identity: local_workspace, fields: [enabled, actor, changed_at], owner: adapter_private_state}
+  binding: {identity: chat_id_plus_session_id, fields: [chat_id, session_id, thread_id, binding_generation, enabled, actor, created_at], owner: adapter_private_state}
+  wake_candidate: {identity: event_kind_plus_event_id, fields: [kind, id, priority, eligibility_reason], owner: non_destructive_projection}
+  wake_attempt: {identity: attempt_id, fields: [binding_generation, candidate_ids, state, turn_id, observed_at, uncertainty], owner: adapter_private_state}
+  host_capability: {identity: configured_Codex_host, allowed_methods: [thread/read, thread/resume, turn/start], owner: host}
+  status: {fields: [binding, eligible_candidates, host_state, last_attempt, uncertainty], owner: adapter_projection}
+contracts:
+  bind: after_explicit_workspace_opt_in_auto_enrollment_uses_host_verified_current_thread_and_joined_session_then_records_private_generation
+  enrollment: a_single_user_request_to_join_triggers_chat_registration_and_host_binding_without_per_chat_user_commands_while_operator_handoff_authority_remains_separate
+  eligibility:
+    priority: [control, required_policy, direct_blocker, direct_request_question_handoff, claimed_work]
+    default_exclusions: [broadcast, informational, unrouted, ambiguous, unchanged]
+    source: non_destructive_local_participation_projection
+  wake:
+    dry_run: default
+    live: explicit_opt_in_only
+    sequence: [verify_binding, observe_candidates, serialize_attempt, read_host_thread_status, resume_if_idle, start_turn_with_compact_references, record_host_turn_id]
+    active_thread: defer_without_second_turn
+    unchanged_candidates: no_repeat_wake
+    uncertain_turn_start: reconcile_or_halt_for_operator_never_blind_retry
+    prompt: contains_only_identity_and_stable_event_references_no_untrusted_message_text
+  control: {priority: before_ordinary_message_wake, acknowledgement: target_agent_only, stopped_session: no_ordinary_wake}
+  lifecycle: {host_turn_completed: not_AgentBus_message_acknowledged, bus_control_receipt: not_external_turn_ended}
+  storage: {binding_and_attempt: private_local_state, state_mode: '0600', directory_mode: '0700', direct_service_database_access: prohibited}
+  portability: {first_host: local_Codex_app_server_proxy, unsupported_host: notification_only}
+failures: [BINDING_MISSING, BINDING_STALE, BINDING_UNAUTHORIZED, HOST_UNAVAILABLE, THREAD_NOT_FOUND, THREAD_ACTIVE, THREAD_RESUME_FAILED, TURN_START_REJECTED, TURN_START_UNCERTAIN, WAKE_DUPLICATE, SESSION_STOPPED, EVENT_NO_LONGER_ELIGIBLE]
+proof_obligations:
+  - {id: CW-PO-01, proves: [CW-INV-002, CW-INV-003], scenario: exact_bound_chat_and_session_wake_only_for_addressed_action_or_claimed_work}
+  - {id: CW-PO-02, proves: [CW-INV-003, CW-INV-007], scenario: empty_informational_broadcast_and_ambiguous_events_produce_zero_turns}
+  - {id: CW-PO-03, proves: [CW-INV-004, CW-INV-005], scenario: duplicate_and_concurrent_attempts_do_not_launch_second_turn_and_uncertain_start_fails_closed}
+  - {id: CW-PO-04, proves: [CW-INV-006], scenario: controls_and_policy_outprioritize_work_and_stopped_session_cannot_wake}
+  - {id: CW-PO-05, proves: [CW-INV-007, CW-INV-008], scenario: compact_prompt_omits_message_text_and_host_configuration_overrides}
+  - {id: CW-PO-06, proves: [CW-INV-001, CW-INV-009, CW-INV-010], scenario: disabled_or_unavailable_host_never_changes_bus_truth_or_claims_live_wake}
+  - {id: CW-PO-07, proves: [CW-INV-002, CW-INV-005], scenario: rename_restart_and_binding_generation_preserve_or_invalidate_launch_rights_exactly}
+implementation_order:
+  - {id: CW-IU-001, unit: freeze_contract_and_host_protocol, depends_on: []}
+  - {id: CW-IU-002, unit: non_destructive_candidate_projection, depends_on: [CW-IU-001]}
+  - {id: CW-IU-003, unit: private_binding_and_attempt_state, depends_on: [CW-IU-001]}
+  - {id: CW-IU-004, unit: dry_run_and_status, depends_on: [CW-IU-002, CW-IU-003]}
+  - {id: CW-IU-005, unit: host_RPC_and_serialized_live_launch, depends_on: [CW-IU-004]}
+  - {id: CW-IU-006, unit: restart_reconciliation_and_adversarial_proof, depends_on: [CW-IU-005]}
+  - {id: CW-IU-007, unit: docs_BCF_graph_and_exact_candidate_proof, depends_on: [CW-IU-006]}
+acceptance_gates:
+  G-BOUNDARY: [CW-INV-001, CW-INV-009, CW-INV-010, CW-PO-06]
+  G-BINDING: [CW-INV-002, CW-PO-01, CW-PO-07]
+  G-ELIGIBILITY: [CW-INV-003, CW-PO-01, CW-PO-02]
+  G-LIFECYCLE: [CW-INV-004, CW-PO-03]
+  G-DEDUP: [CW-INV-005, CW-PO-03, CW-PO-07]
+  G-CONTROL: [CW-INV-006, CW-PO-04]
+  G-TOKEN: [CW-INV-007, CW-INV-008, CW-PO-05]
+  G-GOVERNANCE: [CW-IU-007]

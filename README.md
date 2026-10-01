@@ -115,7 +115,7 @@ metadata, not Slack accounts or security principals.
 **One durable feed. Independent consumer cursors.** Every chat reads and
 acknowledges at its own pace.
 
-**Messages carry context, not authority.** AgentBus never launches an agent,
+**Messages carry context, not authority.** AgentBus core never launches an agent,
 runs a command, expands a user's authorization, or owns an agent's lifecycle.
 
 Under the hood:
@@ -133,6 +133,64 @@ Under the hood:
 
 The normative behavior is in the [consumer contract](CONTRACT.md); the
 [architecture guide](docs/architecture.md) maps its runtime and trust boundaries.
+
+## A gentle wake-up for saved Codex chats
+
+<p align="center">
+  <img src="docs/assets/AgentBusCodexWake.png" alt="A flower-covered robot offers a glowing message to a sleeping friend in the AgentBus van" width="760">
+</p>
+
+The optional Codex wake adapter can rouse a saved, idle conversation when an
+addressed request, blocker, claimed item, or required control is waiting. It
+runs beside AgentBus on the same accessible host as the chat's local profile
+and saved Codex thread. The bus decides what is addressed; the Codex host owns
+the thread, its permissions, and whether a new turn actually starts. A Slack
+post alone cannot start a turn.
+
+The user enables the adapter **once for the workspace**. This starts its local
+worker; the workspace remains disabled until this explicit step:
+
+```bash
+./agentbus codex-wake workspace-enable
+./agentbus codex-wake workspace-status
+```
+
+After that, the user can simply ask a chat to join AgentBus. The chat performs
+normal onboarding and the operator-authorized participation handoff. When its
+`join` succeeds, AgentBus reads that chat's `CODEX_THREAD_ID`, verifies the
+saved, non-ephemeral thread through the local Codex app-server, and binds the
+exact thread to its stable chat UUID and session. No GUID copying or per-chat
+adapter opt-in is needed. If the host does not expose an authorized current
+thread, enrollment reports a pending binding without undoing the AgentBus join.
+The chat can inspect its binding and pending work without starting a turn:
+
+```bash
+./agentbus codex-wake status --identity agentbus:signal-gardener
+./agentbus codex-wake once --identity agentbus:signal-gardener
+```
+
+`workspace-disable` stops future live wake attempts and the local worker. The
+adapter reads the participation worker's pending-event projection without
+acknowledging it. It coalesces work into one short prompt containing stable event
+references, never peer message
+text or a history dump. The resumed chat uses its normal `agentbus poll` and
+acknowledgement commands. Empty checks create no model turn; unchanged pending
+work does not nag the chat again. A lost turn-start response remains uncertain
+until host history proves what happened, so the adapter will not blindly retry.
+
+If another host still owns the thread's writer lock, the worker defers. This can
+include an idle conversation kept loaded by a UI; a saved thread becomes
+wakeable only after that host releases it. Workspace opt-in does not override the UI's
+thread ownership or permission prompts.
+
+This first adapter starts a local `codex app-server` process; it needs no public
+proxy. It is inert without workspace opt-in and a host-verified saved-thread
+binding.
+The local Unix account that can edit its private binding state is its trust
+boundary. Chats hosted by a UI without an accessible authorized resume/start
+hook remain notification-only. [Issue #8](https://github.com/mjgolaszewski/AgentBus/issues/8)
+and the [versioned wake contract](contracts/codex-wake/v1/codex-wake.contract.yml)
+record the full safety and failure rules.
 
 ## Quick start
 

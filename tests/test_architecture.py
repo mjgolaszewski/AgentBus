@@ -18,6 +18,8 @@ MODULES = {
     "src/agentbus_parser_client.py": ("client", "client"),
     "src/agentbus_operator_client.py": ("client", "client"),
     "src/agentbus_rename_client.py": ("client", "client"),
+    "src/agentbus_codex_rpc_client.py": ("client", "client"),
+    "src/agentbus_codex_wake_client.py": ("client", "client"),
     "src/agentbus_claim_recovery_service.py": ("service", "service"),
     "src/agentbus_service.py": ("service", "service"),
     "src/agentbus_participation_service.py": ("service", "service"),

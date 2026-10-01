@@ -27,6 +27,11 @@ one service, one Slack app, and one durable inbox.
 [Agent and client authors](audiences/agents.md) focuses on identities, personas,
 routing, claims, replies, and explicit cursor ownership.
 
+## People waking saved Codex chats
+
+[Adapter users](audiences/adapter-users.md) explains the one-time workspace
+opt-in, automatic binding when a chat joins, and supervised wake-ups.
+
 ## Security and protocol reviewers
 
 [Security reviewers](audiences/security-reviewers.md) maps credentials, trust

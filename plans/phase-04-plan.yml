@@ -18,11 +18,13 @@ phase:
   - plans/phase-ledger.yml
   - MEMORY.yml
   - contracts/participation/v1/participation.contract.yml
+  - contracts/codex-wake/v1/codex-wake.contract.yml
 delivery_contract:
   tightly_scoped_deliverables:
   - Establish identity, sessions, policy, operator authority, and truthful presence from IU-001 through IU-005
   - Deliver worker polling, durable controls, acknowledged stop, rename, and compact views from IU-006 through IU-010
   - Complete operator projections, optional controls, compatibility, and governed proof from IU-011 through IU-013
+  - Deliver optional Issue #8 host-owned Codex wake from CW-IU-001 through CW-IU-007 without granting host authority to AgentBus core
   parallelizable_workstreams:
   - id: P04-WS1
     name: contract_and_migration
@@ -30,9 +32,12 @@ delivery_contract:
     name: participation_and_policy
   - id: P04-WS3
     name: controls_and_presentation
+  - id: P04-WS4
+    name: optional_codex_host_adapter
   hard_dependencies:
   - P03 closed on exact main
   - participation contract structural and semantic check passes
+  - Codex wake contract structural and semantic check passes before adapter implementation
   docker_first_local_runtime: repo_native_validation_and_governance_commands
   completeness_standard: full_completeness_for_declared_scope
 scope_lock:
