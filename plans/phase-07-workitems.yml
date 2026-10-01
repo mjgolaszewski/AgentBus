@@ -1,0 +1,60 @@
+document:
+  kind: execution_phase_workitem_ledger
+  name: Phase 07 Workitems
+  id: project-phase-07-workitems
+  version: 1.0.0
+  generated_at_utc: '2026-10-01T00:00:00Z'
+  status: active
+  path: plans/phase-07-workitems.yml
+  phase_id: P07
+workitems:
+- id: P07-P0-01
+  priority: P0
+  status: DONE
+  summary: deliver pin the Docker uv bootstrap to an immutable multiarch image digest
+  acceptance:
+  - pin the Docker uv bootstrap to an immutable multiarch image digest_is_complete
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P07-P0-02
+  priority: P0
+  status: TODO
+  summary: deliver adopt released BCF generated-workflow-input fix through canonical
+    upgrade machinery
+  acceptance:
+  - adopt released BCF generated-workflow-input fix through canonical upgrade machinery_is_complete
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P07-P0-03
+  priority: P0
+  status: TODO
+  summary: deliver adopt released BCF governance dependency locking without hand-editing
+    generated files
+  acceptance:
+  - adopt released BCF governance dependency locking without hand-editing generated
+    files_is_complete
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P07-P0-04
+  priority: P0
+  status: TODO
+  summary: deliver adopt released BCF proxy-header handling while preserving provider
+    authority boundaries
+  acceptance:
+  - adopt released BCF proxy-header handling while preserving provider authority boundaries_is_complete
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P07-P0-05
+  priority: P0
+  status: TODO
+  summary: deliver prove exact candidate and isolated release archive before consumer
+    cutover
+  acceptance:
+  - prove exact candidate and isolated release archive before consumer cutover_is_complete
+  acceptance_evidence:
+  - test
+  - contract-test

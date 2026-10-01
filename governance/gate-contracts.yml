@@ -525,7 +525,7 @@ gates:
     - {id: unused-import-is-rejected, mutation: {path: *id043, search: import argparse, replace: 'import argparse
 
           import definitely_unused_agentbus_symbol'}, oracle: {kind: *id059, exit_codes: [1], stream: stdout, regex: F401|imported but unused}}
-    - {id: version-drift-is-rejected-at-source-boundary, mutation: {path: *id002, search: version = "0.7.0", replace: version = "9.9.9"}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: project version must match}}
+    - {id: version-drift-is-rejected-at-source-boundary, mutation: {path: *id002, search: version = "0.7.1", replace: version = "9.9.9"}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: project version must match}}
   python314-compatibility:
     invocation: {argv: [python3, *id037, python314-compatibility, --junit, .artifacts/junit/python314-compatibility.xml], cwd: ., env: {}, required_env: []}
     evidence:

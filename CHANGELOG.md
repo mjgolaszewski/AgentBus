@@ -5,6 +5,15 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-10-01
+
+### Supply chain
+
+- Bootstrap the runtime container with uv 0.12.9 from an immutable official
+  multi-architecture image digest rather than an unverified `pip install`.
+- BCF producer fixes for generated workflow inputs, governance dependency
+  locking, and proxy-header handling remain release prerequisites.
+
 ## [0.7.0] - 2026-10-01
 
 ### Security

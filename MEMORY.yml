@@ -53,7 +53,7 @@ environment_facts:
     - structural anti-drift gates are scaffolded for module size, layer ownership, bounded-context ownership, CQRS side rules, router thinness, and duplication
     - application behavior is characterized on Python 3.12 with a pinned Python 3.14 compatibility subprocess in the primary BCF evidence lane
     - BCF 2.1.6 Standard profile contract v3 governs the repository through the canonical prospective train
-    - AgentBus v0.6.0 is published from protected main commit 19b9c669273bd324fba2da74e407e8635eb654e2 with tree 07b0755b2c3e0b4e6503e05e6d6513753152be0b; shared-service cutover remains consumer-owned
+    - AgentBus v0.7.0 is published from protected main commit 259ac4525506e39021c4f891f342bedf4947ad1e with tree 28898db40de8977443d7fe0d69fb9e7ec7f7d2e7; shared-service cutover remains consumer-owned
     - direct protected-main authority is retained without trusted-controller or BCF release authority
     - production implementations live under src while top-level client and service shims preserve public executable and import paths
     - routed Slack envelopes are admitted only from the bot identity authenticated from the configured bot token
@@ -65,9 +65,9 @@ environment_facts:
     build_plan: plans/build-plan.yml
     active_phase_ledger: plans/phase-ledger.yml
     phase_history: plans/phase-history.yml
-    active_phase_plan: plans/phase-06-plan.yml
-    active_workitem_ledger: plans/phase-06-workitems.yml
-    active_phase_log: phases/phase-06-log.yml
+    active_phase_plan: plans/phase-07-plan.yml
+    active_workitem_ledger: plans/phase-07-workitems.yml
+    active_phase_log: phases/phase-07-log.yml
 known_constraints:
   - preserve the public CLI HTTP protocol SQLite state and deployment behavior during governance adoption
   - use only immutable released BCF artifacts and digests; preserve provider boundaries without persistent trusted-controller capability
