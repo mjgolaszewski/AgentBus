@@ -25,7 +25,10 @@ def test_first_join_stages_credential_then_adopts_service_identity(monkeypatch, 
         if len(attempts) == 1:
             raise ClientError("response lost")
         return {"chat_id": "server-issued-uuid", "session_id": "session-one",
-                "revision": "revision-one", "values": {}, "sources": {}, "ack_required": True}
+                "revision": "revision-one", "values": {
+                    "initial_interval_seconds": 60, "backoff_factor": 2,
+                    "max_interval_seconds": 1920,
+                }, "sources": {}, "ack_required": True}
 
     monkeypatch.setattr(client, "api", enroll)
     ns = Namespace(command="join", identity="agentbus:new-chat", handoff_file=None)

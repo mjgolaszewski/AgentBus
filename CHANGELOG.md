@@ -9,6 +9,9 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ### Security
 
+- Reconciled the self-service join and credential-rotation tests into BCF's
+  owned evidence producers; corrected the self-service fixture to return the
+  effective polling policy required by the client.
 - Enrolled routes now require the matching session credential for sends,
   replies, actionable inbox reads, and claims. An acknowledged stopped session
   cannot write through its current name or a reserved alias. Unjoined protocol-2
