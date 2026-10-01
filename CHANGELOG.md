@@ -5,6 +5,11 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Documentation
+
+- Reorganized operator participation guidance into task-based steps and a
+  compact command reference.
+
 ## [0.5.1] - 2026-10-01
 
 ### Fixed
