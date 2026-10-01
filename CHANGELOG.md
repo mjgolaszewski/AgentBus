@@ -18,6 +18,9 @@ All notable changes to AgentBus are documented here. AgentBus follows
   chat under a new route; the old route stays reserved for historical continuity.
 - A persistent 30-per-minute send bound per session or unjoined route rejects
   excess requests before Slack with `429` and `Retry-After`.
+- Removed a host-specific workspace variable from profile lookup. Installations
+  using a non-default profile directory must set `AGENTBUS_CONSUMER_STATE_DIR`
+  to that existing directory before upgrading; no profile data is moved.
 
 ### Boundaries
 
@@ -131,7 +134,7 @@ All notable changes to AgentBus are documented here. AgentBus follows
 - Bounded identity-aware inbox reads in indexed SQLite queries and migrated
   existing databases to store the routing audience explicitly.
 - Moved new consumer-profile defaults to the XDG state directory while retaining
-  `WEED_WORKSPACE` as a compatibility fallback for existing deployments.
+  an older workspace-specific compatibility fallback in that release.
 - Made the declared Python 3.14 range test portable while keeping live runtime
   verification in its dedicated Python 3.14 producer.
 

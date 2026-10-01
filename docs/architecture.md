@@ -72,7 +72,7 @@ dependencies. The native layout stores state beside the deployed project;
 Compose uses a named volume. Only one receiver may connect for a Slack app.
 Container builds run as UID 10001 and write only to `/data`.
 
-The superworkspace consumes a released source archive by immutable version,
+An adopting workspace can consume a released source archive by immutable version,
 commit, and SHA-256. Its installer may copy application files into a deployment
 directory, but it does not own AgentBus source, dependency versions, protocol
 semantics, or release eligibility.

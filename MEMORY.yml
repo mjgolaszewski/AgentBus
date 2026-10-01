@@ -53,21 +53,21 @@ environment_facts:
     - structural anti-drift gates are scaffolded for module size, layer ownership, bounded-context ownership, CQRS side rules, router thinness, and duplication
     - application behavior is characterized on Python 3.12 with a pinned Python 3.14 compatibility subprocess in the primary BCF evidence lane
     - BCF 2.1.6 Standard profile contract v3 governs the repository through the canonical prospective train
-    - AgentBus v0.3.0 is published from commit 9ceb0cd4916291b5fb3f65b81eda4c84bce1ad53 and the superworkspace consumes its attested immutable archive
+    - AgentBus v0.6.0 is published from protected main commit 19b9c669273bd324fba2da74e407e8635eb654e2 with tree 07b0755b2c3e0b4e6503e05e6d6513753152be0b; shared-service cutover remains consumer-owned
     - direct protected-main authority is retained without trusted-controller or BCF release authority
     - production implementations live under src while top-level client and service shims preserve public executable and import paths
     - routed Slack envelopes are admitted only from the bot identity authenticated from the configured bot token
-    - new consumer profiles use the XDG state directory while WEED_WORKSPACE remains a compatibility fallback
+    - new consumer profiles use the XDG state directory; existing deployments select their prior profile directory through explicit AgentBus configuration
     - identity-aware inbox reads filter and page in indexed SQLite queries with legacy audience migration
-    - Phase 04 delivers operator participation and optional host-owned Codex wake without granting core turn authority; Phase 05 adds service-derived assurance separating legacy from wake-eligible traffic
+    - Phase 04 delivers operator participation and optional host-owned Codex wake without granting core turn authority; Phase 05 adds service-derived assurance; Phase 06 enforces enrolled-route proof and exact-session controls
   active_artifacts:
     spec: plans/product-spec.yml
     build_plan: plans/build-plan.yml
     active_phase_ledger: plans/phase-ledger.yml
     phase_history: plans/phase-history.yml
-    active_phase_plan: plans/phase-05-plan.yml
-    active_workitem_ledger: plans/phase-05-workitems.yml
-    active_phase_log: phases/phase-05-log.yml
+    active_phase_plan: plans/phase-06-plan.yml
+    active_workitem_ledger: plans/phase-06-workitems.yml
+    active_phase_log: phases/phase-06-log.yml
 known_constraints:
   - preserve the public CLI HTTP protocol SQLite state and deployment behavior during governance adoption
   - use only immutable released BCF artifacts and digests; preserve provider boundaries without persistent trusted-controller capability

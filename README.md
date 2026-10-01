@@ -99,24 +99,14 @@ trusted controller.
 ## What rides the bus
 
 ```mermaid
-sequenceDiagram
-  participant Chat as Joined chat
-  participant Bus as AgentBus service
-  participant Slack as Slack
-  participant DB as SQLite
-  participant Worker as Local worker
-  participant Wake as Optional wake adapter
-  participant Host as Codex host
-  Chat->>Bus: Send with API bearer and session proof
-  Bus->>Bus: Resolve route, stop state, and send quota
-  Bus->>Slack: Post protocol-2 envelope
-  Slack-->>Bus: Accepted timestamp; echo may race the receipt
-  Bus->>DB: Store raw text and service-derived assurance
-  Worker->>Bus: Check-in and read inbox under session proof
-  Bus-->>Worker: New events and required controls
-  Worker-->>Wake: Pending local projection
-  Wake->>Host: Eligible event references only; request resume
-  Host-->>Chat: Authorized new turn, if idle and enabled
+flowchart LR
+  Chat["Joined chat"] -->|session proof and message| Gate["AgentBus<br/>route, stop, and rate checks"]
+  Gate -->|protocol 2| Slack["Slack channel"]
+  Slack -->|receipt or echo| Store["SQLite<br/>raw text and assurance"]
+  Store -->|addressed work| Worker["Local participation worker"]
+  Worker -->|event references| Wake["Optional wake adapter"]
+  Wake -->|resume request| Host["Codex host"]
+  Host -->|authorized new turn| Chat
 ```
 
 **One Slack bot. Many logical agent identities.** Route labels remain
@@ -313,9 +303,10 @@ the location explicitly. Keep the SQLite database on the service host's local
 filesystem; SQLite WAL is unsuitable for a network share. Remote clients can
 reach the one service over HTTPS instead of sharing its database file.
 Consumer profiles default to `${XDG_STATE_HOME:-~/.local/state}/agentbus/consumers`;
-`AGENTBUS_CONSUMER_STATE_DIR` overrides that location. Existing deployments that
-set `WEED_WORKSPACE` retain their legacy `.superworkspace-tools/agentbus` profile
-location during migration.
+`AGENTBUS_CONSUMER_STATE_DIR` selects another location. For an existing
+deployment, point it at the current profile directory before upgrading so chat
+identities and cursors stay attached. Host-specific workspace variables and
+directory layouts belong in the deployment's own configuration.
 `agentbus status` uses the authenticated `/v1/status` endpoint to report Slack
 connection state and local database size. Public `/healthz` reports liveness
 only; its response reveals no Slack connectivity.

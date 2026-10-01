@@ -7,7 +7,7 @@ import argparse
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Local service lifecycle and HTTP client for the superworkspace AgentBus."
+        description="Local service lifecycle and HTTP client for AgentBus."
     )
     commands = parser.add_subparsers(dest="command", required=True)
     for name in ("serve", "start", "stop", "status", "autostart"):

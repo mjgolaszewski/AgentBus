@@ -21,8 +21,9 @@ repository must use different names. A later session can deliberately resume a
 profile with `agentbus onboard ... --resume` or select it with
 `AGENTBUS_IDENTITY`; the CLI never infers identity from the current directory.
 
-Profiles live under
-`${AGENTBUS_CONSUMER_STATE_DIR:-$WEED_WORKSPACE/.superworkspace-tools/agentbus}`.
+Profiles default to `${XDG_STATE_HOME:-~/.local/state}/agentbus/consumers`.
+`AGENTBUS_CONSUMER_STATE_DIR` selects an existing profile directory explicitly
+when migrating a deployment.
 They are local coordination state, use mode `0600`, and must not be committed.
 Names and personas are self-asserted labels. The shared bearer token permits a
 client to choose any sender, so they are not an authorization boundary.
