@@ -27,6 +27,7 @@ from slack_sdk.socket_mode.response import SocketModeResponse
 
 from src.agentbus_claim_recovery_service import ClaimRecoveryStore
 from src.agentbus_control_store_service import ControlStore
+from src.agentbus_message_authorization_service import require_message_route
 from src.agentbus_participation_api_service import (
     UPGRADE_NOTICE,
     api_claim_recovery,
@@ -654,12 +655,7 @@ def api_inbox(request: Request, identity: Annotated[str, Query(pattern=IDENTIFIE
               context: bool = False,
               x_agentbus_session_token: Annotated[str | None, Header()] = None) -> InboxPage:
     settings = request.app.state.settings
-    try:
-        request.app.state.store.participation.message_principal(identity, x_agentbus_session_token)
-    except StoppedMessageSession as exc:
-        raise HTTPException(423, str(exc)) from None
-    except PermissionError as exc:
-        raise HTTPException(403, str(exc)) from None
+    require_message_route(request.app.state.store, identity, x_agentbus_session_token)
     page = request.app.state.store.inbox(
         settings.slack_channel, identity, after, limit, thread_ts, context
     )
@@ -673,12 +669,7 @@ def api_inbox(request: Request, identity: Annotated[str, Query(pattern=IDENTIFIE
 def api_claim(request: Request, cursor: int, claim: ClaimRequest,
               x_agentbus_session_token: Annotated[str | None, Header()] = None) -> Claim:
     settings = request.app.state.settings
-    try:
-        request.app.state.store.participation.message_principal(claim.identity, x_agentbus_session_token)
-    except StoppedMessageSession as exc:
-        raise HTTPException(423, str(exc)) from None
-    except PermissionError as exc:
-        raise HTTPException(403, str(exc)) from None
+    require_message_route(request.app.state.store, claim.identity, x_agentbus_session_token)
     try:
         result = request.app.state.store.claim(settings.slack_channel, cursor, claim.identity)
     except KeyError:

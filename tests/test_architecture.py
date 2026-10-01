@@ -23,6 +23,7 @@ MODULES = {
     "src/agentbus_codex_wake_client.py": ("client", "client"),
     "src/agentbus_claim_recovery_service.py": ("service", "service"),
     "src/agentbus_message_assurance_service.py": ("service", "service"),
+    "src/agentbus_message_authorization_service.py": ("service", "service"),
     "src/agentbus_presentation_service.py": ("service", "service"),
     "src/agentbus_reply_policy_service.py": ("service", "service"),
     "src/agentbus_request_limits_service.py": ("service", "service"),
