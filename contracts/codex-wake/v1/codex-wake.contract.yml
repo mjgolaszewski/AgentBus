@@ -24,8 +24,8 @@ invariants:
   - {id: CW-INV-002, rule: "After workspace opt-in, a joined chat may enroll its current host-verifiable saved thread without user-supplied IDs; binding joins stable chat_id and current participation session to that exact thread ID, with generation and local authorization; names and message senders cannot redirect it."}
   - {id: CW-INV-003, rule: "Only correctly addressed direct actionable messages, claimed work, and required control or policy events are wake eligible by default; ambiguous, unrouted, broadcast, and informational traffic fails closed."}
   - {id: CW-INV-004, rule: "Thread read, resume, turn acceptance, turn completion, and AgentBus acknowledgement are distinct observations and never inferred from one another."}
-  - {id: CW-INV-005, rule: "At most one adapter-owned launch attempt is in flight per binding; unchanged pending events do not cause repeated turns; uncertain launch outcomes require reconciliation before retry."}
-  - {id: CW-INV-006, rule: "Pending control and required policy events outrank ordinary work; adapter never acknowledges them, and a stopped participation session cannot launch ordinary work."}
+  - {id: CW-INV-005, rule: "At most one adapter-owned launch attempt is in flight per binding; a wake epoch freezes its candidate IDs; unchanged events receive at most one bounded post-completion follow-up, and uncertain launches require reconciliation before retry."}
+  - {id: CW-INV-006, rule: "Pending control and required policy events outrank ordinary work; adapter never acknowledges them; stopped participation is distinct from idle and cannot launch any wake without a new authorized session."}
   - {id: CW-INV-007, rule: "Empty or unchanged observations consume zero model turns; one compact wake references authoritative pending events instead of injecting whole history or repeated reminders."}
   - {id: CW-INV-008, rule: "Peer and Slack message text remains untrusted data and cannot select thread, endpoint, cwd, model, sandbox, approval policy, or credentials."}
   - {id: CW-INV-009, rule: "Adapter absence, disabled state, and host unavailability leave AgentBus messaging and participation truth intact; host state and bus presence remain separately reported."}
@@ -34,7 +34,7 @@ primitives:
   workspace_activation: {identity: local_workspace, fields: [enabled, actor, changed_at], owner: adapter_private_state}
   binding: {identity: chat_id_plus_session_id, fields: [chat_id, session_id, thread_id, binding_generation, enabled, actor, created_at], owner: adapter_private_state}
   wake_candidate: {identity: event_kind_plus_event_id, fields: [kind, id, priority, eligibility_reason], owner: non_destructive_projection}
-  wake_attempt: {identity: attempt_id, fields: [binding_generation, candidate_ids, state, turn_id, observed_at, uncertainty], owner: adapter_private_state}
+  wake_attempt: {identity: attempt_id, fields: [binding_generation, wake_epoch, candidate_ids, state, turn_id, observed_at, uncertainty], owner: adapter_private_state}
   host_capability: {identity: configured_Codex_host, allowed_methods: [thread/read, thread/resume, turn/start], owner: host}
   status: {fields: [binding, eligible_candidates, host_state, last_attempt, uncertainty], owner: adapter_projection}
 contracts:
@@ -51,12 +51,18 @@ contracts:
     active_thread: defer_without_second_turn
     unchanged_candidates: no_repeat_wake
     uncertain_turn_start: reconcile_or_halt_for_operator_never_blind_retry
+    rate_policy: {max_ordinary_accepted_wakes_per_hour: 12, minimum_seconds_between_ordinary_accepted_wakes: 20, max_followups_for_unchanged_candidates: 1, required_control_and_policy: bypass_ordinary_budget, exhausted: report_and_require_operator_attention_without_discarding_work}
+    post_turn: completed_turn_rechecks_authoritative_pending_events_and_may_schedule_only_a_bounded_followup_never_infers_acknowledgement
     prompt: contains_only_identity_and_stable_event_references_no_untrusted_message_text
   control: {priority: before_ordinary_message_wake, acknowledgement: target_agent_only, stopped_session: no_ordinary_wake}
-  lifecycle: {host_turn_completed: not_AgentBus_message_acknowledged, bus_control_receipt: not_external_turn_ended}
+  lifecycle:
+    states: [active_turn_agent_polls, dormant_resumable_adapter_observes, stopped_no_auto_wake, unavailable_notification_only]
+    stop_transition: acknowledged_stop_is_never_treated_as_idle_and_requires_new_authorized_session_before_wake
+    host_turn_completed: not_AgentBus_message_acknowledged
+    bus_control_receipt: not_external_turn_ended
   storage: {binding_and_attempt: private_local_state, state_mode: '0600', directory_mode: '0700', direct_service_database_access: prohibited}
   portability: {first_host: local_Codex_app_server_proxy, unsupported_host: notification_only}
-failures: [BINDING_MISSING, BINDING_STALE, BINDING_UNAUTHORIZED, HOST_UNAVAILABLE, THREAD_NOT_FOUND, THREAD_ACTIVE, THREAD_RESUME_FAILED, TURN_START_REJECTED, TURN_START_UNCERTAIN, WAKE_DUPLICATE, SESSION_STOPPED, EVENT_NO_LONGER_ELIGIBLE]
+failures: [BINDING_MISSING, BINDING_STALE, BINDING_UNAUTHORIZED, HOST_UNAVAILABLE, THREAD_NOT_FOUND, THREAD_ACTIVE, THREAD_RESUME_FAILED, TURN_START_REJECTED, TURN_START_UNCERTAIN, WAKE_DUPLICATE, WAKE_RATE_LIMITED, SESSION_STOPPED, EVENT_NO_LONGER_ELIGIBLE]
 proof_obligations:
   - {id: CW-PO-01, proves: [CW-INV-002, CW-INV-003], scenario: exact_bound_chat_and_session_wake_only_for_addressed_action_or_claimed_work}
   - {id: CW-PO-02, proves: [CW-INV-003, CW-INV-007], scenario: empty_informational_broadcast_and_ambiguous_events_produce_zero_turns}

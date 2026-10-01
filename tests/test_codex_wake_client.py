@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -183,3 +184,39 @@ def test_other_host_writer_defers_without_a_launch_attempt(setup):
     assert result["status"] == "thread_owned_by_host"
     assert wake.status(values, identity)["last_attempt"] is None
     assert not host.prompts
+
+
+def test_completed_turn_gets_one_bounded_followup_for_unacknowledged_work(setup):
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, "thread-one", lambda: host)
+    wake.set_enabled(values, identity, True)
+    put(path, profile, message(1))
+    first = wake.run_once(values, identity, live=True, host_factory=lambda: host)
+    assert first["wake_epoch"] == 1
+    state_path = wake._state_path(values, profile["chat_id"])
+    state = wake._load(state_path)
+    state["wake_history"] = [(datetime.now(timezone.utc) - timedelta(seconds=21)).isoformat()]
+    wake._save(state_path, state)
+    host.found = ("turn-one", "completed")
+    second = wake.run_once(values, identity, live=True, host_factory=lambda: host)
+    assert second["wake_epoch"] == 2
+    assert second["eligible"] == first["eligible"]
+    assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "pending_after_followup"
+    assert len(host.prompts) == 2
+
+
+def test_ordinary_rate_budget_never_blocks_required_control(setup):
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, "thread-one", lambda: host)
+    wake.set_enabled(values, identity, True)
+    put(path, profile, message(1))
+    state_path = wake._state_path(values, profile["chat_id"])
+    state = wake._load(state_path)
+    past = (datetime.now(timezone.utc) - timedelta(seconds=21)).isoformat()
+    state["wake_history"] = [past] * wake.MAX_WAKES_PER_HOUR
+    wake._save(state_path, state)
+    assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "wake_rate_limited"
+    assert not host.prompts
+    put(path, profile, {"kind": "CONTROL", "id": "stop-1", "control": {"kind": "stop_end_turn"}})
+    assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "turn_accepted"
+    assert len(host.prompts) == 1

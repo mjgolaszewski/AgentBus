@@ -35,5 +35,7 @@ def test_codex_wake_contract_is_closed() -> None:
     assert contract["contracts"]["wake"]["dry_run"] == "default"
     assert contract["architecture_constraints"]["activation"] == "workspace_disabled_by_default_and_live_requires_workspace_enablement"
     assert "auto_enrollment" in contract["contracts"]["bind"]
+    assert contract["contracts"]["wake"]["rate_policy"]["max_followups_for_unchanged_candidates"] == 1
+    assert "stopped_no_auto_wake" in contract["contracts"]["lifecycle"]["states"]
     assert contract["contracts"]["wake"]["uncertain_turn_start"] == "reconcile_or_halt_for_operator_never_blind_retry"
     assert contract["contracts"]["storage"]["direct_service_database_access"] == "prohibited"

@@ -175,8 +175,11 @@ acknowledging it. It coalesces work into one short prompt containing stable even
 references, never peer message
 text or a history dump. The resumed chat uses its normal `agentbus poll` and
 acknowledgement commands. Empty checks create no model turn; unchanged pending
-work does not nag the chat again. A lost turn-start response remains uncertain
+work cannot trigger an unbounded chain. A lost turn-start response remains uncertain
 until host history proves what happened, so the adapter will not blindly retry.
+After a completed turn, still-pending work may receive one bounded follow-up;
+ordinary wakes have a minimum interval and hourly budget. Required controls
+and policy changes retain their wake path when that ordinary budget is full.
 
 If another host still owns the thread's writer lock, the worker defers. This can
 include an idle conversation kept loaded by a UI; a saved thread becomes

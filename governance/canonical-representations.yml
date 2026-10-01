@@ -61,6 +61,9 @@ representations:
   - {field: session_id, invariant: exactly matches the current joined participation session}
   - {field: thread_id, invariant: exact saved non-ephemeral Codex host thread}
   - {field: binding_generation, invariant: monotonic on explicit rebind}
+  - {field: wake_epoch, invariant: monotonic coalescing boundary for frozen candidate IDs}
+  - {field: wake_history, invariant: accepted ordinary wakes only with a bounded hourly budget}
+  - {field: same_fingerprint_retries, invariant: at most one completed-turn follow-up for unchanged work}
   permitted_defaults_and_single_application_point: []
   accepted_aliases_and_single_ingress_boundary: []
   persistence_codec_and_envelope:

@@ -42,6 +42,13 @@ class WakeBinding(TypedDict):
     created_at: str
     last_fingerprint: str | None
     last_attempt: dict | None
+    wake_epoch: int
+    wake_history: list[str]
+    same_fingerprint_retries: int
+
+
+MAX_WAKES_PER_HOUR = 12
+MIN_WAKE_INTERVAL_SECONDS = 20
 
 
 def _now() -> str:
@@ -168,6 +175,15 @@ def _load(path: Path) -> WakeBinding:
             not isinstance(state.get("enabled"), bool) or
             "last_attempt" not in state or "last_fingerprint" not in state):
         raise ClientError("Codex wake state has an unsupported schema")
+    # Additive local-state migration preserves bindings made by the first
+    # candidate without resetting their deduplication history.
+    state.setdefault("wake_epoch", 0)
+    state.setdefault("wake_history", [])
+    state.setdefault("same_fingerprint_retries", 0)
+    if (not isinstance(state["wake_epoch"], int) or
+            not isinstance(state["wake_history"], list) or
+            not isinstance(state["same_fingerprint_retries"], int)):
+        raise ClientError("Codex wake state has invalid rate or epoch fields")
     return cast(WakeBinding, state)
 
 
@@ -267,6 +283,7 @@ def bind(values: dict[str, str], identity: str, thread_id: str,
             "binding_generation": (prior["binding_generation"] + 1) if prior else 1,
             "enabled": enabled, "actor": "local-workspace-user" if auto_enable else "local-host-operator", "created_at": _now(),
             "last_fingerprint": None, "last_attempt": None,
+            "wake_epoch": 0, "wake_history": [], "same_fingerprint_retries": 0,
         }
         _save(path, state)
     return {"chat_id": state["chat_id"], "session_id": state["session_id"],
@@ -303,16 +320,43 @@ def _validate_binding(state: WakeBinding, profile: dict, session: dict) -> None:
         raise ClientError("Codex wake binding is stale for this chat/session; bind again")
 
 
+def _rate_result(state: WakeBinding) -> dict | None:
+    now = datetime.now(timezone.utc)
+    recent: list[str] = []
+    for item in state["wake_history"]:
+        try:
+            observed = datetime.fromisoformat(item)
+            age = (now - observed).total_seconds()
+        except (TypeError, ValueError):
+            raise ClientError("Codex wake history is invalid") from None
+        if age < 0:
+            raise ClientError("Codex wake history is in the future")
+        if age < 3600:
+            recent.append(item)
+    state["wake_history"] = recent
+    if len(recent) >= MAX_WAKES_PER_HOUR:
+        return {"status": "wake_rate_limited", "reason": "hourly budget exhausted",
+                "operator_action": "inspect pending work and the chat before re-enabling"}
+    if recent:
+        age = (now - datetime.fromisoformat(recent[-1])).total_seconds()
+        if age < MIN_WAKE_INTERVAL_SECONDS:
+            return {"status": "wake_deferred", "retry_after_seconds": round(MIN_WAKE_INTERVAL_SECONDS - age)}
+    return None
+
+
 def status(values: dict[str, str], identity: str) -> dict:
     profile, session, path = _profile(values, identity, allow_stopped=True)
     with _locked(path):
         state = _load(path)
         _validate_binding(state, profile, session)
+        _rate_result(state)
         refs = [] if session.get("stopped") else eligible_events(identity_path(values, identity).resolve(), profile)
         return {"chat_id": state["chat_id"], "session_id": state["session_id"],
                 "thread_id": state["thread_id"], "enabled": state["enabled"],
                 "workspace_enabled": workspace_status(values)["enabled"],
                 "eligible": refs, "session_stopped": bool(session.get("stopped")),
+                "wake_epoch": state["wake_epoch"],
+                "accepted_wakes_last_hour": len(state["wake_history"]),
                 "last_attempt": state.get("last_attempt")}
 
 
@@ -333,6 +377,7 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
         if not state["enabled"]:
             raise ClientError("Codex wake is disabled; enable it explicitly before --live")
         previous = state.get("last_attempt") or {}
+        reconciled = False
         if previous.get("state") in {"starting", "uncertain"}:
             try:
                 with host_factory() as host:
@@ -345,12 +390,38 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
             previous.update(state="accepted", turn_id=found[0], turn_status=found[1])
             state["last_attempt"] = previous
             state["last_fingerprint"] = previous["fingerprint"]
+            if not previous["candidate_ids"][0].startswith(("CONTROL:", "POLICY_CHANGED:")):
+                state["wake_history"].append(previous["observed_at"])
+            state["same_fingerprint_retries"] = 1 if previous.get("followup") else 0
             _save(path, state)
+            reconciled = True
         if previous.get("state") == "rejected" and previous.get("fingerprint") == fingerprint:
             return {"status": "turn_rejected", "operator_action": "inspect host rejection before retry"}
-        if state.get("last_fingerprint") == fingerprint:
-            return {"status": "already_woken", "eligible": refs,
-                    "turn_id": (state.get("last_attempt") or {}).get("turn_id")}
+        followup = state.get("last_fingerprint") == fingerprint
+        if followup:
+            if reconciled:
+                return {"status": "already_woken", "eligible": refs, "turn_id": previous.get("turn_id")}
+            if state["same_fingerprint_retries"] >= 1:
+                return {"status": "pending_after_followup", "eligible": refs,
+                        "operator_action": "inspect unacknowledged work; no further automatic repeat"}
+            last_attempt = state.get("last_attempt") or {}
+            if last_attempt.get("state") != "accepted":
+                return {"status": "already_woken", "eligible": refs}
+            try:
+                with host_factory() as host:
+                    found = host.find_attempt(state["thread_id"], last_attempt["attempt_id"])
+            except CodexHostError:
+                found = None
+            if found is None or found[1] != "completed":
+                return {"status": "already_woken", "eligible": refs,
+                        "turn_id": last_attempt.get("turn_id")}
+            # Turn completion is only host evidence. The still-pending bus
+            # events merit one bounded follow-up, never an inferred ack.
+        # Required controls and policy revisions retain their safety path even
+        # when ordinary chat traffic has exhausted its autonomous budget.
+        rate = None if refs[0].startswith(("CONTROL:", "POLICY_CHANGED:")) else _rate_result(state)
+        if rate is not None:
+            return rate
         try:
             with host_factory() as host:
                 thread = host.read_thread(state["thread_id"])
@@ -366,9 +437,11 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
                     # when this app-server process reports it as notLoaded.
                     return {"status": "thread_owned_by_host", "eligible": refs}
                 attempt_id = str(uuid.uuid4())
+                state["wake_epoch"] += 1
                 attempt = {"attempt_id": attempt_id, "fingerprint": fingerprint,
                            "candidate_ids": refs, "state": "starting", "observed_at": _now(),
-                           "turn_id": None}
+                           "turn_id": None, "wake_epoch": state["wake_epoch"],
+                           "followup": followup}
                 state["last_attempt"] = attempt
                 _save(path, state)
                 # The marker lets a later host-history read prove a turn started
@@ -395,9 +468,12 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
         attempt.update(state="accepted", turn_id=turn_id, accepted_at=_now())
         state["last_attempt"] = attempt
         state["last_fingerprint"] = fingerprint
+        if not refs[0].startswith(("CONTROL:", "POLICY_CHANGED:")):
+            state["wake_history"].append(str(attempt["observed_at"]))
+        state["same_fingerprint_retries"] = 1 if followup else 0
         _save(path, state)
         return {"status": "turn_accepted", "turn_id": turn_id,
-                "attempt_id": attempt_id, "eligible": refs}
+                "attempt_id": attempt_id, "wake_epoch": state["wake_epoch"], "eligible": refs}
 
 
 def cli_codex_wake(ns: argparse.Namespace, _project: Path, values: dict[str, str]) -> int:

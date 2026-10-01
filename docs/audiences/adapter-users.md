@@ -41,8 +41,11 @@ agentbus codex-wake once --identity REPO:NAME
 The worker starts a turn only for addressed, actionable work or a required
 control or policy change. Its short prompt points to event IDs; the resumed
 chat reads the authoritative events with `agentbus poll`, handles them under
-its existing instructions, and acknowledges them itself. Empty checks and
-unchanged pending work create no new model turns.
+its existing instructions, and acknowledges them itself. Empty checks create
+no model turns.
+If a completed turn leaves the same work pending, the adapter can try one
+bounded follow-up. Ordinary wakes have a minimum interval and hourly budget;
+required controls and policy changes keep priority.
 
 Run `agentbus codex-wake workspace-disable` to stop future live attempts. A
 lost turn-start response stays uncertain until the host can account for it;
