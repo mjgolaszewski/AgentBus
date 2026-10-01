@@ -28,8 +28,8 @@ TEST_GATES = {
     "architecture-cqrs-side": ["tests/test_architecture.py::test_command_and_query_populations_are_closed"],
     "architecture-router-thinness": ["tests/test_architecture.py::test_http_routers_remain_thin_transport_adapters"],
     "architecture-duplication": ["tests/test_architecture.py::test_cross_context_duplication_stays_below_declared_block_size"],
-    "test": ["tests/test_launcher.py", "tests/test_poll_client.py", "tests/test_presentation_client.py", "tests/test_operator_client.py", "tests/test_rename_client.py", "tests/test_codex_wake_contract.py", "tests/test_codex_wake_client.py", "tests/test_codex_rpc_client.py"],
-    "contract-test": ["tests/test_service.py", "tests/test_participation_contract.py", "tests/test_participation_service.py", "tests/test_participation_store.py", "tests/test_control_store.py", "tests/test_rename_store.py", "tests/test_claim_recovery.py"],
+    "test": ["tests/test_launcher.py", "tests/test_poll_client.py", "tests/test_presentation_client.py", "tests/test_operator_client.py", "tests/test_rename_client.py", "tests/test_codex_wake_contract.py", "tests/test_codex_wake_client.py", "tests/test_codex_rpc_client.py", "tests/test_self_service_client.py"],
+    "contract-test": ["tests/test_service.py", "tests/test_participation_contract.py", "tests/test_participation_service.py", "tests/test_participation_store.py", "tests/test_control_store.py", "tests/test_rename_store.py", "tests/test_claim_recovery.py", "tests/test_credential_rotation.py"],
     "python314-compatibility": [
         "tests/test_python_compatibility.py",
         "tests/test_launcher.py",
