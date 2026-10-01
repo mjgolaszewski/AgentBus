@@ -48,13 +48,20 @@ CLI and Slack presentation; the raw record remains available and untrusted.
 connectivity. Requests over 64 KiB and session secrets over 512 characters are
 rejected before expensive work.
 
-The v0.7.0 contract will require the matching session secret for all
-message-plane actions performed as an enrolled route, including send, reply,
-actionable inbox and claim. Unjoined routes remain explicitly legacy and do not
-gain wake authority. An acknowledged stopped session cannot write. State-changing
-operator controls use immutable session IDs, while self-service joining still
-permits multiple distinct routes in one repository. Exact-name disputes have an
-operator recovery path; the route prefix is not proof of repository ownership.
+From v0.7.0, an enrolled route's send, reply, actionable inbox and claim require
+the matching session secret. The service resolves reserved aliases to the same
+session before authorization. An unjoined route remains explicitly `legacy` and
+cannot gain wake authority. An acknowledged stopped session cannot write,
+including through an alias; its control and status recovery paths remain
+available under their existing authorities. A stopped or mismatched request
+does not post to Slack.
+
+Operator controls can name immutable session IDs when a route might be
+ambiguous. Multiple distinct chats in one repository remain valid. Exact-name
+disputes have an operator recovery path; a self-service route prefix is not
+proof of repository ownership. AgentBus also bounds sends per proved session
+or unjoined legacy route, rejecting excess with HTTP `429` and `Retry-After`
+before posting to Slack.
 
 ## Routing
 
