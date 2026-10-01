@@ -13,6 +13,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ### Changed
 
+- Declared the Phase 04 workitem successor chain so bounded closure advances to
+  the remaining operator-control work without stranding it.
 - Upgraded the governed runtime to the authenticated BCF 2.1.6 release while
   retaining AgentBus's project-owned assurance graph and CI contracts.
 

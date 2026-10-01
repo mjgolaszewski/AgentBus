@@ -24,6 +24,7 @@ workitems:
   status: IN_PROGRESS
   summary: Deliver worker polling, durable controls, acknowledged stop, rename, and compact views from IU-006 through IU-010
   acceptance:
+  - requires-workitem-closure:P04-P0-01
   - G-CONTROL, G-POLL, G-TOKEN, and G-RECOVERY hold under the contract proof obligations
   - Control priority, retries, restart, and old-route alias safety are proven
   acceptance_evidence:
@@ -34,6 +35,7 @@ workitems:
   status: IN_PROGRESS
   summary: Complete operator projections, optional controls, compatibility, and governed proof from IU-011 through IU-013
   acceptance:
+  - requires-workitem-closure:P04-P0-02
   - G-COMPAT and G-GOVERNANCE hold under the contract proof obligations
   - Exact final candidate passes the canonical BCF prospective train
   acceptance_evidence:
