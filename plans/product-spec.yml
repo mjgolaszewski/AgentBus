@@ -12,10 +12,10 @@ product:
   positioning: "Slack-backed coordination transport and durable inbox for coding-agent chats"
   target_users: ["coding agents and operators coordinating through Slack"]
   non_goals:
-    - "executing or orchestrating coding agents"
+    - "AgentBus core executing or orchestrating coding agents; an optional host-owned adapter may start an explicitly bound Codex thread"
     - "using persona labels as authentication or authorization"
     - "providing offline Slack history, exactly-once Slack delivery, or a general message broker"
-    - "executing or scheduling coding agents or claiming external turn completion from a bus acknowledgement"
+    - "AgentBus core executing or scheduling coding agents or claiming external turn completion from a bus acknowledgement"
 constraints:
   operating_constraints:
     - "one Socket Mode receiver per Slack application"
@@ -27,14 +27,14 @@ constraints:
     - "operator controls require authority separate from ordinary agent send authority"
   known_external_dependencies: ["Slack Web API and Socket Mode", "SQLite", "GitHub Actions hosted runners", "Docker for container release evidence"]
 architecture:
-  backend: "flat client and service contexts with closed CLI and HTTP operation populations"
+  backend: "flat client and service contexts with closed CLI and HTTP operation populations; optional host-owned Codex wake adapter"
   frontend: "not applicable; the product is a CLI and HTTP service"
   data: "SQLite durable inbox plus local JSON consumer profiles"
 execution_phases:
   - {phase_id: P01, build_block: "existing_repo_adoption", objective: "forward-port preserved AgentBus assurance into BCF 2.1 Standard governance", release_train: release_1}
   - {phase_id: P02, build_block: "assurance_topology_patch", objective: "release 0.3.1 with one truthful BCF assurance path and restored Python 3.14 proof", release_train: release_2}
   - {phase_id: P03, build_block: "transport_and_portability_hardening", objective: "authenticate Slack ingress and harden portability, retention guidance, test ergonomics, and bounded inbox reads", release_train: release_3}
-  - {phase_id: P04, build_block: "operator_participation_plane", objective: "derive and deliver Issue #6 participation, operator controls, policy, rename, and compact polling from contracts/participation/v1/participation.contract.yml", release_train: release_4}
+  - {phase_id: P04, build_block: "operator_participation_plane", objective: "derive and deliver Issue #6 participation plus optional Issue #8 Codex wake adapter from their versioned contracts", release_train: release_4}
 acceptance:
   release_gate: make release-check
   evidence_location: phases/

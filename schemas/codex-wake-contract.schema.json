@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["document", "scope", "architecture_constraints", "invariants", "primitives", "contracts", "failures", "proof_obligations", "implementation_order", "acceptance_gates"],
+  "properties": {
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id", "version", "status", "path", "source", "authority"],
+      "properties": {
+        "kind": {"const": "agentbus_codex_wake_contract"},
+        "id": {"const": "agentbus-codex-wake-v1"},
+        "version": {"type": "string", "pattern": "^1\\.[0-9]+\\.[0-9]+$"},
+        "status": {"enum": ["proposed", "active", "superseded"]},
+        "path": {"const": "contracts/codex-wake/v1/codex-wake.contract.yml"},
+        "source": {"const": "https://github.com/mjgolaszewski/AgentBus/issues/8"},
+        "authority": {"const": "normative_for_optional_codex_adapter"}
+      }
+    },
+    "scope": {"type": "object", "required": ["purpose", "deployment", "non_goals", "compatibility"]},
+    "architecture_constraints": {"type": "object", "required": ["bus_owner", "adapter_owner", "host_owner", "source", "authority", "activation", "governance"]},
+    "invariants": {"type": "array", "minItems": 10, "items": {"type": "object", "additionalProperties": false, "required": ["id", "rule"], "properties": {"id": {"type": "string", "pattern": "^CW-INV-[0-9]{3}$"}, "rule": {"type": "string", "minLength": 20}}}},
+    "primitives": {"type": "object", "required": ["binding", "wake_candidate", "wake_attempt", "host_capability", "status"]},
+    "contracts": {"type": "object", "required": ["bind", "eligibility", "wake", "control", "lifecycle", "storage", "portability"]},
+    "failures": {"type": "array", "uniqueItems": true, "minItems": 10, "items": {"type": "string", "pattern": "^[A-Z][A-Z0-9_]+$"}},
+    "proof_obligations": {"type": "array", "minItems": 7, "items": {"type": "object", "additionalProperties": false, "required": ["id", "proves", "scenario"], "properties": {"id": {"type": "string", "pattern": "^CW-PO-[0-9]{2}$"}, "proves": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^CW-INV-[0-9]{3}$"}}, "scenario": {"type": "string", "minLength": 10}}}},
+    "implementation_order": {"type": "array", "minItems": 7, "items": {"type": "object", "additionalProperties": false, "required": ["id", "unit", "depends_on"], "properties": {"id": {"type": "string", "pattern": "^CW-IU-[0-9]{3}$"}, "unit": {"type": "string", "minLength": 5}, "depends_on": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^CW-IU-[0-9]{3}$"}}}}},
+    "acceptance_gates": {"type": "object", "minProperties": 8}
+  }
+}

@@ -41,3 +41,15 @@ workitems:
   acceptance_evidence:
   - test
   - contract-test
+- id: P04-P1-04
+  priority: P1
+  status: IN_PROGRESS
+  summary: Deliver optional Issue #8 Codex host wake adapter from the versioned contract without changing AgentBus core authority
+  acceptance:
+  - Exact chat/session/thread binding and dry-run eligibility fail closed for ambiguous or informational traffic
+  - Live wake requires explicit opt-in and host proof; duplicate or uncertain launches cannot blindly retry
+  - README hero and operator instructions explain local host boundary, token efficiency, and recovery
+  - New tests and source are owned by the canonical BCF client claim and exact-tree prospective train
+  acceptance_evidence:
+  - test
+  - contract-test

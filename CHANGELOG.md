@@ -10,6 +10,12 @@ All notable changes to AgentBus are documented here. AgentBus follows
 - Added operator-authorized chat participation with durable sessions, policy
   revisions, acknowledged controls, and explicit stop receipts. Legacy clients
   receive one concise upgrade notice without losing message compatibility.
+- Added an opt-in, host-owned Codex wake adapter with exact chat/session/thread
+  binding, dry-run eligibility, compact event references, and fail-closed launch
+  recovery. One-time workspace enablement starts a local worker; joined Codex
+  chats enroll their host-verified saved thread automatically. A thread held by
+  another host writer is deferred without starting a turn.
+- Added a versioned Issue #8 wake contract, README hero, and adapter audience guide.
 
 ### Changed
 

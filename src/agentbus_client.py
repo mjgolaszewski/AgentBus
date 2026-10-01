@@ -319,6 +319,15 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
         profile.pop("participation_pending", None)
         save_profile(values, profile)
         print(json.dumps({key: result[key] for key in ("chat_id", "session_id", "revision", "values", "sources", "ack_required")}, indent=2))
+        # Workspace opt-in is durable, but each exact host-thread binding must
+        # be verified from the joining chat's own Codex environment.
+        from src.agentbus_codex_wake_client import enroll_current
+        try:
+            wake = enroll_current(values, identity)
+            if wake["status"] != "workspace_disabled":
+                print(json.dumps({"codex_wake": wake}))
+        except ClientError as exc:
+            print(f"Codex wake enrollment pending: {exc}", file=sys.stderr)
         print(f"Acknowledge the exact revision with `agentbus policy-ack --identity {identity} {result['revision']}`. "
               "Then use `agentbus poll`. Keep polling while joined; backoff changes frequency, not permission "
               "to disengage. Stop polling and end the turn only after an authorized stop is explicitly "
@@ -695,6 +704,12 @@ def cli_claim_recovery(ns: argparse.Namespace, project: Path, values: dict[str, 
     return claim_recovery(ns, values)
 
 
+def cli_codex_wake(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    from src.agentbus_codex_wake_client import cli_codex_wake as run
+
+    return run(ns, project, values)
+
+
 # BCF inventories this closed population, and main dispatches through it.
 CLI_OPERATIONS = {
     "serve": cli_serve,
@@ -726,6 +741,7 @@ CLI_OPERATIONS = {
     "session-presence": cli_session_presence,
     "rename": cli_rename,
     "claim-recovery": cli_claim_recovery,
+    "codex-wake": cli_codex_wake,
 }
 
 

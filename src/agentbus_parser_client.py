@@ -122,6 +122,24 @@ def build_parser() -> argparse.ArgumentParser:
     recovery.add_argument("--cursor", type=int, required=True)
     recovery.add_argument("--to")
     recovery.add_argument("--reason", required=True)
+    wake = commands.add_parser("codex-wake", help="Optional host-owned Codex wake adapter")
+    wake_commands = wake.add_subparsers(dest="wake_command", required=True)
+    for name in ("workspace-enable", "workspace-disable", "workspace-status"):
+        wake_commands.add_parser(name)
+    wake_commands.add_parser("enroll-current", help="Bind this joined chat to its verified current Codex thread").add_argument("--identity")
+    wake_all = wake_commands.add_parser("watch-all", help="Supervise every enrolled chat in this enabled workspace")
+    wake_all.add_argument("--interval", type=float, default=2.0)
+    wake_bind = wake_commands.add_parser("bind", help="Bind this joined chat to a saved Codex thread (disabled)")
+    wake_bind.add_argument("--identity")
+    wake_bind.add_argument("--thread", required=True)
+    for name in ("enable", "disable", "status"):
+        wake_commands.add_parser(name).add_argument("--identity")
+    for name in ("once", "watch"):
+        action = wake_commands.add_parser(name)
+        action.add_argument("--identity")
+        action.add_argument("--live", action="store_true", help="Permit a new Codex turn on an enabled binding")
+        if name == "watch":
+            action.add_argument("--interval", type=float, default=2.0)
     return parser
 
 

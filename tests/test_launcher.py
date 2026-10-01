@@ -460,6 +460,7 @@ def test_public_cli_operation_inventory_matches_parser_surface(launcher):
         "rename",
         "claim-recovery",
         "control-issue",
+        "codex-wake",
     }
     assert all(callable(operation) for operation in launcher.CLI_OPERATIONS.values())
     command_action = next(action for action in build_parser()._actions
@@ -468,6 +469,8 @@ def test_public_cli_operation_inventory_matches_parser_surface(launcher):
 
 
 def test_join_retries_with_same_session_secret_and_keeps_legacy_uuid(launcher, tmp_path, monkeypatch, capsys):
+    from src import agentbus_codex_wake_client as wake
+
     state = tmp_path / "profiles"
     state.mkdir()
     identity = "agentbus:old"
@@ -493,6 +496,8 @@ def test_join_retries_with_same_session_secret_and_keeps_legacy_uuid(launcher, t
                 "values": {}, "sources": {}, "ack_required": True}
 
     monkeypatch.setattr(launcher, "api", fake_api)
+    enrolled = []
+    monkeypatch.setattr(wake, "enroll_current", lambda _values, selected: enrolled.append(selected) or {"status": "bound"})
     assert launcher.main(["join", "--identity", identity, "--handoff-file", str(handoff)]) == 1
     pending = json.loads((state / f"{identity}.json").read_text())["participation_pending"]
     assert launcher.main(["join", "--identity", identity]) == 0
@@ -500,6 +505,7 @@ def test_join_retries_with_same_session_secret_and_keeps_legacy_uuid(launcher, t
     assert attempts[0]["session_secret"] == attempts[1]["session_secret"] == pending["session_secret"]
     assert committed["chat_id"] == chat_id and committed["participation"]["session_id"] == "session-1"
     assert "participation_pending" not in committed
+    assert enrolled == [identity]
     capsys.readouterr()
 
 

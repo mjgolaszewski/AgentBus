@@ -11,6 +11,7 @@ enforcement:
   - agentbus_service_state
   - agentbus_message_protocol
   - agentbus_routing
+  - agentbus_host_adapter
   - ci_graph_compilation
   - evidence_receipt_admission
   - evidence_session_identity
@@ -19,6 +20,7 @@ enforcement:
   - agentbus.inbox-info.v1
   - agentbus.message-claim.v1
   - agentbus.message-envelope.v1
+  - agentbus.codex-wake-binding.v1
   - governance.ci-graph-compilation.v1
   - governance.evidence-receipt-admission.v1
   - governance.evidence-session.v1
@@ -44,3 +46,55 @@ representations:
 - {semantic_id: agentbus.durable-message.v1, family: agentbus_service_state, schema_version: 1, lifecycle: enforced, finding_ids: [], canonical_type: {language: python, symbol: 'src/agentbus_service.py::Message'}, authoritative_owner: {symbol: 'src/agentbus_service.py::MessageStore._message', owner_kind: constructor}, authorized_constructors_and_factories: ['src/agentbus_service.py::MessageStore._message', 'src/agentbus_service.py::MessageStore.append'], authorized_pure_delegates: [], hostile_boundary_decoder: {symbol: 'src/agentbus_service.py::MessageStore._message', trust_boundary: authenticated local HTTP or untrusted Slack event ingress}, field_invariants: [{field: cursor, invariant: monotonic SQLite-local message identity}, {field: slack_ts, invariant: unique external Slack message identity}, {field: audience, invariant: stored explicitly for indexed bounded routing queries}], permitted_defaults_and_single_application_point: [], accepted_aliases_and_single_ingress_boundary: [], persistence_codec_and_envelope: {applicability: required, codec_symbol: 'src/agentbus_service.py::MessageStore.append', semantic_id: agentbus.durable-message.v1, schema_version: 1, exact_byte_format: canonical JSON fields stored in SQLite and transported in protocol 2 envelopes, integrity_algorithm: Pydantic validation plus SQLite uniqueness and transaction constraints, identity_bindings: [channel, slack_ts, cursor], migration_dispatch: agentbus envelope protocol field}, protocol_translations: [], intentional_projections: [], declared_consumer_layers_and_sinks: {read: ['src/agentbus_service.py::MessageStore._message', 'src/agentbus_service.py::MessageStore.append'], authorization: [], persistence: ['src/agentbus_service.py::MessageStore.append'], cache: [], queue: [], network: [], api: ['src/agentbus_service.py::MessageStore._message'], browser: []}, generated_source_authority: {authoritative_roots: [src/agentbus_service.py], generated_mirrors: [], generator: project-authored AgentBus source, parity_proof: semantic ownership and contract-test gates}, migration_policy: {source_versions: [], destination_version: 1, owner: 'src/agentbus_service.py::MessageStore._message', runtime_exclusion: consumer state remains outside repository governance artifacts, removal_condition: reviewed versioned successor with compatibility tests}, narrow_suppressions: []}
 - {semantic_id: agentbus.message-claim.v1, family: agentbus_routing, schema_version: 1, lifecycle: enforced, finding_ids: [], canonical_type: {language: python, symbol: 'src/agentbus_service.py::Claim'}, authoritative_owner: {symbol: 'src/agentbus_service.py::MessageStore.claim', owner_kind: constructor}, authorized_constructors_and_factories: ['src/agentbus_service.py::MessageStore.claim'], authorized_pure_delegates: [], hostile_boundary_decoder: {symbol: 'src/agentbus_service.py::api_claim', trust_boundary: authenticated local HTTP or untrusted Slack event ingress}, field_invariants: [{field: identity, invariant: first atomic claimant owns an unrouted message}], permitted_defaults_and_single_application_point: [], accepted_aliases_and_single_ingress_boundary: [], persistence_codec_and_envelope: {applicability: required, codec_symbol: 'src/agentbus_service.py::MessageStore.claim', semantic_id: agentbus.message-claim.v1, schema_version: 1, exact_byte_format: canonical JSON fields stored in SQLite and transported in protocol 2 envelopes, integrity_algorithm: Pydantic validation plus SQLite uniqueness and transaction constraints, identity_bindings: [cursor, identity], migration_dispatch: agentbus envelope protocol field}, protocol_translations: [], intentional_projections: [], declared_consumer_layers_and_sinks: {read: ['src/agentbus_service.py::MessageStore.claim'], authorization: ['src/agentbus_service.py::MessageStore.claim'], persistence: ['src/agentbus_service.py::MessageStore.claim'], cache: [], queue: [], network: [], api: ['src/agentbus_service.py::MessageStore.claim'], browser: []}, generated_source_authority: {authoritative_roots: [src/agentbus_service.py], generated_mirrors: [], generator: project-authored AgentBus source, parity_proof: semantic ownership and contract-test gates}, migration_policy: {source_versions: [], destination_version: 1, owner: 'src/agentbus_service.py::MessageStore.claim', runtime_exclusion: consumer state remains outside repository governance artifacts, removal_condition: reviewed versioned successor with compatibility tests}, narrow_suppressions: []}
 - {semantic_id: agentbus.inbox-info.v1, family: agentbus_service_state, schema_version: 1, lifecycle: enforced, finding_ids: [], canonical_type: {language: python, symbol: 'src/agentbus_service.py::Info'}, authoritative_owner: {symbol: 'src/agentbus_service.py::MessageStore.info', owner_kind: constructor}, authorized_constructors_and_factories: ['src/agentbus_service.py::MessageStore.info'], authorized_pure_delegates: [], hostile_boundary_decoder: {symbol: 'src/agentbus_service.py::api_info', trust_boundary: authenticated local HTTP or untrusted Slack event ingress}, field_invariants: [{field: inbox_id, invariant: stable per SQLite inbox}, {field: high_water_cursor, invariant: never exceeds durable local cursor}], permitted_defaults_and_single_application_point: [], accepted_aliases_and_single_ingress_boundary: [], persistence_codec_and_envelope: {applicability: required, codec_symbol: 'src/agentbus_service.py::MessageStore.info', semantic_id: agentbus.inbox-info.v1, schema_version: 1, exact_byte_format: canonical JSON fields stored in SQLite and transported in protocol 2 envelopes, integrity_algorithm: Pydantic validation plus SQLite uniqueness and transaction constraints, identity_bindings: [inbox_id, channel, high_water_cursor], migration_dispatch: agentbus envelope protocol field}, protocol_translations: [], intentional_projections: [], declared_consumer_layers_and_sinks: {read: ['src/agentbus_service.py::MessageStore.info'], authorization: [], persistence: ['src/agentbus_service.py::MessageStore.info'], cache: [], queue: [], network: [], api: ['src/agentbus_service.py::MessageStore.info'], browser: []}, generated_source_authority: {authoritative_roots: [src/agentbus_service.py], generated_mirrors: [], generator: project-authored AgentBus source, parity_proof: semantic ownership and contract-test gates}, migration_policy: {source_versions: [], destination_version: 1, owner: 'src/agentbus_service.py::MessageStore.info', runtime_exclusion: consumer state remains outside repository governance artifacts, removal_condition: reviewed versioned successor with compatibility tests}, narrow_suppressions: []}
+- semantic_id: agentbus.codex-wake-binding.v1
+  family: agentbus_host_adapter
+  schema_version: 1
+  lifecycle: enforced
+  finding_ids: []
+  canonical_type: {language: python, symbol: 'src/agentbus_codex_wake_client.py::WakeBinding'}
+  authoritative_owner: {symbol: 'src/agentbus_codex_wake_client.py::_load', owner_kind: hostile_decoder}
+  authorized_constructors_and_factories: ['src/agentbus_codex_wake_client.py::bind', 'src/agentbus_codex_wake_client.py::_load']
+  authorized_pure_delegates: ['src/agentbus_codex_wake_client.py::_validate_binding']
+  hostile_boundary_decoder: {symbol: 'src/agentbus_codex_wake_client.py::_load', trust_boundary: private_local_binding_file_may_be_stale_or_corrupt}
+  field_invariants:
+  - {field: chat_id, invariant: stable UUID exactly matches the current AgentBus profile}
+  - {field: session_id, invariant: exactly matches the current joined participation session}
+  - {field: thread_id, invariant: exact saved non-ephemeral Codex host thread}
+  - {field: binding_generation, invariant: monotonic on explicit rebind}
+  - {field: wake_epoch, invariant: monotonic coalescing boundary for frozen candidate IDs}
+  - {field: wake_history, invariant: accepted ordinary wakes only with a bounded hourly budget}
+  - {field: same_fingerprint_retries, invariant: at most one completed-turn follow-up for unchanged work}
+  permitted_defaults_and_single_application_point: []
+  accepted_aliases_and_single_ingress_boundary: []
+  persistence_codec_and_envelope:
+    applicability: required
+    codec_symbol: 'src/agentbus_codex_wake_client.py::_save'
+    semantic_id: agentbus.codex-wake-binding.v1
+    schema_version: 1
+    exact_byte_format: UTF-8 JSON private file written atomically
+    integrity_algorithm: schema-version and exact chat/session validation with private file permissions
+    identity_bindings: [chat_id, session_id, thread_id, binding_generation]
+    migration_dispatch: schema_version
+  protocol_translations: []
+  intentional_projections: []
+  declared_consumer_layers_and_sinks:
+    read: ['src/agentbus_codex_wake_client.py::status']
+    authorization: ['src/agentbus_codex_wake_client.py::_validate_binding']
+    persistence: ['src/agentbus_codex_wake_client.py::_save']
+    cache: []
+    queue: ['src/agentbus_codex_wake_client.py::run_once']
+    network: ['src/agentbus_codex_rpc_client.py::CodexAppServer.start_turn']
+    api: []
+    browser: []
+  generated_source_authority:
+    authoritative_roots: [src/agentbus_codex_wake_client.py]
+    generated_mirrors: []
+    generator: project-authored AgentBus adapter source
+    parity_proof: contract and client behavior gates
+  migration_policy:
+    source_versions: []
+    destination_version: 1
+    owner: 'src/agentbus_codex_wake_client.py::_load'
+    runtime_exclusion: adapter disabled and absent leaves AgentBus core unchanged
+    removal_condition: reviewed versioned successor with binding migration tests
+  narrow_suppressions: []

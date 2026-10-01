@@ -63,6 +63,7 @@ operator_requirements_choices_disambiguations:
 active_delivery_priorities:
   current_tranche:
     - "operator_participation_plane"
+    - "optional_codex_host_wake_adapter"
 release_trains:
   release_1:
     target_version: "0.3.0"
@@ -94,6 +95,7 @@ release_trains:
       - versioned_policy_and_operator_controls
       - stable_identity_and_rename
       - compact_agent_surface
+      - optional_codex_host_wake
 release_readiness:
   computed_by: bcf truth
   requirements_source: governance/evidence-policy.yml

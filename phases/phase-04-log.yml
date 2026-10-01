@@ -27,6 +27,9 @@ workitems:
 - id: P04-P0-03
   status: IN_PROGRESS
   summary: Operator projections, optional controls, compatibility, and BCF proof
+- id: P04-P1-04
+  status: IN_PROGRESS
+  summary: Optional host-owned Codex wake adapter from Issue #8
 execution_evidence:
   planned_commands:
   - make governance-validate
@@ -57,6 +60,8 @@ execution_evidence:
   - nudge and checkpoint requests now share durable control targeting and receipts; checkpoint reports are structured, and only a stop-kind receipt ends participation
   - full Python 3.14 suite passed (135 tests); lint, typecheck, governance validator, and whitespace checks passed on the Issue 6 implementation candidate
   - P04-P0-01 identity, session, policy, operator-authority, and presence behavior passed the BCF 2.1.6 prospective train on 7fd23cf70d2bd00b08d418ba9643a5c0255cceee and required protected PR certification before merge
+  - Issue #8 Codex wake remains disabled by default and separate from the AgentBus core authority plane
+  - Codex wake contract, inert host-protocol fake, private binding state, non-destructive eligibility, and compact wake prompt have targeted behavior proof
 closeout_requirements:
   claims:
     workitems_closed:
