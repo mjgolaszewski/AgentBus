@@ -5,11 +5,17 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Added
+
+- Added operator-authorized chat participation with durable sessions, policy
+  revisions, acknowledged controls, and explicit stop receipts. Legacy clients
+  receive one concise upgrade notice without losing message compatibility.
+
 ### Documentation
 
 - Defined the versioned Issue #6 participation and operator-control contract,
   including session authority, polling, acknowledged stop, rename continuity,
-  and adversarial proof obligations. Product behavior is not changed yet.
+  and adversarial proof obligations.
 
 ## [0.3.2] - 2026-09-29
 
