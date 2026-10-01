@@ -370,7 +370,7 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
             if time.monotonic() - last_ensure >= 5:
                 ensure_worker(path, values)
                 last_ensure = time.monotonic()
-            event = peek_event(path, profile)
+            event = peek_event(path, profile, quiet=bool(profile.get("quiet_mode", False)))
             if event is not None:
                 budget = session["policy_values"].get("presentation_budget_bytes")
                 rendered = render_event(event, json_mode=ns.json, budget_bytes=budget)
@@ -656,6 +656,16 @@ def cli_poll(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> i
     return _execute_command(ns, project, values)
 
 
+def cli_quiet(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    identity = resolve_identity(ns.identity)
+    profile, _ = checked_profile(values, identity)
+    if ns.mode != "status":
+        profile["quiet_mode"] = ns.mode == "on"
+        save_profile(values, profile)
+    print("QUIET " + ("ON" if profile.get("quiet_mode", False) else "OFF"))
+    return 0
+
+
 def cli_policy_set(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
     from src.agentbus_operator_client import policy_set
 
@@ -733,6 +743,7 @@ CLI_OPERATIONS = {
     "check-in": cli_check_in,
     "ack-control": cli_ack_control,
     "poll": cli_poll,
+    "quiet": cli_quiet,
     "policy-set": cli_policy_set,
     "policy-show": cli_policy_show,
     "control-stop": cli_control_stop,

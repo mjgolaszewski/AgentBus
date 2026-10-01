@@ -109,3 +109,26 @@ def test_claim_recovery_cli_can_reassign_or_release(monkeypatch, capsys):
                                            "reason": "release"}, "operator-only-capability"),
     ]
     assert len(capsys.readouterr().out.split('"cursor"')) == 3
+
+
+def test_temporary_override_cli_and_session_policy_explanation(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("AGENTBUS_OPERATOR_TOKEN", "operator-only-capability")
+    overlay = tmp_path / "override.json"
+    overlay.write_text(json.dumps({"max_interval_seconds": 120}))
+    calls = []
+    def fake_api(_values, path, payload=None, **kwargs):
+        calls.append((path, payload, kwargs.get("bearer_token")))
+        return {"control_id": "control-1"} if path == "/v1/controls" else {"revision": "r2"}
+    monkeypatch.setattr(operator, "api", fake_api)
+    issue = parse_args(["control-issue", "--kind", "temporary_policy_override",
+                        "--to", "agentbus:one", "--reason", "focus", "--values-file",
+                        str(overlay), "--duration-seconds", "60"])
+    assert operator.control_issue(issue, VALUES) == 0
+    assert calls[0] == ("/v1/controls", {
+        "kind": "temporary_policy_override", "routes": ["agentbus:one"],
+        "all_current": False, "reason": "focus", "values": {"max_interval_seconds": 120},
+        "duration_seconds": 60,
+    }, "operator-only-capability")
+    assert operator.policy_show(parse_args(["policy-show", "--session-id", "session-1"]), VALUES) == 0
+    assert calls[1] == ("/v1/sessions/session-1/policy", None, "operator-only-capability")
+    assert "r2" in capsys.readouterr().out

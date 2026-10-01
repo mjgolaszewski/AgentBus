@@ -455,7 +455,7 @@ def test_public_cli_operation_inventory_matches_parser_surface(launcher):
     assert set(launcher.CLI_OPERATIONS) == {
         "serve", "start", "stop", "status", "autostart", "send", "read",
         "onboard", "persona", "agents", "inbox", "ack", "rebind", "claim", "reply",
-        "issue-handoff", "join", "policy-ack", "check-in", "ack-control", "poll",
+        "issue-handoff", "join", "policy-ack", "check-in", "ack-control", "poll", "quiet",
         "policy-set", "policy-show", "control-stop", "control-status", "session-presence",
         "rename",
         "claim-recovery",
@@ -466,6 +466,21 @@ def test_public_cli_operation_inventory_matches_parser_surface(launcher):
     command_action = next(action for action in build_parser()._actions
                           if isinstance(action, argparse._SubParsersAction))
     assert set(command_action.choices) == set(launcher.CLI_OPERATIONS)
+
+
+def test_quiet_preference_persists_without_changing_participation(launcher, monkeypatch, capsys):
+    from src.agentbus_parser_client import parse_args
+
+    profile = {"identity": "agentbus:one", "participation": {"stopped": False}}
+    saved = []
+    monkeypatch.setattr(launcher, "checked_profile", lambda _values, _identity: (profile, {}))
+    monkeypatch.setattr(launcher, "save_profile", lambda _values, value: saved.append(dict(value)))
+    for mode in ("on", "status", "off"):
+        assert launcher.cli_quiet(parse_args(["quiet", "--identity", "agentbus:one", mode]),
+                                  None, {}) == 0
+    assert [item["quiet_mode"] for item in saved] == [True, False]
+    assert profile["participation"]["stopped"] is False
+    assert capsys.readouterr().out == "QUIET ON\nQUIET ON\nQUIET OFF\n"
 
 
 def test_join_retries_with_same_session_secret_and_keeps_legacy_uuid(launcher, tmp_path, monkeypatch, capsys):

@@ -6,8 +6,9 @@ import json
 import sqlite3
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
+from src.agentbus_participation_service import resolve_policy
 from src.agentbus_participation_store_service import ParticipationStore
 
 
@@ -29,9 +30,16 @@ class ControlStore:
                     kind TEXT NOT NULL,
                     reason TEXT NOT NULL,
                     actor TEXT NOT NULL,
-                    issued_at TEXT NOT NULL
+                    issued_at TEXT NOT NULL,
+                    override_values_json TEXT,
+                    expires_at TEXT
                 )
             """)
+            control_columns = {row["name"] for row in db.execute("PRAGMA table_info(operator_controls)")}
+            if "override_values_json" not in control_columns:
+                db.execute("ALTER TABLE operator_controls ADD COLUMN override_values_json TEXT")
+            if "expires_at" not in control_columns:
+                db.execute("ALTER TABLE operator_controls ADD COLUMN expires_at TEXT")
             db.execute("""
                 CREATE TABLE IF NOT EXISTS control_targets (
                     control_id TEXT NOT NULL REFERENCES operator_controls(control_id),
@@ -55,13 +63,23 @@ class ControlStore:
         return self._issue("stop_end_turn", routes=routes, reason=reason, actor=actor)
 
     def issue_auxiliary(self, *, kind: str, routes: list[str] | None,
-                        reason: str, actor: str) -> tuple[str, list[str]]:
-        if kind not in {"nudge", "checkpoint_request"}:
+                        reason: str, actor: str,
+                        override_values: dict[str, int | float | None] | None = None,
+                        duration_seconds: int | None = None) -> tuple[str, list[str]]:
+        if kind not in {"nudge", "checkpoint_request", "temporary_policy_override"}:
             raise ValueError("unsupported auxiliary control kind")
-        return self._issue(kind, routes=routes, reason=reason, actor=actor)
+        if kind == "temporary_policy_override":
+            if not override_values or isinstance(duration_seconds, bool) or not isinstance(duration_seconds, int) or not 1 <= duration_seconds <= 86400:
+                raise ValueError("temporary override needs policy values and a duration of 1..86400 seconds")
+        elif override_values is not None or duration_seconds is not None:
+            raise ValueError("only temporary policy overrides accept values and duration")
+        return self._issue(kind, routes=routes, reason=reason, actor=actor,
+                           override_values=override_values, duration_seconds=duration_seconds)
 
     def _issue(self, kind: str, *, routes: list[str] | None,
-               reason: str, actor: str) -> tuple[str, list[str]]:
+               reason: str, actor: str,
+               override_values: dict[str, int | float | None] | None = None,
+               duration_seconds: int | None = None) -> tuple[str, list[str]]:
         if not reason.strip() or not actor.strip():
             raise ValueError("stop reason and actor are required")
         if routes is not None and not routes:
@@ -91,14 +109,40 @@ class ControlStore:
                     targets.extend(row["session_id"] for row in rows)
                 targets = sorted(set(targets))
             control_id = str(uuid.uuid4())
+            issued = datetime.now(timezone.utc)
+            expires_at = None
+            if override_values is not None:
+                assert duration_seconds is not None
+                if not targets:
+                    raise ValueError("temporary policy override needs an active target")
+                for session_id in targets:
+                    active = self._db.execute(
+                        "SELECT c.expires_at FROM control_targets AS t JOIN operator_controls AS c USING(control_id) "
+                        "WHERE t.session_id = ? AND c.kind = 'temporary_policy_override'",
+                        (session_id,),
+                    ).fetchall()
+                    if any(datetime.fromisoformat(row["expires_at"]) > issued for row in active):
+                        raise ValueError("target already has an active temporary policy override")
+                    base = self._participation.effective_policy_for_session(session_id, observed_at=issued)
+                    resolve_policy((base.revision, base.values), temporary_revision=(control_id, override_values))
+                expires_at = (issued + timedelta(seconds=duration_seconds)).isoformat()
             self._db.execute(
-                "INSERT INTO operator_controls VALUES (?, ?, ?, ?, ?)",
-                (control_id, kind, reason, actor, _now()),
+                "INSERT INTO operator_controls(control_id, kind, reason, actor, issued_at, override_values_json, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (control_id, kind, reason, actor, issued.isoformat(),
+                 json.dumps(override_values, sort_keys=True) if override_values is not None else None,
+                 expires_at),
             )
             self._db.executemany(
                 "INSERT INTO control_targets(control_id, session_id, state) VALUES (?, ?, 'issued')",
                 [(control_id, session_id) for session_id in targets],
             )
+            if override_values is not None:
+                for session_id in targets:
+                    effective = self._participation.effective_policy_for_session(session_id, observed_at=issued)
+                    self._db.execute(
+                        "UPDATE participation_sessions SET effective_policy_revision = ? WHERE session_id = ?",
+                        (effective.revision, session_id),
+                    )
             return control_id, targets
 
     def deliver(self, session_id: str, session_secret: str) -> list[dict[str, str]]:
@@ -106,7 +150,7 @@ class ControlStore:
         with self._lock, self._db:
             self._participation.authorize_session(session_id, session_secret)
             rows = self._db.execute("""
-                SELECT c.control_id, c.kind, c.reason, t.state
+                SELECT c.control_id, c.kind, c.reason, c.expires_at, t.state
                 FROM control_targets AS t JOIN operator_controls AS c USING(control_id)
                 WHERE t.session_id = ? AND t.state IN ('issued', 'delivered')
                 ORDER BY c.issued_at, c.control_id
@@ -117,7 +161,8 @@ class ControlStore:
                     (_now(), session_id),
                 )
             return [{"control_id": row["control_id"], "kind": row["kind"],
-                     "reason": row["reason"]} for row in rows]
+                     "reason": row["reason"], **({"expires_at": row["expires_at"]}
+                     if row["expires_at"] is not None else {})} for row in rows]
 
     def acknowledge_stop(self, control_id: str, session_id: str, session_secret: str) -> str:
         """Commit target ack, then effect; retries recover a lost response."""
@@ -206,14 +251,16 @@ class ControlStore:
     def status(self, control_id: str) -> list[dict]:
         with self._lock:
             rows = self._db.execute(
-                "SELECT t.*, c.kind, c.reason, c.issued_at FROM control_targets AS t "
+                "SELECT t.*, c.kind, c.reason, c.actor, c.issued_at, c.expires_at FROM control_targets AS t "
                 "JOIN operator_controls AS c USING(control_id) "
                 "WHERE t.control_id = ? ORDER BY t.session_id", (control_id,)
             ).fetchall()
             return [
                 {**{key: row[key] for key in (
-                    "control_id", "session_id", "kind", "reason", "issued_at", "state",
+                    "control_id", "session_id", "kind", "reason", "actor", "issued_at", "state", "expires_at",
                     "delivered_at", "acknowledged_at", "effective_at", "receipt",
-                )}, "report": json.loads(row["report_json"]) if row["report_json"] else None}
+                )}, "override_active": row["expires_at"] is not None and
+                    datetime.fromisoformat(row["expires_at"]) > datetime.now(timezone.utc),
+                 "report": json.loads(row["report_json"]) if row["report_json"] else None}
                 for row in rows
             ]

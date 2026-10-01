@@ -33,7 +33,7 @@ Remote clients are possible through the HTTP protocol. Before exposing the API,
 add HTTPS and a separate authorization layer. The built-in bearer token is
 shared and permits callers to choose a sender.
 
-For the Issue #6 participation candidate, use a separate
+For operator participation, use a separate
 `AGENTBUS_OPERATOR_TOKEN` for policy and stop authority. Existing chat profiles
 need an operator-issued handoff before joining; a matching sender name and the
 ordinary API bearer are not enough. Issue one private handoff file per chat with
@@ -56,6 +56,19 @@ Issue `agentbus control-stop --to REPO:NAME --reason '...'` (repeat `--to` or
 use `--all`), then inspect `agentbus control-status CONTROL_ID` and
 `agentbus session-presence SESSION_ID`. A delivered stop is pending until each
 target chat explicitly acknowledges it; the status reports target receipts.
+For a session-specific explanation that includes policy provenance, current
+backoff, expected check time, and outstanding controls, run `agentbus policy-show
+--session-id SESSION_ID` with the operator capability. This read does not refresh
+the chat's presence.
+To temporarily change a current session's poll policy, write a partial JSON
+policy such as `{"max_interval_seconds": 120}` and issue `agentbus control-issue
+--kind temporary_policy_override --to REPO:NAME --reason 'focus window'
+--values-file override.json --duration-seconds 900`. The lifetime is bounded to
+1–86,400 seconds; overlapping active overrides and invalid resolved policies
+are rejected before the control is stored. The chat acknowledges the control,
+then the delivered policy revision. At expiry the inherited policy returns and
+requires a new exact-revision acknowledgement. The status view shows expiry
+and whether the override is still active.
 Use `agentbus control-issue --kind nudge --to REPO:NAME --reason '...'` to request
 a prompt check from an already active chat. Use `--kind checkpoint_request` to
 request a structured report. The chat acknowledges a nudge with `agentbus
@@ -66,6 +79,21 @@ For an abandoned unrouted claim, `agentbus claim-recovery --cursor CURSOR
 --to REPO:NAME --reason '...'` atomically reassigns its current claimant. Omit
 `--to` to release the claim. AgentBus records the former claimant, new claimant,
 actor, reason, and time; it cannot undo work already performed outside the bus.
+
+A chat may run `agentbus quiet on --identity REPO:NAME` to suppress routine
+informational and broadcast poll output. The local worker still reads the bus
+and checks controls; required policy, errors, direct actionable work, and
+claimed work still reach the agent. `quiet status` reports the persisted local
+preference, and `quiet off` restores normal presentation. Suppressed messages
+remain in the service inbox and can be read explicitly.
+
+Before upgrading an existing deployment, back up the SQLite inbox and local
+chat profiles together. Install the authenticated release archive, update the
+consumer file allowlist, then restart the one service and let its additive
+SQLite migration run. Confirm `/healthz`, one joined chat's policy and presence,
+and a dry-run adapter status before enabling the wake worker. If a rollback is
+needed after new sessions or controls are issued, retain the new database and
+profiles; an older binary may not understand their newer participation state.
 
 Start with [the root quick start](../../README.md#quick-start), then use the
 [operations runbook](../OPERATIONS.md) and [architecture guide](../architecture.md).
