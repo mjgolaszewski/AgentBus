@@ -10,7 +10,7 @@ document:
 workitems:
 - id: P04-P0-01
   priority: P0
-  status: IN_PROGRESS
+  status: DONE
   summary: Establish identity, sessions, policy, operator authority, and truthful presence from IU-001 through IU-005
   acceptance:
   - G-IDENTITY, G-POLICY, and G-AUTHORITY hold under the contract proof obligations

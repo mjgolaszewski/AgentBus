@@ -19,7 +19,7 @@ summary:
   - fresh consumer state uses XDG paths, SQLite remains local to the service, and inbox queries use bounded indexed route or thread candidates
 workitems:
 - id: P04-P0-01
-  status: IN_PROGRESS
+  status: DONE
   summary: Identity, sessions, policy, operator authority, and presence
 - id: P04-P0-02
   status: IN_PROGRESS
@@ -56,6 +56,7 @@ execution_evidence:
   - operator claim recovery now atomically releases or reassigns an unrouted claim and records former/current claimant, actor, reason, and timestamp without claiming to undo external work
   - nudge and checkpoint requests now share durable control targeting and receipts; checkpoint reports are structured, and only a stop-kind receipt ends participation
   - full Python 3.14 suite passed (135 tests); lint, typecheck, governance validator, and whitespace checks passed on the Issue 6 implementation candidate
+  - P04-P0-01 identity, session, policy, operator-authority, and presence behavior passed the BCF 2.1.6 prospective train on 7fd23cf70d2bd00b08d418ba9643a5c0255cceee and required protected PR certification before merge
 closeout_requirements:
   claims:
     workitems_closed:
