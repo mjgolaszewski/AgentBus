@@ -62,7 +62,18 @@ class StopControl(BaseModel):
 
 
 class AuxiliaryControl(StopControl):
-    kind: Literal["nudge", "checkpoint_request"]
+    kind: Literal["nudge", "checkpoint_request", "temporary_policy_override"]
+    values: dict[str, int | float | None] | None = None
+    duration_seconds: int | None = Field(default=None, ge=1, le=86400)
+
+    @model_validator(mode="after")
+    def validate_override(self) -> AuxiliaryControl:
+        if self.kind == "temporary_policy_override":
+            if not self.values or self.duration_seconds is None:
+                raise ValueError("temporary override requires values and duration_seconds")
+        elif self.values is not None or self.duration_seconds is not None:
+            raise ValueError("only temporary policy overrides accept values and duration")
+        return self
 
 
 ReportItem = Annotated[str, Field(min_length=1, max_length=500)]
@@ -123,6 +134,19 @@ def api_policy_effective(request: Request, repo: str, chat_id: str) -> dict:
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from None
     return {"revision": policy.revision, "values": policy.values, "sources": policy.sources}
+
+
+def api_session_policy_explain(request: Request, session_id: str) -> dict:
+    """Operator view joins policy provenance with read-only participation state."""
+    try:
+        policy = request.app.state.store.participation.effective_policy_for_session(session_id)
+        presence = request.app.state.store.participation.presence(session_id)
+    except KeyError:
+        raise HTTPException(404, "Unknown participation session") from None
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from None
+    return {"revision": policy.revision, "values": policy.values,
+            "sources": policy.sources, "presence": presence}
 
 
 def api_session_enroll(request: Request, body: EnrollSession) -> dict:
@@ -210,6 +234,7 @@ def api_control_issue(request: Request, body: AuxiliaryControl) -> dict:
         control_id, targets = request.app.state.store.controls.issue_auxiliary(
             kind=body.kind, routes=None if body.all_current else body.routes,
             reason=body.reason, actor="operator-capability",
+            override_values=body.values, duration_seconds=body.duration_seconds,
         )
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from None

@@ -177,7 +177,7 @@ class ParticipationStore:
                     continue
                 if scope == "chat" and session["chat_id"] != scope_key:
                     continue
-                effective = self.effective_policy(session["repo"], session["chat_id"])
+                effective = self.effective_policy_for_session(session["session_id"])
                 self._db.execute(
                     "UPDATE participation_sessions SET effective_policy_revision = ? WHERE session_id = ?",
                     (effective.revision, session["session_id"]),
@@ -193,6 +193,43 @@ class ParticipationStore:
                 global_revision,
                 self._latest_policy("repo", repo),
                 self._latest_policy("chat", chat_id),
+            )
+
+    def effective_policy_for_session(
+        self, session_id: str, *, observed_at: datetime | None = None,
+    ) -> EffectivePolicy:
+        """Project inherited policy plus an unexpired, session-bound control."""
+        observed = observed_at or datetime.now(timezone.utc)
+        with self._lock:
+            chat = self._db.execute(
+                "SELECT c.repo, c.chat_id FROM participation_sessions AS s "
+                "JOIN chat_identities AS c ON c.chat_id = s.chat_id WHERE s.session_id = ?",
+                (session_id,),
+            ).fetchone()
+            if chat is None:
+                raise KeyError(session_id)
+            global_revision = self._latest_policy("global", "*")
+            if global_revision is None:
+                raise ValueError("global policy must be configured first")
+            control_tables = self._db.execute(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' "
+                "AND name IN ('control_targets', 'operator_controls')"
+            ).fetchone()[0]
+            rows = self._db.execute(
+                "SELECT c.control_id, c.override_values_json, c.expires_at "
+                "FROM control_targets AS t JOIN operator_controls AS c USING(control_id) "
+                "WHERE t.session_id = ? AND c.kind = 'temporary_policy_override' "
+                "ORDER BY c.issued_at, c.control_id",
+                (session_id,),
+            ).fetchall() if control_tables == 2 else []
+            active = [row for row in rows if row["expires_at"] is not None and
+                      datetime.fromisoformat(row["expires_at"]) > observed]
+            if len(active) > 1:
+                raise ValueError("overlapping temporary policy overrides")
+            temporary = (active[0]["control_id"], json.loads(active[0]["override_values_json"])) if active else None
+            return resolve_policy(
+                global_revision, self._latest_policy("repo", chat["repo"]),
+                self._latest_policy("chat", chat["chat_id"]), temporary,
             )
 
     def _latest_policy(self, scope: str, key: str) -> tuple[str, dict[str, int | float | None]] | None:
@@ -271,8 +308,13 @@ class ParticipationStore:
             session = self._authorized_session(session_id, session_secret)
             if session["state"] == "stopped":
                 raise ValueError("stopped session cannot be reactivated")
-            if revision != session["delivered_policy_revision"] or revision != session["effective_policy_revision"]:
+            current_revision = self.effective_policy_for_session(session_id).revision
+            if revision != session["delivered_policy_revision"] or revision != current_revision:
                 raise ValueError("unknown or stale policy revision")
+            self._db.execute(
+                "UPDATE participation_sessions SET effective_policy_revision = ? WHERE session_id = ?",
+                (current_revision, session_id),
+            )
             if session["acknowledged_policy_revision"] == revision:
                 return self._policy_receipt(session_id, revision)
             if session["state"] not in {"joining", "active", "overdue", "stopping"}:
@@ -296,7 +338,7 @@ class ParticipationStore:
             ).fetchone()
             if chat is None:
                 raise RuntimeError("session identity is missing")
-            policy = self.effective_policy(chat["repo"], session["chat_id"])
+            policy = self.effective_policy_for_session(session_id)
             self._db.execute(
                 "UPDATE participation_sessions SET effective_policy_revision = ?, delivered_policy_revision = ? WHERE session_id = ?",
                 (policy.revision, policy.revision, session_id),
@@ -344,7 +386,7 @@ class ParticipationStore:
             """, (session_id,)).fetchone()
             if row is None:
                 raise KeyError(session_id)
-            policy = self.effective_policy(row["repo"], row["chat_id"])
+            policy = self.effective_policy_for_session(session_id, observed_at=observed)
             outstanding = self._db.execute("""
                 SELECT control_id, state FROM control_targets
                 WHERE session_id = ? AND state != 'effective' ORDER BY control_id
@@ -372,7 +414,7 @@ class ParticipationStore:
             "next_expected_check_at": expected.isoformat() if row["state"] != "stopped" else None,
             "overdue_duration_seconds": overdue_seconds if row["state"] != "stopped" else 0.0,
             "overdue_reason": "control check missed" if state == "overdue" else None,
-            "effective_policy_revision": row["effective_policy_revision"],
+            "effective_policy_revision": policy.revision,
             "acknowledged_policy_revision": row["acknowledged_policy_revision"],
             "polling_required": row["state"] != "stopped",
             "outstanding_controls": [dict(item) for item in outstanding],

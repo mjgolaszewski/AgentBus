@@ -93,6 +93,59 @@ def test_actionable_message_priority_is_independent_of_backlog_cursor(tmp_path):
     assert observed == [5, 4, 3, 2, 1]
 
 
+def test_quiet_discards_only_routine_projection_and_keeps_durable_history(tmp_path):
+    path, profile = profile_at(tmp_path)
+    def record(state):
+        for cursor, audience, kind, reason in (
+            (1, "informational", "message", "informational"),
+            (2, "broadcast", "request", "explicit broadcast"),
+            (3, "direct", "request", "addressed to this identity"),
+            (4, "unrouted", "message", "claimed by this identity"),
+        ):
+            poll._append(state, {"kind": "MESSAGE", "id": str(cursor), "message": {
+                "cursor": cursor, "audience": audience, "kind": kind, "action_reason": reason,
+            }})
+        poll._append(state, {"kind": "CONTROL", "id": "stop-1", "control": {"control_id": "stop-1"}})
+        poll._append(state, {"kind": "POLICY_CHANGED", "id": "r2", "revision": "r2"})
+    poll.change_spool(path, profile, record)
+    assert poll.peek_event(path, profile, quiet=True)["kind"] == "CONTROL"
+    state = json.loads(poll.spool_path(path).read_text())
+    assert {event["id"] for event in state["events"]} == {"3", "4", "stop-1", "r2"}
+    assert state["cursor"] == 0
+    poll.retire_event(path, profile, "CONTROL", "stop-1")
+    assert poll.peek_event(path, profile, quiet=True)["kind"] == "POLICY_CHANGED"
+    poll.retire_event(path, profile, "POLICY_CHANGED", "r2")
+    assert poll.peek_event(path, profile, quiet=True)["message"]["cursor"] == 3
+
+
+def test_quiet_worker_advances_durable_cursor_without_routine_spool(tmp_path, monkeypatch):
+    path, profile = profile_at(tmp_path)
+    profile["quiet_mode"] = True
+    path.write_text(json.dumps(profile))
+    clock = [0.0]
+    checks = [0]
+    monkeypatch.setattr(poll.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(poll.time, "sleep", lambda seconds: clock.__setitem__(0, clock[0] + seconds))
+
+    def fake_api(_values, route, _payload=None, **_kwargs):
+        if route.endswith("/check-in"):
+            checks[0] += 1
+            if checks[0] == 2:
+                profile["participation"]["stopped"] = True
+                path.write_text(json.dumps(profile))
+            return {"revision": "r1", "values": POLICY, "sources": {}, "ack_required": False}
+        return {"messages": [
+            {"cursor": 1, "audience": "broadcast", "kind": "request", "action_reason": "explicit broadcast"},
+            {"cursor": 2, "audience": "direct", "kind": "request", "action_reason": "addressed to this identity"},
+        ], "next_cursor": 2, "has_more": False}
+
+    monkeypatch.setattr(poll, "api", fake_api)
+    poll._worker(path, {})
+    state = json.loads(poll.spool_path(path).read_text())
+    assert state["cursor"] == 2
+    assert [event["id"] for event in state["events"]] == ["2"]
+
+
 def test_worker_keeps_probing_controls_after_message_is_ready_for_agent(tmp_path, monkeypatch):
     path, profile = profile_at(tmp_path)
     clock = [0.0]

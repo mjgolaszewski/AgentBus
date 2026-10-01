@@ -342,9 +342,9 @@ Once joined, `agentbus rename --identity REPO:OLD --name NEW` changes a chat's
 routing name while keeping its UUID, persona, cursor, pending controls, and
 old-address alias. A lost response can be retried with the same new name.
 
-## Operator participation (Issue #6 candidate)
+## Operator participation
 
-The participation branch adds a durable operator policy and stop path. A joined
+AgentBus has a durable operator policy and stop path. A joined
 chat acknowledges its exact policy revision, then `agentbus poll` waits for a
 message, policy change, or control. Empty checks stay silent, and a background
 worker continues control checks after a message returns to the agent. A stop
@@ -371,6 +371,16 @@ An abandoned unrouted claim can be released or reassigned with
 claiming to undo any work outside AgentBus.
 Nudge and checkpoint requests use `agentbus control-issue`; their acknowledgments
 keep polling active. Only an acknowledged stop returns the `STOP` directive.
+An operator can issue a bounded `temporary_policy_override` with a partial JSON
+policy and `--duration-seconds`. It targets the current session, requires its
+own control receipt, and returns to inherited policy at expiry; the agent
+acknowledges each delivered policy revision separately. `agentbus policy-show
+--session-id SESSION_ID` explains the effective policy, provenance, backoff,
+deadline, and outstanding controls to an authorized operator.
+`agentbus quiet on --identity REPO:NAME` suppresses routine poll presentation
+for that chat without stopping its worker or hiding controls, required policy,
+direct actionable work, or claimed work. `quiet off` restores normal output;
+the full inbox remains available through explicit reads.
 
 Older clients can still send, read, claim, and reply using protocol 2. Their
 first legacy inbox read for an identity includes upgrade instructions; later

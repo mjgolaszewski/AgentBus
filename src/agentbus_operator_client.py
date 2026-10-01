@@ -32,8 +32,16 @@ def policy_set(ns, values: dict[str, str]) -> int:
 
 
 def policy_show(ns, values: dict[str, str]) -> int:
-    query = urlencode({"repo": ns.repo, "chat_id": ns.chat_id})
-    response = api(values, f"/v1/policy/effective?{query}")
+    if ns.session_id:
+        if ns.repo or ns.chat_id:
+            raise ClientError("Choose --session-id or --repo with --chat-id.")
+        response = api(values, f"/v1/sessions/{ns.session_id}/policy",
+                       bearer_token=_operator_token(values))
+    else:
+        if not ns.repo or not ns.chat_id:
+            raise ClientError("Policy show needs --repo and --chat-id or --session-id.")
+        query = urlencode({"repo": ns.repo, "chat_id": ns.chat_id})
+        response = api(values, f"/v1/policy/effective?{query}")
     print(json.dumps(response, indent=2))
     return 0
 
@@ -47,9 +55,22 @@ def control_stop(ns, values: dict[str, str]) -> int:
 
 
 def control_issue(ns, values: dict[str, str]) -> int:
-    response = api(values, "/v1/controls", {
+    payload = {
         "kind": ns.kind, "routes": ns.to, "all_current": ns.all, "reason": ns.reason,
-    }, bearer_token=_operator_token(values))
+    }
+    if ns.kind == "temporary_policy_override":
+        if not ns.values_file or ns.duration_seconds is None:
+            raise ClientError("Temporary override needs --values-file and --duration-seconds.")
+        try:
+            overlay = json.loads(Path(ns.values_file).read_text())
+        except (OSError, ValueError):
+            raise ClientError("Override values file must contain valid JSON.") from None
+        if not isinstance(overlay, dict):
+            raise ClientError("Override values file must contain a JSON object.")
+        payload.update({"values": overlay, "duration_seconds": ns.duration_seconds})
+    elif ns.values_file or ns.duration_seconds is not None:
+        raise ClientError("Only temporary overrides accept policy values and duration.")
+    response = api(values, "/v1/controls", payload, bearer_token=_operator_token(values))
     print(json.dumps(response, indent=2))
     return 0
 

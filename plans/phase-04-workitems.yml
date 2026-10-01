@@ -21,7 +21,7 @@ workitems:
   - contract-test
 - id: P04-P0-02
   priority: P0
-  status: IN_PROGRESS
+  status: DONE
   summary: Deliver worker polling, durable controls, acknowledged stop, rename, and compact views from IU-006 through IU-010
   acceptance:
   - requires-workitem-closure:P04-P0-01

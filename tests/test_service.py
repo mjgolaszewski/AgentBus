@@ -99,7 +99,7 @@ def test_public_api_operation_inventory_owns_registered_routes(settings):
         for route in app.routes
         for method in getattr(route, "methods", set())
     }
-    assert set(API_OPERATIONS) == {"health", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "session_presence", "session_policy_ack", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename"}
+    assert set(API_OPERATIONS) == {"health", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "session_presence", "session_policy_ack", "session_policy_explain", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename"}
     assert routes[("GET", "/healthz")] is API_OPERATIONS["health"]
     assert routes[("POST", "/v1/messages")] is API_OPERATIONS["send"]
     assert routes[("GET", "/v1/messages")] is API_OPERATIONS["read"]
@@ -109,6 +109,7 @@ def test_public_api_operation_inventory_owns_registered_routes(settings):
     assert routes[("POST", "/v1/messages/{cursor}/claim-recovery")] is API_OPERATIONS["claim_recovery"]
     assert routes[("POST", "/v1/policy/revisions")] is API_OPERATIONS["policy_set"]
     assert routes[("GET", "/v1/policy/effective")] is API_OPERATIONS["policy_effective"]
+    assert routes[("GET", "/v1/sessions/{session_id}/policy")] is API_OPERATIONS["session_policy_explain"]
     assert routes[("POST", "/v1/sessions")] is API_OPERATIONS["session_enroll"]
     assert routes[("POST", "/v1/sessions/{session_id}/policy-ack")] is API_OPERATIONS["session_policy_ack"]
     assert routes[("POST", "/v1/sessions/{session_id}/check-in")] is API_OPERATIONS["session_check_in"]
@@ -334,6 +335,57 @@ def test_auxiliary_controls_need_operator_and_checkpoint_report_without_stopping
     assert acknowledged.status_code == 200 and acknowledged.json()["directive"] == "CONTINUE"
     assert app.state.store.participation.session_state(session_id)["state"] == "active"
     assert client.post(f"/v1/sessions/{session_id}/check-in", headers=session_headers).status_code == 200
+
+
+def test_temporary_policy_override_requires_operator_and_exact_session_ack(service):
+    client, app, _ = service
+    app.state.settings = replace(app.state.settings,
+                                 operator_token="operator-secret-with-at-least-32-characters")
+    operator = {"Authorization": "Bearer operator-secret-with-at-least-32-characters"}
+    values = {
+        "initial_interval_seconds": 60, "backoff_factor": 2,
+        "max_interval_seconds": 1920, "control_check_max_seconds": 60,
+        "jitter_fraction": 0, "overdue_grace_seconds": 120,
+        "presentation_budget_bytes": None,
+    }
+    assert client.post("/v1/policy/revisions", headers=operator, json={
+        "scope": "global", "scope_key": "*", "values": values,
+    }).status_code == 201
+    secret = "session-secret-with-at-least-32-characters"
+    joined = client.post("/v1/sessions", headers=AUTH, json={
+        "repo": "agentbus", "route": "agentbus:one", "display_name": "one",
+        "session_secret": secret,
+    }).json()
+    session_id = joined["session_id"]
+    session_headers = {**AUTH, "X-AgentBus-Session-Token": secret}
+    ack_url = f"/v1/sessions/{session_id}/policy-ack"
+    assert client.post(ack_url, headers=session_headers,
+                       json={"revision": joined["revision"]}).status_code == 200
+    request = {"kind": "temporary_policy_override", "routes": ["agentbus:one"],
+               "reason": "short focus interval", "values": {"max_interval_seconds": 120},
+               "duration_seconds": 60}
+    assert client.post("/v1/controls", headers=AUTH, json=request).status_code == 401
+    assert client.post("/v1/controls", headers=operator,
+                       json={**request, "duration_seconds": 0}).status_code == 422
+    issued = client.post("/v1/controls", headers=operator, json=request)
+    assert issued.status_code == 201
+    control_id = issued.json()["control_id"]
+    assert client.get(f"/v1/sessions/{session_id}/policy", headers=AUTH).status_code == 401
+    explanation = client.get(f"/v1/sessions/{session_id}/policy", headers=operator).json()
+    assert explanation["values"]["max_interval_seconds"] == 120
+    assert explanation["sources"]["max_interval_seconds"] == "temporary"
+    assert explanation["presence"]["acknowledged_policy_revision"] == joined["revision"]
+    delivered = client.post(f"/v1/sessions/{session_id}/check-in", headers=session_headers).json()
+    assert delivered["controls"][0]["control_id"] == control_id
+    assert client.post(f"/v1/controls/{control_id}/targets/{session_id}/ack",
+                       headers=session_headers).json()["directive"] == "CONTINUE"
+    updated = client.post(f"/v1/sessions/{session_id}/check-in", headers=session_headers).json()
+    assert updated["ack_required"] is True
+    assert updated["revision"] == explanation["revision"]
+    assert client.post(ack_url, headers=session_headers,
+                       json={"revision": joined["revision"]}).status_code == 409
+    assert client.post(ack_url, headers=session_headers,
+                       json={"revision": updated["revision"]}).status_code == 200
 
 
 def test_send_roundtrip_and_plain_text_blocks_preserve_mentions_and_unicode(service):

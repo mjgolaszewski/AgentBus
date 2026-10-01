@@ -52,7 +52,18 @@ def change_spool(profile_path: Path, profile: dict, change: Callable[[dict], T])
         return result
 
 
-def peek_event(profile_path: Path, profile: dict) -> dict | None:
+def _routine_message(event: dict) -> bool:
+    if event["kind"] != "MESSAGE":
+        return False
+    message = event["message"]
+    return not (
+        message.get("action_reason") == "claimed by this identity" or
+        (message.get("audience") == "direct" and
+         message.get("kind") in {"blocker", "request", "question", "handoff"})
+    )
+
+
+def peek_event(profile_path: Path, profile: dict, *, quiet: bool = False) -> dict | None:
     def priority(event: dict) -> int:
         if event["kind"] == "CONTROL":
             return 0
@@ -73,6 +84,11 @@ def peek_event(profile_path: Path, profile: dict) -> dict | None:
         return 7
 
     def pick(state: dict) -> dict | None:
+        if quiet:
+            # The service inbox remains authoritative; this is disposable
+            # presentation state, not an acknowledgement or deletion.
+            state["events"] = [event for event in state["events"]
+                               if not _routine_message(event)]
         events = sorted(state["events"], key=lambda event: (
             priority(event),
             event["message"]["cursor"] if event["kind"] == "MESSAGE" else event["id"],
@@ -202,13 +218,18 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
                 page = api(values, "/v1/inbox?" + urlencode({
                     "identity": profile["identity"], "after": cursor, "limit": 100,
                 }), timeout_seconds=request_timeout)
-                def record_messages(state: dict) -> None:
+                def record_messages(state: dict) -> int:
+                    relevant = 0
                     for message in page["messages"]:
-                        _append(state, {"kind": "MESSAGE", "id": str(message["cursor"]),
-                                        "message": message})
+                        event = {"kind": "MESSAGE", "id": str(message["cursor"]),
+                                 "message": message}
+                        if not profile.get("quiet_mode", False) or not _routine_message(event):
+                            _append(state, event)
+                            relevant += 1
                     state["cursor"] = max(int(state["cursor"]), int(page["next_cursor"]))
-                change_spool(profile_path, profile, record_messages)
-                if page["messages"]:
+                    return relevant
+                relevant = change_spool(profile_path, profile, record_messages)
+                if relevant:
                     interval = float(policy["initial_interval_seconds"])
                 else:
                     interval = (float(policy["initial_interval_seconds"]) if interval is None else

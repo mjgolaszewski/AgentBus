@@ -139,3 +139,78 @@ def test_nudge_and_checkpoint_receipts_do_not_stop_participation(tmp_path) -> No
     assert participation.session_state(session_id)["state"] == "active"
     assert controls.status(checkpoint_id)[0]["report"] == report
     db.close()
+
+
+def test_temporary_override_expires_and_reverts_after_restart(tmp_path) -> None:
+    path = tmp_path / "state.sqlite3"
+    db, participation, controls = open_stores(path)
+    participation.set_policy(scope="global", scope_key="*", values=POLICY, actor="operator")
+    chat_id, session_id = enroll(participation, "one")
+    baseline = participation.effective_policy("agentbus", chat_id)
+    with pytest.raises(ValueError, match="duration"):
+        controls.issue_auxiliary(kind="temporary_policy_override", routes=["agentbus:one"],
+                                 reason="focus", actor="operator", override_values={"max_interval_seconds": 120},
+                                 duration_seconds=0)
+    with pytest.raises(ValueError, match="factor"):
+        controls.issue_auxiliary(kind="temporary_policy_override", routes=["agentbus:one"],
+                                 reason="focus", actor="operator", override_values={"backoff_factor": 0.5},
+                                 duration_seconds=60)
+    assert db.execute("SELECT COUNT(*) FROM operator_controls").fetchone()[0] == 0
+    control_id, targets = controls.issue_auxiliary(
+        kind="temporary_policy_override", routes=["agentbus:one"],
+        reason="focus", actor="operator", override_values={"max_interval_seconds": 120},
+        duration_seconds=60,
+    )
+    assert targets == [session_id]
+    active = participation.effective_policy_for_session(session_id)
+    assert active.values["max_interval_seconds"] == 120
+    assert active.sources["max_interval_seconds"] == "temporary"
+    assert active.revision != baseline.revision
+    with pytest.raises(ValueError, match="active temporary"):
+        controls.issue_auxiliary(kind="temporary_policy_override", routes=["agentbus:one"],
+                                 reason="overlap", actor="operator", override_values={"max_interval_seconds": 180},
+                                 duration_seconds=60)
+    delivered = controls.deliver(session_id, SECRET)
+    assert delivered[0]["control_id"] == control_id and delivered[0]["expires_at"]
+    receipt, kind = controls.acknowledge_control(control_id, session_id, SECRET)
+    assert kind == "temporary_policy_override"
+    assert controls.acknowledge_control(control_id, session_id, SECRET)[0] == receipt
+    assert participation.deliver_policy(session_id, SECRET).revision == active.revision
+    with pytest.raises(ValueError, match="unknown or stale"):
+        participation.acknowledge_policy(session_id, SECRET, baseline.revision)
+    participation.acknowledge_policy(session_id, SECRET, active.revision)
+    db.close()
+
+    db, participation, controls = open_stores(path)
+    assert participation.effective_policy_for_session(session_id).revision == active.revision
+    db.execute("UPDATE operator_controls SET expires_at = ? WHERE control_id = ?",
+               ((datetime.now().astimezone() - timedelta(seconds=1)).isoformat(), control_id))
+    db.commit()
+    assert participation.effective_policy_for_session(session_id).revision == baseline.revision
+    assert controls.status(control_id)[0]["override_active"] is False
+    reverted = participation.deliver_policy(session_id, SECRET)
+    assert reverted.revision == baseline.revision
+    with pytest.raises(ValueError, match="unknown or stale"):
+        participation.acknowledge_policy(session_id, SECRET, active.revision)
+    participation.acknowledge_policy(session_id, SECRET, baseline.revision)
+    assert participation.session_state(session_id)["state"] == "active"
+    db.close()
+
+
+def test_existing_control_rows_survive_additive_override_columns(tmp_path) -> None:
+    path = tmp_path / "state.sqlite3"
+    db = sqlite3.connect(path)
+    db.execute("CREATE TABLE operator_controls (control_id TEXT PRIMARY KEY, kind TEXT NOT NULL, "
+               "reason TEXT NOT NULL, actor TEXT NOT NULL, issued_at TEXT NOT NULL)")
+    db.execute("INSERT INTO operator_controls VALUES (?, ?, ?, ?, ?)",
+               ("old-control", "nudge", "check in", "operator", "2026-09-30T00:00:00+00:00"))
+    db.commit()
+    db.close()
+    db, participation, controls = open_stores(path)
+    assert tuple(db.execute("SELECT kind, reason FROM operator_controls WHERE control_id = 'old-control'").fetchone()) == (
+        "nudge", "check in",
+    )
+    assert {row["name"] for row in db.execute("PRAGMA table_info(operator_controls)")} >= {
+        "override_values_json", "expires_at",
+    }
+    db.close()

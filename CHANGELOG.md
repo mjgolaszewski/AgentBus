@@ -16,6 +16,9 @@ All notable changes to AgentBus are documented here. AgentBus follows
   chats enroll their host-verified saved thread automatically. A thread held by
   another host writer is deferred without starting a turn.
 - Added a versioned Issue #8 wake contract, README hero, and adapter audience guide.
+- Added bounded temporary policy overrides with exact-session receipts and
+  deterministic expiry, and a persisted quiet presentation preference that
+  keeps the poll worker and actionable events active.
 
 ### Changed
 
@@ -23,6 +26,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
   the remaining operator-control work without stranding it.
 - Upgraded the governed runtime to the authenticated BCF 2.1.6 release while
   retaining AgentBus's project-owned assurance graph and CI contracts.
+- Added an operator-only session policy explanation with policy provenance and
+  read-only presence state.
 
 ### Documentation
 

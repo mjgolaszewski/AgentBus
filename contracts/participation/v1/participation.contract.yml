@@ -109,6 +109,7 @@ contracts:
     ack: exact_session_and_effective_revision_idempotent
     invalid_ack: reject_unknown_stale_or_inapplicable_revision
     default_timing: measured_before_release_not_guessed_in_contract
+    temporary_override: "Operator-issued, session-targeted partial policy overlay has a fixed UTC expiry and a control receipt. It rejects overlapping active overlays, validates the resulting policy before persistence, and projects the inherited policy again at expiry, including after restart. Both transitions require exact effective-revision acknowledgement before ordinary work. An expired override never silently extends itself."
   poll:
     owner: supervised_client_worker_below_reasoning_boundary
     internal: [wait, bounded_backoff, jitter, control_probe, retry, policy_detection, participation_check_in, compact_rendering]
@@ -147,7 +148,7 @@ contracts:
     priority: [control, required_policy, direct_blocker, direct_request_or_question_or_handoff, claimed_work, actionable_broadcast, informational, replaceable_status]
     unsuppressible: [control, required_policy, direct_blocker, direct_actionable_request, claimed_work]
     durable_history: complete_unchanged
-    quiet_mode: suppress_routine_presentation_only
+    quiet_mode: "A persisted local chat preference suppresses only informational, broadcast, and replaceable-status poll output. The worker continues to check controls and inbox state. Controls, required policy, attention errors, direct actionable work, and claimed work always remain visible; all suppressed messages remain in durable history and are available through explicit inbox reads."
   authority:
     operator_capability: distinct_from_ordinary_agent_bearer_and_unavailable_to_agent_clients
     agent_ack: session_specific_proof_of_possession_bound_to_exact_chat_and_session
@@ -206,6 +207,8 @@ proof_obligations:
   - {id: PO-24, proves: [INV-011], scenario: stop_all_snapshot_does_not_prevent_later_joins}
   - {id: PO-25, proves: [INV-017], scenario: old_client_reads_show_upgrade_instructions_new_client_reads_stay_quiet_and_protocol_2_message_bytes_are_unchanged}
   - {id: PO-26, proves: [INV-006, INV-007, INV-016], scenario: nudge_and_checkpoint_controls_share_durable_target_receipts_require_explicit_ack_and_never_stop_participation_without_stop_kind}
+  - {id: PO-27, proves: [INV-004, INV-012, INV-016], scenario: temporary_override_is_authorized_bounded_audited_restart_safe_and_reverts_to_inherited_policy_at_exact_expiry_with_new_ack_required}
+  - {id: PO-28, proves: [INV-001, INV-002, INV-015], scenario: quiet_mode_suppresses_only_routine_presentation_while_worker_continues_and_controls_policy_direct_action_and_claimed_work_remain_visible}
 
 implementation_order:
   - {id: IU-001, unit: freeze_contract_and_migration_assumptions, depends_on: []}
@@ -224,11 +227,11 @@ implementation_order:
 
 acceptance_gates:
   G-IDENTITY: [INV-008, PO-05, PO-15]
-  G-POLICY: [INV-004, PO-02]
+  G-POLICY: [INV-004, PO-02, PO-27]
   G-CONTROL: [INV-005, INV-007, INV-011, PO-03, PO-04, PO-08, PO-26]
   G-AUTHORITY: [INV-009, PO-06]
   G-POLL: [INV-001, INV-002, INV-013, INV-014, PO-01, PO-09, PO-14]
-  G-TOKEN: [INV-003, INV-015, PO-10]
+  G-TOKEN: [INV-003, INV-015, PO-10, PO-28]
   G-RECOVERY: [INV-012, PO-13]
   G-COMPAT: [PO-05, PO-15, PO-19, PO-25]
   G-GOVERNANCE: [INV-016, PO-12, PO-20]

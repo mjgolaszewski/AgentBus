@@ -50,12 +50,14 @@ def resolve_policy(
     global_revision: tuple[str, Mapping[str, int | float | None]],
     repo_revision: tuple[str, Mapping[str, int | float | None]] | None = None,
     chat_revision: tuple[str, Mapping[str, int | float | None]] | None = None,
+    temporary_revision: tuple[str, Mapping[str, int | float | None]] | None = None,
 ) -> EffectivePolicy:
-    """Resolve one full global policy plus optional repo/chat field overrides."""
+    """Resolve inheritance and one optional bounded session overlay."""
     values: dict[str, int | float | None] = {}
     sources: dict[str, str] = {}
     revisions: list[str] = []
-    for scope, revision in (("global", global_revision), ("repo", repo_revision), ("chat", chat_revision)):
+    for scope, revision in (("global", global_revision), ("repo", repo_revision),
+                            ("chat", chat_revision), ("temporary", temporary_revision)):
         if revision is None:
             continue
         revision_id, fields = revision

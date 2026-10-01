@@ -44,6 +44,7 @@ from src.agentbus_participation_api_service import (
     api_session_check_in,
     api_session_enroll,
     api_session_policy_ack,
+    api_session_policy_explain,
     api_session_presence,
     api_session_rename,
     authenticate_operator,
@@ -709,6 +710,7 @@ API_OPERATIONS: dict[str, Callable[..., object]] = {
     "profile_handoff": api_profile_handoff,
     "session_presence": api_session_presence,
     "session_policy_ack": api_session_policy_ack,
+    "session_policy_explain": api_session_policy_explain,
     "session_check_in": api_session_check_in,
     "control_stop": api_control_stop,
     "control_issue": api_control_issue,
@@ -775,6 +777,8 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
     app.add_api_route("/v1/sessions/profile-handoffs", API_OPERATIONS["profile_handoff"],
                       methods=["POST"], dependencies=[Depends(authenticate_operator)], status_code=201)
     app.add_api_route("/v1/sessions/{session_id}/presence", API_OPERATIONS["session_presence"],
+                      methods=["GET"], dependencies=[Depends(authenticate_operator)])
+    app.add_api_route("/v1/sessions/{session_id}/policy", API_OPERATIONS["session_policy_explain"],
                       methods=["GET"], dependencies=[Depends(authenticate_operator)])
     app.add_api_route("/v1/sessions/{session_id}/policy-ack", API_OPERATIONS["session_policy_ack"],
                       methods=["POST"], dependencies=auth)
