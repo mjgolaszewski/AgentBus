@@ -16,7 +16,10 @@ hotfix:
 execution_evidence:
   planned_commands:
   - bcf ci prospective-train
-  executed_commands: []
+  executed_commands:
+  - BCF 2.1.6 reconcile and canonical prospective train on 36131de7b28ca12fc88a3bf04ca6e74205a8f25f
+  - push-style cheap preflight on the same candidate
+  - protected PR 12 governance run 36854529754 and protected-main run 36854838305 passed
   notes:
   - Protected-main run 36853197127 failed Cheap Preflight because bounded target P04-P0-01 had no declared successor while P04-P0-02 and P04-P0-03 remain unfinished.
   - P04-P0-02 logically depends on completed identity and policy P04-P0-01; P04-P0-03 logically depends on controls and polling P04-P0-02. Declare these exact edges in the canonical workitem acceptance ledger.
