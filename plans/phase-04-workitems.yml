@@ -4,7 +4,7 @@ document:
   id: project-phase-04-workitems
   version: 1.0.0
   generated_at_utc: '2026-09-30T00:00:00Z'
-  status: active
+  status: completed
   path: plans/phase-04-workitems.yml
   phase_id: P04
 workitems:
@@ -32,7 +32,7 @@ workitems:
   - contract-test
 - id: P04-P0-03
   priority: P0
-  status: IN_PROGRESS
+  status: DONE
   summary: Complete operator projections, optional controls, compatibility, and governed proof from IU-011 through IU-013
   acceptance:
   - requires-workitem-closure:P04-P0-02
@@ -43,7 +43,7 @@ workitems:
   - contract-test
 - id: P04-P1-04
   priority: P1
-  status: IN_PROGRESS
+  status: DONE
   summary: Deliver optional Issue #8 Codex host wake adapter from the versioned contract without changing AgentBus core authority
   acceptance:
   - Exact chat/session/thread binding and dry-run eligibility fail closed for ambiguous or informational traffic
