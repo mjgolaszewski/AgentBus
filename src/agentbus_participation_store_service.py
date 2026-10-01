@@ -104,6 +104,18 @@ class ParticipationStore:
                     actor TEXT NOT NULL
                 )
             """)
+            db.execute("""
+                CREATE TABLE IF NOT EXISTS session_rotation_grants (
+                    token_sha256 TEXT PRIMARY KEY,
+                    chat_id TEXT NOT NULL,
+                    session_id TEXT NOT NULL,
+                    issued_at TEXT NOT NULL,
+                    expires_at TEXT NOT NULL,
+                    consumed_at TEXT,
+                    new_secret_sha256 TEXT,
+                    actor TEXT NOT NULL
+                )
+            """)
 
     def issue_profile_handoff(self, *, chat_id: str, repo: str, route: str, actor: str) -> str:
         """Operator authorizes one legacy profile UUID to enter service custody."""
@@ -131,6 +143,69 @@ class ParticipationStore:
             )
             self._audit("handoff_issued", "issued", chat_id, None, "", issued.isoformat(), actor=actor)
         return token
+
+    def issue_session_rotation(self, *, chat_id: str, session_id: str, actor: str) -> str:
+        """Grant one private, short-lived replacement for an enrolled session."""
+        if not actor:
+            raise ValueError("rotation actor is required")
+        token = secrets.token_urlsafe(32)
+        issued = datetime.now(timezone.utc)
+        with self._lock, self._db:
+            session = self._db.execute(
+                "SELECT chat_id, state FROM participation_sessions WHERE session_id = ?", (session_id,)
+            ).fetchone()
+            if session is None or session["chat_id"] != chat_id or session["state"] == "stopped":
+                raise ValueError("rotation target is not an enrolled live chat/session")
+            if self._db.execute(
+                "SELECT 1 FROM session_rotation_grants WHERE session_id = ? AND consumed_at IS NULL AND expires_at > ?",
+                (session_id, issued.isoformat()),
+            ).fetchone():
+                raise ValueError("an unexpired rotation grant already exists for this session")
+            self._db.execute(
+                "INSERT INTO session_rotation_grants VALUES (?, ?, ?, ?, ?, NULL, NULL, ?)",
+                (hashlib.sha256(token.encode()).hexdigest(), chat_id, session_id,
+                 issued.isoformat(), (issued + timedelta(minutes=10)).isoformat(), actor),
+            )
+            self._audit("session_rotation_grant", "issued", chat_id, session_id, "", issued.isoformat(), actor=actor)
+        return token
+
+    def rotate_session_secret(self, *, session_id: str, token: str, new_secret: str) -> str:
+        """Commit replacement without trusting the credential being replaced."""
+        if len(token) < 32 or len(new_secret) < 32:
+            raise ValueError("rotation token and new session secret must be at least 32 characters")
+        token_digest = hashlib.sha256(token.encode()).hexdigest()
+        new_digest = hashlib.sha256(new_secret.encode()).hexdigest()
+        with self._lock, self._db:
+            grant = self._db.execute(
+                "SELECT * FROM session_rotation_grants WHERE token_sha256 = ?", (token_digest,)
+            ).fetchone()
+            session = self._db.execute(
+                "SELECT chat_id, secret_sha256, state FROM participation_sessions WHERE session_id = ?", (session_id,)
+            ).fetchone()
+            if grant is None or session is None or grant["session_id"] != session_id or grant["chat_id"] != session["chat_id"]:
+                raise ValueError("rotation grant is not valid for this session")
+            receipt = str(uuid.uuid5(uuid.NAMESPACE_URL, f"agentbus:rotation:{session_id}:{token_digest}"))
+            if grant["consumed_at"] is not None:
+                if grant["new_secret_sha256"] == new_digest and session["secret_sha256"] == new_digest:
+                    return receipt
+                raise ValueError("rotation grant is already consumed")
+            if datetime.fromisoformat(grant["expires_at"]) <= datetime.now(timezone.utc):
+                raise ValueError("rotation grant has expired")
+            if session["state"] == "stopped":
+                raise ValueError("stopped session cannot rotate credentials")
+            if hmac.compare_digest(session["secret_sha256"], new_digest):
+                raise ValueError("new credential must differ from the current credential")
+            committed = _now()
+            self._db.execute(
+                "UPDATE participation_sessions SET secret_sha256 = ? WHERE session_id = ?", (new_digest, session_id)
+            )
+            self._db.execute(
+                "UPDATE session_rotation_grants SET consumed_at = ?, new_secret_sha256 = ? WHERE token_sha256 = ?",
+                (committed, new_digest, token_digest),
+            )
+            self._audit("session_secret_rotation", "committed", session["chat_id"], session_id, "", committed,
+                        actor=grant["actor"])
+        return receipt
 
     def set_policy(
         self, *, scope: str, scope_key: str, values: dict[str, int | float | None], actor: str,

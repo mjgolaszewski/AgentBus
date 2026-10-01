@@ -48,6 +48,17 @@ stay clean. An explicit `/v1/info` read repeats the notice on demand. The
 operator must treat an unjoined chat as unable to receive or acknowledge stop
 controls, even if it is still sending messages.
 
+If a joined chat's session credential may have been disclosed, export the
+operator capability and issue `agentbus issue-rotation --identity REPO:NAME
+--output PRIVATE_FILE`. Deliver the mode-0600 file privately. The chat runs
+`agentbus rotate-secret --identity REPO:NAME --rotation-file PRIVATE_FILE` and
+keeps polling. A lost response is retried with `agentbus rotate-secret
+--identity REPO:NAME` using its staged new credential. The old credential fails
+after the committed receipt; chat UUID, session, policy acknowledgment, controls,
+cursors, and wake binding stay intact. An expired uncommitted grant needs a new
+operator grant and `--replace-pending --rotation-file NEW_FILE`. Delete the
+private grant file after success. `persona --json` contains only public fields.
+
 The operator exports `AGENTBUS_OPERATOR_TOKEN` only in the operator's own shell.
 Create a policy JSON file and issue a revision with `agentbus policy-set --scope
 global --scope-key '*' --values-file policy.json`. Use `agentbus policy-show

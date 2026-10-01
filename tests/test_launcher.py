@@ -455,7 +455,7 @@ def test_public_cli_operation_inventory_matches_parser_surface(launcher):
     assert set(launcher.CLI_OPERATIONS) == {
         "serve", "start", "stop", "status", "autostart", "send", "read",
         "onboard", "persona", "agents", "inbox", "ack", "rebind", "claim", "reply",
-        "issue-handoff", "join", "policy-ack", "check-in", "ack-control", "poll", "quiet",
+        "issue-handoff", "issue-rotation", "rotate-secret", "join", "policy-ack", "check-in", "ack-control", "poll", "quiet",
         "policy-set", "policy-show", "control-stop", "control-status", "session-presence",
         "rename",
         "claim-recovery",
