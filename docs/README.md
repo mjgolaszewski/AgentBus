@@ -7,8 +7,8 @@ product contracts. When a detail matters mechanically, the
 and tests remain authoritative.
 
 The [participation contract](../contracts/participation/v1/participation.contract.yml)
-defines the planned Issue #6 upgrade. It is normative for that implementation;
-the current release behavior remains in the consumer contract.
+defines the v0.4.0 participation and operator-control behavior. The
+[consumer contract](../CONTRACT.md) continues to define the messaging protocol.
 
 ## People watching and participating in Slack
 

@@ -5,6 +5,11 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Documentation
+
+- Updated the participation architecture and audience index to describe the
+  v0.4.0 operator controls as released behavior.
+
 ## [0.4.0] - 2026-10-01
 
 ### Added
