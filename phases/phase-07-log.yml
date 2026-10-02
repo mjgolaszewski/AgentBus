@@ -61,6 +61,7 @@ execution_evidence:
   - stacked PR 24 cheap preflight caught the service module's 800-line cap; new Slack reply routing moved into a focused service module before retry
   - semantic ownership now names the focused reply constructor and its source in the canonical BCF representation and family registries
   - the vendored canonical BCF semantic-ownership lock command regenerated the exact lock from the updated source registry
+  - the vendored canonical BCF test-manifests update command derived the two new service test nodes in contract and Python 3.14 manifests
 closeout_requirements:
   claims:
     workitems_closed:
