@@ -59,6 +59,7 @@ execution_evidence:
   - BCF #347/#348 fix is not released; F14/F15 remain producer-owned follow-up work rather than v0.7.1 release claims
   - Racecar host probe showed thread/read without turns at 1,130 bytes and default thread/resume over 32 MB; excludeTurns true returned the exact thread in 3,408 bytes
   - stacked PR 24 cheap preflight caught the service module's 800-line cap; new Slack reply routing moved into a focused service module before retry
+  - semantic ownership now names the focused reply constructor and its source in the canonical BCF representation and family registries
 closeout_requirements:
   claims:
     workitems_closed:
