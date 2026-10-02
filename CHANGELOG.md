@@ -7,6 +7,15 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [0.7.1] - 2026-10-01
 
+### Slack participation
+
+- Verified human replies to an unambiguous, session-assured agent thread root
+  become direct requests to that chat's current route and can wake an enabled
+  saved Codex conversation. The agent can reply to the exact verified human
+  message; arbitrary Slack-user routes remain unavailable. Unknown, legacy,
+  mixed-agent, and bot threads remain unrouted; Slack text still cannot invoke
+  AgentBus commands.
+
 ### Fixed
 
 - The Codex wake adapter now resumes saved threads without asking the host to

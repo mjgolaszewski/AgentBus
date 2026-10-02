@@ -19,6 +19,7 @@ from agentbus_service import (
     encode_envelope,
     normalize_event,
 )
+from src import agentbus_codex_wake_client as wake
 
 AUTH = {"Authorization": "Bearer local-test-secret"}
 CHANNEL = "C123456"
@@ -74,6 +75,22 @@ def service(settings):
 
 def event(text="Human reply", ts="1700000001.000001", **changes):
     return {"type": "message", "channel": CHANNEL, "user": "U123", "ts": ts, "text": text, **changes}
+
+
+def enroll_for_thread(store, route: str, secret: str) -> str:
+    participation = store.participation
+    if route == "agentbus:flower":
+        participation.set_policy(scope="global", scope_key="*", values={
+            "initial_interval_seconds": 60, "backoff_factor": 2,
+            "max_interval_seconds": 1920, "control_check_max_seconds": 60,
+            "jitter_fraction": 0, "overdue_grace_seconds": 120,
+            "presentation_budget_bytes": None,
+        }, actor="operator")
+    _chat, session, revision = participation.enroll(
+        repo="agentbus", route=route, display_name=route, session_secret=secret,
+    )
+    participation.acknowledge_policy(session, secret, revision)
+    return session
 
 
 def test_auth_health_and_invalid_messages_never_contact_slack(service):
@@ -794,6 +811,100 @@ def test_socket_human_reply_thread_root_and_unknown_channel(service):
     assert page["messages"][1]["thread_ts"] == root
     assert len(socket.acknowledgements) == 6
     assert requests == []  # Receiving never causes an automatic response.
+
+
+def test_verified_human_reply_to_proved_agent_root_is_direct_and_wake_eligible(service):
+    client, app, _requests = service
+    secret = "flower-session-secret-with-at-least-32-characters"
+    session = enroll_for_thread(app.state.store, "agentbus:flower", secret)
+    root = client.post("/v1/messages", headers={**AUTH, "X-AgentBus-Session-Token": secret},
+                       json={"sender": "agentbus:flower", "text": "How can I help?"})
+    assert root.status_code == 201
+    app.state.socket.emit(event("Please check the release", ts="1700000001.000001",
+                                thread_ts=root.json()["slack_ts"]))
+    reply = app.state.store.read(CHANNEL).messages[-1]
+    assert (reply.sender, reply.recipient, reply.audience, reply.kind) == (
+        "slack:U123", "agentbus:flower", "direct", "request",
+    )
+    assert reply.sender_assurance == "slack-human"
+    assert reply.reply_to_cursor == root.json()["cursor"]
+    assert reply.thread_ts == root.json()["slack_ts"]
+    inbox = app.state.store.inbox(CHANNEL, "agentbus:flower")
+    assert inbox.messages[-1].actionable is True
+    assert wake._candidate({"kind": "MESSAGE", "id": str(reply.cursor),
+                            "message": inbox.messages[-1].model_dump()}, "agentbus:flower") == (
+        3, f"MESSAGE:{reply.cursor}",
+    )
+    answer = client.post("/v1/messages", headers={**AUTH, "X-AgentBus-Session-Token": secret},
+                         json={"sender": "agentbus:flower", "recipient": "slack:U123",
+                               "audience": "direct", "kind": "reply", "text": "I will check",
+                               "thread_ts": root.json()["slack_ts"],
+                               "reply_to_cursor": reply.cursor})
+    assert answer.status_code == 201
+    assert answer.json()["recipient"] == "slack:U123"
+    arbitrary = client.post("/v1/messages", headers={**AUTH, "X-AgentBus-Session-Token": secret},
+                            json={"sender": "agentbus:flower", "recipient": "slack:U999",
+                                  "audience": "direct", "text": "Not a reply"})
+    assert arbitrary.status_code == 422
+    wrong_parent = client.post("/v1/messages", headers={**AUTH, "X-AgentBus-Session-Token": secret},
+                               json={"sender": "agentbus:flower", "recipient": "slack:U123",
+                                     "audience": "direct", "text": "Wrong parent",
+                                     "reply_to_cursor": root.json()["cursor"]})
+    assert wrong_parent.status_code == 422
+    app.state.socket.emit(event("Foreign bot reply", ts="1700000001.000002",
+                                thread_ts=root.json()["slack_ts"],
+                                subtype="bot_message", bot_id="BFOREIGN"))
+    assert app.state.store.read(CHANNEL).messages[-1].audience == "unrouted"
+    own_reply = client.post("/v1/messages", headers={**AUTH, "X-AgentBus-Session-Token": secret},
+                            json={"sender": "agentbus:flower", "text": "I can check",
+                                  "thread_ts": root.json()["slack_ts"]})
+    assert own_reply.status_code == 201
+    app.state.store.participation.rename(session, secret, "agentbus:blossom")
+    app.state.socket.emit(event("One more thing", ts="1700000002.000001",
+                                thread_ts=root.json()["slack_ts"]))
+    renamed = app.state.store.read(CHANNEL).messages[-1]
+    assert renamed.recipient == "agentbus:blossom"
+    assert renamed.sender_assurance == "slack-human"
+
+
+def test_ambiguous_or_unproved_slack_threads_remain_unrouted(service):
+    client, app, _requests = service
+    flower_secret = "flower-session-secret-with-at-least-32-characters"
+    seed_secret = "seed-session-secret-with-at-least-32-characters"
+    enroll_for_thread(app.state.store, "agentbus:flower", flower_secret)
+    enroll_for_thread(app.state.store, "agentbus:seed", seed_secret)
+    root = client.post("/v1/messages", headers={**AUTH, "X-AgentBus-Session-Token": flower_secret},
+                       json={"sender": "agentbus:flower", "text": "Root"}).json()
+    client.post("/v1/messages", headers={**AUTH, "X-AgentBus-Session-Token": seed_secret},
+                json={"sender": "agentbus:seed", "text": "I joined", "thread_ts": root["slack_ts"]})
+    app.state.socket.emit(event("Which agent?", ts="1700000001.000001",
+                                thread_ts=root["slack_ts"]))
+    mixed = app.state.store.read(CHANNEL).messages[-1]
+    assert (mixed.audience, mixed.recipient, mixed.sender_assurance) == (
+        "unrouted", "all", "slack-human",
+    )
+    assert wake._candidate({"kind": "MESSAGE", "id": str(mixed.cursor),
+                            "message": mixed.model_dump()}, "agentbus:flower") is None
+    app.state.socket.emit(event("Unknown root", ts="1700000002.000001",
+                                thread_ts="1600000000.000001"))
+    assert app.state.store.read(CHANNEL).messages[-1].audience == "unrouted"
+    app.state.socket.emit(event("Human root", ts="1700000003.000001"))
+    app.state.socket.emit(event("Human thread", ts="1700000004.000001",
+                                thread_ts="1700000003.000001"))
+    assert app.state.store.read(CHANNEL).messages[-1].audience == "unrouted"
+    app.state.store.append(CHANNEL, "1700000005.000001",
+                           SendMessage(sender="agentbus:legacy", text="Legacy root"))
+    app.state.socket.emit(event("Legacy thread", ts="1700000006.000001",
+                                thread_ts="1700000005.000001"))
+    assert app.state.store.read(CHANNEL).messages[-1].audience == "unrouted"
+    app.state.socket.emit(event("Invalid human ID", ts="1700000007.000001",
+                                thread_ts=root["slack_ts"], user="spoofed-user"))
+    invalid_user = app.state.store.read(CHANNEL).messages[-1]
+    assert invalid_user.audience == "unrouted" and invalid_user.sender_assurance == "legacy"
+    app.state.socket.emit(event("Bot subtype", ts="1700000008.000001",
+                                thread_ts=root["slack_ts"], subtype="bot_message"))
+    bot_subtype = app.state.store.read(CHANNEL).messages[-1]
+    assert bot_subtype.audience == "unrouted" and bot_subtype.sender_assurance == "legacy"
 
 
 def test_failed_durable_ingestion_is_not_acknowledged(settings, monkeypatch, caplog):

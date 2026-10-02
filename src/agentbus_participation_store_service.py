@@ -590,6 +590,18 @@ class ParticipationStore:
     def same_chat(self, first_route: str, second_route: str) -> bool:
         return second_route in self.routes_for(first_route)
 
+    def current_route_for(self, route: str) -> str | None:
+        """Return the current address for an enrolled route or reserved alias."""
+        with self._lock:
+            row = self._db.execute("""
+                SELECT current_route FROM chat_identities WHERE current_route = ?
+                UNION ALL
+                SELECT c.current_route FROM routing_aliases AS a
+                JOIN chat_identities AS c ON c.chat_id = a.chat_id WHERE a.route = ?
+                LIMIT 1
+            """, (route, route)).fetchone()
+            return row["current_route"] if row else None
+
     def session_for_secret(self, secret: str, route: str) -> sqlite3.Row:
         """Resolve an optional message-plane proof without trusting a sender label."""
         if len(secret) > 512:

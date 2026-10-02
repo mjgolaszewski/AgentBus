@@ -1,7 +1,7 @@
 document:
   kind: agentbus_codex_wake_contract
   id: agentbus-codex-wake-v1
-  version: 1.1.0
+  version: 1.2.0
   status: active
   path: contracts/codex-wake/v1/codex-wake.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/8
@@ -33,6 +33,7 @@ invariants:
   - {id: CW-INV-010, rule: "A host without an authorized resume/start hook is notification-only and cannot be advertised as live auto-resumable."}
   - {id: CW-INV-011, rule: "An ordinary message may wake a bound Codex thread only when the service records session or slack-human assurance; legacy and caller-asserted sender labels never grant wake eligibility."}
   - {id: CW-INV-012, rule: "A live-wakable idle chat defaults to zero routine in-chat polls; during an active turn it receives the delivered backoff cadence and checks silently at work checkpoints. The local worker observes below the reasoning boundary, unchanged observations start no model turn, and required controls remain observable within the policy maximum."}
+  - {id: CW-INV-013, rule: "A service-routed verified Slack-human reply to a single session-assured agent thread root is eligible as a direct request for that exact chat. Unknown or ambiguous thread replies do not wake; host opt-in, stopped-session exclusion, rate bounds, and turn authority remain unchanged."}
 primitives:
   workspace_activation: {identity: local_workspace, fields: [enabled, actor, changed_at], owner: adapter_private_state}
   binding: {identity: chat_id_plus_session_id, fields: [chat_id, session_id, thread_id, binding_generation, enabled, actor, created_at], owner: adapter_private_state}
@@ -77,6 +78,7 @@ proof_obligations:
   - {id: CW-PO-07, proves: [CW-INV-002, CW-INV-005], scenario: rename_restart_and_binding_generation_preserve_or_invalidate_launch_rights_exactly}
   - {id: CW-PO-08, proves: [CW-INV-003, CW-INV-011], scenario: legacy_and_spoofed_messages_never_start_turns_while_verified_cross_repo_agents_can_wake}
   - {id: CW-PO-09, proves: [CW-INV-007, CW-INV-012], scenario: watch_all_supervises_bound_chat_poll_workers_before_wake_projection_and_idle_chat_ends_turn_without_manual_polling_or_empty_wakes}
+  - {id: CW-PO-10, proves: [CW-INV-003, CW-INV-011, CW-INV-013], scenario: verified_human_reply_to_single_proved_agent_root_is_direct_and_wake_eligible_while_ambiguous_or_unproved_threads_remain_unrouted}
 implementation_order:
   - {id: CW-IU-001, unit: freeze_contract_and_host_protocol, depends_on: []}
   - {id: CW-IU-002, unit: non_destructive_candidate_projection, depends_on: [CW-IU-001]}
@@ -88,7 +90,7 @@ implementation_order:
 acceptance_gates:
   G-BOUNDARY: [CW-INV-001, CW-INV-009, CW-INV-010, CW-PO-06]
   G-BINDING: [CW-INV-002, CW-PO-01, CW-PO-07]
-  G-ELIGIBILITY: [CW-INV-003, CW-INV-011, CW-PO-01, CW-PO-02, CW-PO-08]
+  G-ELIGIBILITY: [CW-INV-003, CW-INV-011, CW-INV-013, CW-PO-01, CW-PO-02, CW-PO-08, CW-PO-10]
   G-LIFECYCLE: [CW-INV-004, CW-PO-03]
   G-DEDUP: [CW-INV-005, CW-PO-03, CW-PO-07]
   G-CONTROL: [CW-INV-006, CW-PO-04]

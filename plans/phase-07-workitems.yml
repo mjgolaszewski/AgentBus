@@ -54,3 +54,13 @@ workitems:
   acceptance_evidence:
   - test
   - contract-test
+- id: P07-P0-06
+  priority: P0
+  status: DONE
+  summary: route verified human replies to single-agent Slack threads as direct requests
+  acceptance:
+  - only a proved single-agent thread root determines the current recipient; no Slack text or bot label can spoof it
+  - the routed request is actionable and wake eligible while unknown, legacy, mixed-agent, and nonhuman replies stay unrouted
+  acceptance_evidence:
+  - test
+  - contract-test

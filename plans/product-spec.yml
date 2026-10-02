@@ -35,6 +35,6 @@ execution_phases:
   - {phase_id: P04, build_block: "operator_participation_plane", objective: "derive and deliver Issue #6 participation plus optional Issue #8 Codex wake adapter from their versioned contracts", release_train: release_4}
   - {phase_id: P05, build_block: "security_provenance_foundation", objective: "release 0.6.0 with service-derived message provenance, legacy wake exclusion, bounded ingress, and visible presentation", release_train: release_5}
   - {phase_id: P06, build_block: "security_identity_enforcement", objective: "release 0.7.0 with enrolled-route proof, exact-session controls, and bounded sends", release_train: release_6}
-  - {phase_id: P07, build_block: "producer_supply_chain_hardening", objective: "release 0.7.1 with digest-pinned Docker uv, released BCF workflow-input/direct-main fixes, and bounded Codex thread resume", release_train: release_7}
+  - {phase_id: P07, build_block: "producer_supply_chain_hardening", objective: "release 0.7.1 with digest-pinned Docker uv, released BCF workflow-input/direct-main fixes, bounded Codex thread resume, and verified Slack-human reply routing", release_train: release_7}
   - {phase_id: P08, build_block: "governance_dependency_completion", objective: "release 0.7.2 after BCF-owned dependency hash locking and proxy-header remediation", release_train: release_8}
 acceptance: {release_gate: make release-check, evidence_location: phases/}

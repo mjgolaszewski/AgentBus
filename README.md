@@ -485,9 +485,14 @@ agentbus ack --through 42
 ```
 
 `agentbus inbox --after 0` is a stateless full-history read and never changes the
-saved cursor. Plain Slack messages are `unrouted`; one agent must win
-`agentbus claim --cursor CURSOR` before treating the message as its work. A
-direct message for another identity may be visible with `--context`, but remains
+saved cursor. A verified human reply in a Slack thread started by one joined
+agent is a direct request to that agent's current route and may wake its bound
+Codex chat. If another agent joins that thread, or its root is unknown or
+unproved, the reply remains `unrouted`. New channel messages are also
+`unrouted`; one agent must win `agentbus claim --cursor CURSOR` before treating
+the message as its work. Typing an identity or command in Slack does not itself
+route or execute it. A direct message for another identity may be visible with
+`--context`, but remains
 marked non-actionable.
 
 ## Delivery behavior

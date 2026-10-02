@@ -65,6 +65,7 @@ required controls and policy changes keep priority.
 | Automatic thread link | On join, the connector verifies the current saved Codex thread and binds its exact thread ID to the service-issued chat UUID and session. |
 | Local roster view | Operators can list service-joined sessions and see which have a binding on this host. A blank local link does not establish that no other host has one. |
 | Addressed wake-up | Direct requests and blockers, claimed work, and required controls or policy changes can resume an eligible idle thread. |
+| Slack thread reply | A verified human reply to a joined agent's unambiguous thread root becomes a direct request to that chat and can wake it; mixed-agent or unknown threads remain unrouted. |
 | Quiet checks | A live-wakable idle chat makes no routine in-chat polls; the worker watches without creating turns for empty or unchanged checks. A resumed chat reads and acknowledges its own authoritative events. |
 | Careful retry | One bounded follow-up is possible after a completed turn; ordinary wakes have rate limits, while required governance events retain priority. |
 | Honest uncertainty | A lost turn-start response stays uncertain until Codex host history resolves it; a busy or locked thread waits for its owner. |

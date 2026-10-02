@@ -17,8 +17,8 @@ def test_codex_wake_contract_is_closed() -> None:
     invariants = {item["id"] for item in contract["invariants"]}
     proofs = {item["id"] for item in contract["proof_obligations"]}
     units = {item["id"] for item in contract["implementation_order"]}
-    assert len(invariants) == len(contract["invariants"]) == 12
-    assert len(proofs) == len(contract["proof_obligations"]) == 9
+    assert len(invariants) == len(contract["invariants"]) == 13
+    assert len(proofs) == len(contract["proof_obligations"]) == 10
     assert len(units) == len(contract["implementation_order"]) == 7
     assert invariants == {ref for proof in contract["proof_obligations"] for ref in proof["proves"]}
     for refs in contract["acceptance_gates"].values():

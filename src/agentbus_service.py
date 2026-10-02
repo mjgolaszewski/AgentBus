@@ -287,6 +287,54 @@ class MessageStore:
                                    (channel, slack_ts)).fetchone()
             return self._message(row)
 
+    def append_slack(self, channel: str, slack_ts: str, message: SendMessage) -> Message:
+        """Resolve only unambiguous human replies to a proved agent thread root."""
+        with self._lock:
+            if (message._sender_assurance == "slack-human" and message.audience == "unrouted"
+                    and message.thread_ts):
+                root_row = self._db.execute(
+                    "SELECT * FROM messages WHERE channel = ? AND slack_ts = ?",
+                    (channel, message.thread_ts),
+                ).fetchone()
+                if root_row is not None:
+                    try:
+                        root = self._message(root_row)
+                    except ValidationError:
+                        root = None
+                    route = self.participation.current_route_for(root.sender) if root else None
+                    if (root is not None and root.sender_assurance == "session" and root.thread_ts is None
+                            and route is not None and not self._thread_has_other_agent(channel, root)):
+                        try:
+                            routed = SendMessage(
+                                sender=message.sender, recipient=route, text=message.text,
+                                repo=root.repo, kind="request", thread_ts=message.thread_ts,
+                                audience="direct", reply_to_cursor=root.cursor,
+                            )
+                        except ValidationError:
+                            # Preserve the original human text if extra route
+                            # metadata would exceed the envelope bound.
+                            pass
+                        else:
+                            routed._sender_assurance = message._sender_assurance
+                            message = routed
+            return self.append(channel, slack_ts, message)
+
+    def _thread_has_other_agent(self, channel: str, root: Message) -> bool:
+        rows = self._db.execute(
+            "SELECT payload, sender_assurance FROM messages WHERE channel = ? AND thread_ts = ?",
+            (channel, root.slack_ts),
+        )
+        for row in rows:
+            try:
+                sender = SendMessage.model_validate_json(row["payload"]).sender
+            except ValidationError:
+                return True
+            if sender.startswith("slack:"):
+                continue
+            if row["sender_assurance"] != "session" or not self.participation.same_chat(root.sender, sender):
+                return True
+        return False
+
     def read(self, channel: str, after: int = 0, recipient: str | None = None,
              limit: int = 100, thread_ts: str | None = None) -> MessagePage:
         clauses = ["channel = ?", "cursor > ?"]
@@ -475,18 +523,21 @@ def normalize_event(event: dict, channel: str, trusted_bot_id: str) -> tuple[str
             pass
     identity = event.get("bot_id") or event.get("user") or "unknown"
     identity = identity if isinstance(identity, str) and re.fullmatch(r"[A-Za-z0-9_-]{1,60}", identity) else "unknown"
+    verified_human = (isinstance(event.get("user"), str)
+                      and re.fullmatch(r"[UW][A-Z0-9]{2,59}", event["user"]) is not None
+                      and not event.get("bot_id") and event.get("subtype") != "bot_message")
     # Human messages can exceed the API's send limit, including escaped Unicode.
     text = text.encode("utf-8", errors="replace").decode("utf-8").strip()[:MAX_TEXT]
     try:
         message = SendMessage(sender=f"slack:{identity}", text=text, thread_ts=thread_ts,
                               audience="unrouted")
-        message._sender_assurance = "slack-human" if event.get("user") and not event.get("bot_id") else "legacy"
+        message._sender_assurance = "slack-human" if verified_human else "legacy"
         return ts, message
     except ValidationError:
         # Even 3000 astral Unicode characters fit as JSON surrogate pairs.
         message = SendMessage(sender=f"slack:{identity}", text=text[:3000], thread_ts=thread_ts,
                               audience="unrouted")
-        message._sender_assurance = "slack-human" if event.get("user") and not event.get("bot_id") else "legacy"
+        message._sender_assurance = "slack-human" if verified_human else "legacy"
         return ts, message
 
 
@@ -504,7 +555,7 @@ class SlackReceiver:
             if normalized is not None:
                 ts, message = normalized
                 try:
-                    self.store.append(self.channel, ts, message)
+                    self.store.append_slack(self.channel, ts, message)
                 except (sqlite3.Error, OSError):
                     LOGGER.error("Could not durably store Slack event; withholding acknowledgement")
                     return

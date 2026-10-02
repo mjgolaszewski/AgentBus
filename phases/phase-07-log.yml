@@ -17,6 +17,7 @@ summary:
   - phase artifacts were scaffolded from the governance template
   - official uv 0.12.9 multiarch digest is pinned; local image build and runtime imports pass
   - Codex resume now requests metadata only, avoiding oversized full-history frames for long conversations
+  - verified Slack-human replies to a proved single-agent root now target that chat's current route and qualify for optional wake
 workitems:
 - id: P07-P0-01
   status: DONE
@@ -33,6 +34,9 @@ workitems:
 - id: P07-P0-05
   status: DONE
   summary: resume large Codex conversations without hydrating full history
+- id: P07-P0-06
+  status: DONE
+  summary: route verified human replies to single-agent Slack threads as direct requests
 execution_evidence:
   planned_commands:
   - make governance-validate
