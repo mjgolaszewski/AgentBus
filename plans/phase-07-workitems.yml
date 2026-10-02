@@ -44,3 +44,13 @@ workitems:
   acceptance_evidence:
   - test
   - contract-test
+- id: P07-P0-05
+  priority: P0
+  status: DONE
+  summary: resume large Codex conversations without hydrating full history
+  acceptance:
+  - host resume response contains the exact bound thread ID without full turns
+  - bounded host frame stays intact and the wake identity and inbox are preserved
+  acceptance_evidence:
+  - test
+  - contract-test

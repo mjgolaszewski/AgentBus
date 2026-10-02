@@ -21,6 +21,7 @@ delivery_contract:
   tightly_scoped_deliverables:
   - pin the Docker uv bootstrap to an immutable multiarch image digest
   - adopt released BCF direct-main and generated-workflow-input fixes through canonical upgrade machinery
+  - resume large Codex conversations without hydrating full history
   - disclose remaining F14 governance dependency hash and F15 proxy-header risk in release notes and security guidance
   - prove exact candidate and isolated release archive before consumer cutover
   parallelizable_workstreams:
@@ -30,6 +31,8 @@ delivery_contract:
     name: bcf_upgrade
   - id: P07-WS3
     name: release_evidence
+  - id: P07-WS4
+    name: codex_wake
   hard_dependencies:
   - P06 closed on exact main and v0.7.0 published
   - BCF direct-main and workflow-input fixes released with immutable custody

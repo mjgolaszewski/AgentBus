@@ -125,7 +125,10 @@ class CodexAppServer:
         return thread
 
     def resume(self, thread_id: str) -> None:
-        thread = self.request("thread/resume", {"threadId": thread_id}).get("thread")
+        # Resume responses otherwise hydrate the entire conversation. Large
+        # saved threads can exceed our bounded host frame before turn/start.
+        thread = self.request("thread/resume", {"threadId": thread_id,
+                                                 "excludeTurns": True}).get("thread")
         if not isinstance(thread, dict) or thread.get("id") != thread_id:
             raise CodexHostError("Codex host resumed a different thread")
 

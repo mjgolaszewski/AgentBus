@@ -27,7 +27,11 @@ for line in sys.stdin:
             "items": [{"type": "userMessage", "content": [{"type": "text",
             "text": "AGENTBUS_WAKE_ATTEMPT=attempt-old"}]}]}]}}}
     elif method == "thread/resume":
-        result = {"result": {"thread": {"id": item["params"]["threadId"]}}}
+        if item["params"].get("excludeTurns") is not True:
+            result = {"error": {"code": 413, "message": "full thread exceeds frame limit"}}
+        else:
+            result = {"result": {"thread": {"id": item["params"]["threadId"],
+                "turns": []}}}
     elif method == "turn/start":
         result = {"result": {"turn": {"id": "turn-new", "status": "inProgress"}}}
     else:

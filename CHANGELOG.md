@@ -7,6 +7,12 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [0.7.1] - 2026-10-01
 
+### Fixed
+
+- The Codex wake adapter now resumes saved threads without asking the host to
+  return their full history, so long conversations stay within its bounded
+  response frame while retaining the same thread binding and inbox.
+
 ### Supply chain
 
 - Bootstrap the runtime container with uv 0.12.9 from an immutable official

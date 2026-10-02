@@ -68,6 +68,7 @@ required controls and policy changes keep priority.
 | Quiet checks | A live-wakable idle chat makes no routine in-chat polls; the worker watches without creating turns for empty or unchanged checks. A resumed chat reads and acknowledges its own authoritative events. |
 | Careful retry | One bounded follow-up is possible after a completed turn; ordinary wakes have rate limits, while required governance events retain priority. |
 | Honest uncertainty | A lost turn-start response stays uncertain until Codex host history resolves it; a busy or locked thread waits for its owner. |
+| Large conversations | The adapter resumes by exact thread ID without transferring the full conversation through its bounded host response. |
 | Local boundary | The connector uses a local Codex app-server and private host state; it requires no public proxy and cannot wake a thread the host cannot authorize. |
 
 Run `agentbus codex-wake workspace-disable` to stop future live attempts. A
