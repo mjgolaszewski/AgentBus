@@ -83,6 +83,7 @@ execution_evidence:
   - Issue 27 self-status uses exact session proof and a read-only host projection; 182 local tests, lint, typecheck, governance validation, manifests, and semantic lock pass on the candidate branch
   - the stacked Slack operator slice uses a default-empty human user allowlist, exact session/suffix resolution, a durable work hold that preserves wake eligibility, confirmed stop, and service-only metrics; final local checks and BCF proof remain pending
   - released BCF v2.1.8 installer refreshed only pack-owned runtime/schema/workflow surfaces plus canonical locks; local governance, lint, typecheck, architecture, client, and contract gates passed before exact prospective proof
+  - v2.1.8 prospective preflight correctly rejected the completed upgrade workitem without a successor for unfinished release work; the authored phase workitems now connect upgrade, risk disclosure, and final release proof
 closeout_requirements:
   claims:
     workitems_closed:

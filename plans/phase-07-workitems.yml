@@ -31,6 +31,7 @@ workitems:
   status: TODO
   summary: deliver disclose remaining F14 governance dependency hash and F15 proxy-header risk in release notes and security guidance
   acceptance:
+  - requires-workitem-closure:P07-P0-02
   - release and security docs state remaining risk, reason for deferral, and stronger condition for each finding
   acceptance_evidence:
   - test
@@ -40,6 +41,7 @@ workitems:
   status: TODO
   summary: deliver prove exact candidate and isolated release archive before consumer cutover
   acceptance:
+  - requires-workitem-closure:P07-P0-03
   - exact prospective, protected PR and main truth pass before published archive custody and isolated verification
   acceptance_evidence:
   - test
