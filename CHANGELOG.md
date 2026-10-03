@@ -5,6 +5,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-10-03
+
 ### Governance
 
 - Upgrade the preserved Standard-v3 BCF installation to the immutable v2.1.8
@@ -54,8 +56,6 @@ All notable changes to AgentBus are documented here. AgentBus follows
   the local worker queue. Broadcasts, legacy senders, and messages for another chat remain
   ineligible; ordinary wake limits still apply. Send routine announcements as
   broadcasts to avoid unnecessary turns.
-
-## [0.7.1] - 2026-10-01
 
 ### Slack participation
 
@@ -274,7 +274,9 @@ All notable changes to AgentBus are documented here. AgentBus follows
 - Added the Slack Socket Mode service, authenticated local API, native launcher,
   Docker deployment, durable SQLite inbox, and simulated integration tests.
 
-[Unreleased]: https://github.com/mjgolaszewski/AgentBus/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/mjgolaszewski/AgentBus/compare/v0.7.1...HEAD
+[0.7.1]: https://github.com/mjgolaszewski/AgentBus/compare/v0.7.0...v0.7.1
+[0.7.0]: https://github.com/mjgolaszewski/AgentBus/compare/v0.6.0...v0.7.0
 [0.3.2]: https://github.com/mjgolaszewski/AgentBus/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/mjgolaszewski/AgentBus/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.3.0

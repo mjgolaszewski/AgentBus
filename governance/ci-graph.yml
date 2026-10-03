@@ -41,11 +41,11 @@ commands:
     cwd: .
     environment: {BCF_TRUTH_MODE: '${{ github.event_name == ''pull_request'' && ''pr'' || ''closure'' }}'}
   v3-preflight:
-    argv: ['{python}', scripts/preflight_governance.py, --repo-root, ., --evaluation-mode, '${{ inputs.evaluation_mode || (github.event_name == ''push'' && ''workitem'' || ''pr'') }}', --evaluation-target, '${{ inputs.evaluation_target || (github.event_name == ''push'' && ''P07-P0-02'' || '''') }}', --python, '{python}', --artifact-root, .artifacts/bcf, --expected-producer, evidence, --format, text]
+    argv: ['{python}', scripts/preflight_governance.py, --repo-root, ., --evaluation-mode, '${{ inputs.evaluation_mode || (github.event_name == ''push'' && ''workitem'' || ''pr'') }}', --evaluation-target, '${{ inputs.evaluation_target || (github.event_name == ''push'' && ''P07-P0-03'' || '''') }}', --python, '{python}', --artifact-root, .artifacts/bcf, --expected-producer, evidence, --format, text]
     cwd: .
     environment: {}
   v3-preflight-with-prior:
-    argv: ['{python}', scripts/preflight_governance.py, --repo-root, ., --evaluation-mode, '${{ inputs.evaluation_mode || (github.event_name == ''push'' && ''workitem'' || ''pr'') }}', --evaluation-target, '${{ inputs.evaluation_target || (github.event_name == ''push'' && ''P07-P0-02'' || '''') }}', --python, '{python}', --artifact-root, .artifacts/bcf, --expected-producer, evidence, --prior-evidence-dir, .artifacts/bcf/prior-evidence, --format, text]
+    argv: ['{python}', scripts/preflight_governance.py, --repo-root, ., --evaluation-mode, '${{ inputs.evaluation_mode || (github.event_name == ''push'' && ''workitem'' || ''pr'') }}', --evaluation-target, '${{ inputs.evaluation_target || (github.event_name == ''push'' && ''P07-P0-03'' || '''') }}', --python, '{python}', --artifact-root, .artifacts/bcf, --expected-producer, evidence, --prior-evidence-dir, .artifacts/bcf/prior-evidence, --format, text]
     cwd: .
     environment: {}
   v3-capture-shard:
@@ -61,11 +61,11 @@ commands:
     cwd: .
     environment: {}
   v3-truth:
-    argv: ['{python}', scripts/governance_truth.py, --repo-root, ., --evidence-dir, .artifacts/bcf/fan-in, --evaluation-mode, '${{ inputs.evaluation_mode || (github.event_name == ''push'' && ''workitem'' || ''pr'') }}', --evaluation-target, '${{ inputs.evaluation_target || (github.event_name == ''push'' && ''P07-P0-02'' || '''') }}', --format, json, --durable-ref, 'github-actions://${{ github.repository }}/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/bcf-governance-truth', --output, .artifacts/bcf/truth-report.json]
+    argv: ['{python}', scripts/governance_truth.py, --repo-root, ., --evidence-dir, .artifacts/bcf/fan-in, --evaluation-mode, '${{ inputs.evaluation_mode || (github.event_name == ''push'' && ''workitem'' || ''pr'') }}', --evaluation-target, '${{ inputs.evaluation_target || (github.event_name == ''push'' && ''P07-P0-03'' || '''') }}', --format, json, --durable-ref, 'github-actions://${{ github.repository }}/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/bcf-governance-truth', --output, .artifacts/bcf/truth-report.json]
     cwd: .
     environment: {}
   v3-truth-with-prior:
-    argv: ['{python}', scripts/governance_truth.py, --repo-root, ., --evidence-dir, .artifacts/bcf/fan-in, --prior-evidence-dir, .artifacts/bcf/prior-evidence, --evaluation-mode, '${{ inputs.evaluation_mode || (github.event_name == ''push'' && ''workitem'' || ''pr'') }}', --evaluation-target, '${{ inputs.evaluation_target || (github.event_name == ''push'' && ''P07-P0-02'' || '''') }}', --format, json, --durable-ref, 'github-actions://${{ github.repository }}/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/bcf-governance-truth', --output, .artifacts/bcf/truth-report.json]
+    argv: ['{python}', scripts/governance_truth.py, --repo-root, ., --evidence-dir, .artifacts/bcf/fan-in, --prior-evidence-dir, .artifacts/bcf/prior-evidence, --evaluation-mode, '${{ inputs.evaluation_mode || (github.event_name == ''push'' && ''workitem'' || ''pr'') }}', --evaluation-target, '${{ inputs.evaluation_target || (github.event_name == ''push'' && ''P07-P0-03'' || '''') }}', --format, json, --durable-ref, 'github-actions://${{ github.repository }}/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/bcf-governance-truth', --output, .artifacts/bcf/truth-report.json]
     cwd: .
     environment: {}
   install-governance-dependencies:
