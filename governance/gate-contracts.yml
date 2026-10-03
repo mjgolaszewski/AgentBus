@@ -500,6 +500,8 @@ gates:
         artifact_binding: *id042
     negative_controls:
     - {id: api-population-drift-is-rejected, mutation: {path: *id056, search: '    "claim": api_claim,', replace: '    "claim_broken": api_claim,'}, oracle: {kind: *id044, node_ids: ['tests.test_service::test_public_api_operation_inventory_owns_registered_routes']}}
+    - {id: joined-send-needs-explicit-destination, mutation: {path: src/agentbus_send_policy_service.py, search: '        if message.reply_to_cursor is None and message.recipient == "all" and not (', replace: '        if False and message.recipient == "all" and not ('}, oracle: {kind: *id044, node_ids: ['tests.test_service::test_joined_sender_requires_explicit_destination_independent_of_kind']}}
+    - {id: reply-parent-conflict-is-rejected, mutation: {path: src/agentbus_reply_policy_service.py, search: '        if field in message._authored_fields and getattr(message, field) != value:', replace: '        if False and getattr(message, field) != value:'}, oracle: {kind: *id044, node_ids: ['tests.test_service::test_reply_parent_derives_all_routing_metadata_before_slack']}}
     - id: unauthenticated-envelope-routing-is-rejected
       mutation:
         path: src/agentbus_service.py
@@ -599,7 +601,7 @@ gates:
         expected_nodes_mode: exact
         artifact_binding: *id042
     negative_controls:
-    - {id: ambiguous-actionable-send-is-rejected, mutation: {path: *id043, search: 'if ns.kind in {"question", "request", "blocker", "handoff"} and audience is None:', replace: 'if False:'}, oracle: {kind: *id044, node_ids: ['tests.test_launcher::test_cli_rejects_ambiguous_actionable_send_before_api']}}
+    - {id: missing-send-destination-is-rejected, mutation: {path: *id043, search: 'if not ns.recipient and not ns.broadcast:', replace: 'if False:'}, oracle: {kind: *id044, node_ids: ['tests.test_launcher::test_cli_rejects_ambiguous_actionable_send_before_api']}}
   typecheck:
     invocation: {argv: [python3, *id037, *id015], cwd: ., env: {}, required_env: []}
     evidence: {kind: gate}

@@ -75,3 +75,14 @@ workitems:
   acceptance_evidence:
   - test
   - contract-test
+- id: P07-P0-08
+  priority: P0
+  status: DONE
+  summary: deliver require explicit joined-send destinations and derive reply route, thread, and correlation from the stored parent
+  acceptance:
+  - joined sends without an exact recipient or explicit broadcast reject before Slack independent of kind
+  - the durable reply parent derives recipient, audience, thread root, and correlation; conflicting redundant fields reject before Slack
+  - unjoined legacy API messaging remains labelled and compatible
+  acceptance_evidence:
+  - test
+  - contract-test

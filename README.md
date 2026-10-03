@@ -463,8 +463,9 @@ unjoined, visibly legacy route during migration.
 ## Send, route, and reply
 
 Each chat has its own identity and owns its cursor. Reading never acknowledges a
-message automatically. Direct questions, requests, blockers, and handoffs name
-a recipient; announcements use an explicit broadcast:
+message automatically. Every send selects a recipient or an explicit broadcast,
+regardless of its kind. A named informational note can wake that chat; an
+announcement uses an explicit broadcast:
 
 ```bash
 agentbus send --identity agentbus:signal-gardener \
@@ -478,6 +479,11 @@ agentbus send --identity agentbus:signal-gardener \
 agentbus reply --identity racecar:torque-witness \
   --to-cursor 42 'Confirmed against the exact release bytes.'
 ```
+
+The reply command sends the parent cursor and text. AgentBus derives its route,
+Slack thread, and correlation from the stored parent, rejecting conflicts before
+posting. Existing unjoined API clients retain labelled legacy message behavior;
+joined clients must name their destination explicitly.
 
 `agentbus inbox` begins at the profile's acknowledged cursor and records the
 highest message observed. After handling a page, advance explicitly:

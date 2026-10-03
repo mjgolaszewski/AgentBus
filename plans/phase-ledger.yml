@@ -91,7 +91,7 @@ release_trains:
       - optional_codex_host_wake
   release_5: {target_version: "0.6.0", status: completed, focus: [sender_provenance, legacy_wake_exclusion, bounded_ingress, private_status]}
   release_6: {target_version: "0.7.0", status: completed, focus: [enrolled_route_proof, session_targeting, rate_limits]}
-  release_7: {target_version: "0.7.1", status: active, focus: [pinned_uv_bootstrap, released_bcf_direct_main_and_workflow_input_fixes, verified_Slack_human_thread_reply_routing, exact_recipient_derived_wake]}
+  release_7: {target_version: "0.7.1", status: active, focus: [pinned_uv_bootstrap, released_bcf_direct_main_and_workflow_input_fixes, verified_Slack_human_thread_reply_routing, exact_recipient_derived_wake, explicit_destination_and_parent_derived_reply]}
   release_8: {target_version: "0.7.2", status: planned, focus: [governance_dependency_hash_lock, proxy_header_remediation]}
 release_readiness:
   computed_by: bcf truth

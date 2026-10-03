@@ -5,6 +5,17 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Message routing
+
+- Joined senders must name a recipient or explicitly broadcast every message;
+  a `kind` label can no longer silently choose the audience. The client also
+  rejects named-message shortcuts that would create an invisible
+  informational-to-all message. Unjoined API clients keep visibly labelled
+  legacy compatibility.
+- Replies now derive recipient, direct audience, Slack thread, and correlation
+  from the stored parent cursor. Conflicting redundant fields fail before a
+  Slack post, and the CLI sends only the parent cursor and text.
+
 ### Codex wake
 
 - Any verified message addressed to a joined chat's exact route can wake its

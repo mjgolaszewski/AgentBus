@@ -1,7 +1,7 @@
 document:
   kind: agentbus_participation_contract
   id: agentbus-participation-v1
-  version: 1.6.0
+  version: 1.7.0
   status: active
   path: contracts/participation/v1/participation.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/6
@@ -71,6 +71,8 @@ invariants:
   - {id: INV-029, rule: "Multiple independent chat sessions may belong to one repository. Operator controls can target immutable session IDs to avoid route ambiguity; an operator can recover a disputed exact-name collision without treating self-service enrollment as repository ownership proof."}
   - {id: INV-030, rule: "The service bounds send rate per proved session or unjoined legacy route, returns 429 with Retry-After on excess, and does not post a rate-rejected request to Slack. This bound is independent of Slack's own rate response."}
   - {id: INV-031, rule: "A verified Slack-human reply to a known, session-assured agent thread root is a direct request to that root chat's current route only when no other agent chat has spoken in the thread. The service derives this route from durable parent and enrollment state, never message text or caller metadata. An agent may reply to the exact proved human parent, but may not create an arbitrary slack: recipient. Unknown, legacy, human-rooted, mixed-agent, and nonhuman replies remain unrouted; original text, sender, Slack thread, and history stay intact."}
+  - {id: INV-032, rule: "An enrolled sender MUST explicitly select one exact recipient or an explicit broadcast for every new message; message kind never supplies destination authority. A named informational message is addressed to that named chat; informational-to-all is rejected. Unjoined legacy callers retain labelled compatibility during rollout."}
+  - {id: INV-033, rule: "For a message with reply_to_cursor, the durable parent determines the exact recipient, direct audience, canonical Slack thread root, and correlation identity before external post. Omitted redundant fields are derived; explicitly conflicting fields fail closed. The CLI reply operation needs only the parent cursor and text, and the generic send operation cannot independently author reply metadata."}
 
 primitives:
   stable_chat_identity:
@@ -205,6 +207,8 @@ contracts:
     human_sender_namespace: Slack_ingress_only
     raw_history: unchanged_and_available_from_cursor_zero
     Slack_thread_reply: proved_single_agent_root_routes_verified_human_reply_as_direct_request_to_current_chat_route_otherwise_unrouted
+    destination_selection: enrolled_send_requires_explicit_recipient_or_broadcast_independent_of_kind_and_named_informational_is_addressed
+    reply_derivation: durable_parent_cursor_owns_recipient_direct_audience_thread_root_and_correlation_conflicts_reject_before_post
   optional_controls:
     nudge: requests_prompt_check_but_cannot_wake_ended_external_runtime
     temporary_policy_override: bounded_revision_with_deterministic_expiry_and_reversion
@@ -271,6 +275,8 @@ proof_obligations:
   - {id: PO-38, proves: [INV-029], scenario: distinct_chats_in_one_repo_keep_independent_sessions_and_exact_session_control_targeting_and_operator_dispute_recovery_are_unambiguous}
   - {id: PO-39, proves: [INV-030], scenario: per_principal_send_limit_returns_429_retry_after_without_post_and_reopens_after_the_window}
   - {id: PO-40, proves: [INV-023, INV-024, INV-031], scenario: verified_human_reply_to_single_proved_agent_root_targets_current_route_and_is_wake_eligible_agent_can_reply_to_exact_human_parent_but_cannot_send_to_arbitrary_Slack_user_and_ambiguous_threads_fail_closed}
+  - {id: PO-41, proves: [INV-032], scenario: joined_send_without_explicit_destination_or_named_informational_target_rejects_before_Slack_while_legacy_compatibility_remains_labelled}
+  - {id: PO-42, proves: [INV-033], scenario: reply_parent_derives_destination_thread_and_correlation_while_conflicting_metadata_rejects_before_Slack}
 
 implementation_order:
   - {id: IU-001, unit: freeze_contract_and_migration_assumptions, depends_on: []}
@@ -290,6 +296,7 @@ implementation_order:
   - {id: IU-015, unit: exact_session_target_and_dispute_recovery, depends_on: [IU-011, IU-014]}
   - {id: IU-016, unit: bounded_send_rate_and_retry_contract, depends_on: [IU-014]}
   - {id: IU-017, unit: proved_Slack_thread_reply_routing, depends_on: [IU-002, IU-014]}
+  - {id: IU-018, unit: explicit_enrolled_destination_and_parent_derived_reply, depends_on: [IU-014, IU-017]}
 
 acceptance_gates:
   G-IDENTITY: [INV-008, PO-05, PO-15]
@@ -305,3 +312,5 @@ acceptance_gates:
   G-EXACT-TARGET: [INV-029, PO-38]
   G-RATE: [INV-030, PO-39]
   G-SLACK-REPLY: [INV-031, PO-40]
+  G-DESTINATION: [INV-032, PO-41]
+  G-PARENT-REPLY: [INV-033, PO-42]

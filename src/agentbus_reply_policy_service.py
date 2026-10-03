@@ -3,6 +3,26 @@
 from __future__ import annotations
 
 
+def derive_reply_fields(store, channel: str, message) -> None:
+    """Let the durable parent own reply routing, not duplicated caller fields."""
+    if message.reply_to_cursor is None:
+        return
+    parent = store.message(channel, message.reply_to_cursor)
+    if parent is None:
+        raise KeyError(message.reply_to_cursor)
+    derived = {
+        "recipient": parent.sender,
+        "audience": "direct",
+        "thread_ts": parent.thread_ts or parent.slack_ts,
+        "correlation_id": parent.correlation_id,
+    }
+    for field, value in derived.items():
+        if field in message._authored_fields and getattr(message, field) != value:
+            raise ValueError(f"reply {field} conflicts with the durable parent")
+        setattr(message, field, value)
+    message.check_text()
+
+
 def validate_reply(store, channel: str, message) -> None:
     if message.thread_ts is not None and store.message_by_ts(channel, message.thread_ts) is None:
         raise ValueError("thread parent is unknown to this inbox")

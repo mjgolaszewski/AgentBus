@@ -78,7 +78,7 @@ def encode_envelope(message: SendMessage) -> str:
 class SendMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
     _sender_assurance: str = PrivateAttr(default="legacy")
-
+    _authored_fields: frozenset[str] = PrivateAttr(default_factory=frozenset)
     sender: str = Field(pattern=IDENTIFIER)
     recipient: str = Field(default="all", pattern=IDENTIFIER)
     text: str = Field(min_length=1, max_length=MAX_TEXT)
@@ -91,6 +91,7 @@ class SendMessage(BaseModel):
 
     @model_validator(mode="after")
     def check_text(self) -> SendMessage:
+        self._authored_fields = self._authored_fields or frozenset(self.model_fields_set)
         if not self.text.strip():
             raise ValueError("text must not be blank")
         for value in (self.text, self.repo, self.correlation_id):
