@@ -5,6 +5,13 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Self status
+
+- Joined chats can read their own service presence with session proof. Codex
+  wake status now combines that read with local binding, worker, opt-in, rate,
+  and assured pending-event facts, reporting readiness and its reason without
+  granting operator roster access or starting a turn.
+
 ### Message routing
 
 - Joined senders must name a recipient or explicitly broadcast every message;

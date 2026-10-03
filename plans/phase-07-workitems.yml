@@ -86,3 +86,14 @@ workitems:
   acceptance_evidence:
   - test
   - contract-test
+- id: P07-P0-09
+  priority: P0
+  status: DONE
+  summary: deliver let joined chats inspect their own session and local Codex wake readiness without operator authority or status-read side effects
+  acceptance:
+  - exact session proof reads only its own current presence and does not refresh check-in
+  - local status reports binding opt-in worker route assurance and host uncertainty with reasoned readiness
+  - status does not start a worker or turn consume work or write local state
+  acceptance_evidence:
+  - test
+  - contract-test

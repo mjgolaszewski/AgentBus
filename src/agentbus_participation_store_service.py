@@ -529,6 +529,14 @@ class ParticipationStore:
         with self._lock:
             return self._authorized_session(session_id, secret)
 
+    def self_presence(self, session_id: str, secret: str) -> dict:
+        """Return only the proved session's read-only presence projection."""
+        if len(secret) > 512:
+            raise PermissionError("session authority required")
+        with self._lock:
+            self._authorized_session(session_id, secret)
+            return self.presence(session_id)
+
     def rename(self, session_id: str, session_secret: str, new_route: str) -> tuple[str, str, str]:
         """Move the route atomically; the former address remains reserved."""
         with self._lock, self._db:

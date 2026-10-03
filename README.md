@@ -178,8 +178,18 @@ The chat can inspect its binding and pending work without starting a turn:
 ```bash
 ./agentbus codex-wake status --identity agentbus:signal-gardener
 ./agentbus codex-wake once --identity agentbus:signal-gardener
-./agentbus roster
 ```
+
+`codex-wake status` now joins a session-authenticated self-presence read with
+this host's binding and worker state. It reports the current route, session
+state, last check-in, assured pending references, and a reasoned wake readiness
+of `eligible`, `deferred`, `ineligible`, or `unknown` without an operator token.
+`eligible` means the adapter can attempt a wake; the Codex host still decides
+whether its thread is available and accepts a turn. A status read neither
+checks in nor starts a worker, consumes an event, or opens a turn. The separate
+`roster` command remains operator-only and can show other sessions.
+An operator with the separate operator credential can run `agentbus roster` to
+inspect multiple sessions.
 
 `workspace-disable` stops future live wake attempts; it does not end a joined
 session's participation worker. The adapter supervises each bound chat's
@@ -583,6 +593,7 @@ session-bound operations and assured sends.
 | `GET` | `/v1/inbox` | Read identity-aware routing and actionable annotations |
 | `POST` | `/v1/messages/{cursor}/claim` | Atomically claim an unrouted message |
 | `POST` | `/v1/sessions` | Join a chat and receive a service-issued UUID and policy revision |
+| `GET` | `/v1/sessions/{id}/self-presence` | Read only the proved session's current presence without an operator token |
 | `POST` | `/v1/sessions/{id}/policy-ack`, `/check-in` | Acknowledge policy and check for controls under session proof |
 | `GET` | `/v1/sessions/roster`, `/v1/sessions/{id}/presence` | Operator-only joined-session view |
 | `POST` | `/v1/policy/revisions`, `/v1/controls/stop`, `/v1/controls` | Operator-only policy and control changes |

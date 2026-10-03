@@ -52,6 +52,22 @@ def change_spool(profile_path: Path, profile: dict, change: Callable[[dict], T])
         return result
 
 
+def read_spool_events(profile_path: Path) -> list[dict]:
+    """Read the atomically replaced queue without creating locks or state."""
+    path = spool_path(profile_path)
+    if path.is_symlink():
+        raise ClientError("Refusing symlinked AgentBus poll state.")
+    try:
+        state = json.loads(path.read_text())
+    except FileNotFoundError:
+        return []
+    except (OSError, ValueError):
+        raise ClientError("AgentBus poll state is unreadable") from None
+    if not isinstance(state, dict) or not isinstance(state.get("events"), list):
+        raise ClientError("AgentBus poll state has an unsupported schema")
+    return state["events"]
+
+
 def _routine_message(event: dict, identity: str) -> bool:
     if event["kind"] != "MESSAGE":
         return False
@@ -123,6 +139,23 @@ def _append(state: dict, event: dict) -> None:
 
 def _worker_lock(profile_path: Path) -> Path:
     return profile_path.with_name(profile_path.name + ".worker.lock")
+
+
+def worker_running(profile_path: Path) -> bool:
+    """Observe the worker's lifetime lock without starting a process."""
+    path = _worker_lock(profile_path)
+    if path.is_symlink():
+        raise ClientError("Refusing symlinked AgentBus worker lock.")
+    try:
+        with path.open("rb") as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                return True
+            fcntl.flock(lock, fcntl.LOCK_UN)
+            return False
+    except FileNotFoundError:
+        return False
 
 
 def ensure_worker(profile_path: Path, values: dict[str, str]) -> None:

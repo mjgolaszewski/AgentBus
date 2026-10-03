@@ -1,7 +1,7 @@
 document:
   kind: agentbus_codex_wake_contract
   id: agentbus-codex-wake-v1
-  version: 1.3.0
+  version: 1.4.0
   status: active
   path: contracts/codex-wake/v1/codex-wake.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/8
@@ -34,13 +34,14 @@ invariants:
   - {id: CW-INV-011, rule: "An ordinary message may wake a bound Codex thread only when the service records session or slack-human assurance; legacy and caller-asserted sender labels never grant wake eligibility."}
   - {id: CW-INV-012, rule: "A live-wakable idle chat defaults to zero routine in-chat polls; during an active turn it receives the delivered backoff cadence and checks silently at work checkpoints. The local worker observes below the reasoning boundary, unchanged observations start no model turn, and required controls remain observable within the policy maximum."}
   - {id: CW-INV-013, rule: "A service-routed verified Slack-human reply to a single session-assured agent thread root is eligible as a direct message for that exact chat. Unknown or ambiguous thread replies do not wake; host opt-in, stopped-session exclusion, rate bounds, and turn authority remain unchanged."}
+  - {id: CW-INV-014, rule: "A chat can inspect its own read-only wake readiness from session-proved service presence and this host's validated local binding, workspace and chat switches, worker liveness, rate state, and assured pending candidates. Output distinguishes eligible-to-attempt, deferred, ineligible, and unknown with reason and observation time; unobserved host ownership and permission never become a turn-start guarantee. Status neither starts a worker or turn nor consumes pending work."}
 primitives:
   workspace_activation: {identity: local_workspace, fields: [enabled, actor, changed_at], owner: adapter_private_state}
   binding: {identity: chat_id_plus_session_id, fields: [chat_id, session_id, thread_id, binding_generation, enabled, actor, created_at], owner: adapter_private_state}
   wake_candidate: {identity: event_kind_plus_event_id, fields: [kind, id, priority, eligibility_reason], owner: non_destructive_projection}
   wake_attempt: {identity: attempt_id, fields: [binding_generation, wake_epoch, candidate_ids, state, turn_id, observed_at, uncertainty], owner: adapter_private_state}
   host_capability: {identity: configured_Codex_host, allowed_methods: [thread/read, thread/resume, turn/start], owner: host}
-  status: {fields: [binding, eligible_candidates, host_state, last_attempt, uncertainty], owner: adapter_projection}
+  status: {fields: [session_proved_self_presence, binding, workspace_and_chat_switches, worker_liveness, assured_candidates, readiness, reason, observed_at, last_attempt, host_uncertainty], owner: adapter_projection}
 contracts:
   bind: after_explicit_workspace_opt_in_auto_enrollment_uses_host_verified_current_thread_and_joined_session_then_records_private_generation
   enrollment: a_single_user_request_to_join_triggers_chat_registration_and_host_binding_without_per_chat_user_commands_while_operator_handoff_authority_remains_separate
@@ -60,6 +61,7 @@ contracts:
     post_turn: completed_turn_rechecks_authoritative_pending_events_and_may_schedule_only_a_bounded_followup_never_infers_acknowledgement
     prompt: contains_only_identity_and_stable_event_references_no_untrusted_message_text
   control: {priority: before_ordinary_message_wake, acknowledgement: target_agent_only, stopped_session: no_ordinary_wake}
+  self_status: {service_authority: exact_session_proof, local_authority: validated_private_binding_and_worker_observation, readiness: eligible_deferred_ineligible_or_unknown_with_reason, host_turn_start: unobserved_until_host_fact, side_effects: none}
   lifecycle:
     states: [active_turn_agent_polls, dormant_resumable_adapter_observes, stopped_no_auto_wake, unavailable_notification_only]
     stop_transition: acknowledged_stop_is_never_treated_as_idle_and_requires_new_authorized_session_before_wake
@@ -79,6 +81,7 @@ proof_obligations:
   - {id: CW-PO-08, proves: [CW-INV-003, CW-INV-011], scenario: legacy_and_spoofed_messages_never_start_turns_while_verified_cross_repo_agents_can_wake}
   - {id: CW-PO-09, proves: [CW-INV-007, CW-INV-012], scenario: watch_all_supervises_bound_chat_poll_workers_before_wake_projection_and_idle_chat_ends_turn_without_manual_polling_or_empty_wakes}
   - {id: CW-PO-10, proves: [CW-INV-003, CW-INV-011, CW-INV-013], scenario: verified_human_reply_to_single_proved_agent_root_is_direct_and_wake_eligible_while_ambiguous_or_unproved_threads_remain_unrouted}
+  - {id: CW-PO-11, proves: [CW-INV-009, CW-INV-014], scenario: own_status_joins_service_and_local_facts_without_operator_token_other_session_read_side_effect_or_false_host_guarantee}
 implementation_order:
   - {id: CW-IU-001, unit: freeze_contract_and_host_protocol, depends_on: []}
   - {id: CW-IU-002, unit: non_destructive_candidate_projection, depends_on: [CW-IU-001]}
@@ -87,6 +90,7 @@ implementation_order:
   - {id: CW-IU-005, unit: host_RPC_and_serialized_live_launch, depends_on: [CW-IU-004]}
   - {id: CW-IU-006, unit: restart_reconciliation_and_adversarial_proof, depends_on: [CW-IU-005]}
   - {id: CW-IU-007, unit: docs_BCF_graph_and_exact_candidate_proof, depends_on: [CW-IU-006]}
+  - {id: CW-IU-008, unit: session_proved_self_status_and_read_only_wake_projection, depends_on: [CW-IU-004, CW-IU-007]}
 acceptance_gates:
   G-BOUNDARY: [CW-INV-001, CW-INV-009, CW-INV-010, CW-PO-06]
   G-BINDING: [CW-INV-002, CW-PO-01, CW-PO-07]
@@ -96,3 +100,4 @@ acceptance_gates:
   G-CONTROL: [CW-INV-006, CW-PO-04]
   G-TOKEN: [CW-INV-007, CW-INV-008, CW-PO-05]
   G-GOVERNANCE: [CW-IU-007]
+  G-SELF-STATUS: [CW-INV-014, CW-PO-11]

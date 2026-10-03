@@ -202,8 +202,79 @@ def test_binding_stays_with_chat_id_on_rename_and_rejects_session_change(setup):
     assert wake.status(values, profile["identity"])["thread_id"] == "thread-one"
     profile["participation"]["session_id"] = "different-session"
     assert wake.local_binding_projection(values, profile["chat_id"], "different-session")["session_matches"] is False
-    with pytest.raises(ClientError, match="stale"):
-        wake.status(values, profile["identity"])
+    stale = wake.status(values, profile["identity"])
+    assert stale["wake_readiness"] == "ineligible" and stale["reason"] == "binding_missing_or_stale"
+
+
+def test_self_status_combines_proved_service_and_local_facts_without_side_effects(setup, monkeypatch):
+    values, identity, profile, path, host = setup
+    values.update({"AGENTBUS_URL": "http://127.0.0.1:8766", "AGENTBUS_API_TOKEN": "shared"})
+    profile["participation"]["session_secret"] = "exact-session-secret"
+    wake.bind(values, identity, "thread-one", lambda: host)
+    wake.set_enabled(values, identity, True)
+    put(path, profile, message(1, assurance="legacy"), message(2, kind="status"))
+    presence = {"chat_id": profile["chat_id"], "session_id": "session-one",
+                "route": identity, "state": "active_compliant",
+                "last_client_contact_at": "2026-10-03T00:00:00+00:00"}
+    calls = []
+
+    def service_api(_values, route, **kwargs):
+        calls.append((route, kwargs))
+        return dict(presence)
+
+    monkeypatch.setattr(wake, "api", service_api)
+    monkeypatch.setattr(wake, "_worker_pid", lambda _path: 1234)
+    monkeypatch.setattr(wake, "worker_running", lambda _path: True)
+    before = {file.relative_to(path.parent): file.read_bytes() for file in path.parent.rglob("*") if file.is_file()}
+    host_calls = list(host.calls)
+    result = wake.status(values, identity)
+    after = {file.relative_to(path.parent): file.read_bytes() for file in path.parent.rglob("*") if file.is_file()}
+    assert before == after and host.calls == host_calls
+    assert calls == [("/v1/sessions/session-one/self-presence", {"session_token": "exact-session-secret"})]
+    assert result["wake_readiness"] == "eligible" and result["reason"] == "ready_to_attempt"
+    assert result["host_turn_start"] == "unobserved"
+    assert result["registration"] == "joined" and result["service_state"] == "active_compliant"
+    assert result["route_matches"] is True
+    assert result["last_check_in_at"] == presence["last_client_contact_at"]
+    assert result["eligible"] == ["MESSAGE:2"]
+    assert result["service_presence"]["last_client_contact_at"] == presence["last_client_contact_at"]
+    monkeypatch.setattr(wake, "_worker_pid", lambda _path: None)
+    assert wake.status(values, identity)["reason"] == "local_worker_not_running"
+    monkeypatch.setattr(wake, "_worker_pid", lambda _path: 1234)
+    binding_path = wake._state_path(values, profile["chat_id"])
+    binding = wake._load(binding_path)
+    binding["wake_history"] = [wake._now()] * wake.MAX_WAKES_PER_HOUR
+    wake._save(binding_path, binding)
+    assert wake.status(values, identity)["reason"] == "wake_rate_limited"
+    binding["wake_history"] = []
+    wake._save(binding_path, binding)
+    presence["route"] = "agentbus:other"
+    mismatch = wake.status(values, identity)
+    assert mismatch["reason"] == "service_identity_mismatch" and mismatch["route_matches"] is False
+    presence["route"] = identity
+    presence["state"] = "stopped"
+    assert wake.status(values, identity)["reason"] == "session_stopped"
+    presence["state"] = "active_compliant"
+    host.failure = TurnStartUncertain("lost turn-start response")
+    assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "uncertain"
+    unresolved = wake.status(values, identity)
+    assert unresolved["wake_readiness"] == "deferred"
+    assert unresolved["reason"] == "wake_attempt_unresolved"
+
+
+def test_self_status_reports_opt_out_missing_binding_and_unobserved_service(setup, monkeypatch):
+    values, identity, profile, path, host = setup
+    assert wake.status(values, identity)["reason"] == "binding_missing_or_stale"
+    wake.bind(values, identity, "thread-one", lambda: host)
+    wake.set_enabled(values, identity, False)
+    assert wake.status(values, identity)["reason"] == "chat_opted_out"
+    wake.set_enabled(values, identity, True)
+    assert wake.status(values, identity)["wake_readiness"] == "unknown"
+    assert wake.status(values, identity)["reason"] == "service_presence_unobserved"
+    wake.set_workspace_enabled(values, False)
+    assert wake.status(values, identity)["reason"] == "workspace_disabled"
+    profile.pop("participation")
+    assert wake.status(values, identity)["registration"] == "not_joined"
 
 
 def test_workspace_opt_in_enrolls_exact_current_thread_and_controls_live_wake(setup, monkeypatch):

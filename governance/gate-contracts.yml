@@ -13,7 +13,7 @@ claim_model:
   dependency_sets:
     governance: [AGENTS.yml, &id057 MEMORY.yml, &id039 architecture-boundaries.yml, governance/**, plans/**, phases/**, schemas/**, Makefile, Makefile.fragment, .gitignore]
     client-source: [agentbus, &id043 src/agentbus_client.py, src/agentbus_transport_client.py, src/agentbus_poll_client.py, src/agentbus_presentation_client.py, src/agentbus_parser_client.py, src/agentbus_operator_client.py, src/agentbus_rename_client.py, src/agentbus_codex_rpc_client.py, src/agentbus_codex_wake_client.py]
-    service-source: [agentbus_service.py, &id056 src/agentbus_service.py, src/agentbus_participation_service.py, src/agentbus_participation_store_service.py, src/agentbus_control_store_service.py, src/agentbus_claim_recovery_service.py, src/agentbus_participation_api_service.py, src/agentbus_message_assurance_service.py, src/agentbus_message_authorization_service.py, src/agentbus_presentation_service.py, src/agentbus_reply_policy_service.py, src/agentbus_request_limits_service.py, src/agentbus_send_policy_service.py, src/agentbus_send_rate_service.py, src/agentbus_settings_service.py, &id001 slack-app-manifest.json]
+    service-source: [agentbus_service.py, &id056 src/agentbus_service.py, src/agentbus_status_api_service.py, src/agentbus_participation_service.py, src/agentbus_participation_store_service.py, src/agentbus_control_store_service.py, src/agentbus_claim_recovery_service.py, src/agentbus_participation_api_service.py, src/agentbus_message_assurance_service.py, src/agentbus_message_authorization_service.py, src/agentbus_presentation_service.py, src/agentbus_reply_policy_service.py, src/agentbus_request_limits_service.py, src/agentbus_send_policy_service.py, src/agentbus_send_rate_service.py, src/agentbus_settings_service.py, &id001 slack-app-manifest.json]
     participation-contract: [contracts/participation/**, schemas/participation-contract.schema.json]
     codex-wake-contract: [contracts/codex-wake/**, schemas/codex-wake-contract.schema.json]
     package-source: [src/__init__.py, &id002 pyproject.toml, uv.lock]
@@ -502,6 +502,7 @@ gates:
     - {id: api-population-drift-is-rejected, mutation: {path: *id056, search: '    "claim": api_claim,', replace: '    "claim_broken": api_claim,'}, oracle: {kind: *id044, node_ids: ['tests.test_service::test_public_api_operation_inventory_owns_registered_routes']}}
     - {id: joined-send-needs-explicit-destination, mutation: {path: src/agentbus_send_policy_service.py, search: '        if message.reply_to_cursor is None and message.recipient == "all" and not (', replace: '        if False and message.recipient == "all" and not ('}, oracle: {kind: *id044, node_ids: ['tests.test_service::test_joined_sender_requires_explicit_destination_independent_of_kind']}}
     - {id: reply-parent-conflict-is-rejected, mutation: {path: src/agentbus_reply_policy_service.py, search: '        if field in message._authored_fields and getattr(message, field) != value:', replace: '        if False and getattr(message, field) != value:'}, oracle: {kind: *id044, node_ids: ['tests.test_service::test_reply_parent_derives_all_routing_metadata_before_slack']}}
+    - {id: self-presence-requires-exact-session-proof, mutation: {path: src/agentbus_participation_store_service.py, search: '            self._authorized_session(session_id, secret)', replace: '            pass'}, oracle: {kind: *id044, node_ids: ['tests.test_service::test_self_presence_is_exact_session_read_only_and_not_operator_roster']}}
     - id: unauthenticated-envelope-routing-is-rejected
       mutation:
         path: src/agentbus_service.py
@@ -602,6 +603,7 @@ gates:
         artifact_binding: *id042
     negative_controls:
     - {id: missing-send-destination-is-rejected, mutation: {path: *id043, search: 'if not ns.recipient and not ns.broadcast:', replace: 'if False:'}, oracle: {kind: *id044, node_ids: ['tests.test_launcher::test_cli_rejects_ambiguous_actionable_send_before_api']}}
+    - {id: self-status-route-mismatch-is-ineligible, mutation: {path: src/agentbus_codex_wake_client.py, search: '                               service_presence["route"] != identity or', replace: '                               False or'}, oracle: {kind: *id044, node_ids: ['tests.test_codex_wake_client::test_self_status_combines_proved_service_and_local_facts_without_side_effects']}}
   typecheck:
     invocation: {argv: [python3, *id037, *id015], cwd: ., env: {}, required_env: []}
     evidence: {kind: gate}

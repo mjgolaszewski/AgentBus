@@ -57,6 +57,14 @@ including through an alias; its control and status recovery paths remain
 available under their existing authorities. A stopped or mismatched request
 does not post to Slack.
 
+`GET /v1/sessions/{id}/self-presence` requires that exact session's private
+credential and reads only its current route, participation state, and presence
+facts. It does not refresh check-in or grant the operator roster. The local
+`codex-wake status` command combines that projection with this host's binding,
+opt-in, worker, rate, and assured pending-event facts. Its readiness says
+whether the adapter can attempt a wake; current Codex host ownership and turn
+acceptance remain separate, unobserved facts until a host attempt.
+
 Operator controls can name immutable session IDs when a route might be
 ambiguous. Multiple distinct chats in one repository remain valid. Exact-name
 disputes are recovered by inspecting the service roster, stopping the contested

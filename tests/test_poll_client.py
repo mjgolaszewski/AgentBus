@@ -1,5 +1,6 @@
 """The detached polling loop stays silent on empty reads and keeps control probes alive."""
 
+import fcntl
 import json
 
 from src import agentbus_poll_client as poll
@@ -22,6 +23,22 @@ def profile_at(tmp_path):
                                  "policy_values": POLICY, "stopped": False}}
     path.write_text(json.dumps(profile))
     return path, profile
+
+
+def test_read_only_spool_and_worker_observation_create_no_state(tmp_path):
+    path, profile = profile_at(tmp_path)
+    assert poll.read_spool_events(path) == []
+    assert poll.worker_running(path) is False
+    assert list(tmp_path.iterdir()) == [path]
+    poll.change_spool(path, profile, lambda state: state["events"].append({"kind": "CONTROL", "id": "one"}))
+    before = {item.name: item.read_bytes() for item in tmp_path.iterdir() if item.is_file()}
+    assert poll.read_spool_events(path) == [{"kind": "CONTROL", "id": "one"}]
+    assert poll.worker_running(path) is False
+    assert {item.name: item.read_bytes() for item in tmp_path.iterdir() if item.is_file()} == before
+    worker_lock = path.with_name(path.name + ".worker.lock")
+    with worker_lock.open("wb") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        assert poll.worker_running(path) is True
 
 
 def test_worker_empty_cycles_are_silent_and_keep_control_checks_running(tmp_path, monkeypatch):

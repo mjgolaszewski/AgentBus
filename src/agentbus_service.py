@@ -47,6 +47,7 @@ from src.agentbus_participation_api_service import (
     api_session_rename,
     api_session_roster,
     api_session_rotate_secret,
+    api_session_self_presence,
     authenticate_operator,
     upgrade_notice,
 )
@@ -58,6 +59,7 @@ from src.agentbus_send_policy_service import SessionAuthorityError, validate_new
 from src.agentbus_send_rate_service import SendRateExceeded, SendRateStore
 from src.agentbus_settings_service import Settings
 from src.agentbus_slack_reply_service import append_slack
+from src.agentbus_status_api_service import api_health, api_status
 
 LOGGER = logging.getLogger("agentbus")
 IDENTIFIER = r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$"
@@ -592,15 +594,6 @@ def authenticate(request: Request,
                             headers={"WWW-Authenticate": "Bearer"})
 
 
-def api_health(request: Request) -> dict:
-    return {"status": "ok"}
-
-
-def api_status(request: Request) -> dict:
-    return {"status": "ok", "slack_connected": request.app.state.socket.is_connected(),
-            "database_bytes": request.app.state.settings.database_bytes()}
-
-
 async def api_send(request: Request, message: SendMessage,
                    x_agentbus_session_token: Annotated[str | None, Header()] = None) -> Message:
     settings = request.app.state.settings
@@ -702,6 +695,7 @@ API_OPERATIONS: dict[str, Callable[..., object]] = {
     "profile_handoff": api_profile_handoff,
     "rotation_grant": api_rotation_grant,
     "session_presence": api_session_presence,
+    "session_self_presence": api_session_self_presence,
     "session_roster": api_session_roster,
     "session_policy_ack": api_session_policy_ack,
     "session_policy_explain": api_session_policy_explain,
@@ -779,6 +773,8 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                       methods=["POST"], dependencies=auth)
     app.add_api_route("/v1/sessions/{session_id}/presence", API_OPERATIONS["session_presence"],
                       methods=["GET"], dependencies=[Depends(authenticate_operator)])
+    app.add_api_route("/v1/sessions/{session_id}/self-presence", API_OPERATIONS["session_self_presence"],
+                      methods=["GET"], dependencies=auth)
     app.add_api_route("/v1/sessions/roster", API_OPERATIONS["session_roster"], methods=["GET"], dependencies=[Depends(authenticate_operator)])
     app.add_api_route("/v1/sessions/{session_id}/policy", API_OPERATIONS["session_policy_explain"],
                       methods=["GET"], dependencies=[Depends(authenticate_operator)])

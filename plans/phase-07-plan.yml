@@ -25,6 +25,7 @@ delivery_contract:
   - route verified human replies to single-agent Slack threads as direct requests
   - derive wake eligibility from assured exact recipient rather than message kind, including named informational traffic
   - require explicit joined-send destinations and derive reply route, thread, and correlation from the stored parent
+  - let joined chats inspect their own session and local Codex wake readiness without operator authority or status-read side effects
   - disclose remaining F14 governance dependency hash and F15 proxy-header risk in release notes and security guidance
   - prove exact candidate and isolated release archive before consumer cutover
   parallelizable_workstreams:

@@ -118,7 +118,7 @@ def test_public_api_operation_inventory_owns_registered_routes(settings):
         for route in app.routes
         for method in getattr(route, "methods", set())
     }
-    assert set(API_OPERATIONS) == {"health", "status", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "rotation_grant", "session_rotate_secret", "session_presence", "session_roster", "session_policy_ack", "session_policy_explain", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename"}
+    assert set(API_OPERATIONS) == {"health", "status", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "rotation_grant", "session_rotate_secret", "session_presence", "session_self_presence", "session_roster", "session_policy_ack", "session_policy_explain", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename"}
     assert routes[("GET", "/healthz")] is API_OPERATIONS["health"]
     assert routes[("GET", "/v1/status")] is API_OPERATIONS["status"]
     assert routes[("POST", "/v1/messages")] is API_OPERATIONS["send"]
@@ -135,6 +135,7 @@ def test_public_api_operation_inventory_owns_registered_routes(settings):
     assert routes[("POST", "/v1/sessions/{session_id}/rotate-secret")] is API_OPERATIONS["session_rotate_secret"]
     assert routes[("POST", "/v1/sessions/{session_id}/policy-ack")] is API_OPERATIONS["session_policy_ack"]
     assert routes[("POST", "/v1/sessions/{session_id}/check-in")] is API_OPERATIONS["session_check_in"]
+    assert routes[("GET", "/v1/sessions/{session_id}/self-presence")] is API_OPERATIONS["session_self_presence"]
     assert routes[("POST", "/v1/controls/stop")] is API_OPERATIONS["control_stop"]
     assert routes[("POST", "/v1/controls")] is API_OPERATIONS["control_issue"]
     assert routes[("GET", "/v1/controls/{control_id}")] is API_OPERATIONS["control_status"]
@@ -389,6 +390,42 @@ def test_existing_profile_handoff_requires_operator_and_preserves_uuid(service):
                        json={"current_backoff_seconds": "NaN"}).status_code == 422
     assert client.post("/v1/sessions", headers=AUTH, json=enrollment).json()["session_id"] == joined.json()["session_id"]
     assert client.post("/v1/sessions", headers=AUTH, json={**enrollment, "session_secret": "other" * 10}).status_code == 409
+
+
+def test_self_presence_is_exact_session_read_only_and_not_operator_roster(service):
+    client, app, requests = service
+    flower_secret = "flower-session-secret-with-at-least-32-characters"
+    peer_secret = "peer-session-secret-with-at-least-32-characters"
+    flower = enroll_for_thread(app.state.store, "agentbus:flower", flower_secret)
+    peer = enroll_for_thread(app.state.store, "agentbus:peer", peer_secret)
+    route = f"/v1/sessions/{flower}/self-presence"
+    before = app.state.store.participation.presence(flower)
+    exact = {**AUTH, "X-AgentBus-Session-Token": flower_secret}
+    for _ in range(2):
+        response = client.get(route, headers=exact)
+        assert response.status_code == 200
+        assert response.json()["session_id"] == flower
+        assert response.json()["route"] == "agentbus:flower"
+        assert "secret" not in response.text and peer not in response.text
+    assert app.state.store.participation.presence(flower) == before
+    for denied in (AUTH, {**AUTH, "X-AgentBus-Session-Token": peer_secret},
+                   {**AUTH, "X-AgentBus-Session-Token": "wrong"},
+                   {**AUTH, "X-AgentBus-Session-Token": "x" * 513}):
+        response = client.get(route, headers=denied)
+        assert response.status_code == 401
+        assert response.json() == {"detail": "Session authorization required"}
+    unknown = client.get("/v1/sessions/unknown/self-presence", headers=exact)
+    assert unknown.status_code == 401 and unknown.json() == response.json()
+    assert client.get(f"/v1/sessions/{peer}/self-presence", headers=exact).status_code == 401
+    assert client.get(f"/v1/sessions/{flower}/presence", headers=exact).status_code == 401
+    stop_id, _ = app.state.store.controls.issue_stop(
+        routes=["agentbus:flower"], reason="stop this chat", actor="operator",
+    )
+    app.state.store.controls.deliver(flower, flower_secret)
+    app.state.store.controls.acknowledge_stop(stop_id, flower, flower_secret)
+    stopped = client.get(route, headers=exact)
+    assert stopped.status_code == 200 and stopped.json()["state"] == "stopped"
+    assert requests == []
 
 
 def test_self_service_join_and_operator_roster_are_separate_authorities(service):

@@ -39,8 +39,18 @@ Check a chat's binding and pending references without starting a turn:
 ```bash
 agentbus codex-wake status --identity REPO:NAME
 agentbus codex-wake once --identity REPO:NAME
-agentbus roster --json
 ```
+
+`codex-wake status` is the chat's own read-only readiness check. Its session
+credential reads current service route, state, and last check-in; the local
+adapter adds binding, workspace and chat switches, worker liveness, and assured
+pending events. It needs no operator credential. `eligible` means AgentBus can
+attempt a wake, while `deferred`, `ineligible`, and `unknown` explain why that
+attempt cannot currently be claimed. The Codex host may still own the thread
+or reject a turn, so status never promises a successful resume. Reading status
+does not start workers, refresh check-in, consume work, or open a turn. The
+roster remains an operator view of multiple sessions.
+Operators can run `agentbus roster --json` with their separate credential.
 
 The worker starts a turn for any verified message addressed to the chat's
 exact route, including one labelled informational, regardless of whether its
@@ -68,6 +78,7 @@ required controls and policy changes keep priority.
 | --- | --- |
 | Workspace consent | One user action enables the local worker for this workspace; disabling it stops future live wakes. |
 | Automatic thread link | On join, the connector verifies the current saved Codex thread and binds its exact thread ID to the service-issued chat UUID and session. |
+| Own wake status | A joined chat can see its session and this host's wake readiness without an operator token or a model turn. |
 | Local roster view | Operators can list service-joined sessions and see which have a binding on this host. A blank local link does not establish that no other host has one. |
 | Addressed wake-up | Every verified message to the chat's exact route, including named informational messages, can resume an eligible idle thread. Claimed work and required controls or policy changes can too. |
 | Slack thread reply | A verified human reply to a joined agent's unambiguous thread root becomes a direct request to that chat and can wake it; mixed-agent or unknown threads remain unrouted. |

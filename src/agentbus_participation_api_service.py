@@ -225,6 +225,16 @@ def api_session_presence(request: Request, session_id: str) -> dict:
         raise HTTPException(404, "Unknown participation session") from None
 
 
+def api_session_self_presence(
+    request: Request, session_id: str,
+    session_token: Annotated[str | None, Header(alias="X-AgentBus-Session-Token")] = None,
+) -> dict:
+    try:
+        return request.app.state.store.participation.self_presence(session_id, session_token or "")
+    except PermissionError:
+        raise HTTPException(401, "Session authorization required") from None
+
+
 def api_session_roster(request: Request, include_stopped: bool = False) -> dict:
     return {"sessions": request.app.state.store.participation.roster(
         include_stopped=include_stopped)}

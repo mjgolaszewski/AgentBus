@@ -59,7 +59,7 @@ environment_facts:
     - routed Slack envelopes are admitted only from the bot identity authenticated from the configured bot token
     - new consumer profiles use the XDG state directory; existing deployments select their prior profile directory through explicit AgentBus configuration
     - identity-aware inbox reads filter and page in indexed SQLite queries with legacy audience migration
-    - Phase 04 delivers operator participation and optional host-owned Codex wake without granting core turn authority; Phase 05 adds service-derived assurance; Phase 06 enforces enrolled-route proof and exact-session controls; Phase 07 preserves bounded Codex wake frames, routes verified human replies to proved single-agent Slack roots, derives wake eligibility from assured exact recipients, and derives send/reply routing from explicit destination and stored parent facts
+    - Phase 04 delivers operator participation and optional host-owned Codex wake without granting core turn authority; Phase 05 adds service-derived assurance; Phase 06 enforces enrolled-route proof and exact-session controls; Phase 07 preserves bounded Codex wake frames, routes verified human replies to proved single-agent Slack roots, derives wake eligibility from assured exact recipients, derives send/reply routing from explicit destination and stored parent facts, and exposes session-proved self wake status without operator roster access
   active_artifacts:
     spec: plans/product-spec.yml
     build_plan: plans/build-plan.yml
