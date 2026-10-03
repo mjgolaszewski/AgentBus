@@ -52,14 +52,30 @@ def change_spool(profile_path: Path, profile: dict, change: Callable[[dict], T])
         return result
 
 
-def _routine_message(event: dict) -> bool:
+def read_spool_events(profile_path: Path) -> list[dict]:
+    """Read the atomically replaced queue without creating locks or state."""
+    path = spool_path(profile_path)
+    if path.is_symlink():
+        raise ClientError("Refusing symlinked AgentBus poll state.")
+    try:
+        state = json.loads(path.read_text())
+    except FileNotFoundError:
+        return []
+    except (OSError, ValueError):
+        raise ClientError("AgentBus poll state is unreadable") from None
+    if not isinstance(state, dict) or not isinstance(state.get("events"), list):
+        raise ClientError("AgentBus poll state has an unsupported schema")
+    return state["events"]
+
+
+def _routine_message(event: dict, identity: str) -> bool:
     if event["kind"] != "MESSAGE":
         return False
     message = event["message"]
     return not (
         message.get("action_reason") == "claimed by this identity" or
-        (message.get("audience") == "direct" and
-         message.get("kind") in {"blocker", "request", "question", "handoff"})
+        (message.get("audience") in {"direct", "informational"} and
+         message.get("recipient") == identity)
     )
 
 
@@ -72,10 +88,11 @@ def peek_event(profile_path: Path, profile: dict, *, quiet: bool = False) -> dic
         if event["kind"] == "ATTENTION_REQUIRED":
             return 2
         message = event["message"]
-        if message.get("audience") == "direct" and message.get("kind") == "blocker":
+        if (message.get("audience") in {"direct", "informational"} and
+                message.get("recipient") == profile["identity"] and message.get("kind") == "blocker"):
             return 3
-        if (message.get("audience") == "direct" and
-                message.get("kind") in {"request", "question", "handoff"}):
+        if (message.get("audience") in {"direct", "informational"} and
+                message.get("recipient") == profile["identity"]):
             return 4
         if message.get("action_reason") == "claimed by this identity":
             return 5
@@ -88,7 +105,7 @@ def peek_event(profile_path: Path, profile: dict, *, quiet: bool = False) -> dic
             # The service inbox remains authoritative; this is disposable
             # presentation state, not an acknowledgement or deletion.
             state["events"] = [event for event in state["events"]
-                               if not _routine_message(event)]
+                               if not _routine_message(event, profile["identity"])]
         events = sorted(state["events"], key=lambda event: (
             priority(event),
             event["message"]["cursor"] if event["kind"] == "MESSAGE" else event["id"],
@@ -122,6 +139,23 @@ def _append(state: dict, event: dict) -> None:
 
 def _worker_lock(profile_path: Path) -> Path:
     return profile_path.with_name(profile_path.name + ".worker.lock")
+
+
+def worker_running(profile_path: Path) -> bool:
+    """Observe the worker's lifetime lock without starting a process."""
+    path = _worker_lock(profile_path)
+    if path.is_symlink():
+        raise ClientError("Refusing symlinked AgentBus worker lock.")
+    try:
+        with path.open("rb") as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                return True
+            fcntl.flock(lock, fcntl.LOCK_UN)
+            return False
+    except FileNotFoundError:
+        return False
 
 
 def ensure_worker(profile_path: Path, values: dict[str, str]) -> None:
@@ -223,7 +257,7 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
                     for message in page["messages"]:
                         event = {"kind": "MESSAGE", "id": str(message["cursor"]),
                                  "message": message}
-                        if not profile.get("quiet_mode", False) or not _routine_message(event):
+                        if not profile.get("quiet_mode", False) or not _routine_message(event, profile["identity"]):
                             _append(state, event)
                             relevant += 1
                     state["cursor"] = max(int(state["cursor"]), int(page["next_cursor"]))

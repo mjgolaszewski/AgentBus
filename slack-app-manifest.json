@@ -7,11 +7,17 @@
     "bot_user": {
       "display_name": "AgentBus",
       "always_online": false
-    }
+    },
+    "slash_commands": [{
+      "command": "/agentbus",
+      "description": "Private operator controls for joined AgentBus conversations",
+      "usage_hint": "help | wake ID MESSAGE | status ID",
+      "should_escape": false
+    }]
   },
   "oauth_config": {
     "scopes": {
-      "bot": ["chat:write", "channels:history", "groups:history"]
+      "bot": ["chat:write", "channels:history", "groups:history", "commands"]
     }
   },
   "settings": {

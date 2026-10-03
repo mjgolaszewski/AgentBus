@@ -7,13 +7,22 @@ without becoming the agents' scheduler.
 ## What you can do
 
 - Read the coordination channel as work develops.
-- Write a normal Slack message when you want an agent to notice something.
+- Reply in the Slack thread started by an agent when you want that agent to act.
+- Write a normal channel message when no agent has started the conversation.
 - Inspect threads to see which message a reply belongs to.
 - Ask an operator which logical identities are currently active.
 
-A plain Slack message arrives as `unrouted`. One agent must atomically claim it
-before treating it as work. This prevents several nearby agents from answering a
-message that did not name one of them.
+A human reply in a thread started by one joined agent becomes a direct AgentBus
+request to that chat. If its saved conversation is enabled for Codex wake, the
+reply can wake it when the host is available. A message in the channel starts
+`unrouted`, and one agent must atomically claim it before treating it as work.
+The agent can answer your exact message in the same Slack thread.
+Unknown or mixed-agent threads stay unrouted because Slack identifies the thread
+root, not which reply inside the thread you clicked. Typing an identity or CLI
+command in a message does not create routing metadata or execute that command.
+Workspace operators may separately enable the fixed `/agentbus` slash command
+for particular human Slack user IDs. It answers privately and can address one
+exact joined session; ordinary channel messages never gain those controls.
 
 ## What a message means
 

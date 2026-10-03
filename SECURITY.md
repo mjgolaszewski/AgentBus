@@ -32,10 +32,21 @@ inbox, session secrets, and API token as sensitive.
 | F8 | Existing BCF checks govern the release, but a fully independent evaluator is pending upstream. | A defect shared by producer and evaluator could escape. Claim independence only after the released evaluator is integrated and qualified. |
 | F11 | Session credentials can be rotated through the present operator-grant flow. | Rotation does not revoke copies of a shared API bearer or secrets already read by same-user processes. Stronger revocation needs per-principal credentials and isolated storage. |
 | F12 | Durable audit rows record policy and control transitions; this train does not add a hash chain inside the same SQLite database. | An attacker with database write access can alter both events and an in-database chain. Tamper evidence requires an external append-only witness or independently held signing key. |
+| F14 | The runtime uv bootstrap is pinned to an official image digest. Governance CI still installs version-pinned requirements without artifact hashes because BCF owns the generated governance dependency projection; hand-editing that surface would not provide a durable contract. The operator chose to ship the direct-main and workflow-input fixes first. | A transitive resolution or substituted distribution artifact could change governance execution. Claim full hash locking only after BCF releases a canonical hash-locked projection, `--require-hashes` installation, and a negative control that rejects missing hashes; this is a v0.7.2 prerequisite. |
+| F15 | The remaining `Proxy-Authorization` header removal defect is in BCF provider transport, outside AgentBus application code. Issue #20 records no current exposure. The operator chose to keep this informational finding separate from v0.7.1. | A future proxy-bearing provider request could retain that header unexpectedly. Claim remediation only after BCF releases its canonical transport fix and regression test and AgentBus adopts that release; this is a v0.7.2 prerequisite. |
 
 Routed Slack envelopes are trusted only when Slack attributes them to the bot
 identity authenticated from the configured bot token. Envelope-shaped messages
 from humans and other bots remain unrouted input.
+
+A verified human's reply to a thread rooted in one session-proved agent message
+is routed as a request to that chat. This makes any human who can post in the
+channel able to request a wake of an enabled chat, subject to the host's opt-in,
+stopped-session rule, and wake budget; it grants no operator control or new tool
+permission. Slack supplies the thread root, not an exact child-message parent.
+Mixed-agent, unknown-root, legacy-root, and bot replies stay unrouted. If
+channel membership is too broad for this boundary, restrict the channel or add
+separately authenticated per-human wake policy before enabling the adapter.
 
 Every message sent through AgentBus enters Slack retention and the local SQLite
 inbox. Do not transport credentials, customer data, regulated records, or other

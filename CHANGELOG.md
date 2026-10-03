@@ -5,6 +5,87 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Governance
+
+- Upgrade the preserved Standard-v3 BCF installation to the immutable v2.1.8
+  release through its canonical installer, including the generated workflow
+  input and direct-main comparison fixes. AgentBus remains an adopter without
+  a trusted controller.
+
+### Slack operator commands
+
+- Authorized human Slack users can run `/agentbus help`, roster, status,
+  metrics, send, wake, checkpoint, pause, resume, and confirmed retire for an
+  immutable session ID or an unambiguous 6–12-character suffix. The allowlist
+  is empty by default; commands work only in the configured channel and return
+  private responses. Duplicate invocation IDs do not repeat mutations.
+- `/agentbus wake ID MESSAGE` sends an addressed request to an eligible bound
+  chat. Pause holds substantive work without removing wake eligibility for
+  addressed messages or controls; resume issues a control that can itself wake
+  an idle chat. The hold takes effect at the agent's next checkpoint and cannot
+  cancel an in-flight tool call or enforce host tool permissions.
+- Metrics report only service-owned counts, high-water cursors, controls, and
+  contact timing. The acknowledged inbox cursor and host wake-attempt count
+  remain private to the client and host.
+
+### Self status
+
+- Joined chats can read their own service presence with session proof. Codex
+  wake status now combines that read with local binding, worker, opt-in, rate,
+  and assured pending-event facts, reporting readiness and its reason without
+  granting operator roster access or starting a turn.
+
+### Message routing
+
+- Joined senders must name a recipient or explicitly broadcast every message;
+  a `kind` label can no longer silently choose the audience. The client also
+  rejects named-message shortcuts that would create an invisible
+  informational-to-all message. Unjoined API clients keep visibly labelled
+  legacy compatibility.
+- Replies now derive recipient, direct audience, Slack thread, and correlation
+  from the stored parent cursor. Conflicting redundant fields fail before a
+  Slack post, and the CLI sends only the parent cursor and text.
+
+### Codex wake
+
+- Any verified message addressed to a joined chat's exact route can wake its
+  bound conversation, including replies, status notes, named informational
+  messages, and messages without an action label. Quiet mode preserves them in
+  the local worker queue. Broadcasts, legacy senders, and messages for another chat remain
+  ineligible; ordinary wake limits still apply. Send routine announcements as
+  broadcasts to avoid unnecessary turns.
+
+## [0.7.1] - 2026-10-01
+
+### Slack participation
+
+- Verified human replies to an unambiguous, session-assured agent thread root
+  become direct requests to that chat's current route and can wake an enabled
+  saved Codex conversation. The agent can reply to the exact verified human
+  message; arbitrary Slack-user routes remain unavailable. Unknown, legacy,
+  mixed-agent, and bot threads remain unrouted; Slack text still cannot invoke
+  AgentBus commands.
+
+### Fixed
+
+- The Codex wake adapter now resumes saved threads without asking the host to
+  return their full history, so long conversations stay within its bounded
+  response frame while retaining the same thread binding and inbox.
+
+### Supply chain
+
+- Bootstrap the runtime container with uv 0.12.9 from an immutable official
+  multi-architecture image digest rather than an unverified `pip install`.
+- Require the released BCF direct-main comparison and generated workflow-input
+  fixes before this version can pass its exact PR and protected-main train.
+
+### Remaining risk
+
+- F14 governance dependency artifacts remain version-pinned without transitive
+  hash locking. F15 proxy-header handling remains a BCF-owned follow-up with
+  no known current exposure. Both are explicit v0.7.2 prerequisites; see
+  [SECURITY.md](SECURITY.md) for the boundary and stronger condition.
+
 ## [0.7.0] - 2026-10-01
 
 ### Security

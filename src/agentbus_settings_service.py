@@ -17,6 +17,7 @@ class Settings:
     slack_channel: str
     db_path: Path
     operator_token: str | None = field(default=None, repr=False)
+    slack_operator_user_ids: frozenset[str] = frozenset()
 
     def database_bytes(self) -> int:
         """Report current SQLite footprint, including its WAL sidecars."""
@@ -46,4 +47,9 @@ class Settings:
                 raise ValueError("AGENTBUS_OPERATOR_TOKEN must contain at least 32 printable non-whitespace ASCII characters")
             if hmac.compare_digest(operator_token, values["api_token"]):
                 raise ValueError("AGENTBUS_OPERATOR_TOKEN must differ from AGENTBUS_API_TOKEN")
-        return cls(**values, db_path=db_path.expanduser(), operator_token=operator_token)
+        raw_users = os.environ.get("AGENTBUS_SLACK_OPERATOR_USER_IDS", "").strip()
+        users = frozenset(item.strip() for item in raw_users.split(",") if item.strip())
+        if any(not re.fullmatch(r"[UW][A-Z0-9]{2,59}", item) for item in users):
+            raise ValueError("AGENTBUS_SLACK_OPERATOR_USER_IDS must contain Slack user IDs")
+        return cls(**values, db_path=db_path.expanduser(), operator_token=operator_token,
+                   slack_operator_user_ids=users)

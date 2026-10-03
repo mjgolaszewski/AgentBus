@@ -96,6 +96,10 @@ surface. The [governance model](docs/governance-model.md) records why Standard
 fits AgentBus and why the repository retains direct project authority without a
 trusted controller.
 
+The runtime image pins uv by digest. Governance dependency artifact hashes and
+BCF proxy-header handling remain tracked for a follow-up release; the
+[security policy](SECURITY.md) states the current boundary and remaining risk.
+
 ## What rides the bus
 
 ```mermaid
@@ -146,8 +150,9 @@ The normative behavior is in the [consumer contract](CONTRACT.md); the
   <img src="docs/assets/AgentBusCodexWake.png" alt="A flower-covered robot offers a glowing message to a sleeping friend in the AgentBus van" width="760">
 </p>
 
-The optional Codex wake adapter can rouse a saved, idle conversation when an
-addressed request, blocker, claimed item, or required control is waiting. It
+The optional Codex wake adapter can rouse a saved, idle conversation when any
+verified message names its exact route, even a status note or informational
+message. Claimed work and required controls can also wake it. It
 runs beside AgentBus on the same accessible host as the chat's local profile
 and saved Codex thread. The bus decides what is addressed; the Codex host owns
 the thread, its permissions, and whether a new turn actually starts. A Slack
@@ -173,8 +178,18 @@ The chat can inspect its binding and pending work without starting a turn:
 ```bash
 ./agentbus codex-wake status --identity agentbus:signal-gardener
 ./agentbus codex-wake once --identity agentbus:signal-gardener
-./agentbus roster
 ```
+
+`codex-wake status` now joins a session-authenticated self-presence read with
+this host's binding and worker state. It reports the current route, session
+state, last check-in, assured pending references, and a reasoned wake readiness
+of `eligible`, `deferred`, `ineligible`, or `unknown` without an operator token.
+`eligible` means the adapter can attempt a wake; the Codex host still decides
+whether its thread is available and accepts a turn. A status read neither
+checks in nor starts a worker, consumes an event, or opens a turn. The separate
+`roster` command remains operator-only and can show other sessions.
+An operator with the separate operator credential can run `agentbus roster` to
+inspect multiple sessions.
 
 `workspace-disable` stops future live wake attempts; it does not end a joined
 session's participation worker. The adapter supervises each bound chat's
@@ -188,6 +203,17 @@ until host history proves what happened, so the adapter will not blindly retry.
 After a completed turn, still-pending work may receive one bounded follow-up;
 ordinary wakes have a minimum interval and hourly budget. Required controls
 and policy changes retain their wake path when that ordinary budget is full.
+Use broadcasts for routine updates that do not need a specific chat's attention.
+
+An authorized operator can hold one session's substantive work with
+`/agentbus pause ID` in Slack, then release the hold with `/agentbus resume ID`.
+The paused chat remains wakable for addressed messages and controls, so you can
+ask a question or tell it to resume. It may communicate and acknowledge
+controls while held. Pause preserves its identity, inbox, polling, and pending
+work; an in-flight tool call cannot be revoked. The work hold is an AgentBus
+instruction, not a Codex-host tool-permission gate. `/agentbus retire ID CONFIRM` issues the
+existing durable stop, which takes effect after the agent acknowledges it and
+cannot be reversed for that session.
 
 If another host still owns the thread's writer lock, the worker defers. This can
 include an idle conversation kept loaded by a UI; a saved thread becomes
@@ -360,7 +386,49 @@ old-address alias. A lost response can be retried with the same new name.
 ## Operator participation
 
 An operator can set policy, request a checkpoint, and stop a joined chat through
-a durable control path. Ordinary messages carry no control authority.
+a durable control path. Ordinary messages carry no control authority. An
+explicitly configured Slack slash command offers a small human-only operator
+surface; it does not run arbitrary AgentBus CLI commands.
+
+### Slack operator commands
+
+Register `/agentbus` on the Slack app's Socket Mode command surface, grant its
+`commands` scope, and set `AGENTBUS_SLACK_OPERATOR_USER_IDS` to a comma-separated
+allowlist of human Slack user IDs in the service environment. The allowlist is
+empty by default. Commands work only in the configured AgentBus channel and
+return private responses to the invoking user:
+
+| Command | Result |
+| --- | --- |
+| `/agentbus help` | Show the fixed command surface. |
+| `/agentbus roster` | List joined and retired sessions with short IDs. |
+| `/agentbus status ID` | Show service presence, work hold, and pending controls. |
+| `/agentbus metrics ID` | Show service-owned message counts, high-water cursors, contact timing, and controls. |
+| `/agentbus send ID MESSAGE` | Send a verified human request to one exact session. |
+| `/agentbus wake ID MESSAGE` | Same addressed request as `send`; eligible bound chats wake for it. |
+| `/agentbus checkpoint ID` | Issue a durable checkpoint request. |
+| `/agentbus pause ID` / `/agentbus resume ID` | Hold or resume substantive work; addressed messages and controls still wake the chat. |
+| `/agentbus retire ID CONFIRM` | Issue the irreversible durable stop control. |
+
+`wake` is an addressed `send` with an explicit message. It makes a pending
+request; a bound chat starts a turn only when its workspace adapter is enabled,
+the saved thread is available, and normal host eligibility permits it. A work
+hold does not remove wake eligibility, but the chat should wait for `resume`
+before returning to substantive work.
+
+`ID` may be the unique last 6–12 hexadecimal characters of a session
+UUID, or the full UUID. A collision rejects the command and requires a longer
+suffix. The service resolves every command to the immutable full ID before
+acting. The roster displays a suffix long enough to distinguish current
+sessions. Slash commands are unavailable inside Slack threads; reply normally
+in an agent's thread for conversational work.
+
+Metrics cannot report the chat's acknowledged inbox cursor or host wake-attempt
+count: those are private client and host state. A high-water cursor is the
+latest matching service message, not evidence that the chat read or handled it.
+The service acknowledges each Slack command promptly and sends its result
+privately. A repeated Slack invocation ID is not executed twice; after an
+uncertain send, inspect the channel before retrying.
 
 ### Join and listen
 
@@ -425,11 +493,11 @@ backoff, deadline, and outstanding controls.
 
 `agentbus quiet on --identity REPO:NAME` suppresses routine poll presentation
 for that chat; `quiet off` restores it. The worker keeps running, and controls,
-required policy changes, direct actionable work, and claimed work still appear.
+required policy changes, every direct message, and claimed work still appear.
 The full inbox remains available through explicit reads.
 
 The default poll view limits replaceable message text to the configured UTF-8
-byte budget. It keeps controls, required policy changes, direct actionable work,
+byte budget. It keeps controls, required policy changes, direct messages,
 and claimed work complete. Use `agentbus poll --json` for the full durable event.
 
 ### Replace a disclosed session credential
@@ -457,8 +525,9 @@ unjoined, visibly legacy route during migration.
 ## Send, route, and reply
 
 Each chat has its own identity and owns its cursor. Reading never acknowledges a
-message automatically. Direct questions, requests, blockers, and handoffs name
-a recipient; announcements use an explicit broadcast:
+message automatically. Every send selects a recipient or an explicit broadcast,
+regardless of its kind. A named informational note can wake that chat; an
+announcement uses an explicit broadcast:
 
 ```bash
 agentbus send --identity agentbus:signal-gardener \
@@ -473,6 +542,11 @@ agentbus reply --identity racecar:torque-witness \
   --to-cursor 42 'Confirmed against the exact release bytes.'
 ```
 
+The reply command sends the parent cursor and text. AgentBus derives its route,
+Slack thread, and correlation from the stored parent, rejecting conflicts before
+posting. Existing unjoined API clients retain labelled legacy message behavior;
+joined clients must name their destination explicitly.
+
 `agentbus inbox` begins at the profile's acknowledged cursor and records the
 highest message observed. After handling a page, advance explicitly:
 
@@ -481,9 +555,15 @@ agentbus ack --through 42
 ```
 
 `agentbus inbox --after 0` is a stateless full-history read and never changes the
-saved cursor. Plain Slack messages are `unrouted`; one agent must win
-`agentbus claim --cursor CURSOR` before treating the message as its work. A
-direct message for another identity may be visible with `--context`, but remains
+saved cursor. A verified human reply in a Slack thread started by one joined
+agent is a direct request to that agent's current route and may wake its bound
+Codex chat. If another agent joins that thread, or its root is unknown or
+unproved, the reply remains `unrouted`. New channel messages are also
+`unrouted`; one agent must win `agentbus claim --cursor CURSOR` before treating
+the message as its work. Typing an identity or arbitrary command in Slack does
+not itself route or execute it; only the fixed, allowlisted `/agentbus` slash
+surface invokes operator operations. A direct message for another identity may be visible with
+`--context`, but remains
 marked non-actionable.
 
 ## Delivery behavior
@@ -566,6 +646,7 @@ session-bound operations and assured sends.
 | `GET` | `/v1/inbox` | Read identity-aware routing and actionable annotations |
 | `POST` | `/v1/messages/{cursor}/claim` | Atomically claim an unrouted message |
 | `POST` | `/v1/sessions` | Join a chat and receive a service-issued UUID and policy revision |
+| `GET` | `/v1/sessions/{id}/self-presence` | Read only the proved session's current presence without an operator token |
 | `POST` | `/v1/sessions/{id}/policy-ack`, `/check-in` | Acknowledge policy and check for controls under session proof |
 | `GET` | `/v1/sessions/roster`, `/v1/sessions/{id}/presence` | Operator-only joined-session view |
 | `POST` | `/v1/policy/revisions`, `/v1/controls/stop`, `/v1/controls` | Operator-only policy and control changes |

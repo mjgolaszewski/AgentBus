@@ -57,6 +57,14 @@ including through an alias; its control and status recovery paths remain
 available under their existing authorities. A stopped or mismatched request
 does not post to Slack.
 
+`GET /v1/sessions/{id}/self-presence` requires that exact session's private
+credential and reads only its current route, participation state, and presence
+facts. It does not refresh check-in or grant the operator roster. The local
+`codex-wake status` command combines that projection with this host's binding,
+opt-in, worker, rate, and assured pending-event facts. Its readiness says
+whether the adapter can attempt a wake; current Codex host ownership and turn
+acceptance remain separate, unobserved facts until a host attempt.
+
 Operator controls can name immutable session IDs when a route might be
 ambiguous. Multiple distinct chats in one repository remain valid. Exact-name
 disputes are recovered by inspecting the service roster, stopping the contested
@@ -73,20 +81,28 @@ Every protocol-2 message has an audience:
 
 | Audience | Meaning |
 | --- | --- |
-| `direct` | Actionable only by the named recipient |
+| `direct` | Addressed to the named recipient; can wake that chat regardless of message kind |
 | `broadcast` | Explicitly invites any suitable agent to respond |
-| `informational` | Context that requests no response |
+| `informational` | Context that requests no response; if it names a recipient, it can still wake that chat so the message is seen |
 | `unrouted` | Slack text without AgentBus routing metadata; claim before replying |
 
-Questions, requests, blockers, and handoffs require a named recipient or an
-explicit broadcast. Agents must not infer ownership from repository names,
+Every send from a joined session requires a named recipient or an explicit
+broadcast. A message's kind never selects its destination. Named informational
+messages have an exact recipient; informational messages to `all` are rejected.
+Older unjoined callers retain visibly labelled legacy behavior while they
+upgrade. Agents must not infer ownership from repository names,
 message wording, nearby traffic, or persona. A direct message for another agent
 may appear with `inbox --context`, but is marked non-actionable.
+Use an explicit broadcast for routine status when no particular chat needs to
+be woken.
 
-Replies carry `reply_to_cursor`. The service accepts a reply only from the
-parent's direct recipient, an invited broadcast participant, the original
-sender, or the holder of an unrouted-message claim. `agentbus reply` preserves
-the parent correlation and Slack thread and addresses the original sender.
+Replies carry `reply_to_cursor`. The stored parent determines their recipient,
+direct audience, Slack thread root, and correlation ID; conflicting caller
+values are rejected before Slack post. The service accepts a reply only from
+the parent's named direct or informational recipient, an invited broadcast
+participant, the original sender, or the holder of an unrouted-message claim.
+`agentbus reply` supplies only the parent cursor and text, alongside the chat's
+session identity.
 Claims are first-writer-wins coordination records; they do not grant additional
 tool or task authority.
 

@@ -20,6 +20,10 @@ from .evidence_workitem_lifecycle import (
     WorkitemContractError,
     validate_workitem_dependencies,
 )
+from .repository_comparison_context import (
+    PUSH_COMPARISON_BASE_EXPRESSION,
+    comparison_base_input_contract,
+)
 
 
 CALLER_MODE = "${{ inputs.evaluation_mode || 'pr' }}"
@@ -88,6 +92,10 @@ def _workflow_call_defaults(workflow: dict[str, Any]) -> tuple[Any, Any]:
     if len(calls) != 1:
         raise CIGraphError("direct protected-main workflow_call contract is not unique")
     inputs = calls[0].get("inputs", {})
+    if inputs.get("comparison_base_sha") != comparison_base_input_contract():
+        raise CIGraphError(
+            "direct protected-main reusable comparison input is not required and exact"
+        )
     mode = inputs.get("evaluation_mode", {})
     target = inputs.get("evaluation_target", {})
     return mode.get("default"), target.get("default")
@@ -115,6 +123,13 @@ def post_merge_evaluation(graph: dict[str, Any]) -> PostMergeEvaluation:
             job for job in exact[0]["jobs"]
             if job.get("semantic_role") == "exact-main-governance-producer"
         )
+        if producer.get("executor", {}).get("inputs", {}).get(
+            "comparison_base_sha"
+        ) != PUSH_COMPARISON_BASE_EXPRESSION:
+            raise CIGraphError(
+                "exact-main reusable governance comparison base is not "
+                "canonically bound to the outer push event"
+            )
         return PostMergeEvaluation(
             evaluation.mode,
             evaluation.target,
@@ -302,6 +317,9 @@ def reconcile_post_merge_scope(repo_root: Path, *, apply: bool) -> bool:
     )
     admission["executor"]["evaluation_mode"] = mode
     producer["executor"].setdefault("inputs", {})["evaluation_mode"] = mode
+    producer["executor"]["inputs"][
+        "comparison_base_sha"
+    ] = PUSH_COMPARISON_BASE_EXPRESSION
     if target is None:
         admission["executor"].pop("evaluation_target", None)
         producer["executor"]["inputs"].pop("evaluation_target", None)

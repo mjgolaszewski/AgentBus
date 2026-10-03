@@ -533,19 +533,14 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
     elif ns.command == "reply":
         identity = resolve_identity(ns.identity)
         profile, _ = checked_profile(values, identity)
-        parent_page = api(values, "/v1/messages?" + urlencode({"after": ns.to_cursor - 1, "limit": 1}))
-        if not parent_page["messages"] or parent_page["messages"][0]["cursor"] != ns.to_cursor:
-            raise ClientError("Reply parent does not exist in this inbox.")
-        parent = parent_page["messages"][0]
         text = sys.stdin.read() if ns.text == "-" else ns.text
         result = api(values, "/v1/messages", {
-            "sender": identity, "recipient": parent["sender"], "audience": "direct",
-            "text": text, "repo": profile["repo"], "kind": "reply",
-            "correlation_id": parent.get("correlation_id"),
-            "thread_ts": parent.get("thread_ts") or parent["slack_ts"],
+            "sender": identity, "text": text, "repo": profile["repo"], "kind": "reply",
             "reply_to_cursor": ns.to_cursor,
         }, session_token=profile_session_token(profile))
     elif ns.command == "send":
+        if ns.reply_to_cursor is not None:
+            raise ClientError("Use `agentbus reply --to-cursor CURSOR` so the service derives reply routing.")
         if bool(ns.identity) == bool(ns.sender):
             raise ClientError("Use exactly one of --identity or --sender.")
         send_profile: dict | None = None
@@ -557,11 +552,13 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
             raise ClientError("Use either --to/--recipient or --broadcast.")
         if ns.broadcast and ns.informational:
             raise ClientError("Use either --broadcast or --informational.")
+        if not ns.recipient and not ns.broadcast:
+            raise ClientError("Every send requires --to RECIPIENT or --broadcast; message kind does not select a destination.")
+        if ns.informational and not ns.recipient:
+            raise ClientError("Informational messages require --to RECIPIENT.")
         recipient = ns.recipient or "all"
         audience = "broadcast" if ns.broadcast else "informational" if ns.informational else \
                    "direct" if ns.recipient else None
-        if ns.kind in {"question", "request", "blocker", "handoff"} and audience is None:
-            raise ClientError("Actionable messages require --to RECIPIENT or --broadcast.")
         payload = {"sender": sender, "recipient": recipient, "text": ns.text, "kind": ns.kind}
         if audience:
             payload["audience"] = audience
@@ -573,8 +570,6 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
             payload["correlation_id"] = ns.correlation_id
         if ns.thread_ts:
             payload["thread_ts"] = ns.thread_ts
-        if ns.reply_to_cursor:
-            payload["reply_to_cursor"] = ns.reply_to_cursor
         if payload["text"] == "-":
             payload["text"] = sys.stdin.read()
         result = api(values, "/v1/messages", payload, session_token=profile_session_token(send_profile or {}))

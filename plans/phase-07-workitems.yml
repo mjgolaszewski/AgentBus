@@ -1,0 +1,114 @@
+document:
+  kind: execution_phase_workitem_ledger
+  name: Phase 07 Workitems
+  id: project-phase-07-workitems
+  version: 1.0.0
+  generated_at_utc: '2026-10-01T00:00:00Z'
+  status: active
+  path: plans/phase-07-workitems.yml
+  phase_id: P07
+workitems:
+- id: P07-P0-01
+  priority: P0
+  status: DONE
+  summary: deliver pin the Docker uv bootstrap to an immutable multiarch image digest
+  acceptance:
+  - pin the Docker uv bootstrap to an immutable multiarch image digest_is_complete
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P07-P0-02
+  priority: P0
+  status: DONE
+  summary: deliver adopt released BCF direct-main and generated-workflow-input fixes through canonical upgrade machinery
+  acceptance:
+  - released BCF #347/#348 installed through canonical machinery without hand-edited generated files
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P07-P0-03
+  priority: P0
+  status: TODO
+  summary: deliver disclose remaining F14 governance dependency hash and F15 proxy-header risk in release notes and security guidance
+  acceptance:
+  - requires-workitem-closure:P07-P0-02
+  - release and security docs state remaining risk, reason for deferral, and stronger condition for each finding
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P07-P0-04
+  priority: P0
+  status: TODO
+  summary: deliver prove exact candidate and isolated release archive before consumer cutover
+  acceptance:
+  - requires-workitem-closure:P07-P0-03
+  - exact prospective, protected PR and main truth pass before published archive custody and isolated verification
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P07-P0-05
+  priority: P0
+  status: DONE
+  summary: resume large Codex conversations without hydrating full history
+  acceptance:
+  - host resume response contains the exact bound thread ID without full turns
+  - bounded host frame stays intact and the wake identity and inbox are preserved
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P07-P0-06
+  priority: P0
+  status: DONE
+  summary: route verified human replies to single-agent Slack threads as direct requests
+  acceptance:
+  - only a proved single-agent thread root determines the current recipient; no Slack text or bot label can spoof it
+  - the routed request is actionable and wake eligible while unknown, legacy, mixed-agent, and nonhuman replies stay unrouted
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P07-P0-07
+  priority: P0
+  status: DONE
+  summary: deliver derive wake eligibility from assured exact recipient rather than message kind, including named informational traffic
+  acceptance:
+  - verified direct and named informational messages wake the exact bound chat regardless of kind
+  - quiet mode and presentation preserve exactly addressed messages; wrong recipient, broadcast, and legacy senders remain ineligible
+  - named informational recipients can reply through the authenticated parent route
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P07-P0-08
+  priority: P0
+  status: DONE
+  summary: deliver require explicit joined-send destinations and derive reply route, thread, and correlation from the stored parent
+  acceptance:
+  - joined sends without an exact recipient or explicit broadcast reject before Slack independent of kind
+  - the durable reply parent derives recipient, audience, thread root, and correlation; conflicting redundant fields reject before Slack
+  - unjoined legacy API messaging remains labelled and compatible
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P07-P0-09
+  priority: P0
+  status: DONE
+  summary: deliver let joined chats inspect their own session and local Codex wake readiness without operator authority or status-read side effects
+  acceptance:
+  - exact session proof reads only its own current presence and does not refresh check-in
+  - local status reports binding opt-in worker route assurance and host uncertainty with reasoned readiness
+  - status does not start a worker or turn consume work or write local state
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P07-P0-10
+  priority: P0
+  status: DONE
+  summary: deliver let allowlisted Slack humans inspect and address exact sessions, hold and resume substantive work, and issue confirmed durable retirement through fixed commands
+  acceptance:
+  - only allowlisted human Slack IDs in the configured channel can invoke fixed commands
+  - every targeted command resolves a unique short suffix to an immutable session ID and rejects ambiguity
+  - pause survives restart and holds substantive work without retiring participation or suppressing addressed wakes; resume control can itself wake the nonstopped chat
+  - retire requires literal confirmation and retains the existing acknowledged durable stop boundary
+  - metrics distinguish service-owned high-water cursors from private acknowledged cursors and host wake state
+  acceptance_evidence:
+  - test
+  - contract-test

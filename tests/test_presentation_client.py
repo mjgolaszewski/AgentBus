@@ -31,11 +31,22 @@ def test_control_policy_direct_request_and_claimed_work_ignore_tiny_budget():
             "initial_interval_seconds": 60, "backoff_factor": 2, "max_interval_seconds": 1920,
         }},
         message_event(kind="blocker", audience="direct", reason="addressed to this identity"),
+        message_event(kind="status", audience="direct", reason="addressed to this identity"),
+        message_event(kind="message", audience="informational", reason="addressed to this identity"),
         message_event(reason="claimed by this identity"),
     ):
         rendered = render_event(event, json_mode=False, budget_bytes=1)
         assert len(rendered.encode("utf-8")) > 1
         assert not rendered.endswith("~")
+
+
+def test_work_hold_controls_state_the_pause_and_resume_boundary():
+    pause = {"kind": "CONTROL", "control": {"control_id": "hold-1",
+             "kind": "pause_work", "reason": "Pause this task"}}
+    resume = {"kind": "CONTROL", "control": {"control_id": "hold-2",
+              "kind": "resume_work", "reason": "Continue this task"}}
+    assert "remain reachable" in render_event(pause, json_mode=False, budget_bytes=1)
+    assert "resume the prior task" in render_event(resume, json_mode=False, budget_bytes=1)
 
 
 def test_broadcast_can_compact_and_full_record_is_unchanged():

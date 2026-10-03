@@ -28,9 +28,14 @@ MODULES = {
     "src/agentbus_reply_policy_service.py": ("service", "service"),
     "src/agentbus_request_limits_service.py": ("service", "service"),
     "src/agentbus_send_policy_service.py": ("service", "service"),
+    "src/agentbus_slack_reply_service.py": ("service", "service"),
+    "src/agentbus_slack_command_service.py": ("service", "service"),
+    "src/agentbus_slack_socket_service.py": ("service", "service"),
+    "src/agentbus_metrics_service.py": ("service", "service"),
     "src/agentbus_send_rate_service.py": ("service", "service"),
     "src/agentbus_settings_service.py": ("service", "service"),
     "src/agentbus_service.py": ("service", "service"),
+    "src/agentbus_status_api_service.py": ("service", "service"),
     "src/agentbus_participation_service.py": ("service", "service"),
     "src/agentbus_participation_store_service.py": ("service", "service"),
     "src/agentbus_control_store_service.py": ("service", "service"),
@@ -127,7 +132,11 @@ def test_http_routers_remain_thin_transport_adapters() -> None:
         for node in tree("src/agentbus_service.py").body
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("api_")
     }
-    assert set(handlers) == {"api_health", "api_status", "api_send", "api_read", "api_info", "api_inbox", "api_claim"}
+    assert set(handlers) == {"api_send", "api_read", "api_info", "api_inbox", "api_claim"}
+    status_handlers = {node.name: node for node in tree("src/agentbus_status_api_service.py").body
+                       if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("api_")}
+    assert set(status_handlers) == {"api_health", "api_status"}
+    handlers.update(status_handlers)
     for handler in handlers.values():
         branches = sum(isinstance(node, (ast.If, ast.Match, ast.Try)) for node in ast.walk(handler))
         loops = sum(isinstance(node, (ast.For, ast.AsyncFor, ast.While)) for node in ast.walk(handler))

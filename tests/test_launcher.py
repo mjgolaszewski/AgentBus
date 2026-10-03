@@ -392,7 +392,30 @@ def test_cli_rejects_ambiguous_actionable_send_before_api(launcher, monkeypatch,
     assert launcher.main(["send", "Who owns this?", "--sender", "tools:weed",
                           "--kind", "question"]) == 1
     assert called == []
-    assert "require --to" in capsys.readouterr().err
+    assert "requires --to" in capsys.readouterr().err
+    for args in (
+        ["send", "A status note", "--sender", "tools:weed"],
+        ["send", "A status note", "--sender", "tools:weed", "--informational"],
+        ["send", "A reply", "--sender", "tools:weed", "--recipient", "bcf:thistle",
+         "--reply-to-cursor", "42"],
+    ):
+        assert launcher.main(args) == 1
+    assert called == []
+
+
+def test_cli_reply_sends_only_parent_cursor_and_text(launcher, monkeypatch, capsys):
+    payloads = []
+    profile = {"repo": "agentbus", "participation": {"session_secret": "secret"}}
+    monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), {}))
+    monkeypatch.setattr(launcher, "checked_profile", lambda *_args: (profile, {}))
+    monkeypatch.setattr(launcher, "api", lambda _values, path, payload=None, **_kwargs:
+                        payloads.append((path, payload)) or {"cursor": 43})
+    assert launcher.main(["reply", "Seen", "--identity", "agentbus:flower", "--to-cursor", "42"]) == 0
+    assert payloads == [("/v1/messages", {
+        "sender": "agentbus:flower", "text": "Seen", "repo": "agentbus",
+        "kind": "reply", "reply_to_cursor": 42,
+    })]
+    assert json.loads(capsys.readouterr().out)["cursor"] == 43
 
 
 def test_consumer_profiles_reject_symlinked_state(launcher, tmp_path):
@@ -596,8 +619,8 @@ def test_poll_cli_uses_budgeted_default_and_full_json_on_demand(launcher, tmp_pa
     def queue(cursor):
         poll.change_spool(path, profile, lambda spool: poll._append(spool, {
             "kind": "MESSAGE", "id": str(cursor), "message": {
-                "cursor": cursor, "sender": "agentbus:peer", "recipient": identity,
-                "kind": "message", "audience": "informational", "text": "🌼" * 100,
+                "cursor": cursor, "sender": "agentbus:peer", "recipient": "all",
+                "kind": "message", "audience": "broadcast", "text": "🌼" * 100,
             },
         }))
 

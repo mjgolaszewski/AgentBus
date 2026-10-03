@@ -19,11 +19,6 @@ from typing import Annotated, Callable, Literal
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError, model_validator
-from slack_sdk import WebClient
-from slack_sdk.socket_mode import SocketModeClient
-from slack_sdk.socket_mode.client import BaseSocketModeClient
-from slack_sdk.socket_mode.request import SocketModeRequest
-from slack_sdk.socket_mode.response import SocketModeResponse
 
 from src.agentbus_claim_recovery_service import ClaimRecoveryStore
 from src.agentbus_control_store_service import ControlStore
@@ -47,6 +42,7 @@ from src.agentbus_participation_api_service import (
     api_session_rename,
     api_session_roster,
     api_session_rotate_secret,
+    api_session_self_presence,
     authenticate_operator,
     upgrade_notice,
 )
@@ -57,6 +53,8 @@ from src.agentbus_request_limits_service import RequestBodyLimit
 from src.agentbus_send_policy_service import SessionAuthorityError, validate_new_send
 from src.agentbus_send_rate_service import SendRateExceeded, SendRateStore
 from src.agentbus_settings_service import Settings
+from src.agentbus_slack_socket_service import SlackReceiver, build_socket
+from src.agentbus_status_api_service import api_health, api_status
 
 LOGGER = logging.getLogger("agentbus")
 IDENTIFIER = r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$"
@@ -77,7 +75,7 @@ def encode_envelope(message: SendMessage) -> str:
 class SendMessage(BaseModel):
     model_config = ConfigDict(extra="forbid")
     _sender_assurance: str = PrivateAttr(default="legacy")
-
+    _authored_fields: frozenset[str] = PrivateAttr(default_factory=frozenset)
     sender: str = Field(pattern=IDENTIFIER)
     recipient: str = Field(default="all", pattern=IDENTIFIER)
     text: str = Field(min_length=1, max_length=MAX_TEXT)
@@ -90,6 +88,7 @@ class SendMessage(BaseModel):
 
     @model_validator(mode="after")
     def check_text(self) -> SendMessage:
+        self._authored_fields = self._authored_fields or frozenset(self.model_fields_set)
         if not self.text.strip():
             raise ValueError("text must not be blank")
         for value in (self.text, self.repo, self.correlation_id):
@@ -214,6 +213,11 @@ class MessageStore:
             )
         """)
         self._db.execute("""
+            CREATE TABLE IF NOT EXISTS slack_command_receipts (
+                command_id TEXT PRIMARY KEY, received_at TEXT NOT NULL
+            )
+        """)
+        self._db.execute("""
             CREATE TABLE IF NOT EXISTS claims (
                 channel TEXT NOT NULL,
                 cursor INTEGER NOT NULL,
@@ -277,15 +281,25 @@ class MessageStore:
             """, (channel, slack_ts, message.thread_ts, message.recipient,
                   message.audience, datetime.now(timezone.utc).isoformat(),
                   message.model_dump_json(), message._sender_assurance))
-            if message._sender_assurance == "session":
+            if message._sender_assurance in {"session", "slack-human"}:
                 self._db.execute(
-                    "UPDATE messages SET sender_assurance = 'session' "
+                    "UPDATE messages SET sender_assurance = ?, payload = ?, recipient = ?, audience = ?, thread_ts = ? "
                     "WHERE channel = ? AND slack_ts = ? AND sender_assurance = 'legacy'",
-                    (channel, slack_ts),
+                    (message._sender_assurance, message.model_dump_json(), message.recipient,
+                     message.audience, message.thread_ts, channel, slack_ts),
                 )
             row = self._db.execute("SELECT * FROM messages WHERE channel = ? AND slack_ts = ?",
                                    (channel, slack_ts)).fetchone()
             return self._message(row)
+
+    def claim_slash_command(self, command_id: str) -> bool:
+        """Admit one Slack invocation before its external side effects."""
+        with self._lock, self._db:
+            inserted = self._db.execute(
+                "INSERT OR IGNORE INTO slack_command_receipts VALUES (?, ?)",
+                (command_id, datetime.now(timezone.utc).isoformat()),
+            )
+            return inserted.rowcount == 1
 
     def read(self, channel: str, after: int = 0, recipient: str | None = None,
              limit: int = 100, thread_ts: str | None = None) -> MessagePage:
@@ -414,9 +428,9 @@ class MessageStore:
         for row in rows:
             message = self._message(row)
             claim = row["claim_identity"]
-            actionable = (message.audience == "direct" and message.recipient in routes) or \
-                         message.audience == "broadcast" or claim in routes
-            reason = ("addressed to this identity" if message.audience == "direct" and message.recipient in routes
+            addressed = message.audience in {"direct", "informational"} and message.recipient in routes
+            actionable = addressed or message.audience == "broadcast" or claim in routes
+            reason = ("addressed to this identity" if addressed
                       else "explicit broadcast" if message.audience == "broadcast"
                       else "claimed by this identity" if claim in routes
                       else f"claimed by {claim}" if claim
@@ -475,50 +489,18 @@ def normalize_event(event: dict, channel: str, trusted_bot_id: str) -> tuple[str
             pass
     identity = event.get("bot_id") or event.get("user") or "unknown"
     identity = identity if isinstance(identity, str) and re.fullmatch(r"[A-Za-z0-9_-]{1,60}", identity) else "unknown"
-    # Human messages can exceed the API's send limit, including escaped Unicode.
+    verified_human = (isinstance(event.get("user"), str)
+                      and re.fullmatch(r"[UW][A-Z0-9]{2,59}", event["user"]) is not None
+                      and not event.get("bot_id") and event.get("subtype") != "bot_message")
     text = text.encode("utf-8", errors="replace").decode("utf-8").strip()[:MAX_TEXT]
     try:
         message = SendMessage(sender=f"slack:{identity}", text=text, thread_ts=thread_ts,
                               audience="unrouted")
-        message._sender_assurance = "slack-human" if event.get("user") and not event.get("bot_id") else "legacy"
-        return ts, message
     except ValidationError:
-        # Even 3000 astral Unicode characters fit as JSON surrogate pairs.
         message = SendMessage(sender=f"slack:{identity}", text=text[:3000], thread_ts=thread_ts,
                               audience="unrouted")
-        message._sender_assurance = "slack-human" if event.get("user") and not event.get("bot_id") else "legacy"
-        return ts, message
-
-
-class SlackReceiver:
-    def __init__(self, store: MessageStore, channel: str, trusted_bot_id: str):
-        self.store, self.channel, self.trusted_bot_id = store, channel, trusted_bot_id
-
-    def __call__(self, client: BaseSocketModeClient, request: SocketModeRequest) -> None:
-        if request.type == "events_api":
-            event = request.payload.get("event")
-            normalized = (
-                normalize_event(event, self.channel, self.trusted_bot_id)
-                if isinstance(event, dict) else None
-            )
-            if normalized is not None:
-                ts, message = normalized
-                try:
-                    self.store.append(self.channel, ts, message)
-                except (sqlite3.Error, OSError):
-                    LOGGER.error("Could not durably store Slack event; withholding acknowledgement")
-                    return
-        client.send_socket_mode_response(SocketModeResponse(envelope_id=request.envelope_id))
-
-
-def build_socket(settings: Settings, receiver: SlackReceiver) -> SocketModeClient:
-    client = SocketModeClient(
-        app_token=settings.slack_app_token,
-        web_client=WebClient(token=settings.slack_bot_token, timeout=15, retry_handlers=[]),
-        concurrency=1,
-    )
-    client.socket_mode_request_listeners.append(receiver.__call__)
-    return client
+    message._sender_assurance = "slack-human" if verified_human else "legacy"
+    return ts, message
 
 
 class SlackPoster:
@@ -589,15 +571,6 @@ def authenticate(request: Request,
     if scheme.lower() != "bearer" or not hmac.compare_digest(token.encode(), expected.encode()):
         raise HTTPException(401, "Bearer authentication required",
                             headers={"WWW-Authenticate": "Bearer"})
-
-
-def api_health(request: Request) -> dict:
-    return {"status": "ok"}
-
-
-def api_status(request: Request) -> dict:
-    return {"status": "ok", "slack_connected": request.app.state.socket.is_connected(),
-            "database_bytes": request.app.state.settings.database_bytes()}
 
 
 async def api_send(request: Request, message: SendMessage,
@@ -701,6 +674,7 @@ API_OPERATIONS: dict[str, Callable[..., object]] = {
     "profile_handoff": api_profile_handoff,
     "rotation_grant": api_rotation_grant,
     "session_presence": api_session_presence,
+    "session_self_presence": api_session_self_presence,
     "session_roster": api_session_roster,
     "session_policy_ack": api_session_policy_ack,
     "session_policy_explain": api_session_policy_explain,
@@ -728,7 +702,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
             poster = SlackPoster(settings, client)
             trusted_bot_id = await poster.authenticated_bot_id()
             socket = socket_factory(
-                settings, SlackReceiver(store, settings.slack_channel, trusted_bot_id)
+                settings, SlackReceiver(store, settings.slack_channel, trusted_bot_id, settings)
             )
             app.state.store = store
             app.state.poster = poster
@@ -745,7 +719,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                 await client.aclose()
             store.close()
 
-    app = FastAPI(title="AgentBus", version="0.7.0", lifespan=lifespan,
+    app = FastAPI(title="AgentBus", version="0.7.1", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     app.add_middleware(RequestBodyLimit)
@@ -778,6 +752,8 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                       methods=["POST"], dependencies=auth)
     app.add_api_route("/v1/sessions/{session_id}/presence", API_OPERATIONS["session_presence"],
                       methods=["GET"], dependencies=[Depends(authenticate_operator)])
+    app.add_api_route("/v1/sessions/{session_id}/self-presence", API_OPERATIONS["session_self_presence"],
+                      methods=["GET"], dependencies=auth)
     app.add_api_route("/v1/sessions/roster", API_OPERATIONS["session_roster"], methods=["GET"], dependencies=[Depends(authenticate_operator)])
     app.add_api_route("/v1/sessions/{session_id}/policy", API_OPERATIONS["session_policy_explain"],
                       methods=["GET"], dependencies=[Depends(authenticate_operator)])

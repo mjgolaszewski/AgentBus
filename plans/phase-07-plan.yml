@@ -1,0 +1,61 @@
+document:
+  kind: execution_phase_plan
+  name: Phase 07 Plan
+  id: project-phase-07-plan
+  version: 1.0.0
+  generated_at_utc: '2026-10-01T00:00:00Z'
+  status: active
+  path: plans/phase-07-plan.yml
+phase:
+  id: P07
+  build_block: producer_supply_chain_hardening
+  planner: codex
+  date: '2026-10-01'
+  scope_source:
+  - AGENTS.yml
+  - plans/product-spec.yml
+  - plans/build-plan.yml
+  - plans/phase-ledger.yml
+  - MEMORY.yml
+delivery_contract:
+  tightly_scoped_deliverables:
+  - pin the Docker uv bootstrap to an immutable multiarch image digest
+  - adopt released BCF direct-main and generated-workflow-input fixes through canonical upgrade machinery
+  - resume large Codex conversations without hydrating full history
+  - route verified human replies to single-agent Slack threads as direct requests
+  - derive wake eligibility from assured exact recipient rather than message kind, including named informational traffic
+  - require explicit joined-send destinations and derive reply route, thread, and correlation from the stored parent
+  - let joined chats inspect their own session and local Codex wake readiness without operator authority or status-read side effects
+  - let allowlisted Slack humans inspect and address exact sessions, hold and resume substantive work, and issue confirmed durable retirement through fixed commands
+  - disclose remaining F14 governance dependency hash and F15 proxy-header risk in release notes and security guidance
+  - prove exact candidate and isolated release archive before consumer cutover
+  parallelizable_workstreams:
+  - id: P07-WS1
+    name: docker_bootstrap
+  - id: P07-WS2
+    name: bcf_upgrade
+  - id: P07-WS3
+    name: release_evidence
+  - id: P07-WS4
+    name: codex_wake
+  - id: P07-WS5
+    name: slack_ingress
+  hard_dependencies:
+  - P06 closed on exact main and v0.7.0 published
+  - BCF direct-main and workflow-input fixes released with immutable custody
+  docker_first_local_runtime: repo_native_validation_and_governance_commands
+  completeness_standard: full_completeness_for_declared_scope
+scope_lock:
+- order: 1
+  statement: keep the phase narrowly scoped to declared deliverables and update canonical
+    governed artifacts in the same change
+- order: 2
+  statement: do not claim F14 governance hashes or F15 proxy-header remediation in v0.7.1; retain their P08 producer-owned acceptance obligations
+verification_plan:
+- make governance-validate
+- make architecture-test
+- make lint
+- make typecheck
+- make test
+- make contract-test
+- make release-check

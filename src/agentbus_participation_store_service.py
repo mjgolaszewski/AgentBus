@@ -64,13 +64,18 @@ class ParticipationStore:
                     last_client_contact_at TEXT NOT NULL,
                     last_semantic_ack_at TEXT,
                     stopped_at TEXT,
-                    current_backoff_seconds REAL
+                    current_backoff_seconds REAL,
+                    work_paused INTEGER NOT NULL DEFAULT 0
                 )
             """)
             if "current_backoff_seconds" not in {
                 row["name"] for row in db.execute("PRAGMA table_info(participation_sessions)")
             }:
                 db.execute("ALTER TABLE participation_sessions ADD COLUMN current_backoff_seconds REAL")
+            if "work_paused" not in {
+                row["name"] for row in db.execute("PRAGMA table_info(participation_sessions)")
+            }:
+                db.execute("ALTER TABLE participation_sessions ADD COLUMN work_paused INTEGER NOT NULL DEFAULT 0")
             db.execute("""
                 CREATE TABLE IF NOT EXISTS participation_audit (
                     audit_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -520,6 +525,7 @@ class ParticipationStore:
             "effective_policy_revision": policy.revision,
             "acknowledged_policy_revision": row["acknowledged_policy_revision"],
             "polling_required": row["state"] != "stopped",
+            "work_paused": bool(row["work_paused"]),
             "outstanding_controls": [dict(item) for item in outstanding],
             "current_backoff_seconds": row["current_backoff_seconds"],
         }
@@ -528,6 +534,14 @@ class ParticipationStore:
         """Verify session proof for another service-side durable owner."""
         with self._lock:
             return self._authorized_session(session_id, secret)
+
+    def self_presence(self, session_id: str, secret: str) -> dict:
+        """Return only the proved session's read-only presence projection."""
+        if len(secret) > 512:
+            raise PermissionError("session authority required")
+        with self._lock:
+            self._authorized_session(session_id, secret)
+            return self.presence(session_id)
 
     def rename(self, session_id: str, session_secret: str, new_route: str) -> tuple[str, str, str]:
         """Move the route atomically; the former address remains reserved."""
@@ -589,6 +603,18 @@ class ParticipationStore:
 
     def same_chat(self, first_route: str, second_route: str) -> bool:
         return second_route in self.routes_for(first_route)
+
+    def current_route_for(self, route: str) -> str | None:
+        """Return the current address for an enrolled route or reserved alias."""
+        with self._lock:
+            row = self._db.execute("""
+                SELECT current_route FROM chat_identities WHERE current_route = ?
+                UNION ALL
+                SELECT c.current_route FROM routing_aliases AS a
+                JOIN chat_identities AS c ON c.chat_id = a.chat_id WHERE a.route = ?
+                LIMIT 1
+            """, (route, route)).fetchone()
+            return row["current_route"] if row else None
 
     def session_for_secret(self, secret: str, route: str) -> sqlite3.Row:
         """Resolve an optional message-plane proof without trusting a sender label."""
