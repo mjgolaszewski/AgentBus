@@ -5,6 +5,22 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Slack operator commands
+
+- Authorized human Slack users can run `/agentbus help`, roster, status,
+  metrics, send, wake, checkpoint, pause, resume, and confirmed retire for an
+  immutable session ID or an unambiguous 6–12-character suffix. The allowlist
+  is empty by default; commands work only in the configured channel and return
+  private responses. Duplicate invocation IDs do not repeat mutations.
+- `/agentbus wake ID MESSAGE` sends an addressed request to an eligible bound
+  chat. Pause holds substantive work without removing wake eligibility for
+  addressed messages or controls; resume issues a control that can itself wake
+  an idle chat. The hold takes effect at the agent's next checkpoint and cannot
+  cancel an in-flight tool call or enforce host tool permissions.
+- Metrics report only service-owned counts, high-water cursors, controls, and
+  contact timing. The acknowledged inbox cursor and host wake-attempt count
+  remain private to the client and host.
+
 ### Self status
 
 - Joined chats can read their own service presence with session proof. Codex
