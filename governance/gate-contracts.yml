@@ -20,7 +20,7 @@ claim_model:
     client-tests: [&id065 tests/test_launcher.py, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_self_service_client.py]
     service-tests: [&id055 tests/test_service.py, tests/test_slack_commands.py, tests/test_participation_contract.py, tests/test_participation_service.py, tests/test_participation_store.py, tests/test_control_store.py, tests/test_rename_store.py, tests/test_claim_recovery.py, tests/test_credential_rotation.py]
     architecture-tests: [&id051 tests/test_architecture.py]
-    compatibility-tests: [tests/test_python_compatibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, *id055, tests/test_claim_recovery.py]
+    compatibility-tests: [tests/test_python_compatibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, *id055, tests/test_slack_commands.py, tests/test_claim_recovery.py]
     producer-code: [scripts/check_source.py, &id037 scripts/run_project_gate.py]
     release-code: [&id003 Dockerfile, .dockerignore, compose.yaml, .env.example, &id060 scripts/build_release.py, *id001]
     toolchain: [*id002, uv.lock, requirements-governance.txt]
@@ -539,7 +539,7 @@ gates:
         min_collected: 1
         min_executed: 1
         max_skipped: 0
-        selectors: [tests/test_python_compatibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_claim_recovery.py, *id055]
+        selectors: [tests/test_python_compatibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_claim_recovery.py, *id055, tests/test_slack_commands.py]
         expected_node_manifest: governance/test-manifests/python314-compatibility.txt
         expected_nodes_mode: exact
         artifact_binding: *id042
