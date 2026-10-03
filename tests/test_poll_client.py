@@ -78,6 +78,7 @@ def test_actionable_message_priority_is_independent_of_backlog_cursor(tmp_path):
         ):
             poll._append(state, {"kind": "MESSAGE", "id": str(cursor), "message": {
                 "cursor": cursor, "kind": kind, "audience": audience, "action_reason": reason,
+                "recipient": profile["identity"] if audience == "direct" else "all",
             }})
         poll._append(state, {"kind": "POLICY_CHANGED", "id": "revision-2",
                              "revision": "revision-2", "values": POLICY})
@@ -101,16 +102,21 @@ def test_quiet_discards_only_routine_projection_and_keeps_durable_history(tmp_pa
             (2, "broadcast", "request", "explicit broadcast"),
             (3, "direct", "request", "addressed to this identity"),
             (4, "unrouted", "message", "claimed by this identity"),
+            (5, "direct", "status", "addressed to this identity"),
+            (6, "direct", "status", "addressed to another identity"),
+            (7, "informational", "message", "addressed to this identity"),
         ):
             poll._append(state, {"kind": "MESSAGE", "id": str(cursor), "message": {
                 "cursor": cursor, "audience": audience, "kind": kind, "action_reason": reason,
+                "recipient": "agentbus:someone-else" if cursor == 6 else
+                             "all" if cursor in {1, 2, 4} else profile["identity"],
             }})
         poll._append(state, {"kind": "CONTROL", "id": "stop-1", "control": {"control_id": "stop-1"}})
         poll._append(state, {"kind": "POLICY_CHANGED", "id": "r2", "revision": "r2"})
     poll.change_spool(path, profile, record)
     assert poll.peek_event(path, profile, quiet=True)["kind"] == "CONTROL"
     state = json.loads(poll.spool_path(path).read_text())
-    assert {event["id"] for event in state["events"]} == {"3", "4", "stop-1", "r2"}
+    assert {event["id"] for event in state["events"]} == {"3", "4", "5", "7", "stop-1", "r2"}
     assert state["cursor"] == 0
     poll.retire_event(path, profile, "CONTROL", "stop-1")
     assert poll.peek_event(path, profile, quiet=True)["kind"] == "POLICY_CHANGED"
@@ -136,7 +142,8 @@ def test_quiet_worker_advances_durable_cursor_without_routine_spool(tmp_path, mo
             return {"revision": "r1", "values": POLICY, "sources": {}, "ack_required": False}
         return {"messages": [
             {"cursor": 1, "audience": "broadcast", "kind": "request", "action_reason": "explicit broadcast"},
-            {"cursor": 2, "audience": "direct", "kind": "request", "action_reason": "addressed to this identity"},
+            {"cursor": 2, "audience": "direct", "recipient": profile["identity"],
+             "kind": "status", "action_reason": "addressed to this identity"},
         ], "next_cursor": 2, "has_more": False}
 
     monkeypatch.setattr(poll, "api", fake_api)

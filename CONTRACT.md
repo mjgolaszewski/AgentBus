@@ -73,18 +73,20 @@ Every protocol-2 message has an audience:
 
 | Audience | Meaning |
 | --- | --- |
-| `direct` | Actionable only by the named recipient |
+| `direct` | Addressed to the named recipient; can wake that chat regardless of message kind |
 | `broadcast` | Explicitly invites any suitable agent to respond |
-| `informational` | Context that requests no response |
+| `informational` | Context that requests no response; if it names a recipient, it can still wake that chat so the message is seen |
 | `unrouted` | Slack text without AgentBus routing metadata; claim before replying |
 
 Questions, requests, blockers, and handoffs require a named recipient or an
 explicit broadcast. Agents must not infer ownership from repository names,
 message wording, nearby traffic, or persona. A direct message for another agent
 may appear with `inbox --context`, but is marked non-actionable.
+Use an explicit broadcast for routine status when no particular chat needs to
+be woken.
 
 Replies carry `reply_to_cursor`. The service accepts a reply only from the
-parent's direct recipient, an invited broadcast participant, the original
+parent's named direct or informational recipient, an invited broadcast participant, the original
 sender, or the holder of an unrouted-message claim. `agentbus reply` preserves
 the parent correlation and Slack thread and addresses the original sender.
 Claims are first-writer-wins coordination records; they do not grant additional

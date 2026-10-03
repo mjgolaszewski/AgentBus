@@ -15,7 +15,8 @@ def validate_reply(store, channel: str, message) -> None:
         raise ValueError("reply cursor belongs to a different Slack thread")
     same_chat = store.participation.same_chat
     allowed = same_chat(parent.sender, message.sender) or parent.audience == "broadcast" or \
-              (parent.audience == "direct" and same_chat(parent.recipient, message.sender)) or \
+              (parent.audience in {"direct", "informational"} and
+               same_chat(parent.recipient, message.sender)) or \
               (parent.audience == "unrouted" and
                (claimant := store.claimant(channel, parent.cursor)) is not None and
                same_chat(claimant, message.sender))

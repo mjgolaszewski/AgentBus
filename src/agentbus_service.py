@@ -415,9 +415,9 @@ class MessageStore:
         for row in rows:
             message = self._message(row)
             claim = row["claim_identity"]
-            actionable = (message.audience == "direct" and message.recipient in routes) or \
-                         message.audience == "broadcast" or claim in routes
-            reason = ("addressed to this identity" if message.audience == "direct" and message.recipient in routes
+            addressed = message.audience in {"direct", "informational"} and message.recipient in routes
+            actionable = addressed or message.audience == "broadcast" or claim in routes
+            reason = ("addressed to this identity" if addressed
                       else "explicit broadcast" if message.audience == "broadcast"
                       else "claimed by this identity" if claim in routes
                       else f"claimed by {claim}" if claim

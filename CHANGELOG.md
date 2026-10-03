@@ -5,6 +5,15 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Codex wake
+
+- Any verified message addressed to a joined chat's exact route can wake its
+  bound conversation, including replies, status notes, named informational
+  messages, and messages without an action label. Quiet mode preserves them in
+  the local worker queue. Broadcasts, legacy senders, and messages for another chat remain
+  ineligible; ordinary wake limits still apply. Send routine announcements as
+  broadcasts to avoid unnecessary turns.
+
 ## [0.7.1] - 2026-10-01
 
 ### Slack participation

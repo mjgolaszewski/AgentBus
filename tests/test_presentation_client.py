@@ -31,6 +31,8 @@ def test_control_policy_direct_request_and_claimed_work_ignore_tiny_budget():
             "initial_interval_seconds": 60, "backoff_factor": 2, "max_interval_seconds": 1920,
         }},
         message_event(kind="blocker", audience="direct", reason="addressed to this identity"),
+        message_event(kind="status", audience="direct", reason="addressed to this identity"),
+        message_event(kind="message", audience="informational", reason="addressed to this identity"),
         message_event(reason="claimed by this identity"),
     ):
         rendered = render_event(event, json_mode=False, budget_bytes=1)

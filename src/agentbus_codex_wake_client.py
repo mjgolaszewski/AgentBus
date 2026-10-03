@@ -25,7 +25,6 @@ from src.agentbus_poll_client import change_spool, ensure_worker
 from src.agentbus_transport_client import ClientError
 
 THREAD_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$")
-ACTION_KINDS = {"blocker", "request", "question", "handoff"}
 HostFactory = Callable[[], CodexAppServer]
 
 
@@ -220,9 +219,8 @@ def _candidate(event: dict, identity: str) -> tuple[int, str] | None:
         return None
     if message.get("action_reason") == "claimed by this identity":
         return 4, f"MESSAGE:{event_id}"
-    if (message.get("audience") == "direct" and message.get("recipient") == identity and
-            message.get("kind") in ACTION_KINDS):
-        return (2 if message["kind"] == "blocker" else 3), f"MESSAGE:{event_id}"
+    if message.get("audience") in {"direct", "informational"} and message.get("recipient") == identity:
+        return (2 if message.get("kind") == "blocker" else 3), f"MESSAGE:{event_id}"
     return None
 
 

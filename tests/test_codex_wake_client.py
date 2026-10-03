@@ -118,12 +118,15 @@ def test_dry_run_filters_noise_and_does_not_call_host(setup):
     values, identity, profile, path, host = setup
     wake.bind(values, identity, "thread-one", lambda: host)
     host.calls.clear()
-    put(path, profile, message(1, audience="broadcast"), message(2, kind="status"),
-        message(3, recipient="agentbus:someone-else"), message(4))
+    put(path, profile, message(1, audience="broadcast"), message(2, kind="status", audience="broadcast"),
+        message(3, recipient="agentbus:someone-else"), message(4),
+        message(5, kind="status"), message(6, kind="reply"),
+        message(7, kind="message", assurance="legacy"),
+        message(8, audience="informational", kind="message"))
     result = wake.run_once(values, identity, host_factory=lambda: host)
-    assert result == {"status": "dry_run", "eligible": ["MESSAGE:4"], "enabled": False}
+    assert result == {"status": "dry_run", "eligible": ["MESSAGE:4", "MESSAGE:5", "MESSAGE:6", "MESSAGE:8"], "enabled": False}
     assert host.calls == []
-    assert wake.status(values, identity)["eligible"] == ["MESSAGE:4"]
+    assert wake.status(values, identity)["eligible"] == ["MESSAGE:4", "MESSAGE:5", "MESSAGE:6", "MESSAGE:8"]
 
 
 def test_live_wake_is_opt_in_compact_and_not_repeated(setup):
@@ -143,6 +146,17 @@ def test_live_wake_is_opt_in_compact_and_not_repeated(setup):
     again = wake.run_once(values, identity, live=True, host_factory=lambda: host)
     assert again["status"] == "already_woken"
     assert [name for name, _ in host.calls].count("start") == 1
+
+
+def test_direct_status_alone_wakes_joined_chat(setup):
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, "thread-one", lambda: host)
+    wake.set_enabled(values, identity, True)
+    put(path, profile, message(1, kind="status"))
+    result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
+    assert result["status"] == "turn_accepted"
+    assert result["eligible"] == ["MESSAGE:1"]
+    assert len(host.prompts) == 1
 
 
 def test_control_priority_claim_and_active_host(setup):

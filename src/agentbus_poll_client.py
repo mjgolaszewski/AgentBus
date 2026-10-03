@@ -52,14 +52,14 @@ def change_spool(profile_path: Path, profile: dict, change: Callable[[dict], T])
         return result
 
 
-def _routine_message(event: dict) -> bool:
+def _routine_message(event: dict, identity: str) -> bool:
     if event["kind"] != "MESSAGE":
         return False
     message = event["message"]
     return not (
         message.get("action_reason") == "claimed by this identity" or
-        (message.get("audience") == "direct" and
-         message.get("kind") in {"blocker", "request", "question", "handoff"})
+        (message.get("audience") in {"direct", "informational"} and
+         message.get("recipient") == identity)
     )
 
 
@@ -72,10 +72,11 @@ def peek_event(profile_path: Path, profile: dict, *, quiet: bool = False) -> dic
         if event["kind"] == "ATTENTION_REQUIRED":
             return 2
         message = event["message"]
-        if message.get("audience") == "direct" and message.get("kind") == "blocker":
+        if (message.get("audience") in {"direct", "informational"} and
+                message.get("recipient") == profile["identity"] and message.get("kind") == "blocker"):
             return 3
-        if (message.get("audience") == "direct" and
-                message.get("kind") in {"request", "question", "handoff"}):
+        if (message.get("audience") in {"direct", "informational"} and
+                message.get("recipient") == profile["identity"]):
             return 4
         if message.get("action_reason") == "claimed by this identity":
             return 5
@@ -88,7 +89,7 @@ def peek_event(profile_path: Path, profile: dict, *, quiet: bool = False) -> dic
             # The service inbox remains authoritative; this is disposable
             # presentation state, not an acknowledgement or deletion.
             state["events"] = [event for event in state["events"]
-                               if not _routine_message(event)]
+                               if not _routine_message(event, profile["identity"])]
         events = sorted(state["events"], key=lambda event: (
             priority(event),
             event["message"]["cursor"] if event["kind"] == "MESSAGE" else event["id"],
@@ -223,7 +224,7 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
                     for message in page["messages"]:
                         event = {"kind": "MESSAGE", "id": str(message["cursor"]),
                                  "message": message}
-                        if not profile.get("quiet_mode", False) or not _routine_message(event):
+                        if not profile.get("quiet_mode", False) or not _routine_message(event, profile["identity"]):
                             _append(state, event)
                             relevant += 1
                     state["cursor"] = max(int(state["cursor"]), int(page["next_cursor"]))

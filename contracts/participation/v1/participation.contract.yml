@@ -1,7 +1,7 @@
 document:
   kind: agentbus_participation_contract
   id: agentbus-participation-v1
-  version: 1.5.0
+  version: 1.6.0
   status: active
   path: contracts/participation/v1/participation.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/6
@@ -54,7 +54,7 @@ invariants:
   - {id: INV-012, rule: "Restart preserves policy, controls, acknowledgements, stopped state, and aliases; restart alone never reactivates a stopped session."}
   - {id: INV-013, rule: "Control checks have a hard maximum interval independent of inbox backoff; jitter stays inside declared bounds."}
   - {id: INV-014, rule: "Only newly relevant semantic traffic resets inbox backoff; unchanged unacknowledged state cannot induce a busy loop."}
-  - {id: INV-015, rule: "Presentation compaction never suppresses controls, required policy, direct blockers or requests, or claimed work, and never changes durable history."}
+  - {id: INV-015, rule: "Presentation compaction never suppresses controls, required policy, messages addressed to the exact chat under direct or informational audience, or claimed work, and never changes durable history."}
   - {id: INV-016, rule: "Every policy or control mutation and acknowledgement is reconstructable by stable identity, actor, target, revision, timestamps, and resulting state."}
   - {id: INV-017, rule: "A client without participation capability MUST receive upgrade instructions once per inbox identity or on explicit info reads while legacy messaging remains usable; ordinary message pages MUST NOT repeat the notice; capability advertisement is a presentation hint, never authority."}
   - {id: INV-018, rule: "Public persona and agent projections MUST use explicit field allowlists and MUST NOT reveal session credentials, handoff or rotation tokens, pending secrets, or other private profile state."}
@@ -180,10 +180,10 @@ contracts:
     default: compact_semantic_delta
     full_detail: explicit_json_or_verbose_request
     budget_unit: bytes_or_characters_not_model_tokens
-    priority: [control, required_policy, direct_blocker, direct_request_or_question_or_handoff, claimed_work, actionable_broadcast, informational, replaceable_status]
-    unsuppressible: [control, required_policy, direct_blocker, direct_actionable_request, claimed_work]
+    priority: [control, required_policy, direct_blocker, other_direct_message, claimed_work, actionable_broadcast, informational, replaceable_status]
+    unsuppressible: [control, required_policy, direct_message, claimed_work]
     durable_history: complete_unchanged
-    quiet_mode: "A persisted local chat preference suppresses only informational, broadcast, and replaceable-status poll output. The worker continues to check controls and inbox state. Controls, required policy, attention errors, direct actionable work, and claimed work always remain visible; all suppressed messages remain in durable history and are available through explicit inbox reads."
+    quiet_mode: "A persisted local chat preference suppresses only non-addressed informational, broadcast, and replaceable-status poll output. The worker continues to check controls and inbox state. Controls, required policy, attention errors, every message addressed to the exact chat, and claimed work always remain visible; all suppressed messages remain in durable history and are available through explicit inbox reads."
   authority:
     operator_capability: distinct_from_ordinary_agent_bearer_and_unavailable_to_agent_clients
     agent_ack: session_specific_proof_of_possession_bound_to_exact_chat_and_session
@@ -234,7 +234,7 @@ proof_obligations:
   - {id: PO-01, proves: [INV-001, INV-002, INV-013], scenario: empty_cycles_are_silent_and_max_backoff_continues_indefinitely_with_bounded_control_checks}
   - {id: PO-02, proves: [INV-004], scenario: first_join_and_policy_change_require_exact_revision_ack}
   - {id: PO-03, proves: [INV-005, INV-012], scenario: stop_ack_commits_before_poll_exit_and_lost_response_retry_returns_same_receipt_across_restart}
-  - {id: PO-04, proves: [INV-007, INV-015], scenario: backlog_filters_cursors_and_tiny_budget_cannot_suppress_control_or_direct_action}
+  - {id: PO-04, proves: [INV-007, INV-015], scenario: backlog_filters_cursors_and_tiny_budget_cannot_suppress_control_or_exactly_addressed_message}
   - {id: PO-05, proves: [INV-008], scenario: pending_stop_survives_rename_and_old_alias_cannot_be_captured}
   - {id: PO-06, proves: [INV-009], scenario: ordinary_bearer_sender_spoof_and_cross_session_ack_cannot_mutate_operator_control}
   - {id: PO-07, proves: [INV-010], scenario: operator_reads_and_Slack_events_cannot_refresh_target_presence}
@@ -258,7 +258,7 @@ proof_obligations:
   - {id: PO-25, proves: [INV-017], scenario: old_client_reads_show_upgrade_instructions_new_client_reads_stay_quiet_and_protocol_2_message_bytes_are_unchanged}
   - {id: PO-26, proves: [INV-006, INV-007, INV-016], scenario: nudge_and_checkpoint_controls_share_durable_target_receipts_require_explicit_ack_and_never_stop_participation_without_stop_kind}
   - {id: PO-27, proves: [INV-004, INV-012, INV-016], scenario: temporary_override_is_authorized_bounded_audited_restart_safe_and_reverts_to_inherited_policy_at_exact_expiry_with_new_ack_required}
-  - {id: PO-28, proves: [INV-001, INV-002, INV-015], scenario: quiet_mode_suppresses_only_routine_presentation_while_worker_continues_and_controls_policy_direct_action_and_claimed_work_remain_visible}
+  - {id: PO-28, proves: [INV-001, INV-002, INV-015], scenario: quiet_mode_suppresses_only_nonaddressed_presentation_while_worker_continues_and_controls_policy_exactly_addressed_messages_and_claimed_work_remain_visible}
   - {id: PO-29, proves: [INV-018], scenario: persona_json_and_agent_projections_exclude_active_and_pending_credentials}
   - {id: PO-30, proves: [INV-008, INV-009, INV-012, INV-016, INV-019], scenario: operator_grant_rotates_exact_active_session_secret_once_with_restart_safe_retry_and_preserves_identity_policy_controls_and_wake_binding}
   - {id: PO-31, proves: [INV-009, INV-016, INV-020], scenario: operator_roster_lists_service_joined_sessions_with_live_presence_and_only_verified_local_conversation_links_without_credentials}

@@ -64,3 +64,14 @@ workitems:
   acceptance_evidence:
   - test
   - contract-test
+- id: P07-P0-07
+  priority: P0
+  status: DONE
+  summary: deliver derive wake eligibility from assured exact recipient rather than message kind, including named informational traffic
+  acceptance:
+  - verified direct and named informational messages wake the exact bound chat regardless of kind
+  - quiet mode and presentation preserve exactly addressed messages; wrong recipient, broadcast, and legacy senders remain ineligible
+  - named informational recipients can reply through the authenticated parent route
+  acceptance_evidence:
+  - test
+  - contract-test

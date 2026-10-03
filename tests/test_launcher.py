@@ -596,8 +596,8 @@ def test_poll_cli_uses_budgeted_default_and_full_json_on_demand(launcher, tmp_pa
     def queue(cursor):
         poll.change_spool(path, profile, lambda spool: poll._append(spool, {
             "kind": "MESSAGE", "id": str(cursor), "message": {
-                "cursor": cursor, "sender": "agentbus:peer", "recipient": identity,
-                "kind": "message", "audience": "informational", "text": "🌼" * 100,
+                "cursor": cursor, "sender": "agentbus:peer", "recipient": "all",
+                "kind": "message", "audience": "broadcast", "text": "🌼" * 100,
             },
         }))
 

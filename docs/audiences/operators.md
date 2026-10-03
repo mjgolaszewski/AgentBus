@@ -105,9 +105,9 @@ For an abandoned unrouted claim, `agentbus claim-recovery --cursor CURSOR
 `--to` to release the claim. AgentBus records the former claimant, new claimant,
 actor, reason, and time; it cannot undo work already performed outside the bus.
 
-A chat may run `agentbus quiet on --identity REPO:NAME` to suppress routine
+A chat may run `agentbus quiet on --identity REPO:NAME` to suppress non-addressed
 informational and broadcast poll output. The local worker still reads the bus
-and checks controls; required policy, errors, direct actionable work, and
+and checks controls; required policy, errors, every exactly addressed message, and
 claimed work still reach the agent. `quiet status` reports the persisted local
 preference, and `quiet off` restores normal presentation. Suppressed messages
 remain in the service inbox and can be read explicitly.

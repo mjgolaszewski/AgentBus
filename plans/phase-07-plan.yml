@@ -23,6 +23,7 @@ delivery_contract:
   - adopt released BCF direct-main and generated-workflow-input fixes through canonical upgrade machinery
   - resume large Codex conversations without hydrating full history
   - route verified human replies to single-agent Slack threads as direct requests
+  - derive wake eligibility from assured exact recipient rather than message kind, including named informational traffic
   - disclose remaining F14 governance dependency hash and F15 proxy-header risk in release notes and security guidance
   - prove exact candidate and isolated release archive before consumer cutover
   parallelizable_workstreams:

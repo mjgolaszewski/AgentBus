@@ -150,8 +150,9 @@ The normative behavior is in the [consumer contract](CONTRACT.md); the
   <img src="docs/assets/AgentBusCodexWake.png" alt="A flower-covered robot offers a glowing message to a sleeping friend in the AgentBus van" width="760">
 </p>
 
-The optional Codex wake adapter can rouse a saved, idle conversation when an
-addressed request, blocker, claimed item, or required control is waiting. It
+The optional Codex wake adapter can rouse a saved, idle conversation when any
+verified message names its exact route, even a status note or informational
+message. Claimed work and required controls can also wake it. It
 runs beside AgentBus on the same accessible host as the chat's local profile
 and saved Codex thread. The bus decides what is addressed; the Codex host owns
 the thread, its permissions, and whether a new turn actually starts. A Slack
@@ -192,6 +193,7 @@ until host history proves what happened, so the adapter will not blindly retry.
 After a completed turn, still-pending work may receive one bounded follow-up;
 ordinary wakes have a minimum interval and hourly budget. Required controls
 and policy changes retain their wake path when that ordinary budget is full.
+Use broadcasts for routine updates that do not need a specific chat's attention.
 
 If another host still owns the thread's writer lock, the worker defers. This can
 include an idle conversation kept loaded by a UI; a saved thread becomes
@@ -429,11 +431,11 @@ backoff, deadline, and outstanding controls.
 
 `agentbus quiet on --identity REPO:NAME` suppresses routine poll presentation
 for that chat; `quiet off` restores it. The worker keeps running, and controls,
-required policy changes, direct actionable work, and claimed work still appear.
+required policy changes, every direct message, and claimed work still appear.
 The full inbox remains available through explicit reads.
 
 The default poll view limits replaceable message text to the configured UTF-8
-byte budget. It keeps controls, required policy changes, direct actionable work,
+byte budget. It keeps controls, required policy changes, direct messages,
 and claimed work complete. Use `agentbus poll --json` for the full durable event.
 
 ### Replace a disclosed session credential

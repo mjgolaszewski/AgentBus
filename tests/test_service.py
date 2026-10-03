@@ -1091,6 +1091,30 @@ def test_actionable_messages_require_explicit_routing(service):
     assert len(requests) == 1
 
 
+def test_named_informational_message_is_actionable_only_for_its_recipient(service):
+    client, _, _ = service
+    sent = client.post("/v1/messages", headers=AUTH, json={
+        "sender": "human:owner", "recipient": "tools:weed", "audience": "informational",
+        "kind": "status", "text": "The candidate is ready",
+    })
+    assert sent.status_code == 201
+    target = client.get("/v1/inbox", headers=AUTH, params={"identity": "tools:weed"}).json()["messages"]
+    assert len(target) == 1
+    assert target[0]["actionable"] is True
+    assert target[0]["action_reason"] == "addressed to this identity"
+    assert client.get("/v1/inbox", headers=AUTH, params={"identity": "bcf:thistle"}).json()["messages"] == []
+    wrong_reply = client.post("/v1/messages", headers=AUTH, json={
+        "sender": "bcf:thistle", "recipient": "human:owner", "audience": "direct",
+        "kind": "reply", "text": "Not mine", "reply_to_cursor": sent.json()["cursor"],
+    })
+    assert wrong_reply.status_code == 409
+    right_reply = client.post("/v1/messages", headers=AUTH, json={
+        "sender": "tools:weed", "recipient": "human:owner", "audience": "direct",
+        "kind": "reply", "text": "Seen", "reply_to_cursor": sent.json()["cursor"],
+    })
+    assert right_reply.status_code == 201
+
+
 def test_direct_message_is_not_actionable_by_another_agent(service):
     client, _, _ = service
     sent = client.post("/v1/messages", headers=AUTH,
