@@ -28,7 +28,7 @@ workitems:
   - contract-test
 - id: P07-P0-03
   priority: P0
-  status: TODO
+  status: DONE
   summary: deliver disclose remaining F14 governance dependency hash and F15 proxy-header risk in release notes and security guidance
   acceptance:
   - requires-workitem-closure:P07-P0-02

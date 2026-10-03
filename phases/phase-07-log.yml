@@ -31,7 +31,7 @@ workitems:
   status: DONE
   summary: deliver adopt released BCF direct-main and generated-workflow-input fixes through canonical upgrade machinery
 - id: P07-P0-03
-  status: TODO
+  status: DONE
   summary: deliver disclose remaining F14 governance dependency hash and F15 proxy-header risk in release notes and security guidance
 - id: P07-P0-04
   status: TODO
@@ -84,6 +84,7 @@ execution_evidence:
   - the stacked Slack operator slice uses a default-empty human user allowlist, exact session/suffix resolution, a durable work hold that preserves wake eligibility, confirmed stop, and service-only metrics; final local checks and BCF proof remain pending
   - released BCF v2.1.8 installer refreshed only pack-owned runtime/schema/workflow surfaces plus canonical locks; local governance, lint, typecheck, architecture, client, and contract gates passed before exact prospective proof
   - v2.1.8 prospective preflight correctly rejected the completed upgrade workitem without a successor for unfinished release work; the authored phase workitems now connect upgrade, risk disclosure, and final release proof
+  - F14/F15 deferral boundaries, residual risks, and stronger conditions are recorded in SECURITY.md and the v0.7.1 changelog; final archive and consumer cutover remain P07-P0-04
 closeout_requirements:
   claims:
     workitems_closed:
