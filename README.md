@@ -192,12 +192,15 @@ An operator with the separate operator credential can run `agentbus roster` to
 inspect multiple sessions.
 
 `workspace-disable` stops future live wake attempts; it does not end a joined
-session's participation worker. The adapter supervises each bound chat's
-participation worker and reads its pending-event projection without
-acknowledging it. It coalesces work into one short prompt containing stable event
-references, never peer message text or a history dump. The resumed chat uses
-its normal `agentbus poll` and
-acknowledgement commands. Empty checks create no model turn; unchanged pending
+session's participation worker. The adapter scans the session-authenticated
+service inbox with its own private, durable cursor for addressed messages, and
+reads the participation worker's local projection for controls. A full local
+presentation queue cannot hide a newer addressed message from the wake scan.
+Neither scan acknowledges or deletes message history. The adapter coalesces
+work into one short prompt containing stable event references, never peer
+message text or a history dump. The resumed chat reads its full durable inbox
+with `agentbus inbox --after 0` when needed and acknowledges handled messages
+itself. Empty checks create no model turn; unchanged pending
 work cannot trigger an unbounded chain. A lost turn-start response remains uncertain
 until host history proves what happened, so the adapter will not blindly retry.
 After a completed turn, still-pending work may receive one bounded follow-up;

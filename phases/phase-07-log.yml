@@ -13,7 +13,7 @@ summary:
   outcome: active
   highlights:
   - P07 publishes AgentBus 0.7.1 after pinned uv bootstrap and released BCF #347/#348 are proven
-  - operator moved F14 governance hashes and F15 proxy-header remediation into the explicit P08/0.7.2 follow-up
+  - operator moved F14 governance hashes and F15 proxy-header remediation into P08, now targeted at 0.7.3 after the urgent wake hotfix
   - phase artifacts were scaffolded from the governance template
   - official uv 0.12.9 multiarch digest is pinned; local image build and runtime imports pass
   - Codex resume now requests metadata only, avoiding oversized full-history frames for long conversations

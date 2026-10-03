@@ -5,6 +5,27 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-10-03
+
+### Codex wake hotfix
+
+- A separate private, durable cursor now scans each joined chat's authenticated
+  service inbox for assured exact-recipient messages. Local presentation queue
+  saturation no longer blocks wake discovery. The scan persists candidate IDs
+  with its cursor, replays after interruption, and never acknowledges, claims,
+  or deletes service messages. Existing bindings begin from their last semantic
+  acknowledgement; the full inbox remains available to the chat.
+- Wake status reports the scan cursor, whether it caught up, and whether its
+  bounded local candidate projection was compacted. This release does not fix
+  a separately unavailable Codex app-server proxy on the shared host; the
+  custodian must restore that proxy before actual saved-thread resumes work.
+
+### Remaining risk
+
+- F14 governance dependency hash locking and F15 proxy-header remediation
+  remain producer-owned. The emergency wake correction takes v0.7.2; these
+  previously planned v0.7.2 items move to v0.7.3 without a claim of closure.
+
 ## [0.7.1] - 2026-10-03
 
 ### Governance
@@ -83,7 +104,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 - F14 governance dependency artifacts remain version-pinned without transitive
   hash locking. F15 proxy-header handling remains a BCF-owned follow-up with
-  no known current exposure. Both are explicit v0.7.2 prerequisites; see
+  no known current exposure. Both remain follow-up prerequisites, now targeted
+  for v0.7.3 after the v0.7.2 wake hotfix; see
   [SECURITY.md](SECURITY.md) for the boundary and stronger condition.
 
 ## [0.7.0] - 2026-10-01
