@@ -6,10 +6,12 @@ import json
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 
 from src import agentbus_codex_wake_client as wake
+from src import agentbus_wake_inbox_client as wake_inbox
 from src.agentbus_codex_rpc_client import CodexHostRejected, TurnStartUncertain
 from src.agentbus_poll_client import change_spool
 from src.agentbus_transport_client import ClientError
@@ -85,6 +87,116 @@ def message(cursor: int, *, recipient: str = "agentbus:signal-gardener",
         "kind": kind, "text": text, "action_reason": action_reason,
         "sender_assurance": assurance,
     }}
+
+
+def service_message(cursor: int, **overrides: object) -> dict:
+    result = dict(message(cursor)["message"])
+    result.update(overrides)
+    return result
+
+
+def fake_inbox(messages: list[dict]):
+    def respond(_values: dict, path: str, **_kwargs: object) -> dict:
+        assert path.startswith("/v1/inbox?")
+        query = parse_qs(urlparse(path).query)
+        after = int(query["after"][0])
+        page = [item for item in messages if item["cursor"] > after][:100]
+        remaining = any(item["cursor"] > page[-1]["cursor"] for item in messages) if page else False
+        return {"messages": page, "next_cursor": page[-1]["cursor"] if page else after,
+                "has_more": remaining}
+    return respond
+
+
+def test_saturated_spool_cannot_block_service_backed_direct_wake(setup, monkeypatch):
+    values, identity, profile, path, host = setup
+    values.update(AGENTBUS_URL="http://127.0.0.1:8766", AGENTBUS_API_TOKEN="shared")
+    profile["participation"]["session_secret"] = "session-proof"
+    profile["ack_cursor"] = 0
+    wake.bind(values, identity, "thread-one", lambda: host)
+    wake.set_enabled(values, identity, True)
+    put(path, profile, *(message(i, audience="broadcast") for i in range(1, 102)))
+    original_spool = path.with_name(path.name + ".poll.json").read_bytes()
+    messages = [service_message(i, audience="broadcast") for i in range(1, 151)]
+    messages.append(service_message(151, kind="information"))
+    monkeypatch.setattr(wake_inbox, "api", fake_inbox(messages))
+    result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
+    assert result["status"] == "turn_accepted"
+    assert result["eligible"] == ["MESSAGE:151"]
+    assert "MESSAGE:151" in host.prompts[0]
+    assert path.with_name(path.name + ".poll.json").read_bytes() == original_spool
+    assert profile["ack_cursor"] == 0
+    assert wake.status(values, identity)["eligible"] == ["MESSAGE:151"]
+    assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "already_woken"
+    assert [name for name, _ in host.calls].count("start") == 1
+
+
+def test_wake_scan_replays_after_page_failure_without_skipping_or_ack(setup, monkeypatch):
+    values, identity, profile, _path, _host = setup
+    profile["participation"]["session_secret"] = "session-proof"
+    profile["ack_cursor"] = 0
+    messages = [service_message(i, audience="broadcast") for i in range(1, 101)]
+    messages.extend([service_message(101, sender_assurance="legacy"),
+                     service_message(102, recipient="agentbus:other"),
+                     service_message(103, audience="broadcast"),
+                     service_message(104, sender_assurance="slack-human", kind="reply")])
+    respond = fake_inbox(messages)
+    calls = 0
+    def fail_once(v: dict, p: str, **kwargs: object) -> dict:
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise ClientError("temporary inbox failure")
+        return respond(v, p, **kwargs)
+    monkeypatch.setattr(wake_inbox, "api", fail_once)
+    with pytest.raises(ClientError, match="temporary inbox failure"):
+        wake_inbox.scan(values, profile, 1, wake._candidate)
+    state = wake_inbox.read_state(values, profile, 1)
+    assert state["cursor"] == 100 and state["pending"] == []
+    resumed = wake_inbox.scan(values, profile, 1, wake._candidate)
+    assert resumed["cursor"] == 104 and resumed["caught_up"] is True
+    assert wake_inbox.candidates(resumed, 0) == [(3, "MESSAGE:104")]
+    assert profile["ack_cursor"] == 0
+    assert wake_inbox.candidates(wake_inbox.scan(values, profile, 1, wake._candidate), 0) == [(3, "MESSAGE:104")]
+
+
+def test_wake_scan_compacts_only_local_candidate_projection(setup, monkeypatch):
+    values, identity, profile, _path, _host = setup
+    profile["participation"]["session_secret"] = "session-proof"
+    profile["ack_cursor"] = 0
+    messages = [service_message(i) for i in range(1, 132)]
+    monkeypatch.setattr(wake_inbox, "api", fake_inbox(messages))
+    state = wake_inbox.scan(values, profile, 1, wake._candidate)
+    assert state["cursor"] == 131 and state["compacted"] is True
+    assert len(state["pending"]) == wake_inbox.MAX_CANDIDATES
+    assert wake_inbox.candidates(state, 0)[-1] == (3, "MESSAGE:131")
+    profile["ack_cursor"] = 131
+    assert wake_inbox.candidates(wake_inbox.scan(values, profile, 1, wake._candidate), 131) == []
+
+
+def test_wake_scan_rejects_out_of_order_page_without_skipping_direct_message(setup, monkeypatch):
+    values, _identity, profile, _path, _host = setup
+    profile["participation"]["session_secret"] = "session-proof"
+    profile["ack_cursor"] = 0
+    monkeypatch.setattr(wake_inbox, "api", lambda *_args, **_kwargs: {
+        "messages": [service_message(2), service_message(1)],
+        "next_cursor": 2, "has_more": False,
+    })
+    with pytest.raises(ClientError, match="cursor is invalid"):
+        wake_inbox.scan(values, profile, 1, wake._candidate)
+    state = wake_inbox.read_state(values, profile, 1)
+    assert state["cursor"] == 0 and state["pending"] == []
+
+
+def test_wake_scan_replays_from_ack_after_binding_generation_changes(setup, monkeypatch):
+    values, _identity, profile, _path, _host = setup
+    profile["participation"]["session_secret"] = "session-proof"
+    profile["ack_cursor"] = 4
+    monkeypatch.setattr(wake_inbox, "api", fake_inbox([service_message(5)]))
+    assert wake_inbox.scan(values, profile, 1, wake._candidate)["cursor"] == 5
+    fresh = wake_inbox.read_state(values, profile, 2)
+    assert fresh["cursor"] == 4 and fresh["pending"] == []
+    assert wake_inbox.candidates(wake_inbox.scan(values, profile, 2, wake._candidate), 4) == [
+        (3, "MESSAGE:5")]
 
 
 def test_legacy_message_cannot_wake_bound_chat(setup):

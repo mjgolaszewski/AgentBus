@@ -42,7 +42,8 @@ hotfix_lane:
         - default_branch_red_ci
         - release_blocking_regression
         - security_or_expiring_external_breakage
-  open_records: []
+  open_records:
+    - {id: P07-HF01, mode: full, status: active, triggered_by_commits: [d1370afee90251f58caa7ccc524dd2fd35f449ef], failing_workflows: [], root_cause: presentation spool saturation blocks service inbox fetch and the dependent Codex wake, remediated_in_phase: P07, hotfix_log: phases/phase-07-hotfix01.yml, canonical_artifacts: [contracts/codex-wake/v1/codex-wake.contract.yml, plans/phase-ledger.yml, phases/phase-07-hotfix01.yml]}
   remediation_history:
     - {id: P04-HF01, mode: full, recorded_at_utc: '2026-10-01T14:15:00Z', action: declared truthful Phase 04 successor edges and restored protected-main proof, remediated_in_phase: P04, hotfix_log: phases/phase-04-hotfix01.yml, canonical_artifacts: [plans/phase-04-workitems.yml, plans/phase-ledger.yml, phases/phase-04-hotfix01.yml], local_validation: [bcf reconcile --check, bcf ci prospective-train, push-style cheap preflight], remote_validation_completed: {commit: e21976375eaafce6703f11e99a2ed37cd2bac987, workflows: [https://github.com/mjgolaszewski/AgentBus/actions/runs/36854838305]}}
 operator_requirements_choices_disambiguations:
@@ -92,7 +93,8 @@ release_trains:
   release_5: {target_version: "0.6.0", status: completed, focus: [sender_provenance, legacy_wake_exclusion, bounded_ingress, private_status]}
   release_6: {target_version: "0.7.0", status: completed, focus: [enrolled_route_proof, session_targeting, rate_limits]}
   release_7: {target_version: "0.7.1", status: active, focus: [pinned_uv_bootstrap, released_bcf_direct_main_and_workflow_input_fixes, verified_Slack_human_thread_reply_routing, exact_recipient_derived_wake, explicit_destination_and_parent_derived_reply, session_proved_self_wake_status, allowlisted_Slack_operator_commands_and_reversible_wake_pause]}
-  release_8: {target_version: "0.7.2", status: planned, focus: [governance_dependency_hash_lock, proxy_header_remediation]}
+  release_7_hotfix: {target_version: "0.7.2", status: active, focus: [service_backed_codex_wake_cursor]}
+  release_8: {target_version: "0.7.3", status: planned, focus: [governance_dependency_hash_lock, proxy_header_remediation]}
 release_readiness:
   computed_by: bcf truth
   requirements_source: governance/evidence-policy.yml

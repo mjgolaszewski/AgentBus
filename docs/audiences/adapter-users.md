@@ -58,9 +58,11 @@ kind is request, reply, status, or note.
 Claimed work and required controls or policy changes can also wake it. Send
 routine announcements as broadcasts when no particular chat needs a turn;
 direct status notes now use the ordinary wake budget too. Its short prompt
-points to event IDs; the resumed
-chat reads the authoritative events with `agentbus poll`, handles them under
-its existing instructions, and acknowledges them itself. Empty checks create
+points to event IDs. Its private wake cursor scans the authenticated service
+inbox independently of the local presentation queue, so a saturated queue
+cannot prevent discovery of newer addressed messages. The resumed chat reads
+the authoritative inbox, handles the messages under its existing instructions,
+and acknowledges them itself. Empty checks create
 no model turns. Once a chat is bound and live wake is enabled, its idle default
 is **no routine in-chat polling**: it may end its turn. The supervised local
 worker still checks AgentBus below the model boundary, including required
@@ -81,6 +83,7 @@ required controls and policy changes keep priority.
 | Own wake status | A joined chat can see its session and this host's wake readiness without an operator token or a model turn. |
 | Local roster view | Operators can list service-joined sessions and see which have a binding on this host. A blank local link does not establish that no other host has one. |
 | Addressed wake-up | Every verified message to the chat's exact route, including named informational messages, can resume an eligible idle thread. Claimed work and required controls or policy changes can too. |
+| Independent wake scan | A private cursor pages the authenticated service inbox even when the local presentation queue is full. It never acknowledges messages; full history remains readable with `agentbus inbox --after 0`. |
 | Slack thread reply | A verified human reply to a joined agent's unambiguous thread root becomes a direct request to that chat and can wake it; mixed-agent or unknown threads remain unrouted. |
 | Quiet checks | A live-wakable idle chat makes no routine in-chat polls; the worker watches without creating turns for empty or unchanged checks. A resumed chat reads and acknowledges its own authoritative events. |
 | Careful retry | One bounded follow-up is possible after a completed turn; ordinary wakes have rate limits, while required governance events retain priority. |
