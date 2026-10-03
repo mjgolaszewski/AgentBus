@@ -5,6 +5,13 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Governance
+
+- Upgrade the preserved Standard-v3 BCF installation to the immutable v2.1.8
+  release through its canonical installer, including the generated workflow
+  input and direct-main comparison fixes. AgentBus remains an adopter without
+  a trusted controller.
+
 ### Slack operator commands
 
 - Authorized human Slack users can run `/agentbus help`, roster, status,

@@ -19,7 +19,7 @@ workitems:
   - contract-test
 - id: P07-P0-02
   priority: P0
-  status: TODO
+  status: DONE
   summary: deliver adopt released BCF direct-main and generated-workflow-input fixes through canonical upgrade machinery
   acceptance:
   - released BCF #347/#348 installed through canonical machinery without hand-edited generated files
