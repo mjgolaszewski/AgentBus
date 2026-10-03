@@ -21,6 +21,7 @@ summary:
   - assured messages naming an exact chat now qualify for wake regardless of kind or informational label; quiet mode preserves them
   - joined sends now require explicit destinations and replies derive routing metadata from durable parents rather than duplicated caller fields
   - joined chats can inspect their own service presence and read-only local Codex wake readiness without operator authority
+  - allowlisted Slack humans can use fixed exact-session commands; pause holds substantive work while addressed messages and controls still wake the chat, and retire keeps durable stop semantics
 workitems:
 - id: P07-P0-01
   status: DONE
@@ -49,6 +50,9 @@ workitems:
 - id: P07-P0-09
   status: DONE
   summary: deliver let joined chats inspect their own session and local Codex wake readiness without operator authority or status-read side effects
+- id: P07-P0-10
+  status: DONE
+  summary: deliver let allowlisted Slack humans inspect and address exact sessions, hold and resume substantive work, and issue confirmed durable retirement through fixed commands
 execution_evidence:
   planned_commands:
   - make governance-validate
@@ -76,6 +80,7 @@ execution_evidence:
   - the vendored canonical BCF test-manifests update command derived the two new service test nodes in contract and Python 3.14 manifests
   - released BCF 2.1.6 tooling regenerated the semantic lock and exact test manifests for recipient-derived wake behavior; the local suite passed 175 tests
   - Issue 27 self-status uses exact session proof and a read-only host projection; 182 local tests, lint, typecheck, governance validation, manifests, and semantic lock pass on the candidate branch
+  - the stacked Slack operator slice uses a default-empty human user allowlist, exact session/suffix resolution, a durable work hold that preserves wake eligibility, confirmed stop, and service-only metrics; final local checks and BCF proof remain pending
 closeout_requirements:
   claims:
     workitems_closed:

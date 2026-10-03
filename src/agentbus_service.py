@@ -19,11 +19,6 @@ from typing import Annotated, Callable, Literal
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError, model_validator
-from slack_sdk import WebClient
-from slack_sdk.socket_mode import SocketModeClient
-from slack_sdk.socket_mode.client import BaseSocketModeClient
-from slack_sdk.socket_mode.request import SocketModeRequest
-from slack_sdk.socket_mode.response import SocketModeResponse
 
 from src.agentbus_claim_recovery_service import ClaimRecoveryStore
 from src.agentbus_control_store_service import ControlStore
@@ -58,7 +53,7 @@ from src.agentbus_request_limits_service import RequestBodyLimit
 from src.agentbus_send_policy_service import SessionAuthorityError, validate_new_send
 from src.agentbus_send_rate_service import SendRateExceeded, SendRateStore
 from src.agentbus_settings_service import Settings
-from src.agentbus_slack_reply_service import append_slack
+from src.agentbus_slack_socket_service import SlackReceiver, build_socket
 from src.agentbus_status_api_service import api_health, api_status
 
 LOGGER = logging.getLogger("agentbus")
@@ -218,6 +213,11 @@ class MessageStore:
             )
         """)
         self._db.execute("""
+            CREATE TABLE IF NOT EXISTS slack_command_receipts (
+                command_id TEXT PRIMARY KEY, received_at TEXT NOT NULL
+            )
+        """)
+        self._db.execute("""
             CREATE TABLE IF NOT EXISTS claims (
                 channel TEXT NOT NULL,
                 cursor INTEGER NOT NULL,
@@ -281,15 +281,25 @@ class MessageStore:
             """, (channel, slack_ts, message.thread_ts, message.recipient,
                   message.audience, datetime.now(timezone.utc).isoformat(),
                   message.model_dump_json(), message._sender_assurance))
-            if message._sender_assurance == "session":
+            if message._sender_assurance in {"session", "slack-human"}:
                 self._db.execute(
-                    "UPDATE messages SET sender_assurance = 'session' "
+                    "UPDATE messages SET sender_assurance = ?, payload = ?, recipient = ?, audience = ?, thread_ts = ? "
                     "WHERE channel = ? AND slack_ts = ? AND sender_assurance = 'legacy'",
-                    (channel, slack_ts),
+                    (message._sender_assurance, message.model_dump_json(), message.recipient,
+                     message.audience, message.thread_ts, channel, slack_ts),
                 )
             row = self._db.execute("SELECT * FROM messages WHERE channel = ? AND slack_ts = ?",
                                    (channel, slack_ts)).fetchone()
             return self._message(row)
+
+    def claim_slash_command(self, command_id: str) -> bool:
+        """Admit one Slack invocation before its external side effects."""
+        with self._lock, self._db:
+            inserted = self._db.execute(
+                "INSERT OR IGNORE INTO slack_command_receipts VALUES (?, ?)",
+                (command_id, datetime.now(timezone.utc).isoformat()),
+            )
+            return inserted.rowcount == 1
 
     def read(self, channel: str, after: int = 0, recipient: str | None = None,
              limit: int = 100, thread_ts: str | None = None) -> MessagePage:
@@ -493,37 +503,6 @@ def normalize_event(event: dict, channel: str, trusted_bot_id: str) -> tuple[str
     return ts, message
 
 
-class SlackReceiver:
-    def __init__(self, store: MessageStore, channel: str, trusted_bot_id: str):
-        self.store, self.channel, self.trusted_bot_id = store, channel, trusted_bot_id
-
-    def __call__(self, client: BaseSocketModeClient, request: SocketModeRequest) -> None:
-        if request.type == "events_api":
-            event = request.payload.get("event")
-            normalized = (
-                normalize_event(event, self.channel, self.trusted_bot_id)
-                if isinstance(event, dict) else None
-            )
-            if normalized is not None:
-                ts, message = normalized
-                try:
-                    append_slack(self.store, self.channel, ts, message)
-                except (sqlite3.Error, OSError):
-                    LOGGER.error("Could not durably store Slack event; withholding acknowledgement")
-                    return
-        client.send_socket_mode_response(SocketModeResponse(envelope_id=request.envelope_id))
-
-
-def build_socket(settings: Settings, receiver: SlackReceiver) -> SocketModeClient:
-    client = SocketModeClient(
-        app_token=settings.slack_app_token,
-        web_client=WebClient(token=settings.slack_bot_token, timeout=15, retry_handlers=[]),
-        concurrency=1,
-    )
-    client.socket_mode_request_listeners.append(receiver.__call__)
-    return client
-
-
 class SlackPoster:
     def __init__(self, settings: Settings, client: httpx.AsyncClient):
         self.settings, self.client = settings, client
@@ -723,7 +702,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
             poster = SlackPoster(settings, client)
             trusted_bot_id = await poster.authenticated_bot_id()
             socket = socket_factory(
-                settings, SlackReceiver(store, settings.slack_channel, trusted_bot_id)
+                settings, SlackReceiver(store, settings.slack_channel, trusted_bot_id, settings)
             )
             app.state.store = store
             app.state.poster = poster

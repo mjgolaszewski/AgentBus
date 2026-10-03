@@ -69,7 +69,7 @@ class ControlStore:
                         session_ids: list[str] | None = None,
                         override_values: dict[str, int | float | None] | None = None,
                         duration_seconds: int | None = None) -> tuple[str, list[str]]:
-        if kind not in {"nudge", "checkpoint_request", "temporary_policy_override"}:
+        if kind not in {"nudge", "checkpoint_request", "temporary_policy_override", "pause_work", "resume_work"}:
             raise ValueError("unsupported auxiliary control kind")
         if kind == "temporary_policy_override":
             if not override_values or isinstance(duration_seconds, bool) or not isinstance(duration_seconds, int) or not 1 <= duration_seconds <= 86400:
@@ -150,6 +150,18 @@ class ControlStore:
                 "INSERT INTO control_targets(control_id, session_id, state) VALUES (?, ?, 'issued')",
                 [(control_id, session_id) for session_id in targets],
             )
+            if kind in {"pause_work", "resume_work"}:
+                paused = int(kind == "pause_work")
+                self._db.executemany(
+                    "UPDATE participation_sessions SET work_paused = ? WHERE session_id = ?",
+                    [(paused, session_id) for session_id in targets],
+                )
+                self._db.executemany(
+                    "INSERT INTO participation_audit(actor, action, chat_id, session_id, revision, at, result) "
+                    "SELECT ?, 'work_hold', chat_id, session_id, '', ?, ? FROM participation_sessions "
+                    "WHERE session_id = ?",
+                    [(actor, issued.isoformat(), kind, session_id) for session_id in targets],
+                )
             if override_values is not None:
                 for session_id in targets:
                     effective = self._participation.effective_policy_for_session(session_id, observed_at=issued)

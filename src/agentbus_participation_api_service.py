@@ -88,7 +88,7 @@ class StopControl(BaseModel):
 
 
 class AuxiliaryControl(StopControl):
-    kind: Literal["nudge", "checkpoint_request", "temporary_policy_override"]
+    kind: Literal["nudge", "checkpoint_request", "temporary_policy_override", "pause_work", "resume_work"]
     values: dict[str, int | float | None] | None = None
     duration_seconds: int | None = Field(default=None, ge=1, le=86400)
 

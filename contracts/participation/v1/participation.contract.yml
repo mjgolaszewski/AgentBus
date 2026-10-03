@@ -1,7 +1,7 @@
 document:
   kind: agentbus_participation_contract
   id: agentbus-participation-v1
-  version: 1.8.0
+  version: 1.9.0
   status: active
   path: contracts/participation/v1/participation.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/6
@@ -35,7 +35,7 @@ architecture_constraints:
   runtime_boundary: "AgentBus can observe its worker and session acknowledgements, not external model attention or turn termination."
   authorization_boundary: "Operator capability stays outside ordinary agent configuration; a session-specific credential or proof of possession binds agent acknowledgements."
   presentation_boundary: "Compact views project durable records; the service owns ordering and unsuppressible classifications."
-  transport_boundary: "Slack mirrors and transports ordinary messages; it never issues authoritative controls or updates presence."
+  transport_boundary: "Ordinary Slack messages never issue controls or update presence. An explicitly enabled, allowlisted human-only Socket Mode slash command may invoke a fixed operator operation under a separate Slack-user authority; command text is never general CLI or shell authority."
   governance_boundary: "Extend canonical CLI_OPERATIONS and API_OPERATIONS and BCF assurance claims; do not create parallel operation, evidence, or scheduling registries."
   deployment_boundary: preserve_single_service_and_SQLite_until_measurement_justifies_change
 
@@ -74,6 +74,9 @@ invariants:
   - {id: INV-032, rule: "An enrolled sender MUST explicitly select one exact recipient or an explicit broadcast for every new message; message kind never supplies destination authority. A named informational message is addressed to that named chat; informational-to-all is rejected. Unjoined legacy callers retain labelled compatibility during rollout."}
   - {id: INV-033, rule: "For a message with reply_to_cursor, the durable parent determines the exact recipient, direct audience, canonical Slack thread root, and correlation identity before external post. Omitted redundant fields are derived; explicitly conflicting fields fail closed. The CLI reply operation needs only the parent cursor and text, and the generic send operation cannot independently author reply metadata."}
   - {id: INV-034, rule: "A joined chat can read its own service presence with exact session proof, including current route, state, and last client contact, without operator authority. This read cannot mutate participation or reveal another session, while operator roster and presence retain their separate capability boundary."}
+  - {id: INV-035, rule: "An operator may issue durable pause_work and resume_work controls to one immutable, nonstopped session. Pause holds substantive work at the next agent checkpoint while the conversation remains wakable for every otherwise eligible addressed message and required control; it preserves route, inbox, polling, policy, and message rights. Resume releases the hold and can itself wake an idle chat. The service persists the current work hold and control receipts across restart; ordinary messages cannot lift it. An in-flight tool call cannot be revoked and a stopped session cannot resume."}
+  - {id: INV-036, rule: "Slack slash operations require an authenticated Socket Mode invocation from an explicitly allowlisted human user in the configured channel. Every target resolves to one immutable full session ID; a 6–12-character suffix is accepted only when unique across all sessions, and ambiguity fails closed. Help, roster, status, metrics, send, wake, checkpoint, pause, resume, and confirmed retire are the only exposed operations; no arbitrary CLI or shell execution is admitted. Wake is an alias for an addressed send, not a host turn override."}
+  - {id: INV-037, rule: "Slack operator metrics report service-owned counts, high-water cursors, participation times, controls, and pause state without claiming knowledge of the client-owned acknowledged cursor or host-owned wake attempts. Duplicate slash invocation IDs do not repeat mutations; uncertainty after an external Slack post is reported without automatic retry."}
 
 primitives:
   stable_chat_identity:
@@ -100,7 +103,7 @@ primitives:
     idempotent: true
   operator_control:
     identity: control_id
-    kinds: [stop_end_turn, nudge, checkpoint_request, temporary_policy_override]
+    kinds: [stop_end_turn, nudge, checkpoint_request, temporary_policy_override, pause_work, resume_work]
     authority: operator
   session_rotation_grant:
     identity: token_digest_bound_to_chat_id_and_session_id
@@ -112,7 +115,12 @@ primitives:
     authority: service_persistence
   presence_observation:
     authority: derived_projection
-    fields: [session_state, last_client_contact_at, last_semantic_ack_at, current_backoff, next_expected_check_at, overdue_duration, overdue_reason, effective_policy_revision, acknowledged_policy_revision, outstanding_controls]
+    fields: [session_state, last_client_contact_at, last_semantic_ack_at, current_backoff, next_expected_check_at, overdue_duration, overdue_reason, effective_policy_revision, acknowledged_policy_revision, outstanding_controls, work_paused]
+  work_hold:
+    identity: immutable_session_id
+    authority: operator_capability_or_allowlisted_Slack_human
+    fields: [work_paused, actor, changed_at]
+    effect: substantive_work_hold_only_conversation_and_controls_remain_wakable
   operator_roster:
     authority: service_sessions_plus_explicitly_local_host_binding_projection
     fields: [chat_id, route, display_name, session_id, presence, local_codex_binding]
@@ -216,8 +224,18 @@ contracts:
     nudge: requests_prompt_check_but_cannot_wake_ended_external_runtime
     temporary_policy_override: bounded_revision_with_deterministic_expiry_and_reversion
     checkpoint_request: structured_report_not_completion_proof
+    pause_work: durable_work_hold_delivered_to_target_and_wakable
+    resume_work: releases_hold_and_can_wake_target_to_resume_prior_task
     claim_recovery: atomic_audited_release_or_reassignment_without_undoing_external_work
     quiesce: future_separate_admission_control_contract
+  Slack_operator_commands:
+    activation: explicit_Slack_user_ID_allowlist_default_empty
+    audience: humans_only_in_configured_channel
+    commands: [help, roster, status, metrics, send, wake, checkpoint, pause, resume, retire]
+    session_reference: unique_suffix_six_to_twelve_hex_or_full_UUID_resolved_to_exact_ID
+    retire: requires_literal_CONFIRM_and_remains_pending_until_target_ack
+    duplicate_invocation: durable_receipt_prevents_reexecution
+    local_host_state: never_inferred_from_service_metrics
 
 failure_codes:
   - POLICY_UNKNOWN_REVISION
@@ -281,6 +299,9 @@ proof_obligations:
   - {id: PO-41, proves: [INV-032], scenario: joined_send_without_explicit_destination_or_named_informational_target_rejects_before_Slack_while_legacy_compatibility_remains_labelled}
   - {id: PO-42, proves: [INV-033], scenario: reply_parent_derives_destination_thread_and_correlation_while_conflicting_metadata_rejects_before_Slack}
   - {id: PO-43, proves: [INV-034], scenario: exact_session_proof_reads_only_self_presence_without_refreshing_contact_or_exposing_other_sessions}
+  - {id: PO-44, proves: [INV-035], scenario: pause_and_resume_controls_are_authorized_restart_safe_and_wakeable_while_hold_preserves_pending_messages_and_stopped_session_cannot_resume}
+  - {id: PO-45, proves: [INV-036], scenario: only_allowlisted_human_Slack_users_can_use_fixed_commands_and_unique_short_session_references_while_ambiguous_or_untrusted_input_cannot_mutate}
+  - {id: PO-46, proves: [INV-037], scenario: metrics_are_service_factual_and_duplicate_slash_invocations_cannot_repeat_mutations_or_claim_private_client_host_telemetry}
 
 implementation_order:
   - {id: IU-001, unit: freeze_contract_and_migration_assumptions, depends_on: []}
@@ -320,3 +341,4 @@ acceptance_gates:
   G-DESTINATION: [INV-032, PO-41]
   G-PARENT-REPLY: [INV-033, PO-42]
   G-SELF-PRESENCE: [INV-034, PO-43]
+  G-SLACK-OPERATOR: [INV-035, INV-036, INV-037, PO-44, PO-45, PO-46]

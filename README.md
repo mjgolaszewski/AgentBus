@@ -205,6 +205,16 @@ ordinary wakes have a minimum interval and hourly budget. Required controls
 and policy changes retain their wake path when that ordinary budget is full.
 Use broadcasts for routine updates that do not need a specific chat's attention.
 
+An authorized operator can hold one session's substantive work with
+`/agentbus pause ID` in Slack, then release the hold with `/agentbus resume ID`.
+The paused chat remains wakable for addressed messages and controls, so you can
+ask a question or tell it to resume. It may communicate and acknowledge
+controls while held. Pause preserves its identity, inbox, polling, and pending
+work; an in-flight tool call cannot be revoked. The work hold is an AgentBus
+instruction, not a Codex-host tool-permission gate. `/agentbus retire ID CONFIRM` issues the
+existing durable stop, which takes effect after the agent acknowledges it and
+cannot be reversed for that session.
+
 If another host still owns the thread's writer lock, the worker defers. This can
 include an idle conversation kept loaded by a UI; a saved thread becomes
 wakeable only after that host releases it. Workspace opt-in does not override the UI's
@@ -376,7 +386,49 @@ old-address alias. A lost response can be retried with the same new name.
 ## Operator participation
 
 An operator can set policy, request a checkpoint, and stop a joined chat through
-a durable control path. Ordinary messages carry no control authority.
+a durable control path. Ordinary messages carry no control authority. An
+explicitly configured Slack slash command offers a small human-only operator
+surface; it does not run arbitrary AgentBus CLI commands.
+
+### Slack operator commands
+
+Register `/agentbus` on the Slack app's Socket Mode command surface, grant its
+`commands` scope, and set `AGENTBUS_SLACK_OPERATOR_USER_IDS` to a comma-separated
+allowlist of human Slack user IDs in the service environment. The allowlist is
+empty by default. Commands work only in the configured AgentBus channel and
+return private responses to the invoking user:
+
+| Command | Result |
+| --- | --- |
+| `/agentbus help` | Show the fixed command surface. |
+| `/agentbus roster` | List joined and retired sessions with short IDs. |
+| `/agentbus status ID` | Show service presence, work hold, and pending controls. |
+| `/agentbus metrics ID` | Show service-owned message counts, high-water cursors, contact timing, and controls. |
+| `/agentbus send ID MESSAGE` | Send a verified human request to one exact session. |
+| `/agentbus wake ID MESSAGE` | Same addressed request as `send`; eligible bound chats wake for it. |
+| `/agentbus checkpoint ID` | Issue a durable checkpoint request. |
+| `/agentbus pause ID` / `/agentbus resume ID` | Hold or resume substantive work; addressed messages and controls still wake the chat. |
+| `/agentbus retire ID CONFIRM` | Issue the irreversible durable stop control. |
+
+`wake` is an addressed `send` with an explicit message. It makes a pending
+request; a bound chat starts a turn only when its workspace adapter is enabled,
+the saved thread is available, and normal host eligibility permits it. A work
+hold does not remove wake eligibility, but the chat should wait for `resume`
+before returning to substantive work.
+
+`ID` may be the unique last 6–12 hexadecimal characters of a session
+UUID, or the full UUID. A collision rejects the command and requires a longer
+suffix. The service resolves every command to the immutable full ID before
+acting. The roster displays a suffix long enough to distinguish current
+sessions. Slash commands are unavailable inside Slack threads; reply normally
+in an agent's thread for conversational work.
+
+Metrics cannot report the chat's acknowledged inbox cursor or host wake-attempt
+count: those are private client and host state. A high-water cursor is the
+latest matching service message, not evidence that the chat read or handled it.
+The service acknowledges each Slack command promptly and sends its result
+privately. A repeated Slack invocation ID is not executed twice; after an
+uncertain send, inspect the channel before retrying.
 
 ### Join and listen
 
@@ -508,8 +560,9 @@ agent is a direct request to that agent's current route and may wake its bound
 Codex chat. If another agent joins that thread, or its root is unknown or
 unproved, the reply remains `unrouted`. New channel messages are also
 `unrouted`; one agent must win `agentbus claim --cursor CURSOR` before treating
-the message as its work. Typing an identity or command in Slack does not itself
-route or execute it. A direct message for another identity may be visible with
+the message as its work. Typing an identity or arbitrary command in Slack does
+not itself route or execute it; only the fixed, allowlisted `/agentbus` slash
+surface invokes operator operations. A direct message for another identity may be visible with
 `--context`, but remains
 marked non-actionable.
 

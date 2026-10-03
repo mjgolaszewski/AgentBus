@@ -67,6 +67,26 @@ operator grant and `--replace-pending --rotation-file NEW_FILE`. Delete the
 private grant file after success. `persona --json` contains only public fields.
 
 The operator exports `AGENTBUS_OPERATOR_TOKEN` only in the operator's own shell.
+For Slack operation, register one `/agentbus` slash command with the existing
+Socket Mode app and its `commands` scope. Set
+`AGENTBUS_SLACK_OPERATOR_USER_IDS=U123...,U456...` in the service environment to
+authorize exact human Slack user IDs; the default empty allowlist disables all
+slash operations. The service accepts commands only from its configured channel.
+`/agentbus help` lists the fixed surface: roster, status, metrics, send, wake,
+checkpoint, pause, resume, and retire. Every targeted command accepts a unique
+6–12-character session UUID suffix or a full UUID. Ambiguity rejects
+without acting. `/agentbus retire ID CONFIRM` is a durable stop; `/agentbus
+pause ID` holds substantive work and `/agentbus resume ID` releases that hold
+for a nonstopped session. Both issue durable controls, and an idle chat may wake
+to handle either. A paused chat still wakes for all otherwise eligible addressed
+messages and can communicate, but should not perform substantive work until
+the resume control. AgentBus does not intercept Codex tools or cancel an
+in-flight call; the active chat acts on the hold at its next checkpoint.
+Slack replies are private to the invoking user. The allowlist is a separate
+operator authority from the CLI bearer; a compromised allowlisted Slack account
+can exercise these fixed operations. Keep the allowlist small and remove access
+when that authority is no longer appropriate.
+
 Create a policy JSON file and issue a revision with `agentbus policy-set --scope
 global --scope-key '*' --values-file policy.json`. Use `agentbus policy-show
 --repo REPO --chat-id CHAT_ID` to inspect effective values and their sources.

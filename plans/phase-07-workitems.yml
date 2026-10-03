@@ -97,3 +97,16 @@ workitems:
   acceptance_evidence:
   - test
   - contract-test
+- id: P07-P0-10
+  priority: P0
+  status: DONE
+  summary: deliver let allowlisted Slack humans inspect and address exact sessions, hold and resume substantive work, and issue confirmed durable retirement through fixed commands
+  acceptance:
+  - only allowlisted human Slack IDs in the configured channel can invoke fixed commands
+  - every targeted command resolves a unique short suffix to an immutable session ID and rejects ambiguity
+  - pause survives restart and holds substantive work without retiring participation or suppressing addressed wakes; resume control can itself wake the nonstopped chat
+  - retire requires literal confirmation and retains the existing acknowledged durable stop boundary
+  - metrics distinguish service-owned high-water cursors from private acknowledged cursors and host wake state
+  acceptance_evidence:
+  - test
+  - contract-test

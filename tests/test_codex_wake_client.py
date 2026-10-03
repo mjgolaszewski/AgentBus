@@ -64,6 +64,11 @@ def setup(monkeypatch, tmp_path: Path):
     wake.set_workspace_enabled(values, True)
     monkeypatch.setattr(wake, "checked_profile", lambda _values, _identity: (profile, {}))
     monkeypatch.setattr(wake, "identity_path", lambda _values, _identity: profile_path)
+    monkeypatch.setattr(wake, "api", lambda _values, _path, **_kwargs: {
+        "session_id": profile["participation"]["session_id"],
+        "chat_id": profile["chat_id"], "route": identity,
+        "state": "active_compliant", "work_paused": False,
+    })
     host = FakeHost()
     return values, identity, profile, profile_path, host
 
@@ -89,6 +94,43 @@ def test_legacy_message_cannot_wake_bound_chat(setup):
     assert wake.status(values, identity)["eligible"] == []
     assert wake.run_once(values, identity, host_factory=lambda: host)["status"] == "no_action"
     assert all(name != "start" for name, _ in host.calls)
+
+
+def test_operator_pause_keeps_addressed_messages_wakable(setup, monkeypatch):
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, "thread-one", lambda: host)
+    wake.set_enabled(values, identity, True)
+    host.calls.clear()
+    put(path, profile, message(1))
+    monkeypatch.setattr(wake, "api", lambda _values, _path, **_kwargs: {
+        "session_id": profile["participation"]["session_id"],
+        "chat_id": profile["chat_id"], "route": identity,
+        "state": "active_compliant", "work_paused": True,
+    })
+    result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
+    assert result["status"] == "turn_accepted"
+    assert result["eligible"] == ["MESSAGE:1"]
+    assert ("start", "thread-one") in host.calls
+    assert "Operator work hold is active" in host.prompts[0]
+
+
+def test_resume_control_wakes_held_conversation(setup, monkeypatch):
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, "thread-one", lambda: host)
+    wake.set_enabled(values, identity, True)
+    host.calls.clear()
+    put(path, profile, {"kind": "CONTROL", "id": "resume-1",
+                        "control": {"kind": "resume_work"}})
+    monkeypatch.setattr(wake, "api", lambda _values, _path, **_kwargs: {
+        "session_id": profile["participation"]["session_id"],
+        "chat_id": profile["chat_id"], "route": identity,
+        "state": "control_pending", "work_paused": False,
+    })
+    result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
+    assert result["status"] == "turn_accepted"
+    assert result["eligible"] == ["CONTROL:resume-1"]
+    assert ("start", "thread-one") in host.calls
+    assert "Operator work hold is active" not in host.prompts[0]
 
 
 def test_watch_all_supervises_poll_worker_before_wake_projection(monkeypatch, tmp_path):

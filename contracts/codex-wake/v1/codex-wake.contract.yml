@@ -1,7 +1,7 @@
 document:
   kind: agentbus_codex_wake_contract
   id: agentbus-codex-wake-v1
-  version: 1.4.0
+  version: 1.5.0
   status: active
   path: contracts/codex-wake/v1/codex-wake.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/8
@@ -35,6 +35,7 @@ invariants:
   - {id: CW-INV-012, rule: "A live-wakable idle chat defaults to zero routine in-chat polls; during an active turn it receives the delivered backoff cadence and checks silently at work checkpoints. The local worker observes below the reasoning boundary, unchanged observations start no model turn, and required controls remain observable within the policy maximum."}
   - {id: CW-INV-013, rule: "A service-routed verified Slack-human reply to a single session-assured agent thread root is eligible as a direct message for that exact chat. Unknown or ambiguous thread replies do not wake; host opt-in, stopped-session exclusion, rate bounds, and turn authority remain unchanged."}
   - {id: CW-INV-014, rule: "A chat can inspect its own read-only wake readiness from session-proved service presence and this host's validated local binding, workspace and chat switches, worker liveness, rate state, and assured pending candidates. Output distinguishes eligible-to-attempt, deferred, ineligible, and unknown with reason and observation time; unobserved host ownership and permission never become a turn-start guarantee. Status neither starts a worker or turn nor consumes pending work."}
+  - {id: CW-INV-015, rule: "A service-owned pause_work hold never removes wake eligibility for addressed messages or controls. Every wake while held states the current hold and permits communication and control acknowledgement without substantive work; a resume_work control can wake the chat and lift the hold. The adapter cannot revoke an in-flight tool call or enforce host tool permissions, and a stopped session remains ineligible."}
 primitives:
   workspace_activation: {identity: local_workspace, fields: [enabled, actor, changed_at], owner: adapter_private_state}
   binding: {identity: chat_id_plus_session_id, fields: [chat_id, session_id, thread_id, binding_generation, enabled, actor, created_at], owner: adapter_private_state}
@@ -62,6 +63,7 @@ contracts:
     prompt: contains_only_identity_and_stable_event_references_no_untrusted_message_text
   control: {priority: before_ordinary_message_wake, acknowledgement: target_agent_only, stopped_session: no_ordinary_wake}
   self_status: {service_authority: exact_session_proof, local_authority: validated_private_binding_and_worker_observation, readiness: eligible_deferred_ineligible_or_unknown_with_reason, host_turn_start: unobserved_until_host_fact, side_effects: none}
+  operator_work_hold: {authority: service_exact_session_state_and_durable_controls, adapter_effect: include_current_hold_in_compact_wake_prompt_without_filtering_candidates, reversibility: resume_work_control_can_wake_nonstopped_session, in_flight: not_cancelled}
   lifecycle:
     states: [active_turn_agent_polls, dormant_resumable_adapter_observes, stopped_no_auto_wake, unavailable_notification_only]
     stop_transition: acknowledged_stop_is_never_treated_as_idle_and_requires_new_authorized_session_before_wake
@@ -82,6 +84,7 @@ proof_obligations:
   - {id: CW-PO-09, proves: [CW-INV-007, CW-INV-012], scenario: watch_all_supervises_bound_chat_poll_workers_before_wake_projection_and_idle_chat_ends_turn_without_manual_polling_or_empty_wakes}
   - {id: CW-PO-10, proves: [CW-INV-003, CW-INV-011, CW-INV-013], scenario: verified_human_reply_to_single_proved_agent_root_is_direct_and_wake_eligible_while_ambiguous_or_unproved_threads_remain_unrouted}
   - {id: CW-PO-11, proves: [CW-INV-009, CW-INV-014], scenario: own_status_joins_service_and_local_facts_without_operator_token_other_session_read_side_effect_or_false_host_guarantee}
+  - {id: CW-PO-12, proves: [CW-INV-006, CW-INV-015], scenario: exact_operator_work_hold_keeps_direct_and_control_wakes_active_marks_compact_prompt_and_resume_control_can_wake_without_reviving_stopped_session}
 implementation_order:
   - {id: CW-IU-001, unit: freeze_contract_and_host_protocol, depends_on: []}
   - {id: CW-IU-002, unit: non_destructive_candidate_projection, depends_on: [CW-IU-001]}
@@ -101,3 +104,4 @@ acceptance_gates:
   G-TOKEN: [CW-INV-007, CW-INV-008, CW-PO-05]
   G-GOVERNANCE: [CW-IU-007]
   G-SELF-STATUS: [CW-INV-014, CW-PO-11]
+  G-OPERATOR-PAUSE: [CW-INV-015, CW-PO-12]

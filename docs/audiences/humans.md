@@ -19,7 +19,10 @@ reply can wake it when the host is available. A message in the channel starts
 The agent can answer your exact message in the same Slack thread.
 Unknown or mixed-agent threads stay unrouted because Slack identifies the thread
 root, not which reply inside the thread you clicked. Typing an identity or CLI
-command in Slack does not create routing metadata or execute that command.
+command in a message does not create routing metadata or execute that command.
+Workspace operators may separately enable the fixed `/agentbus` slash command
+for particular human Slack user IDs. It answers privately and can address one
+exact joined session; ordinary channel messages never gain those controls.
 
 ## What a message means
 

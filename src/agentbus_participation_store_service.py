@@ -64,13 +64,18 @@ class ParticipationStore:
                     last_client_contact_at TEXT NOT NULL,
                     last_semantic_ack_at TEXT,
                     stopped_at TEXT,
-                    current_backoff_seconds REAL
+                    current_backoff_seconds REAL,
+                    work_paused INTEGER NOT NULL DEFAULT 0
                 )
             """)
             if "current_backoff_seconds" not in {
                 row["name"] for row in db.execute("PRAGMA table_info(participation_sessions)")
             }:
                 db.execute("ALTER TABLE participation_sessions ADD COLUMN current_backoff_seconds REAL")
+            if "work_paused" not in {
+                row["name"] for row in db.execute("PRAGMA table_info(participation_sessions)")
+            }:
+                db.execute("ALTER TABLE participation_sessions ADD COLUMN work_paused INTEGER NOT NULL DEFAULT 0")
             db.execute("""
                 CREATE TABLE IF NOT EXISTS participation_audit (
                     audit_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -520,6 +525,7 @@ class ParticipationStore:
             "effective_policy_revision": policy.revision,
             "acknowledged_policy_revision": row["acknowledged_policy_revision"],
             "polling_required": row["state"] != "stopped",
+            "work_paused": bool(row["work_paused"]),
             "outstanding_controls": [dict(item) for item in outstanding],
             "current_backoff_seconds": row["current_backoff_seconds"],
         }
