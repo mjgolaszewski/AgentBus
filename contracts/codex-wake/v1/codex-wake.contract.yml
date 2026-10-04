@@ -1,7 +1,7 @@
 document:
   kind: agentbus_codex_wake_contract
   id: agentbus-codex-wake-v1
-  version: 1.6.1
+  version: 1.7.0
   status: active
   path: contracts/codex-wake/v1/codex-wake.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/8
@@ -40,13 +40,17 @@ invariants:
   - {id: CW-INV-016, rule: "An authenticated service-backed wake cursor discovers assured, exactly addressed messages independently of presentation spool capacity. Its cursor advances only after candidate identity is durable; crash/retry cannot skip eligible work or acknowledge messages. Existing bindings replay from the last semantic acknowledgement, and routine history cannot starve newer addressed traffic."}
   - {id: CW-INV-017, rule: "An accepted host turn never proves handled work. A host-observed interrupted or failed turn with unacknowledged exact candidates may receive at most one recovery turn after an idle-thread check; unknown or active status and a host writer lock defer without retry or inferred acknowledgement. The recovery prompt requires inspection before repeating possible side effects."}
   - {id: CW-INV-018, rule: "Within each safety priority, compact wake references show newest numeric message cursors first; controls and policy retain precedence, and complete durable history remains available when references are truncated."}
+  - {id: CW-INV-019, rule: "The client that starts a Codex turn MUST keep its host transport alive until the exact turn/completed notification supplies a terminal status. A server-initiated interactive request is rejected without approval, the exact turn is explicitly interrupted at most once, and the transport remains open for terminal observation; cached terminal truth wins over an interrupt response error. Any first terminal-wait error, including a recoverable malformed frame, requests exact-turn interruption and a bounded terminal grace before teardown. Controlled workspace-disable stops new launches and drains active per-binding transports through terminal observation before the worker exits; it cannot kill the process group or abandon daemon threads. Acceptance is not completion or message handling; interrupted, failed, lost, and timed-out turns never imply AgentBus acknowledgement."}
+  - {id: CW-INV-020, rule: "A competing stdio app-server cannot claim wake delivery to a VS Code-owned thread. Without a configured, supported shared owning-host endpoint, default workspace wake readiness is notification_only and live attempts are rejected before host launch. Explicit standalone mode is allowed only for threads the adapter's app-server owns; a development-only extension executable override is not a released integration contract."}
+  - {id: CW-INV-021, rule: "Uncertain-turn reconciliation never hydrates full saved-thread history. It queries bounded newest-first turn summaries and bounded item pages through the host pagination protocol, finds the exact attempt marker in recent user input, and remains uncertain if the bounded scan cannot prove the attempt."}
 primitives:
   workspace_activation: {identity: local_workspace, fields: [enabled, actor, changed_at], owner: adapter_private_state}
   binding: {identity: chat_id_plus_session_id, fields: [chat_id, session_id, thread_id, binding_generation, enabled, actor, created_at], owner: adapter_private_state}
   wake_candidate: {identity: event_kind_plus_event_id, fields: [kind, id, priority, eligibility_reason], owner: non_destructive_projection}
   wake_scan: {identity: chat_id_plus_session_id, fields: [scan_cursor, pending_candidate_ids, binding_generation], owner: adapter_private_state}
   wake_attempt: {identity: attempt_id, fields: [binding_generation, wake_epoch, candidate_ids, state, turn_id, observed_at, uncertainty], owner: adapter_private_state}
-  host_capability: {identity: configured_Codex_host, allowed_methods: [thread/read, thread/resume, turn/start], owner: host}
+  host_capability: {identity: configured_Codex_host, allowed_methods: [thread/read, thread/resume, thread/turns/list, thread/items/list, turn/start, turn/interrupt], owner: host}
+  owning_host_endpoint: {status: future_not_implemented, transport: private_local_Unix_socket_or_equivalent_supported_host_channel, authentication: host_verified_OS_peer_identity_or_host_issued_credential, endpoint_source: trusted_workspace_operator_or_host_configuration_only, message_selected_endpoint: forbidden, shared_writer: owning_host_only}
   status: {fields: [session_proved_self_presence, binding, workspace_and_chat_switches, worker_liveness, assured_candidates, readiness, reason, observed_at, last_attempt, host_uncertainty], owner: adapter_projection}
 contracts:
   bind: after_explicit_workspace_opt_in_auto_enrollment_uses_host_verified_current_thread_and_joined_session_then_records_private_generation
@@ -62,9 +66,11 @@ contracts:
     sequence: [verify_binding, observe_candidates, serialize_attempt, read_host_thread_status, resume_if_idle, start_turn_with_compact_references, record_host_turn_id]
     active_thread: defer_without_second_turn
     unchanged_candidates: no_repeat_wake
-    uncertain_turn_start: reconcile_or_halt_for_operator_never_blind_retry
-    rate_policy: {max_ordinary_accepted_wakes_per_hour: 12, minimum_seconds_between_ordinary_accepted_wakes: 20, max_followups_for_unchanged_candidates: 1, required_control_and_policy: bypass_ordinary_budget, exhausted: report_and_require_operator_attention_without_discarding_work}
-    post_turn: host_observed_terminal_turn_rechecks_authoritative_pending_events_and_may_schedule_only_a_bounded_followup_never_infers_acknowledgement
+    uncertain_turn_start: bounded_paginated_recent_turn_reconciliation_or_halt_for_operator_never_full_history_or_blind_retry
+    rate_policy: {max_ordinary_accepted_wakes_per_hour: 12, minimum_seconds_between_ordinary_accepted_wakes: 20, max_followups_for_unchanged_candidates: 1, accepted_start_counted_even_if_terminal_failed_or_interrupted: true, required_control_and_policy: bypass_ordinary_budget, exhausted: report_and_require_operator_attention_without_discarding_work}
+    post_turn: host_transport_remains_alive_through_exact_terminal_notification_then_rechecks_pending_events_without_inferred_acknowledgement
+    host_mode: default_notification_only_until_supported_shared_owner_or_explicit_standalone
+    terminal_timeout: bounded_interrupt_then_observe_terminal_or_report_uncertain
     prompt: contains_only_identity_and_stable_event_references_no_untrusted_message_text
   control: {priority: before_ordinary_message_wake, acknowledgement: target_agent_only, stopped_session: no_ordinary_wake}
   self_status: {service_authority: exact_session_proof, local_authority: validated_private_binding_and_worker_observation, readiness: eligible_deferred_ineligible_or_unknown_with_reason, host_turn_start: unobserved_until_host_fact, side_effects: none}
@@ -76,8 +82,8 @@ contracts:
     host_turn_completed: not_AgentBus_message_acknowledged
     bus_control_receipt: not_external_turn_ended
   storage: {binding_and_attempt: private_local_state, state_mode: '0600', directory_mode: '0700', direct_service_database_access: prohibited}
-  portability: {first_host: local_Codex_app_server_proxy, unsupported_host: notification_only}
-failures: [BINDING_MISSING, BINDING_STALE, BINDING_UNAUTHORIZED, HOST_UNAVAILABLE, THREAD_NOT_FOUND, THREAD_ACTIVE, THREAD_RESUME_FAILED, TURN_START_REJECTED, TURN_START_UNCERTAIN, WAKE_DUPLICATE, WAKE_RATE_LIMITED, SESSION_STOPPED, EVENT_NO_LONGER_ELIGIBLE]
+  portability: {standalone_host: explicit_adapter_owned_app_server, vs_code_stdio_host: notification_only, shared_owner_endpoint: future_supported_local_authenticated_transport_contract}
+failures: [BINDING_MISSING, BINDING_STALE, BINDING_UNAUTHORIZED, HOST_UNAVAILABLE, THREAD_NOT_FOUND, THREAD_ACTIVE, THREAD_RESUME_FAILED, TURN_START_REJECTED, TURN_START_UNCERTAIN, TURN_COMPLETION_UNCERTAIN, WAKE_DUPLICATE, WAKE_RATE_LIMITED, SESSION_STOPPED, EVENT_NO_LONGER_ELIGIBLE]
 proof_obligations:
   - {id: CW-PO-01, proves: [CW-INV-002, CW-INV-003], scenario: exact_bound_chat_and_session_wake_for_every_direct_kind_or_claimed_work}
   - {id: CW-PO-02, proves: [CW-INV-003, CW-INV-007], scenario: empty_broadcast_unrouted_and_ambiguous_events_produce_zero_turns}
@@ -94,6 +100,9 @@ proof_obligations:
   - {id: CW-PO-13, proves: [CW-INV-003, CW-INV-004, CW-INV-011, CW-INV-016], scenario: saturated_presentation_spool_does_not_block_assured_direct_wake_across_service_pages_crash_replay_or_restart_and_never_auto_acks_unread_work}
   - {id: CW-PO-14, proves: [CW-INV-004, CW-INV-005, CW-INV-017], scenario: interrupted_turn_gets_one_host_idle_recovery_with_no_auto_ack_while_unknown_active_or_host_owned_state_defers}
   - {id: CW-PO-15, proves: [CW-INV-006, CW-INV-007, CW-INV-018], scenario: newest_equal_priority_direct_refs_appear_in_compact_prompt_without_displacing_controls_or_full_history}
+  - {id: CW-PO-16, proves: [CW-INV-004, CW-INV-019], scenario: real_subprocess_remains_alive_after_acceptance_until_exact_terminal_notification_interactive_request_and_recoverable_frame_error_interrupt_once_and_controlled_workspace_disable_drains_without_dropping_transport_or_acking_work}
+  - {id: CW-PO-17, proves: [CW-INV-001, CW-INV-009, CW-INV-020], scenario: default_unshared_stdio_host_is_notification_only_and_never_attempts_live_wake_while_explicit_standalone_remains_available}
+  - {id: CW-PO-18, proves: [CW-INV-005, CW-INV-021], scenario: large_saved_history_reconciles_exact_recent_attempt_via_bounded_turn_and_item_pages_without_full_thread_hydration_or_blind_retry}
 implementation_order:
   - {id: CW-IU-001, unit: freeze_contract_and_host_protocol, depends_on: []}
   - {id: CW-IU-002, unit: non_destructive_candidate_projection, depends_on: [CW-IU-001]}
@@ -105,10 +114,10 @@ implementation_order:
   - {id: CW-IU-008, unit: session_proved_self_status_and_read_only_wake_projection, depends_on: [CW-IU-004, CW-IU-007]}
   - {id: CW-IU-009, unit: durable_service_backed_wake_scan_independent_of_presentation_spool, depends_on: [CW-IU-008]}
 acceptance_gates:
-  G-BOUNDARY: [CW-INV-001, CW-INV-009, CW-INV-010, CW-PO-06]
+  G-BOUNDARY: [CW-INV-001, CW-INV-009, CW-INV-010, CW-INV-020, CW-PO-06, CW-PO-17]
   G-BINDING: [CW-INV-002, CW-PO-01, CW-PO-07]
   G-ELIGIBILITY: [CW-INV-003, CW-INV-011, CW-INV-013, CW-INV-016, CW-INV-018, CW-PO-01, CW-PO-02, CW-PO-08, CW-PO-10, CW-PO-13, CW-PO-15, CW-IU-009]
-  G-LIFECYCLE: [CW-INV-004, CW-INV-017, CW-PO-03, CW-PO-14]
+  G-LIFECYCLE: [CW-INV-004, CW-INV-017, CW-INV-019, CW-INV-021, CW-PO-03, CW-PO-14, CW-PO-16, CW-PO-18]
   G-DEDUP: [CW-INV-005, CW-PO-03, CW-PO-07]
   G-CONTROL: [CW-INV-006, CW-PO-04]
   G-TOKEN: [CW-INV-007, CW-INV-008, CW-PO-05]

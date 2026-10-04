@@ -8,10 +8,12 @@ import hashlib
 import json
 import math
 import os
+import queue
 import re
 import signal
 import subprocess
 import sys
+import threading
 import time
 import uuid
 from contextlib import contextmanager
@@ -21,7 +23,13 @@ from typing import Any, Callable, Iterator
 
 from src import agentbus_wake_inbox_client as wake_inbox
 from src.agentbus_client import atomic_json, checked_profile, consumer_state_dir, identity_path, resolve_identity
-from src.agentbus_codex_rpc_client import CodexAppServer, CodexHostError, CodexHostRejected, TurnStartUncertain
+from src.agentbus_codex_rpc_client import (
+    CodexAppServer,
+    CodexHostError,
+    CodexHostRejected,
+    TurnCompletionUncertain,
+    TurnStartUncertain,
+)
 from src.agentbus_poll_client import ensure_worker, read_spool_events, worker_running
 from src.agentbus_transport_client import ClientError, api, profile_session_token
 
@@ -35,6 +43,17 @@ class WakeBinding(dict[str, Any]):
 
 MAX_WAKES_PER_HOUR = 12
 MIN_WAKE_INTERVAL_SECONDS = 20
+
+
+def _turn_max_seconds(values: dict[str, str]) -> int:
+    raw = values.get("AGENTBUS_CODEX_TURN_MAX_SECONDS", "600")
+    try:
+        seconds = int(raw)
+    except ValueError:
+        raise ClientError("AGENTBUS_CODEX_TURN_MAX_SECONDS must be 60 to 3600") from None
+    if not 60 <= seconds <= 3600:
+        raise ClientError("AGENTBUS_CODEX_TURN_MAX_SECONDS must be 60 to 3600")
+    return seconds
 
 
 def _now() -> str:
@@ -127,7 +146,17 @@ def stop_worker(values: dict[str, str]) -> dict:
     with _locked(path):
         pid = _worker_pid(path)
         if pid is not None:
-            os.killpg(pid, signal.SIGTERM)
+            # Signal only the supervisor. Its active per-binding threads must
+            # retain their app-server children through a terminal observation.
+            try:
+                os.kill(pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            deadline = time.monotonic() + _turn_max_seconds(values) + 60
+            while _worker_pid(path) == pid and time.monotonic() < deadline:
+                time.sleep(0.1)
+            if _worker_pid(path) == pid:
+                raise ClientError("Codex wake worker is still draining active turns; inspect worker status")
         path.unlink(missing_ok=True)
         return {"worker_stopped": pid is not None}
 
@@ -416,6 +445,8 @@ def status(values: dict[str, str], identity: str) -> dict:
         readiness, reason = "ineligible", "workspace_disabled"
     elif state is not None and not state["enabled"]:
         readiness, reason = "ineligible", "chat_opted_out"
+    elif values.get("AGENTBUS_CODEX_HOST_MODE") != "standalone":
+        readiness, reason = "ineligible", "owning_host_endpoint_unavailable"
     elif service_presence is None:
         readiness, reason = "unknown", "service_presence_unobserved"
     elif service_presence["state"] not in {"active_compliant", "control_pending"}:
@@ -432,12 +463,17 @@ def status(values: dict[str, str], identity: str) -> dict:
         elif state.get("last_fingerprint") == fingerprint:
             if state["same_fingerprint_retries"] >= 1:
                 readiness, reason = "deferred", "pending_after_followup"
+            elif rate and not refs[0].startswith(("CONTROL:", "POLICY_CHANGED:")):
+                readiness, reason = "deferred", rate["status"]
+            elif previous.get("state") in {"completed", "interrupted", "failed"}:
+                readiness, reason = "eligible", "terminal_turn_has_unacknowledged_work"
             else:
                 readiness, reason = "unknown", "prior_turn_completion_unobserved"
         elif rate and not refs[0].startswith(("CONTROL:", "POLICY_CHANGED:")):
             readiness, reason = "deferred", rate["status"]
     elif rate:
         readiness, reason = "deferred", rate["status"]
+    last_status = (state.get("last_attempt") or {}).get("turn_status") if state else None
     return {"identity": identity, "chat_id": profile["chat_id"],
             "session_id": session["session_id"], "thread_id": state.get("thread_id") if state else None,
             "registration": "joined" if service_presence else "unverified",
@@ -455,7 +491,11 @@ def status(values: dict[str, str], identity: str) -> dict:
             "wake_scan_caught_up": scan_state["caught_up"] if scan_state else None,
             "wake_scan_compacted": scan_state["compacted"] if scan_state else None,
             "work_paused": bool(service_presence.get("work_paused")) if service_presence else None,
-            "wake_readiness": readiness, "reason": reason, "host_turn_start": "unobserved",
+            "wake_readiness": readiness, "reason": reason,
+            "host_mode": "standalone" if values.get("AGENTBUS_CODEX_HOST_MODE") == "standalone" else "notification_only",
+            "turn_max_seconds": _turn_max_seconds(values),
+            "last_terminal_status": last_status if last_status in {"completed", "interrupted", "failed"} else None,
+            "host_turn_start": "unobserved",
             "observed_at": observed_at, "wake_epoch": state["wake_epoch"] if state else None,
             "accepted_wakes_last_hour": len(state["wake_history"]) if state else 0,
             "last_attempt": state.get("last_attempt") if state else None}
@@ -491,6 +531,9 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
             raise ClientError("Codex wake workspace is disabled")
         if not state["enabled"]:
             raise ClientError("Codex wake is disabled; enable it explicitly before --live")
+        if host_factory is CodexAppServer and values.get("AGENTBUS_CODEX_HOST_MODE") != "standalone":
+            return {"status": "notification_only", "reason": "owning_host_endpoint_unavailable",
+                    "eligible": refs}
         try:
             presence = api(values, f"/v1/sessions/{session['session_id']}/self-presence",
                            session_token=profile_session_token(profile))
@@ -513,10 +556,12 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
             if found is None:
                 return {"status": "uncertain", "attempt_id": previous["attempt_id"],
                         "operator_action": "inspect host history; do not retry blindly"}
-            previous.update(state="accepted", turn_id=found[0], turn_status=found[1])
+            terminal = found[1] if found[1] in {"completed", "interrupted", "failed"} else None
+            previous.update(state=terminal or "accepted", turn_id=found[0], turn_status=found[1])
             state["last_attempt"] = previous
             state["last_fingerprint"] = previous["fingerprint"]
-            if not previous["candidate_ids"][0].startswith(("CONTROL:", "POLICY_CHANGED:")):
+            if (not previous["candidate_ids"][0].startswith(("CONTROL:", "POLICY_CHANGED:")) and
+                    previous["observed_at"] not in state["wake_history"]):
                 state["wake_history"].append(previous["observed_at"])
             state["same_fingerprint_retries"] = 1 if previous.get("followup") else 0
             _save(path, state)
@@ -532,21 +577,27 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
                 return {"status": "pending_after_followup", "eligible": refs,
                         "operator_action": "inspect unacknowledged work; no further automatic repeat"}
             last_attempt = state.get("last_attempt") or {}
-            if last_attempt.get("state") != "accepted":
-                return {"status": "already_woken", "eligible": refs}
-            try:
-                with host_factory() as host:
-                    found = host.find_attempt(state["thread_id"], last_attempt["attempt_id"])
-            except CodexHostError:
-                found = None
-            if found is not None:
-                last_attempt["turn_status"] = found[1]
+            terminal_status = last_attempt.get("turn_status") if last_attempt.get("state") in {
+                "completed", "interrupted", "failed"} else None
+            if terminal_status is None:
+                if last_attempt.get("state") != "accepted":
+                    return {"status": "already_woken", "eligible": refs}
+                try:
+                    with host_factory() as host:
+                        found = host.find_attempt(state["thread_id"], last_attempt["attempt_id"])
+                except CodexHostError:
+                    found = None
+                if found is None or found[1] not in {"completed", "interrupted", "failed"}:
+                    return {"status": "already_woken", "eligible": refs,
+                            "turn_id": last_attempt.get("turn_id"),
+                            "host_turn_status": found[1] if found else "unknown"}
+                terminal_status = found[1]
+                last_attempt.update(state=terminal_status, turn_status=terminal_status)
+                if (not last_attempt["candidate_ids"][0].startswith(("CONTROL:", "POLICY_CHANGED:")) and
+                        last_attempt["observed_at"] not in state["wake_history"]):
+                    state["wake_history"].append(last_attempt["observed_at"])
                 _save(path, state)
-            if found is None or found[1] not in {"completed", "interrupted", "failed"}:
-                return {"status": "already_woken", "eligible": refs,
-                        "turn_id": last_attempt.get("turn_id"),
-                        "host_turn_status": found[1] if found else "unknown"}
-            recovering_interrupted = found[1] in {"interrupted", "failed"}
+            recovering_interrupted = terminal_status in {"interrupted", "failed"}
             # Turn completion is only host evidence. The still-pending bus
             # events merit one bounded follow-up, never an inferred ack.
         # Required controls and policy revisions retain their safety path even
@@ -565,8 +616,6 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
                 try:
                     host.resume(state["thread_id"])
                 except CodexHostRejected:
-                    # Another host may own the saved thread's writer lock even
-                    # when this app-server process reports it as notLoaded.
                     return {"status": "thread_owned_by_host", "eligible": refs}
                 attempt_id = str(uuid.uuid4())
                 state["wake_epoch"] += 1
@@ -584,16 +633,26 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
                                                     work_paused=bool(presence.get("work_paused")),
                                                     ack_cursor=int(profile.get("ack_cursor", 0)),
                                                     recovering_interrupted=recovering_interrupted))
+                    attempt.update(state="accepted", turn_id=turn_id, accepted_at=_now())
+                    state["last_attempt"] = attempt
+                    if not refs[0].startswith(("CONTROL:", "POLICY_CHANGED:")):
+                        state["wake_history"].append(attempt["observed_at"])
+                    _save(path, state)
+                    turn_status = host.await_turn_terminal(
+                        state["thread_id"], turn_id, max_seconds=_turn_max_seconds(values))
+                    if turn_status not in {"completed", "interrupted", "failed"}:
+                        raise TurnCompletionUncertain("Codex host returned an invalid terminal status")
                 except CodexHostRejected as exc:
                     attempt["state"] = "rejected"
                     state["last_attempt"] = attempt
                     _save(path, state)
                     return {"status": "turn_rejected", "reason": str(exc)}
-        except TurnStartUncertain:
+        except (TurnStartUncertain, TurnCompletionUncertain) as exc:
             attempt["state"] = "uncertain"
             state["last_attempt"] = attempt
             _save(path, state)
-            return {"status": "uncertain", "attempt_id": attempt_id,
+            return {"status": "turn_completion_unobserved" if isinstance(exc, TurnCompletionUncertain) else "uncertain",
+                    "attempt_id": attempt_id, "turn_id": attempt.get("turn_id"),
                     "operator_action": "inspect host history; do not retry blindly"}
         except CodexHostError as exc:
             current_attempt = state.get("last_attempt")
@@ -601,14 +660,12 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
                 current_attempt["state"] = "resume_failed"
                 _save(path, state)
             return {"status": "host_unavailable", "reason": str(exc)}
-        attempt.update(state="accepted", turn_id=turn_id, accepted_at=_now())
+        attempt.update(state=turn_status, turn_status=turn_status)
         state["last_attempt"] = attempt
         state["last_fingerprint"] = fingerprint
-        if not refs[0].startswith(("CONTROL:", "POLICY_CHANGED:")):
-            state["wake_history"].append(str(attempt["observed_at"]))
         state["same_fingerprint_retries"] = 1 if followup else 0
         _save(path, state)
-        return {"status": "turn_accepted", "turn_id": turn_id,
+        return {"status": f"turn_{turn_status}", "host_turn_status": turn_status, "turn_id": turn_id,
                 "attempt_id": attempt_id, "wake_epoch": state["wake_epoch"], "eligible": refs}
 
 
@@ -670,7 +727,43 @@ def watch_all(values: dict[str, str], interval: float = 2.0) -> None:
     if not math.isfinite(interval) or not 1 <= interval <= 60:
         raise ClientError("Codex wake watch interval must be between 1 and 60 seconds")
     last_results: dict[str, str] = {}
-    while workspace_status(values)["enabled"]:
+    active: dict[str, threading.Thread] = {}
+    finished: queue.Queue[tuple[str, dict | str]] = queue.Queue()
+    stopping = threading.Event()
+    previous_handler = None
+    if threading.current_thread() is threading.main_thread():
+        previous_handler = signal.getsignal(signal.SIGTERM)
+        signal.signal(signal.SIGTERM, lambda _signum, _frame: stopping.set())
+
+    def wake_one(identity: str) -> None:
+        try:
+            finished.put((identity, run_once(values, identity, live=True)))
+        except (ClientError, OSError, ValueError) as exc:
+            finished.put((identity, str(exc)))
+
+    try:
+        _watch_all_loop(values, interval, active, finished, last_results, wake_one, stopping)
+    finally:
+        for worker in active.values():
+            worker.join()
+        if previous_handler is not None:
+            signal.signal(signal.SIGTERM, previous_handler)
+
+
+def _watch_all_loop(values: dict[str, str], interval: float, active: dict[str, threading.Thread],
+                    finished: queue.Queue[tuple[str, dict | str]], last_results: dict[str, str],
+                    wake_one: Callable[[str], None], stopping: threading.Event) -> None:
+    while not stopping.is_set() and workspace_status(values)["enabled"]:
+        while not finished.empty():
+            finished_identity, outcome = finished.get_nowait()
+            encoded = json.dumps(outcome, sort_keys=True) if isinstance(outcome, dict) else outcome
+            if encoded != last_results.get(finished_identity):
+                if isinstance(outcome, dict):
+                    if outcome["status"] not in {"no_action", "already_woken"}:
+                        print(json.dumps({"identity": finished_identity, **outcome}), flush=True)
+                else:
+                    print(json.dumps({"identity": finished_identity, "error": outcome}), flush=True)
+            last_results[finished_identity] = encoded
         root = consumer_state_dir(values)
         for profile_path in root.glob("*.json"):
             if profile_path.is_symlink():
@@ -684,14 +777,15 @@ def watch_all(values: dict[str, str], interval: float = 2.0) -> None:
                 if not isinstance(chat_id, str) or not _state_path(values, chat_id).is_file():
                     continue
                 ensure_worker(profile_path, values)
-                result = run_once(values, identity, live=True)
-                encoded = json.dumps(result, sort_keys=True)
-                if encoded != last_results.get(identity) and result["status"] not in {"no_action", "already_woken"}:
-                    print(json.dumps({"identity": identity, **result}), flush=True)
-                last_results[identity] = encoded
+                if stopping.is_set():
+                    break
+                if identity not in active or not active[identity].is_alive():
+                    worker = threading.Thread(target=wake_one, args=(identity,))
+                    active[identity] = worker
+                    worker.start()
             except (ClientError, OSError, ValueError) as exc:
                 encoded = str(exc)
                 if encoded != last_results.get(profile_path.name):
                     print(json.dumps({"profile": profile_path.name, "error": encoded}), flush=True)
                 last_results[profile_path.name] = encoded
-        time.sleep(interval)
+        stopping.wait(interval)

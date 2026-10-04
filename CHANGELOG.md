@@ -5,6 +5,39 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Codex host wake boundary
+
+- The wake adapter now keeps its app-server transport alive until the exact
+  started turn reaches `completed`, `interrupted`, or `failed`. A bounded
+  timeout requests interruption and leaves the attempt uncertain unless a
+  terminal host fact arrives. One slow chat no longer blocks another binding's
+  wake scan or attempt.
+- The default VS Code-backed host is reported as `notification_only` because
+  a competing stdio app-server cannot acquire the UI-owned thread writer lock.
+  Explicit `standalone` mode is reserved for adapter-owned threads. The
+  development-only executable-wrapper experiment is outside this release.
+- Accepted ordinary starts consume the existing rate budget regardless of
+  terminal outcome. Failed and interrupted turns remain visibly distinct and
+  never imply an AgentBus acknowledgement.
+- Controlled workspace-disable stops launching and drains active per-chat
+  transports through terminal observation before the worker exits; it may
+  wait for the configured turn timeout.
+- Uncertain attempt recovery now queries bounded newest-first turn summaries
+  and turn-scoped item pages. It no longer hydrates entire saved histories,
+  which could exceed the adapter's host frame limit and strand large chats.
+- A server-initiated approval or other interactive request is rejected without
+  granting authority; the exact accepted turn is interrupted and its terminal
+  status observed before transport teardown.
+- A recoverable malformed host frame during terminal wait follows the same
+  exact-turn interrupt and bounded terminal grace, so a single bad frame does
+  not immediately tear down an otherwise live accepted turn.
+
+### Remaining risk
+
+- This change does not give the current VS Code extension a supported shared
+  owning-host endpoint. Actual VS Code conversation wake delivery remains
+  unresolved in Issue #33 and requires host integration plus end-to-end proof.
+
 ## [0.7.3] - 2026-10-04
 
 ### Wake and polling hotfix
