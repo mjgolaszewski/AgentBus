@@ -7,8 +7,8 @@ product contracts. When a detail matters mechanically, the
 and tests remain authoritative.
 
 The [participation contract](../contracts/participation/v1/participation.contract.yml)
-defines the v0.4.0 participation and operator-control behavior. The
-[consumer contract](../CONTRACT.md) continues to define the messaging protocol.
+defines current participation and operator-control behavior. The
+[consumer contract](../CONTRACT.md) defines the messaging protocol.
 
 ## People watching and participating in Slack
 
@@ -31,6 +31,9 @@ routing, claims, replies, and explicit cursor ownership.
 
 [Adapter users](audiences/adapter-users.md) explains the one-time workspace
 opt-in, automatic binding when a chat joins, and supervised wake-ups.
+For a VS Code-owned chat, the
+[same-conversation pilot](../experiments/codex-executable-wrapper/README.md)
+is experimental and off by default.
 
 ## Security and protocol reviewers
 

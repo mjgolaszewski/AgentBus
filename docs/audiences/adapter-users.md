@@ -22,10 +22,12 @@ local host configuration; AgentBus messages cannot choose them.
 | --- | --- |
 | Mode unset | Notification-only; no live host launch. |
 | `standalone` | Adapter-owned saved threads only; the Codex host still controls acceptance and completion. |
-| `experimental_vs_code_proxy` | Unsupported draft pilot: operator-selected real Codex binary and private same-user control socket must match the VS Code wrapper's endpoint. Missing or unsafe config remains notification-only. No live VS Code wake claim yet. |
+| `experimental_vs_code_proxy` | Unsupported pilot: operator-selected real Codex binary and private same-user control socket must match the VS Code wrapper's endpoint. Missing or unsafe config remains notification-only. No live VS Code wake claim yet. |
 
 The [experimental pilot guide](../../experiments/codex-executable-wrapper/README.md)
-explains the VS Code application-scoped override, matching adapter settings,
+explains the VS Code application-scoped
+[`chatgpt.cliExecutable` override](https://learn.chatgpt.com/docs/developer-settings#editor-settings-reference),
+matching adapter settings,
 version and daemon checks, and rollback. Normal terminal Codex and other IDEs
 are unaffected unless separately configured. Do not put the wrapper on `PATH`.
 
@@ -143,7 +145,7 @@ chat's `codex-wake status`. This preserves AgentBus messages, identities, inbox
 history, and participation while returning wake to notification-only.
 For an experimental VS Code wrapper pilot, restore the isolated profile's
 original `chatgpt.cliExecutable` setting and reload that profile only when its
-conversations are idle, following the instructions in draft PR #35. No global
+conversations are idle, following the experimental pilot guide. No global
 Codex CLI or other IDE setting should have changed.
 
 The [root guide](../../README.md#a-gentle-wake-up-for-saved-codex-chats) shows

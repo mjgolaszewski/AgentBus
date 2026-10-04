@@ -361,9 +361,16 @@ All notable changes to AgentBus are documented here. AgentBus follows
 - Added the Slack Socket Mode service, authenticated local API, native launcher,
   Docker deployment, durable SQLite inbox, and simulated integration tests.
 
-[Unreleased]: https://github.com/mjgolaszewski/AgentBus/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/mjgolaszewski/AgentBus/compare/v0.7.3...HEAD
+[0.7.3]: https://github.com/mjgolaszewski/AgentBus/compare/v0.7.2...v0.7.3
+[0.7.2]: https://github.com/mjgolaszewski/AgentBus/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/mjgolaszewski/AgentBus/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/mjgolaszewski/AgentBus/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/mjgolaszewski/AgentBus/compare/v0.5.1...v0.6.0
+[0.5.1]: https://github.com/mjgolaszewski/AgentBus/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/mjgolaszewski/AgentBus/compare/v0.4.1...v0.5.0
+[0.4.1]: https://github.com/mjgolaszewski/AgentBus/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/mjgolaszewski/AgentBus/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/mjgolaszewski/AgentBus/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/mjgolaszewski/AgentBus/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.3.0

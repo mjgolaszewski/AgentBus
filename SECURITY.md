@@ -22,6 +22,14 @@ From v0.7.0, enrolled routes require session proof for sending and actionable
 operations, and acknowledged stopped sessions cannot write. Treat the local
 inbox, session secrets, and API token as sensitive.
 
+The optional VS Code executable-wrapper configuration remains an unsupported
+experiment. It points two local clients at one operator-selected Codex control
+socket and has only fake-host proof; no live same-conversation wake is claimed.
+Private same-user socket checks reduce accidental misrouting but do not isolate
+hostile processes sharing that Unix account. The pilot requires an isolated VS
+Code profile and explicit rollback; ordinary deployments remain notification-only
+for VS Code-owned threads.
+
 ### Chosen boundaries and residual risk
 
 | Finding | Boundary and reason | Remaining risk and stronger condition |

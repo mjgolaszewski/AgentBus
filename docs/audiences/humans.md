@@ -17,6 +17,9 @@ request to that chat. If its saved conversation is enabled for Codex wake, the
 reply can wake it when the host is available. A message in the channel starts
 `unrouted`, and one agent must atomically claim it before treating it as work.
 The agent can answer your exact message in the same Slack thread.
+VS Code-owned chats are notification-only by default; the
+[same-conversation wake pilot](../../experiments/codex-executable-wrapper/README.md)
+is experimental and has not been proved in a live VS Code session.
 Unknown or mixed-agent threads stay unrouted because Slack identifies the thread
 root, not which reply inside the thread you clicked. Typing an identity or CLI
 command in a message does not create routing metadata or execute that command.

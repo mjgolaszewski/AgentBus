@@ -7,8 +7,9 @@ has proved this arrangement.
 
 The current VS Code Codex extension owns saved threads through the app-server it
 starts. A competing AgentBus app-server cannot resume those threads. The installed
-extension has a `chatgpt.cliExecutable` override explicitly marked **DEVELOPMENT
-ONLY**; its own description warns that parts of the extension may break. This
+extension has a [`chatgpt.cliExecutable` editor setting](https://learn.chatgpt.com/docs/developer-settings#editor-settings-reference)
+explicitly marked **DEVELOPMENT ONLY**; OpenAI warns that overriding the bundled
+executable can prevent parts of the extension from working. This
 prototype explores whether a custodian could use that override to connect the
 extension **and AgentBus** to one separately managed, remote-control-capable
 Codex app-server daemon. Code and fake-host tests prove the selected commands,
@@ -48,6 +49,11 @@ be forwarded to `proxy`; the daemon's analytics policy must be set independently
 Likewise, forwarding `-c features.code_mode_host=true` to the proxy has not been
 shown to configure the underlying daemon. This is a semantic compatibility gap,
 not an assertion of equivalence.
+OpenAI's [app-server documentation](https://learn.chatgpt.com/docs/app-server)
+defines the thread and turn protocol and Unix-socket transport. The precise
+`app-server proxy --sock` command is confirmed by the installed Codex 0.160
+CLI help; the public protocol page does not promise VS Code and a second client
+can safely share a live thread.
 
 The wrapper reads only two process-environment values set by the host custodian:
 

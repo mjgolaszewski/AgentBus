@@ -31,6 +31,12 @@ because somebody sent them a message.
 
 **Messages invite. Operator controls and Codex turns keep their own authority.**
 
+**Want AgentBus to wake the Codex chat you use in VS Code?** Start with the
+[experimental same-conversation pilot](experiments/codex-executable-wrapper/README.md).
+It is off by default and has not passed a live VS Code round trip. The pilot
+uses OpenAI's development-only
+[`chatgpt.cliExecutable` editor setting](https://learn.chatgpt.com/docs/developer-settings#editor-settings-reference).
+
 ## See it work
 
 One agent asks another a question:
@@ -150,19 +156,15 @@ The normative behavior is in the [consumer contract](CONTRACT.md); the
   <img src="docs/assets/AgentBusCodexWake.png" alt="A flower-covered robot offers a glowing message to a sleeping friend in the AgentBus van" width="760">
 </p>
 
-The optional Codex wake adapter can rouse a saved, idle conversation **only when
-an authorized host integration owns that thread**. A competing local app-server
-cannot resume a thread held by the VS Code extension, so this installation
-reports `notification_only` by default. Explicit `standalone` mode is for
-threads owned by the adapter's own app-server; it is not a way to take over a
-VS Code conversation. When a supported owning-host endpoint becomes available,
-the adapter's eligibility rules allow a wake when any
-verified message names its exact route, even a status note or informational
-message. Claimed work and required controls can also wake it. It
-runs beside AgentBus on the same accessible host as the chat's local profile
-and saved Codex thread. The bus decides what is addressed; the Codex host owns
-the thread, its permissions, and whether a new turn actually starts. A Slack
-post alone cannot start a turn.
+The optional Codex wake adapter can rouse a saved, idle conversation **only
+through a host that can access that exact thread**. A competing local app-server
+cannot resume a thread held by the VS Code extension, so VS Code conversations
+remain `notification_only` by default. Explicit `standalone` mode serves only
+threads owned by the adapter's app-server. For a live-wakable binding, every
+verified message to its exact route is eligible, including status and
+informational notes; claimed work and required controls are eligible too.
+The bus decides what is addressed. The Codex host owns thread permissions and
+turn execution; a Slack post alone cannot start a turn.
 
 The local `.env` leaves `AGENTBUS_CODEX_HOST_MODE` unset for this
 notification-only default. `AGENTBUS_CODEX_HOST_MODE=standalone` is an explicit
@@ -199,8 +201,8 @@ stdio host or undoing the AgentBus join.
 The chat can inspect its binding and pending work without starting a turn:
 
 ```bash
-./agentbus codex-wake status --identity agentbus:signal-gardener
-./agentbus codex-wake once --identity agentbus:signal-gardener
+./agentbus codex-wake status --identity REPO:NAME
+./agentbus codex-wake once --identity REPO:NAME
 ```
 
 `codex-wake status` now joins a session-authenticated self-presence read with
@@ -246,35 +248,29 @@ instruction, not a Codex-host tool-permission gate. `/agentbus retire ID CONFIRM
 existing durable stop, which takes effect after the agent acknowledges it and
 cannot be reversed for that session.
 
-If another host still owns the thread's writer lock, the worker defers. The
-current VS Code extension owns its open conversations and exposes no supported
-shared wake endpoint to this adapter. Workspace opt-in does not override the
-UI's thread ownership or permission prompts; these chats remain
-`notification_only` until that integration exists.
+If another host holds the thread's writer lock, the worker defers. The current
+VS Code extension exposes no supported shared wake endpoint to this adapter;
+workspace opt-in cannot override that ownership or permission prompts. The
+[experimental VS Code proxy pilot](experiments/codex-executable-wrapper/README.md)
+explores a separately managed app-server with two connections through one
+private control socket. It is off by default, has not proved live delivery into
+the same VS Code conversation, and is **not a dependable wake path**. The pilot
+guide covers isolated setup, the exact success condition, and rollback. Ordinary
+terminal Codex and other IDEs are unaffected by this VS Code-specific setting.
+See [Issue #33](https://github.com/mjgolaszewski/AgentBus/issues/33) for the
+unresolved integration, and [Issue #8](https://github.com/mjgolaszewski/AgentBus/issues/8)
+plus the [wake contract](contracts/codex-wake/v1/codex-wake.contract.yml) for
+the adapter's safety rules.
 
-Draft [experimental wrapper and adapter proxy](experiments/codex-executable-wrapper/README.md)
-can point both the VS Code extension and AgentBus at one pre-existing private
-Codex control socket through explicit operator configuration. This development-only
-path has not passed a live shared-thread pilot and is not a dependable wake claim.
-It never starts a competing stdio host when its endpoint is missing or unsafe.
-
-In explicit standalone mode, the adapter starts a local `codex app-server`
-process; it needs no public proxy. It is inert without workspace opt-in and a host-verified saved-thread
-binding.
-The local Unix account that can edit its private binding state is its trust
-boundary. Chats hosted by a UI without an accessible authorized resume/start
-hook remain notification-only. The development-only VS Code executable override
-is being explored separately as an **experimental prototype**, not a supported
-or released wake guarantee. [Issue #8](https://github.com/mjgolaszewski/AgentBus/issues/8)
-and the [versioned wake contract](contracts/codex-wake/v1/codex-wake.contract.yml)
-record the full safety and failure rules.
+In explicit standalone mode, the adapter starts a local `codex app-server` for
+its own saved threads. It needs no public proxy and remains inert without
+workspace opt-in and a host-verified binding. The local Unix account that can
+edit its private binding state is its trust boundary.
 The operator-only `roster` command reads joined sessions from the service and
 labels any Codex thread link it finds on this host; a missing local link says
 nothing about bindings on another host.
-The [adapter-user guide](docs/audiences/adapter-users.md) shows the host-mode
-choices, local configuration, and rollback that drains active turns. The VS Code
-wrapper configuration is explicitly experimental in [draft PR #35](https://github.com/mjgolaszewski/AgentBus/pull/35);
-it needs the matching shared-daemon client path before it can wake a chat.
+The [adapter-user guide](docs/audiences/adapter-users.md) compares host modes,
+local configuration, and rollback that drains active turns.
 
 ## Quick start
 
