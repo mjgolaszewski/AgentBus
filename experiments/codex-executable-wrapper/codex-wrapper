@@ -71,7 +71,10 @@ def main() -> None:
     binary = real_binary()
     args = sys.argv[1:]
     replacement = app_server_command(args)
-    os.execv(binary, [binary, *(replacement if replacement is not None else args)])
+    try:
+        os.execv(binary, [binary, *(replacement if replacement is not None else args)])
+    except OSError:
+        fail("configured Codex binary could not start")
 
 
 if __name__ == "__main__":

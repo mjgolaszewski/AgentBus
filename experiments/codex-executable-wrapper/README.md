@@ -13,6 +13,13 @@ It has not proven that the daemon and extension can safely share thread ownershi
 that AgentBus can reach the same host, or that a live conversation can finish a
 wake turn through this arrangement.
 
+**Scope:** Only the VS Code Codex extension configured with
+`chatgpt.cliExecutable` would invoke this wrapper. The setting is application
+scoped, so a pilot needs an isolated VS Code profile rather than assuming a single
+workspace window is isolated. Ordinary `codex` terminal commands and other IDEs
+continue using their own executables unless separately configured. Do not put this
+wrapper on `PATH`, replace the real Codex binary, or install it globally.
+
 ## Mechanism
 
 The observed extension version `26.930.31730` launches:
@@ -67,6 +74,13 @@ permissions. No live configuration or shared service should change on this evide
 The custodian would need an isolated test profile, a managed daemon with its private
 control socket, a known matching Codex binary, an extension restart using the
 development-only override, and a rollback to the original extension executable.
+The extension host must inherit both wrapper environment values; values set in a
+later terminal do not retroactively reach an already-running extension host. The
+`chatgpt.cliExecutable` value must be the absolute wrapper path visible to that
+host, while `AGENTBUS_EXPERIMENTAL_CODEX_BINARY` points to the real executable.
+Before switching the override, the custodian can use the fake-host tests and verify
+that the private control socket actually exists. The wrapper never creates it. A
+socket file alone does not prove that the daemon is responsive or compatible.
 The pilot must show one saved conversation remains usable in the UI while a second
 authorized proxy can resume its exact thread, start a turn, observe a terminal
 notification, and leave the UI healthy. A failed pilot must leave AgentBus in

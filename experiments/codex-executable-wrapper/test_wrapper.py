@@ -74,6 +74,16 @@ def test_configured_binary_cannot_be_wrapper(tmp_path: Path) -> None:
     assert "points back" in result.stderr
 
 
+def test_broken_real_binary_fails_without_traceback(tmp_path: Path) -> None:
+    binary = tmp_path / "broken-codex"
+    binary.write_text("not an executable format\n")
+    binary.chmod(0o700)
+    result = call(tmp_path, ["--version"], live_socket=False, binary=binary)
+    assert result.returncode == 78
+    assert "configured Codex binary could not start" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
 def test_unsafe_socket_mode_fails_closed(tmp_path: Path) -> None:
     listener = socket.socket(socket.AF_UNIX)
     path = tmp_path / "owner.sock"
