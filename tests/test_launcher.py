@@ -510,6 +510,18 @@ def test_public_cli_operation_inventory_matches_parser_surface(launcher):
     assert set(command_action.choices) == set(launcher.CLI_OPERATIONS)
 
 
+def test_inbox_and_read_page_limits_reject_locally_with_pagination_help(capsys):
+    from src.agentbus_parser_client import parse_args
+
+    for command in ("inbox", "read"):
+        for limit in ("0", "1000", "nope"):
+            with pytest.raises(SystemExit) as exit_info:
+                parse_args([command, "--limit", limit])
+            assert exit_info.value.code == 2
+            assert "1 to 200" in capsys.readouterr().err
+        assert parse_args([command, "--limit", "200"]).limit == 200
+
+
 def test_quiet_preference_persists_without_changing_participation(launcher, monkeypatch, capsys):
     from src.agentbus_parser_client import parse_args
 

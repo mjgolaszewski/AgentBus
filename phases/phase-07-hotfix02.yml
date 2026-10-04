@@ -1,0 +1,48 @@
+document:
+  kind: hotfix_execution_log
+  name: P07-HF02 Hotfix Log
+  id: project-phase-07-hotfix02
+  version: 1.0.0
+  generated_at_utc: '2026-10-04T00:00:00Z'
+  status: completed
+  path: phases/phase-07-hotfix02.yml
+hotfix:
+  id: P07-HF02
+  mode: full
+  related_phase_id: P07
+  hotfix_number: 2
+  summary: Recover interrupted wakes and stale participation alarms with bounded inbox
+    pages
+execution_evidence:
+  planned_commands:
+  - bcf ci prospective-train
+  executed_commands:
+  - uv run --extra dev pytest -q tests/test_codex_wake_client.py tests/test_codex_wake_contract.py tests/test_poll_client.py tests/test_participation_contract.py tests/test_launcher.py
+  - make PYTHON=.venv/bin/python lint typecheck architecture-test
+  - make PYTHON=.venv/bin/python test contract-test governance-validate runtime-smoke
+  - bcf test-manifest update --all
+  - bcf semantic-ownership lock --apply
+  - bcf reconcile --apply
+  - bcf reconcile --check
+  notes:
+  - Issue 33 records runtime observations after the protected-main v0.7.2 cutover; no CI workflow is reported failing.
+  - AgentBus owns the alarm, page-bound, prompt-order, and bounded terminal-turn recovery slice. The custodian owns host writer-lock and interrupted-turn correlation.
+  - A recovery turn can inspect earlier partial side effects but cannot make an interrupted host turn atomic; the prompt explicitly requires inspection before repeating work.
+  - Released BCF v2.1.8 refreshed only canonical manifests and lock; the reconciliation fixed point and 96 unit plus 98 contract tests passed locally before exact prospective proof.
+closeout_requirements:
+  claims:
+    required_suites_green:
+      required_evidence:
+      - test
+      - contract-test
+    security_review_complete:
+      required_evidence:
+      - governance-validate
+    health_checks_green:
+      required_evidence:
+      - runtime-smoke
+  reconciliation:
+    required_evidence:
+    - governance-validate
+    - governance-exposure-scan
+  finding_registry: governance/findings.yml

@@ -5,6 +5,18 @@ from __future__ import annotations
 import argparse
 
 
+def _inbox_page_limit(raw: str) -> int:
+    try:
+        limit = int(raw)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("inbox page limit must be an integer from 1 to 200") from exc
+    if not 1 <= limit <= 200:
+        raise argparse.ArgumentTypeError(
+            "inbox page limit must be 1 to 200; use --after CURSOR to read later pages"
+        )
+    return limit
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Local service lifecycle and HTTP client for AgentBus."
@@ -26,7 +38,8 @@ def build_parser() -> argparse.ArgumentParser:
     send.add_argument("--reply-to-cursor", type=int)
     read = commands.add_parser("read", help="Read the durable local inbox")
     read.add_argument("--after", type=int, default=0)
-    read.add_argument("--limit", type=int, default=100)
+    read.add_argument("--limit", type=_inbox_page_limit, default=100,
+                      help="Page size 1–200; use --after CURSOR for later pages")
     read.add_argument("--recipient")
     read.add_argument("--thread-ts")
     onboard = commands.add_parser("onboard", help="Create a unique local chat identity and persona")
@@ -62,7 +75,8 @@ def build_parser() -> argparse.ArgumentParser:
     inbox = commands.add_parser("inbox", help="Read a chat inbox without acknowledging it")
     inbox.add_argument("--identity")
     inbox.add_argument("--after", type=int)
-    inbox.add_argument("--limit", type=int, default=100)
+    inbox.add_argument("--limit", type=_inbox_page_limit, default=100,
+                       help="Page size 1–200; use --after CURSOR for later pages")
     inbox.add_argument("--thread-ts")
     inbox.add_argument("--context", action="store_true")
     ack = commands.add_parser("ack", help="Acknowledge handled messages through a cursor")

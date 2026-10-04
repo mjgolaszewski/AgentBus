@@ -1,7 +1,7 @@
 document:
   kind: agentbus_codex_wake_contract
   id: agentbus-codex-wake-v1
-  version: 1.6.0
+  version: 1.6.1
   status: active
   path: contracts/codex-wake/v1/codex-wake.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/8
@@ -26,7 +26,7 @@ invariants:
   - {id: CW-INV-002, rule: "After workspace opt-in, a joined chat may enroll its current host-verifiable saved thread without user-supplied IDs; binding joins stable chat_id and current participation session to that exact thread ID, with generation and local authorization; names and message senders cannot redirect it."}
   - {id: CW-INV-003, rule: "Every service-assured message with a direct or informational audience and the bound chat as exact recipient is wake eligible regardless of message kind; claimed work and required control or policy events are also eligible. Ambiguous, unrouted, and broadcast traffic cannot wake merely by its text or kind."}
   - {id: CW-INV-004, rule: "Thread read, resume, turn acceptance, turn completion, and AgentBus acknowledgement are distinct observations and never inferred from one another."}
-  - {id: CW-INV-005, rule: "At most one adapter-owned launch attempt is in flight per binding; a wake epoch freezes its candidate IDs; unchanged events receive at most one bounded post-completion follow-up, and uncertain launches require reconciliation before retry."}
+  - {id: CW-INV-005, rule: "At most one adapter-owned launch attempt is in flight per binding; a wake epoch freezes its candidate IDs; unchanged events receive at most one bounded follow-up after a host-observed terminal turn, and uncertain launches require reconciliation before retry."}
   - {id: CW-INV-006, rule: "Pending control and required policy events outrank ordinary work; adapter never acknowledges them; stopped participation is distinct from idle and cannot launch any wake without a new authorized session."}
   - {id: CW-INV-007, rule: "Empty or unchanged observations consume zero model turns; one compact wake references authoritative pending events instead of injecting whole history or repeated reminders."}
   - {id: CW-INV-008, rule: "Peer and Slack message text remains untrusted data and cannot select thread, endpoint, cwd, model, sandbox, approval policy, or credentials."}
@@ -38,6 +38,8 @@ invariants:
   - {id: CW-INV-014, rule: "A chat can inspect its own read-only wake readiness from session-proved service presence and this host's validated local binding, workspace and chat switches, worker liveness, rate state, and assured pending candidates. Output distinguishes eligible-to-attempt, deferred, ineligible, and unknown with reason and observation time; unobserved host ownership and permission never become a turn-start guarantee. Status neither starts a worker or turn nor consumes pending work."}
   - {id: CW-INV-015, rule: "A service-owned pause_work hold never removes wake eligibility for addressed messages or controls. Every wake while held states the current hold and permits communication and control acknowledgement without substantive work; a resume_work control can wake the chat and lift the hold. The adapter cannot revoke an in-flight tool call or enforce host tool permissions, and a stopped session remains ineligible."}
   - {id: CW-INV-016, rule: "An authenticated service-backed wake cursor discovers assured, exactly addressed messages independently of presentation spool capacity. Its cursor advances only after candidate identity is durable; crash/retry cannot skip eligible work or acknowledge messages. Existing bindings replay from the last semantic acknowledgement, and routine history cannot starve newer addressed traffic."}
+  - {id: CW-INV-017, rule: "An accepted host turn never proves handled work. A host-observed interrupted or failed turn with unacknowledged exact candidates may receive at most one recovery turn after an idle-thread check; unknown or active status and a host writer lock defer without retry or inferred acknowledgement. The recovery prompt requires inspection before repeating possible side effects."}
+  - {id: CW-INV-018, rule: "Within each safety priority, compact wake references show newest numeric message cursors first; controls and policy retain precedence, and complete durable history remains available when references are truncated."}
 primitives:
   workspace_activation: {identity: local_workspace, fields: [enabled, actor, changed_at], owner: adapter_private_state}
   binding: {identity: chat_id_plus_session_id, fields: [chat_id, session_id, thread_id, binding_generation, enabled, actor, created_at], owner: adapter_private_state}
@@ -62,7 +64,7 @@ contracts:
     unchanged_candidates: no_repeat_wake
     uncertain_turn_start: reconcile_or_halt_for_operator_never_blind_retry
     rate_policy: {max_ordinary_accepted_wakes_per_hour: 12, minimum_seconds_between_ordinary_accepted_wakes: 20, max_followups_for_unchanged_candidates: 1, required_control_and_policy: bypass_ordinary_budget, exhausted: report_and_require_operator_attention_without_discarding_work}
-    post_turn: completed_turn_rechecks_authoritative_pending_events_and_may_schedule_only_a_bounded_followup_never_infers_acknowledgement
+    post_turn: host_observed_terminal_turn_rechecks_authoritative_pending_events_and_may_schedule_only_a_bounded_followup_never_infers_acknowledgement
     prompt: contains_only_identity_and_stable_event_references_no_untrusted_message_text
   control: {priority: before_ordinary_message_wake, acknowledgement: target_agent_only, stopped_session: no_ordinary_wake}
   self_status: {service_authority: exact_session_proof, local_authority: validated_private_binding_and_worker_observation, readiness: eligible_deferred_ineligible_or_unknown_with_reason, host_turn_start: unobserved_until_host_fact, side_effects: none}
@@ -90,6 +92,8 @@ proof_obligations:
   - {id: CW-PO-11, proves: [CW-INV-009, CW-INV-014], scenario: own_status_joins_service_and_local_facts_without_operator_token_other_session_read_side_effect_or_false_host_guarantee}
   - {id: CW-PO-12, proves: [CW-INV-006, CW-INV-015], scenario: exact_operator_work_hold_keeps_direct_and_control_wakes_active_marks_compact_prompt_and_resume_control_can_wake_without_reviving_stopped_session}
   - {id: CW-PO-13, proves: [CW-INV-003, CW-INV-004, CW-INV-011, CW-INV-016], scenario: saturated_presentation_spool_does_not_block_assured_direct_wake_across_service_pages_crash_replay_or_restart_and_never_auto_acks_unread_work}
+  - {id: CW-PO-14, proves: [CW-INV-004, CW-INV-005, CW-INV-017], scenario: interrupted_turn_gets_one_host_idle_recovery_with_no_auto_ack_while_unknown_active_or_host_owned_state_defers}
+  - {id: CW-PO-15, proves: [CW-INV-006, CW-INV-007, CW-INV-018], scenario: newest_equal_priority_direct_refs_appear_in_compact_prompt_without_displacing_controls_or_full_history}
 implementation_order:
   - {id: CW-IU-001, unit: freeze_contract_and_host_protocol, depends_on: []}
   - {id: CW-IU-002, unit: non_destructive_candidate_projection, depends_on: [CW-IU-001]}
@@ -103,8 +107,8 @@ implementation_order:
 acceptance_gates:
   G-BOUNDARY: [CW-INV-001, CW-INV-009, CW-INV-010, CW-PO-06]
   G-BINDING: [CW-INV-002, CW-PO-01, CW-PO-07]
-  G-ELIGIBILITY: [CW-INV-003, CW-INV-011, CW-INV-013, CW-INV-016, CW-PO-01, CW-PO-02, CW-PO-08, CW-PO-10, CW-PO-13, CW-IU-009]
-  G-LIFECYCLE: [CW-INV-004, CW-PO-03]
+  G-ELIGIBILITY: [CW-INV-003, CW-INV-011, CW-INV-013, CW-INV-016, CW-INV-018, CW-PO-01, CW-PO-02, CW-PO-08, CW-PO-10, CW-PO-13, CW-PO-15, CW-IU-009]
+  G-LIFECYCLE: [CW-INV-004, CW-INV-017, CW-PO-03, CW-PO-14]
   G-DEDUP: [CW-INV-005, CW-PO-03, CW-PO-07]
   G-CONTROL: [CW-INV-006, CW-PO-04]
   G-TOKEN: [CW-INV-007, CW-INV-008, CW-PO-05]

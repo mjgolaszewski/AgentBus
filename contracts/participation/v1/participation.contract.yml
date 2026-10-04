@@ -1,7 +1,7 @@
 document:
   kind: agentbus_participation_contract
   id: agentbus-participation-v1
-  version: 1.9.0
+  version: 1.9.1
   status: active
   path: contracts/participation/v1/participation.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/6
@@ -77,6 +77,8 @@ invariants:
   - {id: INV-035, rule: "An operator may issue durable pause_work and resume_work controls to one immutable, nonstopped session. Pause holds substantive work at the next agent checkpoint while the conversation remains wakable for every otherwise eligible addressed message and required control; it preserves route, inbox, polling, policy, and message rights. Resume releases the hold and can itself wake an idle chat. The service persists the current work hold and control receipts across restart; ordinary messages cannot lift it. An in-flight tool call cannot be revoked and a stopped session cannot resume."}
   - {id: INV-036, rule: "Slack slash operations require an authenticated Socket Mode invocation from an explicitly allowlisted human user in the configured channel. Every target resolves to one immutable full session ID; a 6–12-character suffix is accepted only when unique across all sessions, and ambiguity fails closed. Help, roster, status, metrics, send, wake, checkpoint, pause, resume, and confirmed retire are the only exposed operations; no arbitrary CLI or shell execution is admitted. Wake is an alias for an addressed send, not a host turn override."}
   - {id: INV-037, rule: "Slack operator metrics report service-owned counts, high-water cursors, participation times, controls, and pause state without claiming knowledge of the client-owned acknowledged cursor or host-owned wake attempts. Duplicate slash invocation IDs do not repeat mutations; uncertainty after an external Slack post is reported without automatic retry."}
+  - {id: INV-038, rule: "A complete successful poll cycle retires an obsolete persisted transport alarm even after worker restart; a failed cycle never clears the alarm merely because process-local failure memory was reset."}
+  - {id: INV-039, rule: "The client validates the service's one-through-200 inbox page bound before a request and explains cursor pagination for larger histories; an invalid page size never changes durable inbox or acknowledgement state."}
 
 primitives:
   stable_chat_identity:
@@ -302,6 +304,8 @@ proof_obligations:
   - {id: PO-44, proves: [INV-035], scenario: pause_and_resume_controls_are_authorized_restart_safe_and_wakeable_while_hold_preserves_pending_messages_and_stopped_session_cannot_resume}
   - {id: PO-45, proves: [INV-036], scenario: only_allowlisted_human_Slack_users_can_use_fixed_commands_and_unique_short_session_references_while_ambiguous_or_untrusted_input_cannot_mutate}
   - {id: PO-46, proves: [INV-037], scenario: metrics_are_service_factual_and_duplicate_slash_invocations_cannot_repeat_mutations_or_claim_private_client_host_telemetry}
+  - {id: PO-47, proves: [INV-038], scenario: stale_transport_alarm_retires_only_after_healthy_post_restart_cycle_and_survives_a_current_failure}
+  - {id: PO-48, proves: [INV-039], scenario: out_of_range_inbox_page_is_rejected_locally_with_pagination_guidance_and_no_service_call}
 
 implementation_order:
   - {id: IU-001, unit: freeze_contract_and_migration_assumptions, depends_on: []}
@@ -329,9 +333,10 @@ acceptance_gates:
   G-POLICY: [INV-004, PO-02, PO-27]
   G-CONTROL: [INV-005, INV-007, INV-011, PO-03, PO-04, PO-08, PO-26]
   G-AUTHORITY: [INV-009, PO-06]
-  G-POLL: [INV-001, INV-002, INV-013, INV-014, PO-01, PO-09, PO-14]
+  G-POLL: [INV-001, INV-002, INV-013, INV-014, INV-038, PO-01, PO-09, PO-14, PO-47]
   G-TOKEN: [INV-003, INV-015, PO-10, PO-28]
   G-RECOVERY: [INV-012, PO-13]
+  G-INBOX-PAGE: [INV-039, PO-48]
   G-COMPAT: [PO-05, PO-15, PO-19, PO-25]
   G-GOVERNANCE: [INV-016, PO-12, PO-20]
   G-MESSAGE-PRINCIPAL: [INV-027, INV-028, PO-36, PO-37]

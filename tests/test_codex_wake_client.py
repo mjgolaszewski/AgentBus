@@ -278,9 +278,9 @@ def test_dry_run_filters_noise_and_does_not_call_host(setup):
         message(7, kind="message", assurance="legacy"),
         message(8, audience="informational", kind="message"))
     result = wake.run_once(values, identity, host_factory=lambda: host)
-    assert result == {"status": "dry_run", "eligible": ["MESSAGE:4", "MESSAGE:5", "MESSAGE:6", "MESSAGE:8"], "enabled": False}
+    assert result == {"status": "dry_run", "eligible": ["MESSAGE:8", "MESSAGE:6", "MESSAGE:5", "MESSAGE:4"], "enabled": False}
     assert host.calls == []
-    assert wake.status(values, identity)["eligible"] == ["MESSAGE:4", "MESSAGE:5", "MESSAGE:6", "MESSAGE:8"]
+    assert wake.status(values, identity)["eligible"] == ["MESSAGE:8", "MESSAGE:6", "MESSAGE:5", "MESSAGE:4"]
 
 
 def test_live_wake_is_opt_in_compact_and_not_repeated(setup):
@@ -478,6 +478,55 @@ def test_completed_turn_gets_one_bounded_followup_for_unacknowledged_work(setup)
     assert second["eligible"] == first["eligible"]
     assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "pending_after_followup"
     assert len(host.prompts) == 2
+
+
+def test_interrupted_turn_gets_one_cautious_recovery_only_when_host_idle(setup):
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, "thread-one", lambda: host)
+    wake.set_enabled(values, identity, True)
+    put(path, profile, message(1))
+    wake.run_once(values, identity, live=True, host_factory=lambda: host)
+    state_path = wake._state_path(values, profile["chat_id"])
+    state = wake._load(state_path)
+    state["wake_history"] = [(datetime.now(timezone.utc) - timedelta(seconds=21)).isoformat()]
+    wake._save(state_path, state)
+    host.found = ("turn-one", "interrupted")
+    host.resume_failure = CodexHostRejected("thread already has an active writer")
+    assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "thread_owned_by_host"
+    assert len(host.prompts) == 1
+    assert wake.status(values, identity)["last_attempt"]["turn_status"] == "interrupted"
+    host.resume_failure = None
+    assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "turn_accepted"
+    assert "do not repeat them blindly" in host.prompts[-1]
+    assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "pending_after_followup"
+
+
+def test_unknown_or_active_host_turn_is_not_retried(setup):
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, "thread-one", lambda: host)
+    wake.set_enabled(values, identity, True)
+    put(path, profile, message(1))
+    wake.run_once(values, identity, live=True, host_factory=lambda: host)
+    for observed in (None, ("turn-one", "inProgress")):
+        host.found = observed
+        result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
+        assert result["status"] == "already_woken"
+        assert len(host.prompts) == 1
+
+
+def test_newest_equal_priority_message_is_visible_in_compact_prompt(setup):
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, "thread-one", lambda: host)
+    wake.set_enabled(values, identity, True)
+    put(path, profile, *(message(cursor) for cursor in range(1, 12)))
+    refs = wake.eligible_events(path, profile)
+    assert refs[:8] == [f"MESSAGE:{cursor}" for cursor in range(11, 3, -1)]
+    result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
+    assert result["status"] == "turn_accepted"
+    assert "MESSAGE:11" in host.prompts[0]
+    assert "MESSAGE:4 and 3 more" in host.prompts[0]
+    put(path, profile, {"kind": "CONTROL", "id": "stop-1", "control": {"kind": "stop_end_turn"}})
+    assert wake.eligible_events(path, profile) == ["CONTROL:stop-1"]
 
 
 def test_ordinary_rate_budget_never_blocks_required_control(setup):
