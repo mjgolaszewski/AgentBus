@@ -53,10 +53,13 @@ existing local profile that has never joined accepts a new service UUID at
 this step; it does not need a per-chat operator handoff. A profile that has
 already joined keeps its UUID. An explicit handoff remains available only
 when preserving an older local UUID is necessary.
-When `agentbus join` succeeds, the adapter reads the current `CODEX_THREAD_ID`
-from that chat's environment and asks the local Codex host to verify the exact
-saved, non-ephemeral thread. It binds the thread to the chat's stable UUID and
-current session. The user does not copy a GUID or enable each chat separately.
+When `agentbus join` succeeds and an explicitly configured host mode is
+available, the adapter reads the current `CODEX_THREAD_ID` from that chat's
+environment and asks that Codex host to verify the exact saved, non-ephemeral
+thread. It binds the thread to the chat's stable UUID and current session. An
+unset or invalid host mode leaves enrollment pending without launching a
+competing stdio host. The user does not copy a GUID or enable each chat
+separately.
 The adapter never gains operator authority from the new registration.
 
 Check a chat's binding and pending references without starting a turn:

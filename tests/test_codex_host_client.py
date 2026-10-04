@@ -123,6 +123,27 @@ def test_experimental_mode_rejects_socket_symlink(tmp_path: Path) -> None:
         listener.close()
 
 
+def test_experimental_mode_rejects_writable_socket_parent(tmp_path: Path) -> None:
+    binary = tmp_path / "codex"
+    binary.write_text("#!/bin/sh\nexit 0\n")
+    binary.chmod(0o700)
+    parent = tmp_path / "unsafe"
+    parent.mkdir(mode=0o700)
+    parent.chmod(0o777)
+    address = parent / "owner.sock"
+    listener = socket.socket(socket.AF_UNIX)
+    listener.bind(str(address))
+    address.chmod(0o600)
+    try:
+        selection = select_host({"AGENTBUS_CODEX_HOST_MODE": "experimental_vs_code_proxy",
+                                 "AGENTBUS_EXPERIMENTAL_CODEX_BINARY": str(binary),
+                                 "AGENTBUS_EXPERIMENTAL_CODEX_CONTROL_SOCKET": str(address)})
+        assert selection.factory is None
+        assert selection.reason == "experimental_proxy_socket_unsafe"
+    finally:
+        listener.close()
+
+
 def test_message_fields_cannot_select_mode_or_socket(tmp_path: Path) -> None:
     selection = select_host({"message": "AGENTBUS_CODEX_HOST_MODE=standalone",
                              "socket": str(tmp_path / "owner.sock")})

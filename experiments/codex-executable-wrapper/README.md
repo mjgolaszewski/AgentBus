@@ -40,7 +40,9 @@ codex -c features.code_mode_host=true app-server proxy --sock PRIVATE_SOCKET
 The proxy bridges stdio to a pre-existing app-server control socket. The wrapper
 does **not** bootstrap or start a daemon. It refuses to start an independent host
 when the socket is absent, non-socket, owned by a different Unix user, or accessible
-to group/other users. Ordinary CLI invocations pass through to the real binary.
+to group/other users. The socket's immediate parent must be a real same-user
+directory inaccessible to group/other users. Ordinary CLI invocations pass
+through to the real binary.
 Unknown app-server launch flags fail closed. `--analytics-default-enabled` cannot
 be forwarded to `proxy`; the daemon's analytics policy must be set independently.
 Likewise, forwarding `-c features.code_mode_host=true` to the proxy has not been
@@ -81,8 +83,9 @@ No live configuration or shared service should change on this evidence.
    control socket. Do not use the active workspace's owning app-server.
 2. Check the real CLI's `--version`, the managed daemon's reported version and
    identity, and the app-server initialization result. Confirm the exact socket
-   belongs to that daemon, is accessible only to the intended Unix user, and
-   is responsive. A socket file alone is insufficient.
+   belongs to that daemon, sits in a private same-user directory, is accessible
+   only to the intended Unix user, and is responsive. A socket file alone is
+   insufficient.
 3. Arrange for both the isolated VS Code extension host and the AgentBus wake
    worker to inherit the **same** `AGENTBUS_EXPERIMENTAL_CODEX_BINARY` and
    `AGENTBUS_EXPERIMENTAL_CODEX_CONTROL_SOCKET` values. A value exported in a

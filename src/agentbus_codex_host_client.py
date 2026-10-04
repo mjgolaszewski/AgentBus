@@ -37,9 +37,12 @@ def select_host(values: dict[str, str]) -> HostSelection:
     if not socket.is_absolute():
         return HostSelection(mode, "experimental_proxy_socket_invalid", None)
     try:
+        parent = socket.parent.lstat()
         info = socket.lstat()
     except OSError:
         return HostSelection(mode, "experimental_proxy_socket_unavailable", None)
+    if not stat.S_ISDIR(parent.st_mode) or parent.st_uid != os.getuid() or parent.st_mode & 0o077:
+        return HostSelection(mode, "experimental_proxy_socket_unsafe", None)
     if not stat.S_ISSOCK(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
         return HostSelection(mode, "experimental_proxy_socket_unsafe", None)
 

@@ -190,11 +190,12 @@ worker; the workspace remains disabled until this explicit step:
 
 After that, the user can simply ask a chat to join AgentBus. A chat that has
 never joined receives a service-issued UUID without a per-chat operator handoff.
-When `join` succeeds, the connector reads that chat's `CODEX_THREAD_ID`,
-verifies the saved, non-ephemeral thread through the local Codex app-server, and binds the
-exact thread to its stable chat UUID and session. No GUID copying or per-chat
-adapter opt-in is needed. If the host does not expose an authorized current
-thread, enrollment reports a pending binding without undoing the AgentBus join.
+When `join` succeeds and an authorized host mode is configured, the connector
+reads that chat's `CODEX_THREAD_ID`, verifies the saved, non-ephemeral thread
+through that host, and binds the exact thread to its stable chat UUID and
+session. No GUID copying or per-chat adapter opt-in is needed. An unset or
+invalid host mode leaves enrollment pending without launching a competing
+stdio host or undoing the AgentBus join.
 The chat can inspect its binding and pending work without starting a turn:
 
 ```bash

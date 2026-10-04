@@ -98,3 +98,22 @@ def test_unsafe_socket_mode_fails_closed(tmp_path: Path) -> None:
         assert "accessible to group or other" in result.stderr
     finally:
         listener.close()
+
+
+def test_unsafe_socket_parent_fails_closed(tmp_path: Path) -> None:
+    parent = tmp_path / "unsafe"
+    parent.mkdir(mode=0o700)
+    parent.chmod(0o777)
+    path = parent / "owner.sock"
+    listener = socket.socket(socket.AF_UNIX)
+    listener.bind(str(path))
+    path.chmod(0o600)
+    try:
+        env = dict(os.environ, AGENTBUS_EXPERIMENTAL_CODEX_BINARY=str(fake_binary(tmp_path)),
+                   AGENTBUS_EXPERIMENTAL_CODEX_CONTROL_SOCKET=str(path))
+        result = subprocess.run([sys.executable, str(WRAPPER), "app-server"], env=env,
+                                text=True, capture_output=True, timeout=5)
+        assert result.returncode == 78
+        assert "parent is not private" in result.stderr
+    finally:
+        listener.close()

@@ -680,6 +680,21 @@ def test_experimental_enrollment_rejects_unsafe_endpoint_before_host_launch(setu
     assert not host.calls
 
 
+@pytest.mark.parametrize("mode,reason", [
+    (None, "owning_host_endpoint_unavailable"),
+    ("agent-selected", "unsupported_host_mode"),
+])
+def test_default_or_unknown_mode_cannot_start_host_during_enrollment(setup, mode, reason):
+    values, identity, _profile, _path, host = setup
+    if mode is None:
+        values.pop("AGENTBUS_CODEX_HOST_MODE")
+    else:
+        values["AGENTBUS_CODEX_HOST_MODE"] = mode
+    with pytest.raises(ClientError, match=reason):
+        wake.bind(values, identity, "thread-one", auto_enable=True)
+    assert not host.calls
+
+
 def test_completed_turn_gets_one_bounded_followup_for_unacknowledged_work(setup):
     values, identity, profile, path, host = setup
     wake.bind(values, identity, "thread-one", lambda: host)
