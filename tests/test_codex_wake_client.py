@@ -3,6 +3,12 @@
 from __future__ import annotations
 
 import json
+import os
+import signal
+import subprocess
+import sys
+import threading
+import time
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -12,7 +18,7 @@ import pytest
 
 from src import agentbus_codex_wake_client as wake
 from src import agentbus_wake_inbox_client as wake_inbox
-from src.agentbus_codex_rpc_client import CodexHostRejected, TurnStartUncertain
+from src.agentbus_codex_rpc_client import CodexHostRejected, TurnCompletionUncertain, TurnStartUncertain
 from src.agentbus_poll_client import change_spool
 from src.agentbus_transport_client import ClientError
 
@@ -25,6 +31,7 @@ class FakeHost:
         self.found: tuple[str, str] | None = None
         self.prompts: list[str] = []
         self.resume_failure: Exception | None = None
+        self.terminal_status = "completed"
 
     def __enter__(self) -> FakeHost:
         return self
@@ -48,6 +55,10 @@ class FakeHost:
             raise self.failure
         return "turn-one"
 
+    def await_turn_terminal(self, thread_id: str, turn_id: str, *, max_seconds: float = 600) -> str:
+        self.calls.append(("terminal", turn_id))
+        return self.terminal_status
+
     def find_attempt(self, thread_id: str, attempt_id: str) -> tuple[str, str] | None:
         self.calls.append(("find", thread_id))
         return self.found
@@ -62,7 +73,8 @@ def setup(monkeypatch, tmp_path: Path):
     }
     profile_path = tmp_path / "profile.json"
     profile_path.write_text(json.dumps(profile))
-    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(tmp_path / "consumers")}
+    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(tmp_path / "consumers"),
+              "AGENTBUS_CODEX_HOST_MODE": "standalone"}
     wake.set_workspace_enabled(values, True)
     monkeypatch.setattr(wake, "checked_profile", lambda _values, _identity: (profile, {}))
     monkeypatch.setattr(wake, "identity_path", lambda _values, _identity: profile_path)
@@ -120,13 +132,13 @@ def test_saturated_spool_cannot_block_service_backed_direct_wake(setup, monkeypa
     messages.append(service_message(151, kind="information"))
     monkeypatch.setattr(wake_inbox, "api", fake_inbox(messages))
     result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
-    assert result["status"] == "turn_accepted"
+    assert result["status"] == "turn_completed"
     assert result["eligible"] == ["MESSAGE:151"]
     assert "MESSAGE:151" in host.prompts[0]
     assert path.with_name(path.name + ".poll.json").read_bytes() == original_spool
     assert profile["ack_cursor"] == 0
     assert wake.status(values, identity)["eligible"] == ["MESSAGE:151"]
-    assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "already_woken"
+    assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "wake_deferred"
     assert [name for name, _ in host.calls].count("start") == 1
 
 
@@ -220,7 +232,7 @@ def test_operator_pause_keeps_addressed_messages_wakable(setup, monkeypatch):
         "state": "active_compliant", "work_paused": True,
     })
     result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
-    assert result["status"] == "turn_accepted"
+    assert result["status"] == "turn_completed"
     assert result["eligible"] == ["MESSAGE:1"]
     assert ("start", "thread-one") in host.calls
     assert "Operator work hold is active" in host.prompts[0]
@@ -239,7 +251,7 @@ def test_resume_control_wakes_held_conversation(setup, monkeypatch):
         "state": "control_pending", "work_paused": False,
     })
     result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
-    assert result["status"] == "turn_accepted"
+    assert result["status"] == "turn_completed"
     assert result["eligible"] == ["CONTROL:resume-1"]
     assert ("start", "thread-one") in host.calls
     assert "Operator work hold is active" not in host.prompts[0]
@@ -268,6 +280,148 @@ def test_watch_all_supervises_poll_worker_before_wake_projection(monkeypatch, tm
     assert calls == [("poll", profile_path), ("wake", "agentbus:flower")]
 
 
+def test_watch_all_long_turn_for_one_chat_does_not_delay_another(monkeypatch, tmp_path):
+    for name in ("a", "b"):
+        (tmp_path / f"agentbus:{name}.json").write_text(json.dumps({
+            "identity": f"agentbus:{name}", "chat_id": str(uuid.uuid4()),
+            "participation": {"session_id": name, "stopped": False},
+        }))
+    binding = tmp_path / "binding.json"
+    binding.write_text("{}")
+    a_started = threading.Event()
+    a_release = threading.Event()
+    b_completed = threading.Event()
+    stop = threading.Event()
+    monkeypatch.setattr(wake, "workspace_status", lambda _values: {"enabled": not stop.is_set()})
+    monkeypatch.setattr(wake, "consumer_state_dir", lambda _values: tmp_path)
+    monkeypatch.setattr(wake, "_state_path", lambda *_args: binding)
+    monkeypatch.setattr(wake, "ensure_worker", lambda *_args: None)
+
+    def observe(_values, identity, **_kwargs):
+        if identity == "agentbus:a":
+            a_started.set()
+            assert a_release.wait(2)
+        else:
+            assert a_started.wait(2)
+            b_completed.set()
+            stop.set()
+        return {"status": "no_action"}
+
+    monkeypatch.setattr(wake, "run_once", observe)
+    supervisor = threading.Thread(target=wake.watch_all, args=({},), kwargs={"interval": 1}, daemon=True)
+    supervisor.start()
+    try:
+        assert b_completed.wait(2), "B must be scanned while A's turn is still running"
+        assert not a_release.is_set()
+    finally:
+        stop.set()
+        a_release.set()
+        supervisor.join(3)
+    assert not supervisor.is_alive()
+
+
+def test_workspace_disable_drains_accepted_turn_before_supervisor_exits(tmp_path):
+    """A supervisor SIGTERM must not tear down its live app-server transport."""
+    consumers = tmp_path / "consumers"
+    consumers.mkdir()
+    identity = "agentbus:flower"
+    profile = {"identity": identity, "chat_id": str(uuid.uuid4()),
+               "participation": {"session_id": "s1", "stopped": False}}
+    (consumers / f"{identity}.json").write_text(json.dumps(profile))
+    (tmp_path / "binding.json").write_text("{}")
+    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(consumers)}
+    wake.set_workspace_enabled(values, True)
+
+    fake_host = tmp_path / "fake_host.py"
+    fake_host.write_text('''
+import json, os, pathlib, sys, time
+root = pathlib.Path(os.environ["WAKE_TEST_ROOT"])
+for line in sys.stdin:
+    request = json.loads(line)
+    method = request.get("method")
+    if method == "initialized":
+        continue
+    if method == "thread/read":
+        result = {"thread": {"id": request["params"]["threadId"], "status": {"type": "idle"}}}
+    elif method == "thread/resume":
+        result = {"thread": {"id": request["params"]["threadId"]}}
+    elif method == "turn/start":
+        result = {"turn": {"id": "turn-one", "status": "inProgress"}}
+    else:
+        result = {}
+    print(json.dumps({"id": request["id"], "result": result}), flush=True)
+    if method == "turn/start":
+        (root / "accepted").write_text("accepted")
+        until = time.monotonic() + 5
+        while not (root / "release").exists() and time.monotonic() < until:
+            time.sleep(0.01)
+        (root / "host_terminal").write_text("completed")
+        print(json.dumps({"method": "turn/completed", "params": {"turn": {
+            "id": "turn-one", "status": "completed"}}}), flush=True)
+''')
+    supervisor_script = tmp_path / "supervisor.py"
+    supervisor_script.write_text('''
+import os, pathlib, sys
+sys.path.insert(0, os.environ["WAKE_TEST_REPO"])
+from src import agentbus_codex_wake_client as wake
+from src.agentbus_codex_rpc_client import CodexAppServer
+root = pathlib.Path(os.environ["WAKE_TEST_ROOT"])
+values = {"AGENTBUS_CONSUMER_STATE_DIR": str(root / "consumers")}
+wake._state_path = lambda *_args: root / "binding.json"
+wake.ensure_worker = lambda *_args: None
+def run_once(_values, _identity, *, live):
+    with CodexAppServer((sys.executable, str(root / "fake_host.py")), timeout=1) as host:
+        host.read_thread("thread-one")
+        host.resume("thread-one")
+        turn_id = host.start_turn("thread-one", "wake")
+        terminal = host.await_turn_terminal("thread-one", turn_id, max_seconds=5)
+    (root / "observed_terminal").write_text(terminal)
+    return {"status": "turn_" + terminal}
+wake.run_once = run_once
+wake.watch_all(values, interval=1)
+''')
+    env = dict(os.environ, WAKE_TEST_ROOT=str(tmp_path),
+               WAKE_TEST_REPO=str(Path(__file__).resolve().parents[1]))
+    proc = subprocess.Popen([sys.executable, str(supervisor_script)], env=env,
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            start_new_session=True)
+    stopped: list[dict | Exception] = []
+    try:
+        deadline = time.monotonic() + 3
+        while not (tmp_path / "accepted").exists() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert (tmp_path / "accepted").exists(), "turn never reached accepted state"
+        from src.agentbus_client import process_identity
+        worker_path = wake._worker_path(values)
+        wake.atomic_json(worker_path, {"pid": proc.pid,
+                                       "start_time": process_identity(proc.pid)})
+
+        def disable() -> None:
+            try:
+                wake.set_workspace_enabled(values, False)
+                stopped.append(wake.stop_worker(values))
+            except Exception as exc:
+                stopped.append(exc)
+
+        stopper = threading.Thread(target=disable)
+        stopper.start()
+        time.sleep(0.15)
+        assert stopper.is_alive(), "disable returned before the accepted turn became terminal"
+        assert proc.poll() is None, "supervisor exited while the turn was active"
+        (tmp_path / "release").write_text("go")
+        stopper.join(4)
+        assert not stopper.is_alive(), "disable did not drain the active turn"
+        assert stopped == [{"worker_stopped": True}]
+        assert proc.wait(timeout=3) == 0
+        assert (tmp_path / "host_terminal").read_text() == "completed"
+        assert (tmp_path / "observed_terminal").read_text() == "completed"
+    finally:
+        (tmp_path / "release").write_text("go")
+        if proc.poll() is None:
+            os.killpg(proc.pid, signal.SIGKILL)
+            proc.wait(timeout=3)
+
+
 def test_dry_run_filters_noise_and_does_not_call_host(setup):
     values, identity, profile, path, host = setup
     wake.bind(values, identity, "thread-one", lambda: host)
@@ -292,13 +446,13 @@ def test_live_wake_is_opt_in_compact_and_not_repeated(setup):
     wake.set_enabled(values, identity, True)
     host.calls.clear()
     accepted = wake.run_once(values, identity, live=True, host_factory=lambda: host)
-    assert accepted["status"] == "turn_accepted" and accepted["turn_id"] == "turn-one"
-    assert [name for name, _ in host.calls] == ["read", "resume", "start"]
+    assert accepted["status"] == "turn_completed" and accepted["turn_id"] == "turn-one"
+    assert [name for name, _ in host.calls] == ["read", "resume", "start", "terminal"]
     assert "MESSAGE:1" in host.prompts[0] and "MESSAGE:2" in host.prompts[0]
     assert "DO NOT PUT THIS" not in host.prompts[0]
     assert "AGENTBUS_WAKE_ATTEMPT=" in host.prompts[0]
     again = wake.run_once(values, identity, live=True, host_factory=lambda: host)
-    assert again["status"] == "already_woken"
+    assert again["status"] == "wake_deferred"
     assert [name for name, _ in host.calls].count("start") == 1
 
 
@@ -308,7 +462,7 @@ def test_direct_status_alone_wakes_joined_chat(setup):
     wake.set_enabled(values, identity, True)
     put(path, profile, message(1, kind="status"))
     result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
-    assert result["status"] == "turn_accepted"
+    assert result["status"] == "turn_completed"
     assert result["eligible"] == ["MESSAGE:1"]
     assert len(host.prompts) == 1
 
@@ -461,6 +615,22 @@ def test_other_host_writer_defers_without_a_launch_attempt(setup):
     assert not host.prompts
 
 
+def test_unshared_stdio_defaults_to_notification_only_before_host_launch(setup):
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, "thread-one", lambda: host)
+    wake.set_enabled(values, identity, True)
+    put(path, profile, message(1))
+    values.pop("AGENTBUS_CODEX_HOST_MODE")
+    own_status = wake.status(values, identity)
+    assert own_status["wake_readiness"] == "ineligible"
+    assert own_status["reason"] == "owning_host_endpoint_unavailable"
+    assert own_status["host_mode"] == "notification_only"
+    result = wake.run_once(values, identity, live=True)
+    assert result["status"] == "notification_only"
+    assert result["eligible"] == ["MESSAGE:1"]
+    assert not host.prompts
+
+
 def test_completed_turn_gets_one_bounded_followup_for_unacknowledged_work(setup):
     values, identity, profile, path, host = setup
     wake.bind(values, identity, "thread-one", lambda: host)
@@ -480,38 +650,68 @@ def test_completed_turn_gets_one_bounded_followup_for_unacknowledged_work(setup)
     assert len(host.prompts) == 2
 
 
+@pytest.mark.parametrize("terminal", ["completed", "failed", "interrupted"])
+def test_terminal_truth_preserves_pending_bus_work_and_reports_outcome(setup, terminal):
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, "thread-one", lambda: host)
+    wake.set_enabled(values, identity, True)
+    put(path, profile, message(1))
+    host.terminal_status = terminal
+    result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
+    assert result["status"] == f"turn_{terminal}"
+    assert result["host_turn_status"] == terminal
+    status = wake.status(values, identity)
+    assert status["last_attempt"]["state"] == terminal
+    assert status["last_terminal_status"] == terminal
+    assert status["eligible"] == ["MESSAGE:1"]
+    assert profile.get("ack_cursor", 0) == 0
+
+
+def test_accepted_start_consumes_rate_budget_even_if_terminal_is_unobserved(setup):
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, "thread-one", lambda: host)
+    wake.set_enabled(values, identity, True)
+    put(path, profile, message(1))
+    def lose_terminal(*_args, **_kwargs):
+        raise TurnCompletionUncertain("terminal not observed")
+    host.await_turn_terminal = lose_terminal
+    result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
+    assert result["status"] == "turn_completion_unobserved"
+    assert wake.status(values, identity)["accepted_wakes_last_hour"] == 1
+    assert wake.status(values, identity)["last_attempt"]["turn_id"] == "turn-one"
+
+
 def test_interrupted_turn_gets_one_cautious_recovery_only_when_host_idle(setup):
     values, identity, profile, path, host = setup
     wake.bind(values, identity, "thread-one", lambda: host)
     wake.set_enabled(values, identity, True)
     put(path, profile, message(1))
-    wake.run_once(values, identity, live=True, host_factory=lambda: host)
+    host.terminal_status = "interrupted"
+    assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "turn_interrupted"
     state_path = wake._state_path(values, profile["chat_id"])
     state = wake._load(state_path)
     state["wake_history"] = [(datetime.now(timezone.utc) - timedelta(seconds=21)).isoformat()]
     wake._save(state_path, state)
-    host.found = ("turn-one", "interrupted")
     host.resume_failure = CodexHostRejected("thread already has an active writer")
     assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "thread_owned_by_host"
     assert len(host.prompts) == 1
     assert wake.status(values, identity)["last_attempt"]["turn_status"] == "interrupted"
     host.resume_failure = None
-    assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "turn_accepted"
+    host.terminal_status = "completed"
+    assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "turn_completed"
     assert "do not repeat them blindly" in host.prompts[-1]
     assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "pending_after_followup"
 
 
-def test_unknown_or_active_host_turn_is_not_retried(setup):
+def test_completed_turn_is_rate_deferred_before_its_bounded_followup(setup):
     values, identity, profile, path, host = setup
     wake.bind(values, identity, "thread-one", lambda: host)
     wake.set_enabled(values, identity, True)
     put(path, profile, message(1))
     wake.run_once(values, identity, live=True, host_factory=lambda: host)
-    for observed in (None, ("turn-one", "inProgress")):
-        host.found = observed
-        result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
-        assert result["status"] == "already_woken"
-        assert len(host.prompts) == 1
+    result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
+    assert result["status"] == "wake_deferred"
+    assert len(host.prompts) == 1
 
 
 def test_newest_equal_priority_message_is_visible_in_compact_prompt(setup):
@@ -522,7 +722,7 @@ def test_newest_equal_priority_message_is_visible_in_compact_prompt(setup):
     refs = wake.eligible_events(path, profile)
     assert refs[:8] == [f"MESSAGE:{cursor}" for cursor in range(11, 3, -1)]
     result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
-    assert result["status"] == "turn_accepted"
+    assert result["status"] == "turn_completed"
     assert "MESSAGE:11" in host.prompts[0]
     assert "MESSAGE:4 and 3 more" in host.prompts[0]
     put(path, profile, {"kind": "CONTROL", "id": "stop-1", "control": {"kind": "stop_end_turn"}})
@@ -542,5 +742,5 @@ def test_ordinary_rate_budget_never_blocks_required_control(setup):
     assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "wake_rate_limited"
     assert not host.prompts
     put(path, profile, {"kind": "CONTROL", "id": "stop-1", "control": {"kind": "stop_end_turn"}})
-    assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "turn_accepted"
+    assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "turn_completed"
     assert len(host.prompts) == 1

@@ -2,9 +2,27 @@
 
 The Codex wake adapter is for a workspace where saved conversations should
 notice work addressed to their AgentBus identities. It runs beside the shared
-AgentBus service, using local chat profiles and a local Codex app-server
-process. AgentBus keeps the inbox; the host decides whether a thread can
-resume and start a turn.
+AgentBus service, using local chat profiles and a Codex host integration.
+AgentBus keeps the inbox; the host decides whether a thread can resume and
+start a turn. The current VS Code extension owns its conversation threads and
+has no supported shared wake endpoint, so those chats are `notification_only`
+by default. An explicitly configured `standalone` app-server can wake only
+threads it owns.
+
+The `.env` defaults leave `AGENTBUS_CODEX_HOST_MODE` unset, which reports
+`notification_only` and refuses live host launch. For an adapter-owned saved
+thread, set `AGENTBUS_CODEX_HOST_MODE=standalone` in the local AgentBus `.env`
+before enabling the worker. Do not use `standalone` for a VS Code-owned thread.
+`AGENTBUS_CODEX_TURN_MAX_SECONDS` defaults to `600`; its allowed range is
+`60`–`3600`. At that timeout, the adapter requests host interruption and still
+waits for a terminal observation or records uncertainty. These settings are
+local host configuration; AgentBus messages cannot choose them.
+
+| Configuration | Current behavior |
+| --- | --- |
+| Mode unset | Notification-only; no live host launch. |
+| `standalone` | Adapter-owned saved threads only; the Codex host still controls acceptance and completion. |
+| VS Code executable wrapper | Experimental work in [draft PR #35](https://github.com/mjgolaszewski/AgentBus/pull/35). The wrapper alone does not connect this adapter to the shared daemon. |
 
 ## Open the door once
 
@@ -18,7 +36,9 @@ agentbus codex-wake workspace-status
 ```
 
 The worker runs under the local Unix account and stores its private state
-outside Git. `workspace-disable` stops it and bars future live wake attempts.
+outside Git. `workspace-disable` bars new live wake attempts, then waits for
+active turns to reach a host-observed terminal state before the worker exits.
+This can take up to the configured turn timeout.
 
 ## Invite a chat in
 
@@ -47,7 +67,9 @@ adapter adds binding, workspace and chat switches, worker liveness, and assured
 pending events. It needs no operator credential. `eligible` means AgentBus can
 attempt a wake, while `deferred`, `ineligible`, and `unknown` explain why that
 attempt cannot currently be claimed. The Codex host may still own the thread
-or reject a turn, so status never promises a successful resume. Reading status
+or reject a turn, so status never promises a successful resume. The
+`owning_host_endpoint_unavailable` reason means this host is notification-only;
+workspace opt-in alone cannot clear the VS Code writer lock. Reading status
 does not start workers, refresh check-in, consume work, or open a turn. The
 roster remains an operator view of multiple sessions.
 Operators can run `agentbus roster --json` with their separate credential.
@@ -70,8 +92,9 @@ controls within the policy maximum. During an active turn, a chat uses
 `agentbus poll --check` at natural work checkpoints under the cadence delivered
 at join or policy change. An empty check prints nothing. A chat without a live
 binding uses blocking `agentbus poll` when it needs to wait for work.
-If a completed turn leaves the same work pending, the adapter can try one
-bounded follow-up. Ordinary wakes have a minimum interval and hourly budget;
+If a terminal turn leaves the same work pending, the adapter can try one
+bounded follow-up. Every accepted ordinary start consumes the minimum interval
+and hourly budget even if that turn later fails or is interrupted;
 required controls and policy changes keep priority.
 
 ## What the connector gives each conversation
@@ -82,17 +105,17 @@ required controls and policy changes keep priority.
 | Automatic thread link | On join, the connector verifies the current saved Codex thread and binds its exact thread ID to the service-issued chat UUID and session. |
 | Own wake status | A joined chat can see its session and this host's wake readiness without an operator token or a model turn. |
 | Local roster view | Operators can list service-joined sessions and see which have a binding on this host. A blank local link does not establish that no other host has one. |
-| Addressed wake-up | Every verified message to the chat's exact route, including named informational messages, can resume an eligible idle thread. Claimed work and required controls or policy changes can too. |
+| Addressed wake-up | Every verified message to the chat's exact route, including named informational messages, is eligible for the authorized host to resume an idle thread. Claimed work and required controls or policy changes can too. Current VS Code chats remain notification-only. |
 | Independent wake scan | A private cursor pages the authenticated service inbox even when the local presentation queue is full. It never acknowledges messages; full history remains readable with `agentbus inbox --after 0`. |
 | Slack thread reply | A verified human reply to a joined agent's unambiguous thread root becomes a direct request to that chat and can wake it; mixed-agent or unknown threads remain unrouted. |
 | Quiet checks | A live-wakable idle chat makes no routine in-chat polls; the worker watches without creating turns for empty or unchanged checks. A resumed chat reads and acknowledges its own authoritative events. |
-| Careful retry | One bounded follow-up is possible after a host-observed completed, interrupted, or failed turn with pending work. An interrupted-turn prompt asks the chat to inspect earlier side effects first; ordinary wakes have rate limits, while required governance events retain priority. |
-| Honest uncertainty | A lost turn-start response stays uncertain until Codex host history resolves it; a busy or locked thread waits for its owner. |
-| Large conversations | The adapter resumes by exact thread ID without transferring the full conversation through its bounded host response. |
-| Local boundary | The connector uses a local Codex app-server and private host state; it requires no public proxy and cannot wake a thread the host cannot authorize. |
+| Careful retry | One bounded follow-up is possible after a host-observed completed, interrupted, or failed turn with pending work. An interrupted-turn prompt asks the chat to inspect earlier side effects first; accepted starts count toward ordinary rate limits even when they fail, while required governance events retain priority. |
+| Honest uncertainty | A lost turn-start response stays uncertain until bounded recent host pages prove its exact attempt marker; a busy or locked thread waits for its owner. |
+| Large conversations | The adapter resumes by exact thread ID and reconciles through paginated recent turns and items; it does not transfer the full conversation through a bounded host response. |
+| Local boundary | In explicit standalone mode, the connector uses a local Codex app-server and private host state. It requires no public proxy and cannot wake a thread the host cannot authorize. The development-only VS Code executable override is experimental and is not a supported integration. |
 
 Run `agentbus codex-wake workspace-disable` to stop future live attempts. A
-lost turn-start response stays uncertain until the host can account for it;
+lost turn-start response stays uncertain until bounded recent host pages account for it;
 the adapter does not guess and launch a duplicate. A chat without an accessible
 saved thread can still receive AgentBus messages, but this adapter cannot wake
 it. An idle chat that its UI keeps loaded may still hold a writer lock; the
@@ -100,6 +123,20 @@ worker defers until that host releases the thread. If enrollment failed after
 a successful join, the chat can retry
 `agentbus codex-wake enroll-current --identity REPO:NAME` from its own Codex
 environment after the host is available.
+
+## Roll back local wake
+
+Run `agentbus codex-wake workspace-disable` first. It stops new launches and
+waits for active adapter-owned turns to reach terminal status before the worker
+exits; do not kill the worker process group. Then remove
+`AGENTBUS_CODEX_HOST_MODE=standalone` and any turn-timeout override from the
+local `.env`, and inspect `agentbus codex-wake workspace-status` plus each
+chat's `codex-wake status`. This preserves AgentBus messages, identities, inbox
+history, and participation while returning wake to notification-only.
+For an experimental VS Code wrapper pilot, restore the isolated profile's
+original `chatgpt.cliExecutable` setting and reload that profile only when its
+conversations are idle, following the instructions in draft PR #35. No global
+Codex CLI or other IDE setting should have changed.
 
 The [root guide](../../README.md#a-gentle-wake-up-for-saved-codex-chats) shows
 the illustrated workflow. The [wake contract](../../contracts/codex-wake/v1/codex-wake.contract.yml)

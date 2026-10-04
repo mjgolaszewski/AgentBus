@@ -18,6 +18,10 @@ class TurnStartUncertain(CodexHostError):
     """A turn-start request was sent, but its acceptance is not known."""
 
 
+class TurnCompletionUncertain(CodexHostError):
+    """An accepted turn has no trustworthy terminal host observation."""
+
+
 class CodexHostRejected(CodexHostError):
     """The host explicitly rejected a request."""
 
@@ -32,6 +36,9 @@ class CodexAppServer:
         self.proc: subprocess.Popen[bytes] | None = None
         self.buffer = bytearray()
         self.next_id = 1
+        self.terminal_turns: dict[str, str] = {}
+        self.rejected_turn_requests: set[tuple[str, str]] = set()
+        self.interrupt_requested: set[tuple[str, str]] = set()
 
     def __enter__(self) -> CodexAppServer:
         try:
@@ -114,12 +121,73 @@ class CodexAppServer:
                     raise CodexHostError(f"Codex host returned no result for {method}")
                 return result
             if "method" in frame and "id" in frame:
-                raise CodexHostError("Codex host requested interactive input; adapter cannot answer it")
-            # Other notifications are host observations, not request results.
+                self._reject_server_request(frame)
+                continue
+            self._observe_terminal(frame)
 
-    def read_thread(self, thread_id: str, *, include_turns: bool = False) -> dict[str, Any]:
+    def _reject_server_request(self, frame: dict[str, Any]) -> None:
+        params = frame.get("params")
+        if isinstance(params, dict):
+            thread_id, turn_id = params.get("threadId"), params.get("turnId")
+            if isinstance(thread_id, str) and isinstance(turn_id, str):
+                self.rejected_turn_requests.add((thread_id, turn_id))
+        self._send({"id": frame["id"], "error": {"code": -32601,
+                                                 "message": "AgentBus wake adapter cannot approve host requests"}})
+
+    def _request_interrupt(self, thread_id: str, turn_id: str) -> None:
+        key = (thread_id, turn_id)
+        if key in self.interrupt_requested or turn_id in self.terminal_turns:
+            return
+        self.interrupt_requested.add(key)
+        try:
+            self.request("turn/interrupt", {"threadId": thread_id, "turnId": turn_id})
+        except CodexHostError:
+            # A terminal notification may race an already-terminal rejection.
+            # The caller still waits for the exact terminal fact or times out.
+            pass
+
+    def _observe_terminal(self, frame: dict[str, Any]) -> None:
+        if frame.get("method") != "turn/completed":
+            return
+        params = frame.get("params")
+        turn = params.get("turn") if isinstance(params, dict) else None
+        if (isinstance(turn, dict) and isinstance(turn.get("id"), str) and
+                turn.get("status") in {"completed", "interrupted", "failed"}):
+            self.terminal_turns[turn["id"]] = turn["status"]
+
+    def _terminal_until(self, thread_id: str, turn_id: str, deadline: float) -> str:
+        if (thread_id, turn_id) in self.rejected_turn_requests and turn_id not in self.terminal_turns:
+            self._request_interrupt(thread_id, turn_id)
+        while turn_id not in self.terminal_turns:
+            frame = self._receive(deadline)
+            if "method" in frame and "id" in frame:
+                self._reject_server_request(frame)
+                if (thread_id, turn_id) in self.rejected_turn_requests:
+                    self._request_interrupt(thread_id, turn_id)
+                continue
+            self._observe_terminal(frame)
+        self.rejected_turn_requests.discard((thread_id, turn_id))
+        self.interrupt_requested.discard((thread_id, turn_id))
+        return self.terminal_turns.pop(turn_id)
+
+    def await_turn_terminal(self, thread_id: str, turn_id: str, *, max_seconds: float = 3600) -> str:
+        """Keep the owning stdio transport open through exact terminal status."""
+        try:
+            return self._terminal_until(thread_id, turn_id, time.monotonic() + max_seconds)
+        except CodexHostError:
+            # A malformed frame can be recoverable while the accepted turn is
+            # still running. Give every first wait error the same exact-turn
+            # interrupt and terminal grace as a timeout.
+            pass
+        self._request_interrupt(thread_id, turn_id)
+        try:
+            return self._terminal_until(thread_id, turn_id, time.monotonic() + self.timeout)
+        except CodexHostError:
+            raise TurnCompletionUncertain("Codex turn did not reach a terminal host state") from None
+
+    def read_thread(self, thread_id: str) -> dict[str, Any]:
         thread = self.request("thread/read", {"threadId": thread_id,
-                                               "includeTurns": include_turns}).get("thread")
+                                               "includeTurns": False}).get("thread")
         if not isinstance(thread, dict) or thread.get("id") != thread_id:
             raise CodexHostError("Codex host did not return the exact bound thread")
         return thread
@@ -148,15 +216,49 @@ class CodexAppServer:
         return turn["id"]
 
     def find_attempt(self, thread_id: str, attempt_id: str) -> tuple[str, str] | None:
-        thread = self.read_thread(thread_id, include_turns=True)
-        turns = thread.get("turns")
-        if not isinstance(turns, list):
-            return None
+        # A saved rollout may be hundreds of megabytes. Inspect only recent
+        # turn summaries and their first bounded item pages; never hydrate the
+        # full thread to reconcile an uncertain, just-started attempt.
         marker = f"AGENTBUS_WAKE_ATTEMPT={attempt_id}"
-        for turn in reversed(turns):
-            if not isinstance(turn, dict) or not isinstance(turn.get("id"), str):
-                continue
-            for item in turn.get("items", []):
-                if isinstance(item, dict) and item.get("type") == "userMessage" and marker in json.dumps(item):
-                    return turn["id"], str(turn.get("status", "unknown"))
+        turn_cursor: str | None = None
+        for _ in range(3):
+            params: dict[str, Any] = {"threadId": thread_id, "limit": 8,
+                                      "sortDirection": "desc", "itemsView": "notLoaded"}
+            if turn_cursor is not None:
+                params["cursor"] = turn_cursor
+            page = self.request("thread/turns/list", params)
+            turns = page.get("data")
+            if not isinstance(turns, list):
+                raise CodexHostError("Codex host returned invalid turn pagination")
+            for turn in turns:
+                if not isinstance(turn, dict) or not isinstance(turn.get("id"), str):
+                    raise CodexHostError("Codex host returned an invalid turn summary")
+                item_cursor: str | None = None
+                for _ in range(2):
+                    item_params: dict[str, Any] = {"threadId": thread_id,
+                                                   "turnId": turn["id"], "limit": 8,
+                                                   "sortDirection": "asc"}
+                    if item_cursor is not None:
+                        item_params["cursor"] = item_cursor
+                    item_page = self.request("thread/items/list", item_params)
+                    entries = item_page.get("data")
+                    if not isinstance(entries, list):
+                        raise CodexHostError("Codex host returned invalid item pagination")
+                    for entry in entries:
+                        item = entry.get("item") if isinstance(entry, dict) else None
+                        if (isinstance(item, dict) and item.get("type") == "userMessage" and
+                                marker in json.dumps(item)):
+                            return turn["id"], str(turn.get("status", "unknown"))
+                    next_item = item_page.get("nextCursor")
+                    if next_item is None:
+                        break
+                    if not isinstance(next_item, str) or next_item == item_cursor:
+                        raise CodexHostError("Codex host returned an invalid item cursor")
+                    item_cursor = next_item
+            next_turn = page.get("nextCursor")
+            if next_turn is None:
+                break
+            if not isinstance(next_turn, str) or next_turn == turn_cursor:
+                raise CodexHostError("Codex host returned an invalid turn cursor")
+            turn_cursor = next_turn
         return None

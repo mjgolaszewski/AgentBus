@@ -5,6 +5,7 @@ import json
 import os
 import signal
 import threading
+import time
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib.machinery import SourceFileLoader
@@ -109,6 +110,39 @@ def test_configuration_keeps_existing_checkout_database_location(launcher, proje
     (project / ".state").mkdir()
     _, values = launcher.configuration()
     assert Path(values["AGENTBUS_DB_PATH"]) == project / ".state/messages.sqlite3"
+
+
+def test_codex_wake_detached_worker_receives_resolved_env_settings(launcher, project, tmp_path):
+    from src import agentbus_codex_wake_client as wake
+
+    marker = tmp_path / "detached-worker-env.json"
+    (project / ".env").write_text(
+        "AGENTBUS_CODEX_HOST_MODE=standalone\n"
+        "AGENTBUS_CODEX_TURN_MAX_SECONDS=90\n"
+        f'AGENTBUS_WAKE_TEST_MARKER="{marker}"\n'
+    )
+    (project / "agentbus").write_text('''
+import json, os, pathlib, time
+path = pathlib.Path(os.environ["AGENTBUS_WAKE_TEST_MARKER"])
+path.write_text(json.dumps({
+    "mode": os.environ.get("AGENTBUS_CODEX_HOST_MODE"),
+    "timeout": os.environ.get("AGENTBUS_CODEX_TURN_MAX_SECONDS"),
+}))
+while True:
+    time.sleep(1)
+''')
+    actual_project, values = launcher.configuration()
+    assert actual_project == project
+    started = wake.start_worker(project, values)
+    try:
+        assert started["already_running"] is False
+        deadline = time.monotonic() + 3
+        while not marker.exists() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert marker.exists(), "detached worker did not start"
+        assert json.loads(marker.read_text()) == {"mode": "standalone", "timeout": "90"}
+    finally:
+        wake.stop_worker(values)
 
 
 def test_operator_capability_is_not_loaded_into_ordinary_client_configuration(launcher, project, monkeypatch):

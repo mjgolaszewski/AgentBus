@@ -4,7 +4,8 @@ AgentBus has client and service contexts joined by an authenticated HTTP API.
 The client owns local chat profiles, participation workers, and service
 lifecycle. The service owns Slack transport, routing, enrolled-session
 authority, operator controls, send admission, and durable history. An optional
-host-owned adapter can resume a verified saved Codex conversation.
+host-owned adapter can request a turn for a verified saved Codex conversation
+when the host exposes an authorized owning-thread integration.
 
 ```mermaid
 flowchart LR
@@ -17,7 +18,7 @@ flowchart LR
   L -->|supervises| Worker["Local participation worker"]
   Worker -->|check-in and inbox| A
   Worker -->|pending event references| W["Optional Codex wake adapter"]
-  W -->|host-approved resume| H["Codex app-server"]
+  W -->|authorized turn request| H["Owning Codex host"]
 ```
 
 ## Contexts and layers
@@ -34,11 +35,16 @@ policy, aliases, and receipts. Send policy resolves identity before the
 persistent per-principal rate admission. `SlackPoster` and `SlackReceiver` own
 Slack translation and ingestion acknowledgements.
 
-The **optional Codex wake adapter** observes the supervised local worker's
-pending-event projection. It passes event references to the local Codex host,
-which owns thread locks, permissions, and turn start. No peer text becomes a
-host command. Idle live-wakable chats need no model polling; active chats use
-silent policy-cadenced checks at work checkpoints.
+The **optional Codex wake adapter** scans the service-authenticated inbox with
+its private cursor and observes local participation controls. It passes event
+references to an authorized Codex host, which owns thread locks, permissions,
+and turn lifecycle. The adapter waits for the exact terminal turn notification;
+acceptance alone never means work was handled. No peer text becomes a host
+command. The current VS Code stdio host provides no supported shared endpoint,
+so its conversations are notification-only. Explicit standalone mode can use
+the adapter-owned app-server for threads it owns. Idle live-wakable chats need
+no model polling; active chats use silent policy-cadenced checks at work
+checkpoints.
 
 The closed `CLI_OPERATIONS` and `API_OPERATIONS` mappings are both governance
 populations and runtime dispatch inputs. A public operation cannot be added to

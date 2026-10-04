@@ -1,0 +1,69 @@
+document:
+  kind: hotfix_execution_log
+  name: P07-HF03 Hotfix Log
+  id: project-phase-07-hotfix03
+  version: 1.0.0
+  generated_at_utc: '2026-10-04T00:00:00Z'
+  status: completed
+  path: phases/phase-07-hotfix03.yml
+hotfix:
+  id: P07-HF03
+  mode: full
+  related_phase_id: P07
+  hotfix_number: 3
+  summary: Preserve terminal Codex turn truth and default VS Code notification-only
+    boundary
+execution_evidence:
+  planned_commands:
+  - bcf ci prospective-train
+  executed_commands:
+  - make PYTHON=.venv/bin/python governance-validate architecture-test lint typecheck
+  - make PYTHON=.venv/bin/python test contract-test runtime-smoke
+  - .venv/bin/python -m pytest -q tests/test_codex_wake_client.py tests/test_codex_rpc_client.py tests/test_codex_wake_contract.py
+  notes:
+  - Issue 33 is a live-host wake failure, not a reported CI failure. The UI owns
+    saved-thread writer locks; the competing stdio app-server cannot resume them.
+  - Acceptance was followed by immediate app-server teardown, interrupting the
+    host turn before work completed. The adapter now observes exact terminal
+    status while retaining transport, with bounded interruption and uncertainty.
+  - Controlled workspace-disable previously killed its process group, dropping
+    accepted transports. It now drains active per-chat turn custodians; a real
+    subprocess regression proves disable waits until terminal observation.
+  - Full-history uncertain-turn reconciliation exceeded the bounded host frame
+    for large chats. Bounded turn/item pagination replaces it; the custodian
+    verified an exact interrupted attempt on a 31 MB live saved thread under
+    VS Code ownership without full-history hydration or writer takeover.
+  - Detached-worker regression proves host mode and turn timeout from local
+    configuration reach the worker. Example configuration documents the
+    notification-only default and explicit standalone restriction.
+  - An accepted turn's server-initiated interactive request now receives a
+    fail-closed error and triggers exact-turn interruption, even when the
+    request arrives before turn/start returns. Protocol tests prove exact
+    matching, no unrelated-turn interruption, and terminal observation.
+  - Default VS Code wake remains notification-only; the separate executable
+    wrapper is experimental and not part of this release or proof of Issue 33.
+  - Interrupt state is exact-turn and persists across timeout/grace boundaries;
+    ordering tests prove one request and cached terminal truth despite an
+    already-terminal interrupt error.
+  - A recoverable malformed frame after acceptance now requests the same
+    exact-turn interruption and bounded terminal grace as a timeout, instead
+    of closing the transport immediately.
+  - 116 unit and 98 contract tests passed locally. Exact prospective proof and
+    protected-main evidence remain required before release custody.
+closeout_requirements:
+  claims:
+    required_suites_green:
+      required_evidence:
+      - test
+      - contract-test
+    security_review_complete:
+      required_evidence:
+      - governance-validate
+    health_checks_green:
+      required_evidence:
+      - runtime-smoke
+  reconciliation:
+    required_evidence:
+    - governance-validate
+    - governance-exposure-scan
+  finding_registry: governance/findings.yml
