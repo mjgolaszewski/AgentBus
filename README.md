@@ -31,12 +31,6 @@ because somebody sent them a message.
 
 **Messages invite. Operator controls and Codex turns keep their own authority.**
 
-**Want AgentBus to wake the Codex chat you use in VS Code?** Start with the
-[experimental same-conversation pilot](experiments/codex-executable-wrapper/README.md).
-It is off by default and has not passed a live VS Code round trip. The pilot
-uses OpenAI's development-only
-[`chatgpt.cliExecutable` editor setting](https://learn.chatgpt.com/docs/developer-settings#editor-settings-reference).
-
 ## See it work
 
 One agent asks another a question:
@@ -157,9 +151,8 @@ The normative behavior is in the [consumer contract](CONTRACT.md); the
 </p>
 
 The optional Codex wake adapter can rouse a saved, idle conversation **only
-through a host that can access that exact thread**. A competing local app-server
-cannot resume a thread held by the VS Code extension, so VS Code conversations
-remain `notification_only` by default. Explicit `standalone` mode serves only
+through a host that can access that exact thread**. Without an authorized host,
+the binding stays `notification_only`. Explicit `standalone` mode serves only
 threads owned by the adapter's app-server. For a live-wakable binding, every
 verified message to its exact route is eligible, including status and
 informational notes; claimed work and required controls are eligible too.
@@ -248,19 +241,11 @@ instruction, not a Codex-host tool-permission gate. `/agentbus retire ID CONFIRM
 existing durable stop, which takes effect after the agent acknowledges it and
 cannot be reversed for that session.
 
-If another host holds the thread's writer lock, the worker defers. The current
-VS Code extension exposes no supported shared wake endpoint to this adapter;
-workspace opt-in cannot override that ownership or permission prompts. The
-[experimental VS Code proxy pilot](experiments/codex-executable-wrapper/README.md)
-explores a separately managed app-server with two connections through one
-private control socket. It is off by default, has not proved live delivery into
-the same VS Code conversation, and is **not a dependable wake path**. The pilot
-guide covers isolated setup, the exact success condition, and rollback. Ordinary
-terminal Codex and other IDEs are unaffected by this VS Code-specific setting.
-See [Issue #33](https://github.com/mjgolaszewski/AgentBus/issues/33) for the
-unresolved integration, and [Issue #8](https://github.com/mjgolaszewski/AgentBus/issues/8)
-plus the [wake contract](contracts/codex-wake/v1/codex-wake.contract.yml) for
-the adapter's safety rules.
+If another host holds the thread's writer lock, the worker defers. Workspace
+opt-in cannot override host ownership or permission prompts. See
+[Issue #8](https://github.com/mjgolaszewski/AgentBus/issues/8) and the
+[wake contract](contracts/codex-wake/v1/codex-wake.contract.yml) for the
+adapter's safety rules.
 
 In explicit standalone mode, the adapter starts a local `codex app-server` for
 its own saved threads. It needs no public proxy and remains inert without
@@ -271,6 +256,16 @@ labels any Codex thread link it finds on this host; a missing local link says
 nothing about bindings on another host.
 The [adapter-user guide](docs/audiences/adapter-users.md) compares host modes,
 local configuration, and rollback that drains active turns.
+
+> **Experimental: the same VS Code chat.** The extension owns its thread, so
+> ordinary adapter wake stays `notification_only`. An
+> [isolated proxy pilot](experiments/codex-executable-wrapper/README.md) uses
+> the development-only
+> [`chatgpt.cliExecutable` setting](https://learn.chatgpt.com/docs/developer-settings#editor-settings-reference)
+> to explore sharing one managed Codex host. It is off by default and has not
+> proved a live same-chat wake. The pilot guide has setup and rollback;
+> [Issue #33](https://github.com/mjgolaszewski/AgentBus/issues/33) tracks the
+> unresolved integration.
 
 ## Quick start
 
