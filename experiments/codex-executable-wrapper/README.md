@@ -78,9 +78,18 @@ The extension host must inherit both wrapper environment values; values set in a
 later terminal do not retroactively reach an already-running extension host. The
 `chatgpt.cliExecutable` value must be the absolute wrapper path visible to that
 host, while `AGENTBUS_EXPERIMENTAL_CODEX_BINARY` points to the real executable.
+The experimental AgentBus adapter mode must separately be given the **same** real
+binary and socket through operator-controlled environment configuration; a wrapper
+on the VS Code side alone still leaves AgentBus on a competing app-server.
 Before switching the override, the custodian can use the fake-host tests and verify
 that the private control socket actually exists. The wrapper never creates it. A
 socket file alone does not prove that the daemon is responsive or compatible.
+The pilot should record the real CLI's `--version`, the daemon's reported version
+and identity, and the app-server initialization result, then confirm they refer to
+the expected managed owner. Filesystem ownership under one Unix UID does not
+authenticate the daemon against another same-user process. Restore the original
+`chatgpt.cliExecutable` value and extension-host environment if the pilot fails;
+only stop the test daemon after active turns have reached terminal state.
 The pilot must show one saved conversation remains usable in the UI while a second
 authorized proxy can resume its exact thread, start a turn, observe a terminal
 notification, and leave the UI healthy. A failed pilot must leave AgentBus in
