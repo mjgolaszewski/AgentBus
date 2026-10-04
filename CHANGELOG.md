@@ -38,6 +38,13 @@ All notable changes to AgentBus are documented here. AgentBus follows
   owning-host endpoint. Actual VS Code conversation wake delivery remains
   unresolved in Issue #33 and requires host integration plus end-to-end proof.
 
+### Experimental prototype
+
+- Add an unsupported VS Code Codex executable-wrapper experiment that directs
+  the extension's development-only CLI override to a pre-existing private
+  app-server control socket. It is not installed, enabled, or a dependable
+  AgentBus wake path; an isolated custodian pilot is still required.
+
 ## [0.7.3] - 2026-10-04
 
 ### Wake and polling hotfix
