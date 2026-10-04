@@ -5,6 +5,17 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Experimental prototype
+
+- Add an unsupported VS Code Codex executable-wrapper experiment that directs
+  the extension's development-only CLI override and an explicit AgentBus
+  `experimental_vs_code_proxy` mode to the same pre-existing private app-server
+  control socket. The mode validates operator-selected socket and binary
+  configuration and fails closed; it is not installed, enabled, or a dependable
+  wake path. An isolated custodian pilot is still required.
+
+## [0.7.3] - 2026-10-04
+
 ### Codex host wake boundary
 
 - The wake adapter now keeps its app-server transport alive until the exact
@@ -37,8 +48,6 @@ All notable changes to AgentBus are documented here. AgentBus follows
 - This change does not give the current VS Code extension a supported shared
   owning-host endpoint. Actual VS Code conversation wake delivery remains
   unresolved in Issue #33 and requires host integration plus end-to-end proof.
-
-## [0.7.3] - 2026-10-04
 
 ### Wake and polling hotfix
 
@@ -352,9 +361,16 @@ All notable changes to AgentBus are documented here. AgentBus follows
 - Added the Slack Socket Mode service, authenticated local API, native launcher,
   Docker deployment, durable SQLite inbox, and simulated integration tests.
 
-[Unreleased]: https://github.com/mjgolaszewski/AgentBus/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/mjgolaszewski/AgentBus/compare/v0.7.3...HEAD
+[0.7.3]: https://github.com/mjgolaszewski/AgentBus/compare/v0.7.2...v0.7.3
+[0.7.2]: https://github.com/mjgolaszewski/AgentBus/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/mjgolaszewski/AgentBus/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/mjgolaszewski/AgentBus/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/mjgolaszewski/AgentBus/compare/v0.5.1...v0.6.0
+[0.5.1]: https://github.com/mjgolaszewski/AgentBus/compare/v0.5.0...v0.5.1
+[0.5.0]: https://github.com/mjgolaszewski/AgentBus/compare/v0.4.1...v0.5.0
+[0.4.1]: https://github.com/mjgolaszewski/AgentBus/compare/v0.4.0...v0.4.1
+[0.4.0]: https://github.com/mjgolaszewski/AgentBus/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/mjgolaszewski/AgentBus/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/mjgolaszewski/AgentBus/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.3.0

@@ -22,7 +22,14 @@ local host configuration; AgentBus messages cannot choose them.
 | --- | --- |
 | Mode unset | Notification-only; no live host launch. |
 | `standalone` | Adapter-owned saved threads only; the Codex host still controls acceptance and completion. |
-| VS Code executable wrapper | Experimental work in [draft PR #35](https://github.com/mjgolaszewski/AgentBus/pull/35). The wrapper alone does not connect this adapter to the shared daemon. |
+| `experimental_vs_code_proxy` | Unsupported pilot: operator-selected real Codex binary and private same-user control socket must match the VS Code wrapper's endpoint. Missing or unsafe config remains notification-only. No live VS Code wake claim yet. |
+
+The [experimental pilot guide](../../experiments/codex-executable-wrapper/README.md)
+explains the VS Code application-scoped
+[`chatgpt.cliExecutable` override](https://learn.chatgpt.com/docs/developer-settings#editor-settings-reference),
+matching adapter settings,
+version and daemon checks, and rollback. Normal terminal Codex and other IDEs
+are unaffected unless separately configured. Do not put the wrapper on `PATH`.
 
 ## Open the door once
 
@@ -48,10 +55,13 @@ existing local profile that has never joined accepts a new service UUID at
 this step; it does not need a per-chat operator handoff. A profile that has
 already joined keeps its UUID. An explicit handoff remains available only
 when preserving an older local UUID is necessary.
-When `agentbus join` succeeds, the adapter reads the current `CODEX_THREAD_ID`
-from that chat's environment and asks the local Codex host to verify the exact
-saved, non-ephemeral thread. It binds the thread to the chat's stable UUID and
-current session. The user does not copy a GUID or enable each chat separately.
+When `agentbus join` succeeds and an explicitly configured host mode is
+available, the adapter reads the current `CODEX_THREAD_ID` from that chat's
+environment and asks that Codex host to verify the exact saved, non-ephemeral
+thread. It binds the thread to the chat's stable UUID and current session. An
+unset or invalid host mode leaves enrollment pending without launching a
+competing stdio host. The user does not copy a GUID or enable each chat
+separately.
 The adapter never gains operator authority from the new registration.
 
 Check a chat's binding and pending references without starting a turn:
@@ -135,7 +145,7 @@ chat's `codex-wake status`. This preserves AgentBus messages, identities, inbox
 history, and participation while returning wake to notification-only.
 For an experimental VS Code wrapper pilot, restore the isolated profile's
 original `chatgpt.cliExecutable` setting and reload that profile only when its
-conversations are idle, following the instructions in draft PR #35. No global
+conversations are idle, following the experimental pilot guide. No global
 Codex CLI or other IDE setting should have changed.
 
 The [root guide](../../README.md#a-gentle-wake-up-for-saved-codex-chats) shows

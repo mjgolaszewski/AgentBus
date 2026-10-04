@@ -18,6 +18,7 @@ import pytest
 
 from src import agentbus_codex_wake_client as wake
 from src import agentbus_wake_inbox_client as wake_inbox
+from src.agentbus_codex_host_client import HostSelection
 from src.agentbus_codex_rpc_client import CodexHostRejected, TurnCompletionUncertain, TurnStartUncertain
 from src.agentbus_poll_client import change_spool
 from src.agentbus_transport_client import ClientError
@@ -629,6 +630,69 @@ def test_unshared_stdio_defaults_to_notification_only_before_host_launch(setup):
     assert result["status"] == "notification_only"
     assert result["eligible"] == ["MESSAGE:1"]
     assert not host.prompts
+
+
+def test_experimental_proxy_mode_uses_only_validated_host_factory(setup, monkeypatch):
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, "thread-one", lambda: host)
+    wake.set_enabled(values, identity, True)
+    put(path, profile, message(1))
+    values["AGENTBUS_CODEX_HOST_MODE"] = "experimental_vs_code_proxy"
+    monkeypatch.setattr(wake, "select_host", lambda _values: HostSelection(
+        "experimental_vs_code_proxy", None, lambda: host))
+    own_status = wake.status(values, identity)
+    assert own_status["host_mode"] == "experimental_vs_code_proxy"
+    assert wake.run_once(values, identity, live=True)["status"] == "turn_completed"
+    assert host.calls[-1] == ("terminal", "turn-one")
+
+
+def test_experimental_enrollment_uses_the_same_validated_proxy(setup, monkeypatch):
+    values, identity, _profile, _path, host = setup
+    values["AGENTBUS_CODEX_HOST_MODE"] = "experimental_vs_code_proxy"
+    monkeypatch.setattr(wake, "select_host", lambda _values: HostSelection(
+        "experimental_vs_code_proxy", None, lambda: host))
+    assert wake.bind(values, identity, "thread-one", auto_enable=True)["enabled"] is True
+    assert host.calls == [("read", "thread-one")]
+
+
+def test_experimental_proxy_without_valid_endpoint_never_launches(setup, monkeypatch):
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, "thread-one", lambda: host)
+    wake.set_enabled(values, identity, True)
+    put(path, profile, message(1))
+    values["AGENTBUS_CODEX_HOST_MODE"] = "experimental_vs_code_proxy"
+    monkeypatch.setattr(wake, "select_host", lambda _values: HostSelection(
+        "experimental_vs_code_proxy", "experimental_proxy_socket_unsafe", None))
+    assert wake.status(values, identity)["reason"] == "experimental_proxy_socket_unsafe"
+    result = wake.run_once(values, identity, live=True)
+    assert result["status"] == "notification_only"
+    assert result["reason"] == "experimental_proxy_socket_unsafe"
+    assert not host.prompts
+
+
+def test_experimental_enrollment_rejects_unsafe_endpoint_before_host_launch(setup, monkeypatch):
+    values, identity, _profile, _path, host = setup
+    values["AGENTBUS_CODEX_HOST_MODE"] = "experimental_vs_code_proxy"
+    monkeypatch.setattr(wake, "select_host", lambda _values: HostSelection(
+        "experimental_vs_code_proxy", "experimental_proxy_socket_unsafe", None))
+    with pytest.raises(ClientError, match="experimental_proxy_socket_unsafe"):
+        wake.bind(values, identity, "thread-one", auto_enable=True)
+    assert not host.calls
+
+
+@pytest.mark.parametrize("mode,reason", [
+    (None, "owning_host_endpoint_unavailable"),
+    ("agent-selected", "unsupported_host_mode"),
+])
+def test_default_or_unknown_mode_cannot_start_host_during_enrollment(setup, mode, reason):
+    values, identity, _profile, _path, host = setup
+    if mode is None:
+        values.pop("AGENTBUS_CODEX_HOST_MODE")
+    else:
+        values["AGENTBUS_CODEX_HOST_MODE"] = mode
+    with pytest.raises(ClientError, match=reason):
+        wake.bind(values, identity, "thread-one", auto_enable=True)
+    assert not host.calls
 
 
 def test_completed_turn_gets_one_bounded_followup_for_unacknowledged_work(setup):

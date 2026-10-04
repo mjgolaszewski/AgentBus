@@ -15,36 +15,36 @@ import tempfile
 import tomllib
 from pathlib import Path
 
+import yaml
 from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
 ARTIFACTS = ROOT / ".artifacts"
-TEST_GATES = {
-    "architecture-test": ["tests/test_architecture.py::test_architecture_registry_covers_every_production_module"],
-    "architecture-module-size": ["tests/test_architecture.py::test_production_modules_respect_loc_cap"],
-    "architecture-layer-membership": ["tests/test_architecture.py::test_production_modules_map_to_exactly_one_layer"],
-    "architecture-context-membership": ["tests/test_architecture.py::test_production_modules_map_to_exactly_one_bounded_context"],
-    "architecture-import-boundaries": ["tests/test_architecture.py::test_context_import_boundaries"],
-    "architecture-cqrs-side": ["tests/test_architecture.py::test_command_and_query_populations_are_closed"],
-    "architecture-router-thinness": ["tests/test_architecture.py::test_http_routers_remain_thin_transport_adapters"],
-    "architecture-duplication": ["tests/test_architecture.py::test_cross_context_duplication_stays_below_declared_block_size"],
-    "test": ["tests/test_launcher.py", "tests/test_poll_client.py", "tests/test_presentation_client.py", "tests/test_operator_client.py", "tests/test_rename_client.py", "tests/test_codex_wake_contract.py", "tests/test_codex_wake_client.py", "tests/test_codex_rpc_client.py", "tests/test_self_service_client.py"],
-    "contract-test": ["tests/test_service.py", "tests/test_slack_commands.py", "tests/test_participation_contract.py", "tests/test_participation_service.py", "tests/test_participation_store.py", "tests/test_control_store.py", "tests/test_rename_store.py", "tests/test_claim_recovery.py", "tests/test_credential_rotation.py"],
-    "python314-compatibility": [
-        "tests/test_python_compatibility.py",
-        "tests/test_launcher.py",
-        "tests/test_poll_client.py",
-        "tests/test_presentation_client.py",
-        "tests/test_operator_client.py",
-        "tests/test_rename_client.py",
-        "tests/test_codex_wake_contract.py",
-        "tests/test_codex_wake_client.py",
-        "tests/test_codex_rpc_client.py",
-        "tests/test_claim_recovery.py",
-        "tests/test_service.py",
-        "tests/test_slack_commands.py",
-    ],
-}
+def declared_test_gates() -> dict[str, list[str]]:
+    """Use BCF's gate selectors as the sole test-population declaration."""
+    registry = yaml.safe_load((ROOT / "governance/gate-contracts.yml").read_text(encoding="utf-8"))
+    gates = registry.get("gates") if isinstance(registry, dict) else None
+    if not isinstance(gates, dict):
+        raise SystemExit("governance gate registry is invalid")
+    result: dict[str, list[str]] = {}
+    for gate_id, gate in gates.items():
+        evidence = gate.get("evidence") if isinstance(gate, dict) else None
+        contract = evidence.get("test_contract") if isinstance(evidence, dict) else None
+        if not isinstance(contract, dict):
+            continue
+        selectors = contract.get("selectors")
+        if not isinstance(selectors, list) or not selectors:
+            raise SystemExit(f"governance test selectors are missing for {gate_id}")
+        for selector in selectors:
+            source = selector.split("::", 1)[0] if isinstance(selector, str) else ""
+            path = Path(source)
+            if not source.startswith("tests/") or path.is_absolute() or ".." in path.parts or not source.endswith(".py"):
+                raise SystemExit(f"governance test selector is unsafe for {gate_id}")
+        result[str(gate_id)] = selectors
+    return result
+
+
+TEST_GATES = declared_test_gates()
 TOKEN_PATTERN = re.compile(
     rb"(?:xox[baprs]-[A-Za-z0-9-]{20,}|gh[pousr]_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----)"
 )

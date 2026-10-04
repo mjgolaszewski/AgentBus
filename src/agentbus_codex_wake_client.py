@@ -23,6 +23,7 @@ from typing import Any, Callable, Iterator
 
 from src import agentbus_wake_inbox_client as wake_inbox
 from src.agentbus_client import atomic_json, checked_profile, consumer_state_dir, identity_path, resolve_identity
+from src.agentbus_codex_host_client import select_host
 from src.agentbus_codex_rpc_client import (
     CodexAppServer,
     CodexHostError,
@@ -310,6 +311,11 @@ def bind(values: dict[str, str], identity: str, thread_id: str,
     if not THREAD_ID.fullmatch(thread_id):
         raise ClientError("Pass an exact Codex thread ID")
     profile, session, path = _profile(values, identity)
+    if host_factory is CodexAppServer:
+        selected = select_host(values)
+        if selected.factory is None:
+            raise ClientError(str(selected.reason))
+        host_factory = selected.factory
     try:
         with host_factory() as host:
             thread = host.read_thread(thread_id)
@@ -429,6 +435,7 @@ def status(values: dict[str, str], identity: str) -> dict:
     else:
         service_error = "service self-presence is not configured"
     rate = _rate_result(state) if state else None
+    host_selection = select_host(values)
     adapter_worker_running = _worker_pid(_worker_path(values)) is not None
     participation_worker_running = worker_running(profile_path)
     reason = "ready_to_attempt"
@@ -445,8 +452,8 @@ def status(values: dict[str, str], identity: str) -> dict:
         readiness, reason = "ineligible", "workspace_disabled"
     elif state is not None and not state["enabled"]:
         readiness, reason = "ineligible", "chat_opted_out"
-    elif values.get("AGENTBUS_CODEX_HOST_MODE") != "standalone":
-        readiness, reason = "ineligible", "owning_host_endpoint_unavailable"
+    elif host_selection.reason:
+        readiness, reason = "ineligible", host_selection.reason
     elif service_presence is None:
         readiness, reason = "unknown", "service_presence_unobserved"
     elif service_presence["state"] not in {"active_compliant", "control_pending"}:
@@ -492,7 +499,7 @@ def status(values: dict[str, str], identity: str) -> dict:
             "wake_scan_compacted": scan_state["compacted"] if scan_state else None,
             "work_paused": bool(service_presence.get("work_paused")) if service_presence else None,
             "wake_readiness": readiness, "reason": reason,
-            "host_mode": "standalone" if values.get("AGENTBUS_CODEX_HOST_MODE") == "standalone" else "notification_only",
+            "host_mode": host_selection.mode,
             "turn_max_seconds": _turn_max_seconds(values),
             "last_terminal_status": last_status if last_status in {"completed", "interrupted", "failed"} else None,
             "host_turn_start": "unobserved",
@@ -531,9 +538,11 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
             raise ClientError("Codex wake workspace is disabled")
         if not state["enabled"]:
             raise ClientError("Codex wake is disabled; enable it explicitly before --live")
-        if host_factory is CodexAppServer and values.get("AGENTBUS_CODEX_HOST_MODE") != "standalone":
-            return {"status": "notification_only", "reason": "owning_host_endpoint_unavailable",
-                    "eligible": refs}
+        if host_factory is CodexAppServer:
+            selected = select_host(values)
+            if selected.factory is None:
+                return {"status": "notification_only", "reason": selected.reason, "eligible": refs}
+            host_factory = selected.factory
         try:
             presence = api(values, f"/v1/sessions/{session['session_id']}/self-presence",
                            session_token=profile_session_token(profile))

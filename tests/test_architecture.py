@@ -20,6 +20,7 @@ MODULES = {
     "src/agentbus_rotation_client.py": ("client", "client"),
     "src/agentbus_rename_client.py": ("client", "client"),
     "src/agentbus_codex_rpc_client.py": ("client", "client"),
+    "src/agentbus_codex_host_client.py": ("client", "client"),
     "src/agentbus_codex_wake_client.py": ("client", "client"),
     "src/agentbus_wake_inbox_client.py": ("client", "client"),
     "src/agentbus_claim_recovery_service.py": ("service", "service"),

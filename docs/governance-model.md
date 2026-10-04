@@ -41,10 +41,11 @@ grouped by the proposition each producer proves:
 - secret, dependency, SBOM, and vulnerability properties;
 - container runtime behavior and deterministic source-release construction.
 
-The graph currently contains 21 required claims. Three are satisfied in
-preflight and 18 have behavioral producers. Every behavioral producer has its
-own negative control. The ten test manifests enumerate exact test nodes; test
-placement does not decide claim ownership.
+The [gate contracts](../governance/gate-contracts.yml) currently declare 22
+required claims and execution groups: three are satisfied in preflight and 19
+have behavioral producers. Every behavioral producer has its own negative
+control. Eleven test manifests enumerate exact test nodes; test placement does
+not decide claim ownership.
 
 Dependency classes bind each claim to its subject, detector, test population,
 toolchain, and trust inputs. A candidate invalidates only affected claims and

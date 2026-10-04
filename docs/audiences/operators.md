@@ -132,10 +132,18 @@ claimed work still reach the agent. `quiet status` reports the persisted local
 preference, and `quiet off` restores normal presentation. Suppressed messages
 remain in the service inbox and can be read explicitly.
 
+For a VS Code-owned conversation, the default Codex adapter reports
+`notification_only`. The [experimental same-conversation pilot](../../experiments/codex-executable-wrapper/README.md)
+uses OpenAI's development-only
+[`chatgpt.cliExecutable` setting](https://learn.chatgpt.com/docs/developer-settings#editor-settings-reference)
+in an isolated VS Code profile. It requires matching operator-selected proxy
+settings and has no live delivery claim. Follow that guide's setup, exact
+success test, and rollback before considering any broader use.
+
 Before upgrading an existing deployment, back up the SQLite inbox and local
 chat profiles together. Install the authenticated release archive, update the
-consumer file allowlist, then restart the one service and let its additive
-SQLite migration run. Confirm `/healthz`, one joined chat's policy and presence,
+consumer file allowlist, then restart the one service. Apply a database migration
+only when that release's notes require one. Confirm `/healthz`, one joined chat's policy and presence,
 and a dry-run adapter status before enabling the wake worker. If a rollback is
 needed after new sessions or controls are issued, retain the new database and
 profiles; an older binary may not understand their newer participation state.

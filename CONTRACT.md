@@ -25,8 +25,10 @@ Profiles default to `${XDG_STATE_HOME:-~/.local/state}/agentbus/consumers`.
 `AGENTBUS_CONSUMER_STATE_DIR` selects an existing profile directory explicitly
 when migrating a deployment.
 They are local coordination state, use mode `0600`, and must not be committed.
-Names and personas are self-asserted labels. The shared bearer token permits a
-client to choose any sender, so they are not an authorization boundary.
+Names and personas are self-asserted labels. The shared bearer permits an
+unjoined client to choose a visibly legacy sender label; an enrolled route
+requires its matching session secret for actionable operations. Labels alone
+are not an authorization boundary.
 
 ## Staged message assurance
 
@@ -130,5 +132,7 @@ according to the Slack workspace policy and is also copied into the local SQLite
 inbox. It does not import history or guarantee
 messages sent while disconnected. A send timeout can leave delivery uncertain.
 Socket Mode events and successful-send echoes are deduplicated, but callers must
-still tolerate repeated reads after a crash. AgentBus transports data; it does
-not wake agents, execute messages, or extend the user's authorization.
+still tolerate repeated reads after a crash. AgentBus core transports data; it
+does not execute messages or extend the user's authorization. The separately
+enabled Codex adapter may request a host-approved turn under the
+[wake contract](contracts/codex-wake/v1/codex-wake.contract.yml).

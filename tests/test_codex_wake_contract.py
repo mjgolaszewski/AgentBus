@@ -17,8 +17,8 @@ def test_codex_wake_contract_is_closed() -> None:
     invariants = {item["id"] for item in contract["invariants"]}
     proofs = {item["id"] for item in contract["proof_obligations"]}
     units = {item["id"] for item in contract["implementation_order"]}
-    assert len(invariants) == len(contract["invariants"]) == 21
-    assert len(proofs) == len(contract["proof_obligations"]) == 18
+    assert len(invariants) == len(contract["invariants"]) == 22
+    assert len(proofs) == len(contract["proof_obligations"]) == 19
     assert len(units) == len(contract["implementation_order"]) == 9
     assert invariants == {ref for proof in contract["proof_obligations"] for ref in proof["proves"]}
     for refs in contract["acceptance_gates"].values():
@@ -40,5 +40,7 @@ def test_codex_wake_contract_is_closed() -> None:
     assert contract["contracts"]["wake"]["uncertain_turn_start"] == "bounded_paginated_recent_turn_reconciliation_or_halt_for_operator_never_full_history_or_blind_retry"
     assert {"thread/turns/list", "thread/items/list", "turn/interrupt"} <= set(contract["primitives"]["host_capability"]["allowed_methods"])
     assert "TURN_COMPLETION_UNCERTAIN" in contract["failures"]
+    assert contract["primitives"]["experimental_proxy"]["mode"] == "experimental_vs_code_proxy"
+    assert contract["primitives"]["experimental_proxy"]["fallback_to_competing_stdio"] == "forbidden"
     assert contract["contracts"]["storage"]["direct_service_database_access"] == "prohibited"
     assert contract["contracts"]["wake_scan"]["advancement"] == "only_after_candidate_ids_are_durable"
