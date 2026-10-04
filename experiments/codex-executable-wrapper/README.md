@@ -97,10 +97,11 @@ No live configuration or shared service should change on this evidence.
    disposable saved conversation, and inspect `agentbus codex-wake status
    --identity REPO:NAME`. The adapter uses the proxy for both enrollment and
    wake; it never falls back to a competing stdio host in this mode.
-5. Send one addressed test message to that exact chat. Observe that the UI stays
-   usable while AgentBus starts a turn through its second proxy and receives an
-   exact terminal notification. `eligible` status or `turn/start` acceptance
-   alone is not proof of delivery.
+5. Send one addressed test message to that exact chat. Observe that AgentBus
+   starts a turn through its second proxy in the **same VS Code conversation**,
+   receives an exact terminal notification, and leaves the user able to
+   continue that conversation normally in VS Code without a handback or fork.
+   `eligible` status or `turn/start` acceptance alone is not proof of delivery.
 
 Rollback in order: run `agentbus codex-wake workspace-disable` and let active
 turns drain to terminal; remove the experimental mode and two endpoint values
