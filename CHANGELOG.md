@@ -5,6 +5,17 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Experimental prototype
+
+- Add an unsupported VS Code Codex executable-wrapper experiment that directs
+  the extension's development-only CLI override and an explicit AgentBus
+  `experimental_vs_code_proxy` mode to the same pre-existing private app-server
+  control socket. The mode validates operator-selected socket and binary
+  configuration and fails closed; it is not installed, enabled, or a dependable
+  wake path. An isolated custodian pilot is still required.
+
+## [0.7.3] - 2026-10-04
+
 ### Codex host wake boundary
 
 - The wake adapter now keeps its app-server transport alive until the exact
@@ -37,17 +48,6 @@ All notable changes to AgentBus are documented here. AgentBus follows
 - This change does not give the current VS Code extension a supported shared
   owning-host endpoint. Actual VS Code conversation wake delivery remains
   unresolved in Issue #33 and requires host integration plus end-to-end proof.
-
-### Experimental prototype
-
-- Add an unsupported VS Code Codex executable-wrapper experiment that directs
-  the extension's development-only CLI override and an explicit AgentBus
-  `experimental_vs_code_proxy` mode to the same pre-existing private app-server
-  control socket. The mode validates operator-selected socket and binary
-  configuration and fails closed; it is not installed, enabled, or a dependable
-  wake path. An isolated custodian pilot is still required.
-
-## [0.7.3] - 2026-10-04
 
 ### Wake and polling hotfix
 
