@@ -251,6 +251,12 @@ shared wake endpoint to this adapter. Workspace opt-in does not override the
 UI's thread ownership or permission prompts; these chats remain
 `notification_only` until that integration exists.
 
+Draft [experimental wrapper and adapter proxy](experiments/codex-executable-wrapper/README.md)
+can point both the VS Code extension and AgentBus at one pre-existing private
+Codex control socket through explicit operator configuration. This development-only
+path has not passed a live shared-thread pilot and is not a dependable wake claim.
+It never starts a competing stdio host when its endpoint is missing or unsafe.
+
 In explicit standalone mode, the adapter starts a local `codex app-server`
 process; it needs no public proxy. It is inert without workspace opt-in and a host-verified saved-thread
 binding.

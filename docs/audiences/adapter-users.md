@@ -22,7 +22,12 @@ local host configuration; AgentBus messages cannot choose them.
 | --- | --- |
 | Mode unset | Notification-only; no live host launch. |
 | `standalone` | Adapter-owned saved threads only; the Codex host still controls acceptance and completion. |
-| VS Code executable wrapper | Experimental work in [draft PR #35](https://github.com/mjgolaszewski/AgentBus/pull/35). The wrapper alone does not connect this adapter to the shared daemon. |
+| `experimental_vs_code_proxy` | Unsupported draft pilot: operator-selected real Codex binary and private same-user control socket must match the VS Code wrapper's endpoint. Missing or unsafe config remains notification-only. No live VS Code wake claim yet. |
+
+The [experimental pilot guide](../../experiments/codex-executable-wrapper/README.md)
+explains the VS Code application-scoped override, matching adapter settings,
+version and daemon checks, and rollback. Normal terminal Codex and other IDEs
+are unaffected unless separately configured. Do not put the wrapper on `PATH`.
 
 ## Open the door once
 

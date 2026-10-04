@@ -12,15 +12,15 @@ claim_model:
   version: '1.0'
   dependency_sets:
     governance: [AGENTS.yml, &id057 MEMORY.yml, &id039 architecture-boundaries.yml, governance/**, plans/**, phases/**, schemas/**, Makefile, Makefile.fragment, .gitignore]
-    client-source: [agentbus, &id043 src/agentbus_client.py, src/agentbus_transport_client.py, src/agentbus_poll_client.py, src/agentbus_presentation_client.py, src/agentbus_parser_client.py, src/agentbus_operator_client.py, src/agentbus_rename_client.py, src/agentbus_codex_rpc_client.py, src/agentbus_codex_wake_client.py, src/agentbus_wake_inbox_client.py]
+    client-source: [agentbus, &id043 src/agentbus_client.py, src/agentbus_transport_client.py, src/agentbus_poll_client.py, src/agentbus_presentation_client.py, src/agentbus_parser_client.py, src/agentbus_operator_client.py, src/agentbus_rename_client.py, src/agentbus_codex_rpc_client.py, src/agentbus_codex_host_client.py, src/agentbus_codex_wake_client.py, src/agentbus_wake_inbox_client.py, experiments/codex-executable-wrapper/codex-wrapper]
     service-source: [agentbus_service.py, &id056 src/agentbus_service.py, src/agentbus_status_api_service.py, src/agentbus_participation_service.py, src/agentbus_participation_store_service.py, src/agentbus_control_store_service.py, src/agentbus_claim_recovery_service.py, src/agentbus_participation_api_service.py, src/agentbus_message_assurance_service.py, src/agentbus_message_authorization_service.py, src/agentbus_presentation_service.py, src/agentbus_reply_policy_service.py, src/agentbus_request_limits_service.py, src/agentbus_send_policy_service.py, src/agentbus_send_rate_service.py, src/agentbus_settings_service.py, src/agentbus_metrics_service.py, src/agentbus_slack_command_service.py, src/agentbus_slack_socket_service.py, &id001 slack-app-manifest.json]
     participation-contract: [contracts/participation/**, schemas/participation-contract.schema.json]
     codex-wake-contract: [contracts/codex-wake/**, schemas/codex-wake-contract.schema.json]
     package-source: [src/__init__.py, &id002 pyproject.toml, uv.lock]
-    client-tests: [&id065 tests/test_launcher.py, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_self_service_client.py]
+    client-tests: [&id065 tests/test_launcher.py, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_codex_host_client.py, tests/test_codex_wrapper_experiment.py, tests/test_self_service_client.py]
     service-tests: [&id055 tests/test_service.py, tests/test_slack_commands.py, tests/test_participation_contract.py, tests/test_participation_service.py, tests/test_participation_store.py, tests/test_control_store.py, tests/test_rename_store.py, tests/test_claim_recovery.py, tests/test_credential_rotation.py]
     architecture-tests: [&id051 tests/test_architecture.py]
-    compatibility-tests: [tests/test_python_compatibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, *id055, tests/test_slack_commands.py, tests/test_claim_recovery.py]
+    compatibility-tests: [tests/test_python_compatibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_codex_host_client.py, tests/test_codex_wrapper_experiment.py, *id055, tests/test_slack_commands.py, tests/test_claim_recovery.py]
     producer-code: [scripts/check_source.py, &id037 scripts/run_project_gate.py]
     release-code: [&id003 Dockerfile, .dockerignore, compose.yaml, .env.example, &id060 scripts/build_release.py, *id001]
     toolchain: [*id002, uv.lock, requirements-governance.txt]
@@ -539,7 +539,7 @@ gates:
         min_collected: 1
         min_executed: 1
         max_skipped: 0
-        selectors: [tests/test_python_compatibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_claim_recovery.py, *id055, tests/test_slack_commands.py]
+        selectors: [tests/test_python_compatibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_codex_host_client.py, tests/test_codex_wrapper_experiment.py, tests/test_claim_recovery.py, *id055, tests/test_slack_commands.py]
         expected_node_manifest: governance/test-manifests/python314-compatibility.txt
         expected_nodes_mode: exact
         artifact_binding: *id042
@@ -598,7 +598,7 @@ gates:
         min_collected: 1
         min_executed: 1
         max_skipped: 0
-        selectors: [*id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_self_service_client.py]
+        selectors: [*id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_codex_host_client.py, tests/test_codex_wrapper_experiment.py, tests/test_self_service_client.py]
         expected_node_manifest: governance/test-manifests/test.txt
         expected_nodes_mode: exact
         artifact_binding: *id042

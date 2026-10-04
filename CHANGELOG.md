@@ -41,9 +41,11 @@ All notable changes to AgentBus are documented here. AgentBus follows
 ### Experimental prototype
 
 - Add an unsupported VS Code Codex executable-wrapper experiment that directs
-  the extension's development-only CLI override to a pre-existing private
-  app-server control socket. It is not installed, enabled, or a dependable
-  AgentBus wake path; an isolated custodian pilot is still required.
+  the extension's development-only CLI override and an explicit AgentBus
+  `experimental_vs_code_proxy` mode to the same pre-existing private app-server
+  control socket. The mode validates operator-selected socket and binary
+  configuration and fails closed; it is not installed, enabled, or a dependable
+  wake path. An isolated custodian pilot is still required.
 
 ## [0.7.3] - 2026-10-04
 

@@ -45,6 +45,9 @@ so its conversations are notification-only. Explicit standalone mode can use
 the adapter-owned app-server for threads it owns. Idle live-wakable chats need
 no model polling; active chats use silent policy-cadenced checks at work
 checkpoints.
+An unsupported, opt-in VS Code proxy experiment can point the extension and
+adapter at the same private control socket; it does not confer a supported
+host capability or prove live wake delivery.
 
 The closed `CLI_OPERATIONS` and `API_OPERATIONS` mappings are both governance
 populations and runtime dispatch inputs. A public operation cannot be added to

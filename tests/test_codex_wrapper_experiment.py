@@ -9,7 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-WRAPPER = Path(__file__).with_name("codex-wrapper")
+WRAPPER = Path(__file__).resolve().parents[1] / "experiments/codex-executable-wrapper/codex-wrapper"
 
 
 def fake_binary(tmp_path: Path) -> Path:

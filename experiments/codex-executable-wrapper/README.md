@@ -51,6 +51,7 @@ The wrapper reads only two process-environment values set by the host custodian:
 | --- | --- |
 | `AGENTBUS_EXPERIMENTAL_CODEX_BINARY` | Absolute path to the real Codex executable; cannot point back to the wrapper. |
 | `AGENTBUS_EXPERIMENTAL_CODEX_CONTROL_SOCKET` | Absolute path to an already-live, private same-user Unix control socket. |
+| `AGENTBUS_CODEX_HOST_MODE=experimental_vs_code_proxy` | Explicit adapter-side opt-in; unset remains notification-only. The extension wrapper does not read this setting. |
 
 No AgentBus message or agent route can select either endpoint. A shared Unix account
 still weakens this boundary: another same-user process can potentially influence
@@ -60,14 +61,15 @@ misrouting, not a security claim against a hostile same-user process.
 ## Test without touching VS Code
 
 ```sh
-python -m pytest -q experiments/codex-executable-wrapper/test_wrapper.py
+python -m pytest -q tests/test_codex_wrapper_experiment.py tests/test_codex_host_client.py
 ```
 
-The tests launch a fake executable and temporary Unix socket. They prove argument
-translation, ordinary CLI delegation, and fail-closed behavior for absent or unsafe
-sockets and unrecognized app-server flags. They do **not** exercise the Codex daemon,
-VS Code extension, remote control, thread locking, terminal notifications, or user
-permissions. No live configuration or shared service should change on this evidence.
+The tests launch a fake executable and temporary Unix socket. They prove exact
+proxy command selection, a JSON-RPC round trip through an inert fake, ordinary
+CLI delegation, and fail-closed behavior for absent or unsafe sockets and
+unrecognized app-server flags. They do **not** exercise the Codex daemon, VS
+Code extension, real thread locking, terminal notifications, or user permissions.
+No live configuration or shared service should change on this evidence.
 
 ## Conditions for a custodian-run pilot
 
