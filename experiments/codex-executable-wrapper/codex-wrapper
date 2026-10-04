@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""EXPERIMENTAL VS Code Codex executable override. Not a supported wake path."""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
+import stat
+import sys
+
+
+REAL_BINARY = "AGENTBUS_EXPERIMENTAL_CODEX_BINARY"
+CONTROL_SOCKET = "AGENTBUS_EXPERIMENTAL_CODEX_CONTROL_SOCKET"
+
+
+def fail(reason: str) -> None:
+    print(f"experimental Codex wrapper: {reason}", file=sys.stderr)
+    raise SystemExit(78)
+
+
+def real_binary() -> str:
+    raw = os.environ.get(REAL_BINARY, "")
+    path = Path(raw)
+    if not path.is_absolute() or not path.is_file() or not os.access(path, os.X_OK):
+        fail(f"{REAL_BINARY} must name an absolute executable file")
+    if path.samefile(__file__):
+        fail("real binary points back to this wrapper")
+    return str(path)
+
+
+def control_socket() -> str:
+    raw = os.environ.get(CONTROL_SOCKET, "")
+    path = Path(raw)
+    if not path.is_absolute():
+        fail(f"{CONTROL_SOCKET} must name an absolute Unix socket")
+    try:
+        info = path.lstat()
+    except OSError:
+        fail("owning-host control socket is unavailable; refusing an independent host")
+    if not stat.S_ISSOCK(info.st_mode) or info.st_uid != os.getuid():
+        fail("owning-host control socket has the wrong type or owner")
+    if info.st_mode & 0o077:
+        fail("owning-host control socket is accessible to group or other users")
+    return str(path)
+
+
+def app_server_command(args: list[str]) -> list[str] | None:
+    """Recognize the observed extension stdio launch; refuse other host launches."""
+    prefix: list[str] = []
+    index = 0
+    while index + 1 < len(args) and args[index] in ("-c", "--config", "--enable", "--disable"):
+        prefix.extend(args[index:index + 2])
+        index += 2
+    if index >= len(args) or args[index] != "app-server":
+        if "app-server" in args:
+            fail("unrecognized app-server launch arguments")
+        return None
+    tail = args[index + 1:]
+    if tail[:1] in (["daemon"], ["proxy"]):
+        return None
+    if tail in ([], ["--analytics-default-enabled"], ["--stdio"],
+                ["--listen", "stdio://"],
+                ["--analytics-default-enabled", "--listen", "stdio://"]):
+        # The proxy has no analytics-default-enabled option. The owning host
+        # must be started separately with the intended analytics policy.
+        return prefix + ["app-server", "proxy", "--sock", control_socket()]
+    fail("unsupported app-server launch flags; refusing an independent host")
+
+
+def main() -> None:
+    binary = real_binary()
+    args = sys.argv[1:]
+    replacement = app_server_command(args)
+    os.execv(binary, [binary, *(replacement if replacement is not None else args)])
+
+
+if __name__ == "__main__":
+    main()
