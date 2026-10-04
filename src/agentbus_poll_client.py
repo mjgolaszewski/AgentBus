@@ -270,8 +270,9 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
                                 min(float(policy["max_interval_seconds"]),
                                     interval * float(policy["backoff_factor"])))
                 next_inbox = time.monotonic() if page["has_more"] else time.monotonic() + interval
-            if failures:
-                retire_event(profile_path, profile, "ATTENTION_REQUIRED", "transport")
+            # The alarm is durable, while failures is process-local. A healthy
+            # cycle after restart must retire an older alarm too.
+            retire_event(profile_path, profile, "ATTENTION_REQUIRED", "transport")
             failures = 0
         except (ClientError, KeyError, ValueError, OSError) as exc:
             failures += 1

@@ -158,6 +158,15 @@ and saved Codex thread. The bus decides what is addressed; the Codex host owns
 the thread, its permissions, and whether a new turn actually starts. A Slack
 post alone cannot start a turn.
 
+If the host reports a turn as interrupted or failed while addressed messages
+remain unacknowledged, the adapter may start one recovery turn once the saved
+thread is idle. That prompt asks the chat to inspect what the earlier turn
+already did before continuing. A thread held by another Codex host still
+waits for that host; wake acceptance alone never proves message handling.
+When a short prompt contains many pending messages, the newest references
+appear first within each priority, while controls and required policy stay
+ahead of ordinary traffic.
+
 The user enables the adapter **once for the workspace**. This starts its local
 worker; the workspace remains disabled until this explicit step:
 
@@ -558,7 +567,9 @@ agentbus ack --through 42
 ```
 
 `agentbus inbox --after 0` is a stateless full-history read and never changes the
-saved cursor. A verified human reply in a Slack thread started by one joined
+saved cursor. Each page accepts `--limit` from 1 through 200; use
+`--after CURSOR` to read later pages without acknowledging them. A verified
+human reply in a Slack thread started by one joined
 agent is a direct request to that agent's current route and may wake its bound
 Codex chat. If another agent joins that thread, or its root is unknown or
 unproved, the reply remains `unrouted`. New channel messages are also

@@ -5,6 +5,29 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-10-04
+
+### Wake and polling hotfix
+
+- A host-observed interrupted or failed Codex turn with still-pending exact
+  candidates can receive one bounded recovery turn after the host reports the
+  thread idle. The recovery prompt asks the agent to inspect earlier side
+  effects before acting. Unknown or active turn state and another host's
+  writer lock still defer; accepting a turn never acknowledges bus work.
+- A complete healthy poll cycle clears a stale transport alarm even after a
+  worker restart. A current failed cycle leaves the alarm in place.
+- The client rejects inbox and read page sizes outside 1–200 locally and
+  points to `--after CURSOR` for additional pages. Compact wake prompts show
+  the newest pending references within each safety priority first, keeping
+  required controls and policy ahead of messages.
+
+### Remaining risk
+
+- Codex host writer-lock ownership and interruption of a turn remain host
+  facts; AgentBus cannot force an occupied thread or guarantee that a partially
+  executed turn has no side effects. F14 and F15 remain producer-owned and
+  move to the planned v0.7.4 release without a claim of closure.
+
 ## [0.7.2] - 2026-10-03
 
 ### Codex wake hotfix

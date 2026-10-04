@@ -66,6 +66,31 @@ def test_worker_empty_cycles_are_silent_and_keep_control_checks_running(tmp_path
     assert poll.peek_event(path, profile) is None
 
 
+def test_post_restart_healthy_cycle_retires_durable_transport_alarm(tmp_path, monkeypatch):
+    path, profile = profile_at(tmp_path)
+    poll.change_spool(path, profile, lambda state: poll._append(state, {
+        "kind": "ATTENTION_REQUIRED", "id": "transport", "reason": "Cannot reach AgentBus",
+    }))
+    clock = [0.0]
+    checks = [0]
+    monkeypatch.setattr(poll.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(poll.time, "sleep", lambda seconds: clock.__setitem__(0, clock[0] + seconds))
+
+    def fake_api(_values, route, _payload=None, **_kwargs):
+        if route.endswith("/check-in"):
+            checks[0] += 1
+            if checks[0] == 2:
+                profile["participation"]["stopped"] = True
+                path.write_text(json.dumps(profile))
+            return {"revision": "r1", "values": POLICY, "sources": {}, "ack_required": False}
+        return {"messages": [], "next_cursor": 0, "has_more": False}
+
+    monkeypatch.setattr(poll, "api", fake_api)
+    poll._worker(path, {})
+    assert checks[0] == 2
+    assert poll.peek_event(path, profile) is None
+
+
 def test_control_precedes_queued_message_and_message_is_retired_independently(tmp_path):
     path, profile = profile_at(tmp_path)
 

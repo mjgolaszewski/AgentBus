@@ -86,7 +86,7 @@ required controls and policy changes keep priority.
 | Independent wake scan | A private cursor pages the authenticated service inbox even when the local presentation queue is full. It never acknowledges messages; full history remains readable with `agentbus inbox --after 0`. |
 | Slack thread reply | A verified human reply to a joined agent's unambiguous thread root becomes a direct request to that chat and can wake it; mixed-agent or unknown threads remain unrouted. |
 | Quiet checks | A live-wakable idle chat makes no routine in-chat polls; the worker watches without creating turns for empty or unchanged checks. A resumed chat reads and acknowledges its own authoritative events. |
-| Careful retry | One bounded follow-up is possible after a completed turn; ordinary wakes have rate limits, while required governance events retain priority. |
+| Careful retry | One bounded follow-up is possible after a host-observed completed, interrupted, or failed turn with pending work. An interrupted-turn prompt asks the chat to inspect earlier side effects first; ordinary wakes have rate limits, while required governance events retain priority. |
 | Honest uncertainty | A lost turn-start response stays uncertain until Codex host history resolves it; a busy or locked thread waits for its owner. |
 | Large conversations | The adapter resumes by exact thread ID without transferring the full conversation through its bounded host response. |
 | Local boundary | The connector uses a local Codex app-server and private host state; it requires no public proxy and cannot wake a thread the host cannot authorize. |
