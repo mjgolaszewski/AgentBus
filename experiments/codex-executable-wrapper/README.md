@@ -1,17 +1,19 @@
 # Experimental Codex executable wrapper
 
-**Unsupported prototype. Not an AgentBus wake transport, release dependency, or
-operator recommendation.** Nothing here is installed or enabled by AgentBus.
+**Unsupported experimental VS Code configuration. Not a dependable AgentBus
+wake path or operator default.** The wrapper and adapter proxy mode are off
+unless a custodian explicitly configures them. No live shared-thread pilot
+has proved this arrangement.
 
 The current VS Code Codex extension owns saved threads through the app-server it
 starts. A competing AgentBus app-server cannot resume those threads. The installed
 extension has a `chatgpt.cliExecutable` override explicitly marked **DEVELOPMENT
 ONLY**; its own description warns that parts of the extension may break. This
 prototype explores whether a custodian could use that override to connect the
-extension to a separately managed, remote-control-capable Codex app-server daemon.
-It has not proven that the daemon and extension can safely share thread ownership,
-that AgentBus can reach the same host, or that a live conversation can finish a
-wake turn through this arrangement.
+extension **and AgentBus** to one separately managed, remote-control-capable
+Codex app-server daemon. Code and fake-host tests prove the selected commands,
+not that the extension and adapter can safely share thread ownership or finish
+a real wake turn.
 
 **Scope:** Only the VS Code Codex extension configured with
 `chatgpt.cliExecutable` would invoke this wrapper. The setting is application
@@ -71,30 +73,41 @@ unrecognized app-server flags. They do **not** exercise the Codex daemon, VS
 Code extension, real thread locking, terminal notifications, or user permissions.
 No live configuration or shared service should change on this evidence.
 
-## Conditions for a custodian-run pilot
+## Custodian-run isolated pilot
 
-The custodian would need an isolated test profile, a managed daemon with its private
-control socket, a known matching Codex binary, an extension restart using the
-development-only override, and a rollback to the original extension executable.
-The extension host must inherit both wrapper environment values; values set in a
-later terminal do not retroactively reach an already-running extension host. The
-`chatgpt.cliExecutable` value must be the absolute wrapper path visible to that
-host, while `AGENTBUS_EXPERIMENTAL_CODEX_BINARY` points to the real executable.
-The experimental AgentBus adapter mode must separately be given the **same** real
-binary and socket through operator-controlled environment configuration; a wrapper
-on the VS Code side alone still leaves AgentBus on a competing app-server.
-Before switching the override, the custodian can use the fake-host tests and verify
-that the private control socket actually exists. The wrapper never creates it. A
-socket file alone does not prove that the daemon is responsive or compatible.
-The pilot should record the real CLI's `--version`, the daemon's reported version
-and identity, and the app-server initialization result, then confirm they refer to
-the expected managed owner. Filesystem ownership under one Unix UID does not
-authenticate the daemon against another same-user process. Restore the original
-`chatgpt.cliExecutable` value and extension-host environment if the pilot fails;
-only stop the test daemon after active turns have reached terminal state.
-The pilot must show one saved conversation remains usable in the UI while a second
-authorized proxy can resume its exact thread, start a turn, observe a terminal
-notification, and leave the UI healthy. A failed pilot must leave AgentBus in
-notification-only mode. A successful pilot still needs a supported owner endpoint or
-an explicit acceptance of the development-only override before this can be a
-dependable product path.
+1. Open a separate VS Code profile with no active work and record its original
+   `chatgpt.cliExecutable` value. Choose the **real** Codex executable and a
+   managed app-server daemon with remote control and a private same-user Unix
+   control socket. Do not use the active workspace's owning app-server.
+2. Check the real CLI's `--version`, the managed daemon's reported version and
+   identity, and the app-server initialization result. Confirm the exact socket
+   belongs to that daemon, is accessible only to the intended Unix user, and
+   is responsive. A socket file alone is insufficient.
+3. Arrange for both the isolated VS Code extension host and the AgentBus wake
+   worker to inherit the **same** `AGENTBUS_EXPERIMENTAL_CODEX_BINARY` and
+   `AGENTBUS_EXPERIMENTAL_CODEX_CONTROL_SOCKET` values. A value exported in a
+   later terminal will not reach an already-running extension host. Set the
+   profile's application-scoped `chatgpt.cliExecutable` to the absolute wrapper
+   path, then reload that idle profile.
+4. Set `AGENTBUS_CODEX_HOST_MODE=experimental_vs_code_proxy` only for the test
+   adapter worker. Run `agentbus codex-wake workspace-enable`, join or bind a
+   disposable saved conversation, and inspect `agentbus codex-wake status
+   --identity REPO:NAME`. The adapter uses the proxy for both enrollment and
+   wake; it never falls back to a competing stdio host in this mode.
+5. Send one addressed test message to that exact chat. Observe that the UI stays
+   usable while AgentBus starts a turn through its second proxy and receives an
+   exact terminal notification. `eligible` status or `turn/start` acceptance
+   alone is not proof of delivery.
+
+Rollback in order: run `agentbus codex-wake workspace-disable` and let active
+turns drain to terminal; remove the experimental mode and two endpoint values
+from the test worker and extension-host environment; restore the original
+`chatgpt.cliExecutable` value and reload the idle VS Code profile; then stop
+the test daemon after all turns are terminal. Verify that wake status has
+returned to notification-only. Do not stop or restart an active shared owner
+to perform this experiment.
+
+Filesystem ownership under one Unix UID does not authenticate the daemon
+against another same-user process. A successful pilot still needs an explicit
+decision to accept the development-only override, or a supported owner
+endpoint, before this can be a dependable product path.

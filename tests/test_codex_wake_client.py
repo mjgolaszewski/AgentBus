@@ -646,6 +646,15 @@ def test_experimental_proxy_mode_uses_only_validated_host_factory(setup, monkeyp
     assert host.calls[-1] == ("terminal", "turn-one")
 
 
+def test_experimental_enrollment_uses_the_same_validated_proxy(setup, monkeypatch):
+    values, identity, _profile, _path, host = setup
+    values["AGENTBUS_CODEX_HOST_MODE"] = "experimental_vs_code_proxy"
+    monkeypatch.setattr(wake, "select_host", lambda _values: HostSelection(
+        "experimental_vs_code_proxy", None, lambda: host))
+    assert wake.bind(values, identity, "thread-one", auto_enable=True)["enabled"] is True
+    assert host.calls == [("read", "thread-one")]
+
+
 def test_experimental_proxy_without_valid_endpoint_never_launches(setup, monkeypatch):
     values, identity, profile, path, host = setup
     wake.bind(values, identity, "thread-one", lambda: host)
@@ -659,6 +668,16 @@ def test_experimental_proxy_without_valid_endpoint_never_launches(setup, monkeyp
     assert result["status"] == "notification_only"
     assert result["reason"] == "experimental_proxy_socket_unsafe"
     assert not host.prompts
+
+
+def test_experimental_enrollment_rejects_unsafe_endpoint_before_host_launch(setup, monkeypatch):
+    values, identity, _profile, _path, host = setup
+    values["AGENTBUS_CODEX_HOST_MODE"] = "experimental_vs_code_proxy"
+    monkeypatch.setattr(wake, "select_host", lambda _values: HostSelection(
+        "experimental_vs_code_proxy", "experimental_proxy_socket_unsafe", None))
+    with pytest.raises(ClientError, match="experimental_proxy_socket_unsafe"):
+        wake.bind(values, identity, "thread-one", auto_enable=True)
+    assert not host.calls
 
 
 def test_completed_turn_gets_one_bounded_followup_for_unacknowledged_work(setup):

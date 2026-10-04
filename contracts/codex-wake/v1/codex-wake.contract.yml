@@ -105,7 +105,7 @@ proof_obligations:
   - {id: CW-PO-16, proves: [CW-INV-004, CW-INV-019], scenario: real_subprocess_remains_alive_after_acceptance_until_exact_terminal_notification_interactive_request_and_recoverable_frame_error_interrupt_once_and_controlled_workspace_disable_drains_without_dropping_transport_or_acking_work}
   - {id: CW-PO-17, proves: [CW-INV-001, CW-INV-009, CW-INV-020], scenario: default_unshared_stdio_host_is_notification_only_and_never_attempts_live_wake_while_explicit_standalone_remains_available}
   - {id: CW-PO-18, proves: [CW-INV-005, CW-INV-021], scenario: large_saved_history_reconciles_exact_recent_attempt_via_bounded_turn_and_item_pages_without_full_thread_hydration_or_blind_retry}
-  - {id: CW-PO-19, proves: [CW-INV-008, CW-INV-020, CW-INV-022], scenario: explicit_operator_proxy_mode_uses_the_same_validated_private_socket_and_real_binary_as_the_extension_wrapper_while_default_invalid_and_message_selected_endpoints_never_launch_a_competing_host}
+  - {id: CW-PO-19, proves: [CW-INV-008, CW-INV-020, CW-INV-022], scenario: explicit_operator_proxy_mode_uses_the_same_validated_private_socket_and_real_binary_for_enrollment_and_wake_as_the_extension_wrapper_while_default_invalid_and_message_selected_endpoints_never_launch_a_competing_host}
 implementation_order:
   - {id: CW-IU-001, unit: freeze_contract_and_host_protocol, depends_on: []}
   - {id: CW-IU-002, unit: non_destructive_candidate_projection, depends_on: [CW-IU-001]}

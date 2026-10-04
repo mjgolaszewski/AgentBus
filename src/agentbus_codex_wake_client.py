@@ -311,6 +311,11 @@ def bind(values: dict[str, str], identity: str, thread_id: str,
     if not THREAD_ID.fullmatch(thread_id):
         raise ClientError("Pass an exact Codex thread ID")
     profile, session, path = _profile(values, identity)
+    if host_factory is CodexAppServer and values.get("AGENTBUS_CODEX_HOST_MODE") == "experimental_vs_code_proxy":
+        selected = select_host(values)
+        if selected.factory is None:
+            raise ClientError(str(selected.reason))
+        host_factory = selected.factory
     try:
         with host_factory() as host:
             thread = host.read_thread(thread_id)
