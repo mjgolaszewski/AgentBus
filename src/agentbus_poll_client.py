@@ -205,6 +205,7 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
             time.sleep(min(1.0, next_control - instant, next_inbox - instant))
             continue
         try:
+            service_healthy = False
             if instant >= next_control:
                 reported_backoff = min(float(policy["max_interval_seconds"]),
                                        max(float(policy["initial_interval_seconds"]),
@@ -213,6 +214,7 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
                                {"current_backoff_seconds": reported_backoff},
                                session_token=session["session_secret"],
                                timeout_seconds=request_timeout)
+                service_healthy = True
                 if "controls" in response:
                     def record_controls(state: dict) -> None:
                         for control in response["controls"]:
@@ -245,35 +247,37 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
                 ))
                 if queued >= 100:
                     next_inbox = time.monotonic() + float(policy["initial_interval_seconds"])
-                    continue
-                def cursor_of(state: dict) -> int:
-                    return int(state["cursor"])
-                cursor = change_spool(profile_path, profile, cursor_of)
-                page = api(values, "/v1/inbox?" + urlencode({
-                    "identity": profile["identity"], "after": cursor, "limit": 100,
-                }), session_token=profile_session_token(profile), timeout_seconds=request_timeout)
-                def record_messages(state: dict) -> int:
-                    relevant = 0
-                    for message in page["messages"]:
-                        event = {"kind": "MESSAGE", "id": str(message["cursor"]),
-                                 "message": message}
-                        if not profile.get("quiet_mode", False) or not _routine_message(event, profile["identity"]):
-                            _append(state, event)
-                            relevant += 1
-                    state["cursor"] = max(int(state["cursor"]), int(page["next_cursor"]))
-                    return relevant
-                relevant = change_spool(profile_path, profile, record_messages)
-                if relevant:
-                    interval = float(policy["initial_interval_seconds"])
                 else:
-                    interval = (float(policy["initial_interval_seconds"]) if interval is None else
-                                min(float(policy["max_interval_seconds"]),
-                                    interval * float(policy["backoff_factor"])))
-                next_inbox = time.monotonic() if page["has_more"] else time.monotonic() + interval
-            # The alarm is durable, while failures is process-local. A healthy
-            # cycle after restart must retire an older alarm too.
-            retire_event(profile_path, profile, "ATTENTION_REQUIRED", "transport")
-            failures = 0
+                    def cursor_of(state: dict) -> int:
+                        return int(state["cursor"])
+                    cursor = change_spool(profile_path, profile, cursor_of)
+                    page = api(values, "/v1/inbox?" + urlencode({
+                        "identity": profile["identity"], "after": cursor, "limit": 100,
+                    }), session_token=profile_session_token(profile), timeout_seconds=request_timeout)
+                    service_healthy = True
+                    def record_messages(state: dict) -> int:
+                        relevant = 0
+                        for message in page["messages"]:
+                            event = {"kind": "MESSAGE", "id": str(message["cursor"]),
+                                     "message": message}
+                            if not profile.get("quiet_mode", False) or not _routine_message(event, profile["identity"]):
+                                _append(state, event)
+                                relevant += 1
+                        state["cursor"] = max(int(state["cursor"]), int(page["next_cursor"]))
+                        return relevant
+                    relevant = change_spool(profile_path, profile, record_messages)
+                    if relevant:
+                        interval = float(policy["initial_interval_seconds"])
+                    else:
+                        interval = (float(policy["initial_interval_seconds"]) if interval is None else
+                                    min(float(policy["max_interval_seconds"]),
+                                        interval * float(policy["backoff_factor"])))
+                    next_inbox = time.monotonic() if page["has_more"] else time.monotonic() + interval
+            # A durable alarm outlives process-local failures. Only authenticated
+            # service success can retire it, including when presentation is full.
+            if service_healthy:
+                retire_event(profile_path, profile, "ATTENTION_REQUIRED", "transport")
+                failures = 0
         except (ClientError, KeyError, ValueError, OSError) as exc:
             failures += 1
             if failures == 3:

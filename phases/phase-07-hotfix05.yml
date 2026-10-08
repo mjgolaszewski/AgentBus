@@ -1,0 +1,41 @@
+document:
+  kind: hotfix_execution_log
+  name: P07-HF05 Hotfix Log
+  id: project-phase-07-hotfix05
+  version: 1.0.0
+  generated_at_utc: '2026-10-08T00:00:00Z'
+  status: completed
+  path: phases/phase-07-hotfix05.yml
+hotfix:
+  id: P07-HF05
+  mode: full
+  related_phase_id: P07
+  hotfix_number: 5
+  summary: Retire stale transport alarms after healthy check-in despite full local
+    presentation queue
+execution_evidence:
+  planned_commands:
+  - bcf ci prospective-train
+  executed_commands:
+  - python -m pytest tests/test_poll_client.py -q
+  notes:
+  - Issue #39 reproduces a stale local transport alarm with 100 queued presentation messages while authenticated service check-ins succeed.
+  - The poll worker now retires the alarm only after a completed authenticated service operation; presentation backpressure still defers inbox fetch and never advances the durable cursor or acknowledges queued work.
+  - A failed check-in preserves the alarm. The service-backed Codex wake path and live deployment are outside this hotfix.
+closeout_requirements:
+  claims:
+    required_suites_green:
+      required_evidence:
+      - test
+      - contract-test
+    security_review_complete:
+      required_evidence:
+      - governance-validate
+    health_checks_green:
+      required_evidence:
+      - runtime-smoke
+  reconciliation:
+    required_evidence:
+    - governance-validate
+    - governance-exposure-scan
+  finding_registry: governance/findings.yml
