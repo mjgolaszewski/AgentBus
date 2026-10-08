@@ -36,12 +36,24 @@ workitems:
   acceptance_evidence:
   - test
   - contract-test
+- id: P07-P0-11
+  priority: P0
+  status: DONE
+  summary: retire obsolete transport alarms after healthy check-in despite a full local presentation queue
+  acceptance:
+  - requires-workitem-closure:P07-P0-03
+  - a full queue cannot bypass alarm retirement after authenticated service success
+  - a failed check-in preserves the alarm; queued messages and inbox cursor remain unchanged
+  acceptance_evidence:
+  - test
+  - contract-test
 - id: P07-P0-04
   priority: P0
   status: TODO
   summary: deliver prove exact candidate and isolated release archive before consumer cutover
   acceptance:
   - requires-workitem-closure:P07-P0-03
+  - requires-workitem-closure:P07-P0-11
   - exact prospective, protected PR and main truth pass before published archive custody and isolated verification
   acceptance_evidence:
   - test

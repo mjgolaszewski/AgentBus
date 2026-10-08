@@ -5,6 +5,14 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Polling hotfix
+
+- A full local message presentation queue no longer leaves a stale connectivity
+  alarm after a successful authenticated service check-in. Queued messages and
+  the durable inbox cursor remain intact; failed check-ins still retain the
+  alarm. This is a client repair and requires a controlled client upgrade to
+  affect existing workers.
+
 ### Supply-chain hotfix
 
 - Raise the pinned uv bootstrap and development/governance dependency from

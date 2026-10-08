@@ -17,6 +17,7 @@ summary:
   - phase artifacts were scaffolded from the governance template
   - official uv 0.12.9 multiarch digest is pinned; local image build and runtime imports pass
   - P07-HF04 replaces the vulnerable uv 0.12.9 pin with 0.12.18 in the dev and governance environments, lockfile, and immutable official Docker bootstrap after the isolated BCF 2.2.0 security scan failed
+  - P07-HF05 lets an authenticated healthy check-in retire an obsolete local transport alarm even when 100 presentation messages are queued; the queue and durable inbox cursor remain untouched
   - Codex resume now requests metadata only, avoiding oversized full-history frames for long conversations
   - verified Slack-human replies to a proved single-agent root now target that chat's current route and qualify for optional wake
   - assured messages naming an exact chat now qualify for wake regardless of kind or informational label; quiet mode preserves them
@@ -34,6 +35,9 @@ workitems:
 - id: P07-P0-03
   status: DONE
   summary: deliver disclose remaining F14 governance dependency hash and F15 proxy-header risk in release notes and security guidance
+- id: P07-P0-11
+  status: DONE
+  summary: retire obsolete transport alarms after healthy check-in despite a full local presentation queue
 - id: P07-P0-04
   status: TODO
   summary: deliver prove exact candidate and isolated release archive before consumer cutover
