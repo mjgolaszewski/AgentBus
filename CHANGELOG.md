@@ -5,6 +5,14 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Supply-chain hotfix
+
+- Raise the pinned uv bootstrap and development/governance dependency from
+  0.12.9 to 0.12.18 and retain an immutable official multiarch Docker digest.
+  This clears the reported GHSA-2cv4-cqwr-gwf7 dependency audit finding. The
+  advisory concerns Windows wheel extraction; AgentBus's Linux image is outside
+  that exploit path, but the vulnerable package pin is removed everywhere.
+
 ### Codex host wake boundary
 
 - The wake adapter now keeps its app-server transport alive until the exact
