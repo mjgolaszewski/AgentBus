@@ -1,0 +1,58 @@
+document:
+  kind: hotfix_execution_log
+  name: P07-HF04 Hotfix Log
+  id: project-phase-07-hotfix04
+  version: 1.0.0
+  generated_at_utc: '2026-10-08T00:00:00Z'
+  status: completed
+  path: phases/phase-07-hotfix04.yml
+hotfix:
+  id: P07-HF04
+  mode: full
+  related_phase_id: P07
+  hotfix_number: 4
+  summary: Replace vulnerable uv 0.12.9 pin across governed environments and Docker
+    bootstrap
+execution_evidence:
+  planned_commands:
+  - bcf reconcile --check
+  - bcf ci prospective-train
+  - security-vulnerability-scan
+  - docker build --pull .
+  executed_commands:
+  - uv lock --python python3.12
+  - uv sync --locked --extra dev --python python3.12
+  - .venv/bin/python scripts/run_project_gate.py security-vulnerability-scan
+  - .venv/bin/python scripts/run_project_gate.py security-dependency-audit
+  - .venv/bin/python scripts/validate_governance_yaml.py --repo-root .
+  - bcf reconcile --repo-root . --check --python .venv/bin/python
+  notes:
+  - Isolated immutable BCF 2.2.0 qualification failed only security-vulnerability-scan
+    because AgentBus's pinned uv 0.12.9 is reported as CVE-2026-104843 and
+    GHSA-2cv4-cqwr-gwf7; BCF did not mutate the adopter repository.
+  - The upstream advisory applies to Windows wheel extraction and excludes the
+    Linux Docker runtime, but AgentBus's cross-platform dependency pin and
+    strict audit still require remediation.
+  - Development and governance requirements now pin uv 0.12.18; uv.lock was
+    regenerated and the official multiarch Docker index digest was verified as
+    sha256:3adc3706091ce7c2fe595e669628caedd6d951551b92b258b7e7dbe06d9440bc.
+  - The focused strict pip-audit and declared-environment check pass with no
+    known vulnerabilities or broken requirements. Docker build, exact BCF
+    prospective proof, and protected PR/main truth remain required for custody.
+closeout_requirements:
+  claims:
+    required_suites_green:
+      required_evidence:
+      - test
+      - contract-test
+    security_review_complete:
+      required_evidence:
+      - governance-validate
+    health_checks_green:
+      required_evidence:
+      - runtime-smoke
+  reconciliation:
+    required_evidence:
+    - governance-validate
+    - governance-exposure-scan
+  finding_registry: governance/findings.yml

@@ -52,7 +52,7 @@ environment_facts:
     - observability contracts are scaffolded under contracts/observability/v1/
     - structural anti-drift gates are scaffolded for module size, layer ownership, bounded-context ownership, CQRS side rules, router thinness, and duplication
     - application behavior is characterized on Python 3.12 with a pinned Python 3.14 compatibility subprocess in the primary BCF evidence lane
-    - BCF 2.1.8 Standard profile contract v3 governs the repository through the canonical prospective train
+    - BCF 2.1.8 Standard profile contract v3 governs the repository through the canonical prospective train; uv 0.12.18 aligns development, governance, and immutable Docker bootstrap pins after GHSA-2cv4-cqwr-gwf7 blocked isolated BCF 2.2.0 qualification
     - direct protected-main authority is retained without trusted-controller or BCF release authority
     - production implementations live under src while top-level client and service shims preserve public executable and import paths
     - routed Slack envelopes are admitted only from the bot identity authenticated from the configured bot token

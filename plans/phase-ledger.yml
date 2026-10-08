@@ -21,13 +21,7 @@ active_phase:
   build_plan: plans/build-plan.yml
   lifecycle_status: active
   owner: "agentbus:signal-gardener"
-  validation_commands:
-    - make governance-validate
-    - make architecture-test
-    - make lint
-    - make typecheck
-    - make test
-    - make release-check
+  validation_commands: [make governance-validate, make architecture-test, make lint, make typecheck, make test, make release-check]
 hotfix_lane:
   scaffold_script: scripts/scaffold_governance_artifacts.py
   default_mode: full
@@ -46,6 +40,7 @@ hotfix_lane:
     - {id: P07-HF01, mode: full, status: active, triggered_by_commits: [d1370afee90251f58caa7ccc524dd2fd35f449ef], failing_workflows: [], root_cause: presentation spool saturation blocks service inbox fetch and the dependent Codex wake, remediated_in_phase: P07, hotfix_log: phases/phase-07-hotfix01.yml, canonical_artifacts: [contracts/codex-wake/v1/codex-wake.contract.yml, plans/phase-ledger.yml, phases/phase-07-hotfix01.yml]}
     - {id: P07-HF02, mode: full, status: active, triggered_by_commits: [0e071cf2757cc580bf073780ef59fe741c65c594], failing_workflows: [], root_cause: "host-interrupted wake accepted without handling, restart-stale transport alarm, unbounded client inbox page argument, and old-first compact wake refs", remediated_in_phase: P07, hotfix_log: phases/phase-07-hotfix02.yml, canonical_artifacts: [contracts/codex-wake/v1/codex-wake.contract.yml, contracts/participation/v1/participation.contract.yml, plans/phase-ledger.yml, phases/phase-07-hotfix02.yml]}
     - {id: P07-HF03, mode: full, status: active, triggered_by_commits: [6caed153206a20bd1eb0d082d1a2ae0ac5686030], failing_workflows: [], root_cause: "accepted turn lost when transient stdio host exits before terminal; controlled disable kills process group; full-history recovery overflows frame; VS Code owns writer locks", remediated_in_phase: P07, hotfix_log: phases/phase-07-hotfix03.yml, canonical_artifacts: [contracts/codex-wake/v1/codex-wake.contract.yml, plans/phase-ledger.yml, phases/phase-07-hotfix03.yml]}
+    - {id: P07-HF04, mode: full, status: active, triggered_by_commits: [e8f5dcc46b671118f3110ac913b4ac0dc674638d], failing_workflows: [], root_cause: "AgentBus pins uv 0.12.9, which pip-audit rejects for GHSA-2cv4-cqwr-gwf7 during isolated BCF 2.2.0 qualification", remediated_in_phase: P07, hotfix_log: phases/phase-07-hotfix04.yml, canonical_artifacts: [Dockerfile, pyproject.toml, uv.lock, requirements-governance.txt, plans/phase-ledger.yml, phases/phase-07-hotfix04.yml]}
   remediation_history:
     - {id: P04-HF01, mode: full, recorded_at_utc: '2026-10-01T14:15:00Z', action: declared truthful Phase 04 successor edges and restored protected-main proof, remediated_in_phase: P04, hotfix_log: phases/phase-04-hotfix01.yml, canonical_artifacts: [plans/phase-04-workitems.yml, plans/phase-ledger.yml, phases/phase-04-hotfix01.yml], local_validation: [bcf reconcile --check, bcf ci prospective-train, push-style cheap preflight], remote_validation_completed: {commit: e21976375eaafce6703f11e99a2ed37cd2bac987, workflows: [https://github.com/mjgolaszewski/AgentBus/actions/runs/36854838305]}}
 operator_requirements_choices_disambiguations:
