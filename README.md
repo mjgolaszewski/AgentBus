@@ -426,8 +426,9 @@ service. Existing `repo:name` chats can continue under their old route until
 the upgraded service and client are in place. Each joined chat can then run
 `agentbus rename --identity REPO:NAME` to move to the configured prefix with
 its session credential, inbox cursor, pending presentation, and history intact;
-the old route stays a reserved alias. Set `AGENTBUS_IDENTITY` to the new route
-afterward. The prefix is a namespace, not an ownership credential.
+the old route stays a reserved alias, and service-actionable direct messages
+to that alias remain eligible to wake a bound chat. Set `AGENTBUS_IDENTITY` to
+the new route afterward. The prefix is a namespace, not an ownership credential.
 
 ## Operator participation
 

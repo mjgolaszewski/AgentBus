@@ -24,7 +24,7 @@ architecture_constraints:
 invariants:
   - {id: CW-INV-001, rule: "Only a user-enabled workspace host adapter may resume or start a saved Codex thread; AgentBus core never holds Codex credentials or claims host lifecycle authority."}
   - {id: CW-INV-002, rule: "After workspace opt-in, a joined chat may enroll its current host-verifiable saved thread without user-supplied IDs; binding joins stable chat_id and current participation session to that exact thread ID, with generation and local authorization; names and message senders cannot redirect it."}
-  - {id: CW-INV-003, rule: "Every service-assured message with a direct or informational audience and the bound chat as exact recipient is wake eligible regardless of message kind; claimed work and required control or policy events are also eligible. Ambiguous, unrouted, and broadcast traffic cannot wake merely by its text or kind."}
+  - {id: CW-INV-003, rule: "Every service-assured message with a direct or informational audience and a service-derived actionable route match for the bound chat, including a reserved old-route alias, is wake eligible regardless of message kind; claimed work and required control or policy events are also eligible. Ambiguous, unrouted, and broadcast traffic cannot wake merely by its text or kind."}
   - {id: CW-INV-004, rule: "Thread read, resume, turn acceptance, turn completion, and AgentBus acknowledgement are distinct observations and never inferred from one another."}
   - {id: CW-INV-005, rule: "At most one adapter-owned launch attempt is in flight per binding; a wake epoch freezes its candidate IDs; unchanged events receive at most one bounded follow-up after a host-observed terminal turn, and uncertain launches require reconciliation before retry."}
   - {id: CW-INV-006, rule: "Pending control and required policy events outrank ordinary work; adapter never acknowledges them; stopped participation is distinct from idle and cannot launch any wake without a new authorized session."}
@@ -91,7 +91,7 @@ proof_obligations:
   - {id: CW-PO-04, proves: [CW-INV-006], scenario: controls_and_policy_outprioritize_work_and_stopped_session_cannot_wake}
   - {id: CW-PO-05, proves: [CW-INV-007, CW-INV-008], scenario: compact_prompt_omits_message_text_and_host_configuration_overrides}
   - {id: CW-PO-06, proves: [CW-INV-001, CW-INV-009, CW-INV-010], scenario: disabled_or_unavailable_host_never_changes_bus_truth_or_claims_live_wake}
-  - {id: CW-PO-07, proves: [CW-INV-002, CW-INV-005], scenario: rename_restart_and_binding_generation_preserve_or_invalidate_launch_rights_exactly}
+  - {id: CW-PO-07, proves: [CW-INV-002, CW-INV-003, CW-INV-005], scenario: rename_restart_and_binding_generation_preserve_or_invalidate_launch_rights_exactly_and_service_actionable_old_alias_remains_wakable}
   - {id: CW-PO-08, proves: [CW-INV-003, CW-INV-011], scenario: legacy_and_spoofed_messages_never_start_turns_while_verified_cross_repo_agents_can_wake}
   - {id: CW-PO-09, proves: [CW-INV-007, CW-INV-012], scenario: watch_all_supervises_bound_chat_poll_workers_before_wake_projection_and_idle_chat_ends_turn_without_manual_polling_or_empty_wakes}
   - {id: CW-PO-10, proves: [CW-INV-003, CW-INV-011, CW-INV-013], scenario: verified_human_reply_to_single_proved_agent_root_is_direct_and_wake_eligible_while_ambiguous_or_unproved_threads_remain_unrouted}

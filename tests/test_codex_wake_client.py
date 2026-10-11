@@ -98,12 +98,16 @@ def message(cursor: int, *, recipient: str = "agentbus:signal-gardener",
         "cursor": cursor, "recipient": recipient, "audience": audience,
         "kind": kind, "text": text, "action_reason": action_reason,
         "sender_assurance": assurance,
+        "actionable": audience in {"direct", "informational"} and recipient == "agentbus:signal-gardener",
     }}
 
 
 def service_message(cursor: int, **overrides: object) -> dict:
     result = dict(message(cursor)["message"])
     result.update(overrides)
+    if "actionable" not in overrides:
+        result["actionable"] = (result["audience"] in {"direct", "informational"}
+                                and result["recipient"] == "agentbus:signal-gardener")
     return result
 
 
@@ -169,6 +173,23 @@ def test_wake_scan_replays_after_page_failure_without_skipping_or_ack(setup, mon
     assert wake_inbox.candidates(resumed, 0) == [(3, "MESSAGE:104")]
     assert profile["ack_cursor"] == 0
     assert wake_inbox.candidates(wake_inbox.scan(values, profile, 1, wake._candidate), 0) == [(3, "MESSAGE:104")]
+
+
+def test_service_actionable_old_route_alias_remains_wakable_after_prefix_rename(setup, monkeypatch):
+    values, _identity, profile, _path, _host = setup
+    profile["identity"] = "home:agentbus:signal-gardener"
+    profile["participation"]["session_secret"] = "session-proof"
+    messages = [
+        service_message(1, recipient="agentbus:signal-gardener", actionable=True),
+        service_message(2, recipient="agentbus:other", actionable=False),
+        service_message(3, recipient="agentbus:signal-gardener", actionable=True,
+                        sender_assurance="legacy"),
+        service_message(4, recipient="agentbus:signal-gardener", actionable=True,
+                        audience="broadcast"),
+    ]
+    monkeypatch.setattr(wake_inbox, "api", fake_inbox(messages))
+    state = wake_inbox.scan(values, profile, 1, wake._candidate)
+    assert wake_inbox.candidates(state, 0) == [(3, "MESSAGE:1")]
 
 
 def test_wake_scan_compacts_only_local_candidate_projection(setup, monkeypatch):
