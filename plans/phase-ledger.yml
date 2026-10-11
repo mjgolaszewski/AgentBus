@@ -93,7 +93,8 @@ release_trains:
   release_7: {target_version: "0.7.1", status: active, focus: [pinned_uv_bootstrap, released_bcf_direct_main_and_workflow_input_fixes, verified_Slack_human_thread_reply_routing, exact_recipient_derived_wake, explicit_destination_and_parent_derived_reply, session_proved_self_wake_status, allowlisted_Slack_operator_commands_and_reversible_wake_pause]}
   release_7_hotfix: {target_version: "0.7.2", status: active, focus: [service_backed_codex_wake_cursor]}
   release_7_hotfix_2: {target_version: "0.7.3", status: active, focus: [interrupted_wake_recovery, stale_poll_alarm_recovery, bounded_inbox_cli, recent_wake_reference_visibility, terminal_turn_truth, vs_code_notification_only_boundary]}
-  release_8: {target_version: "0.7.4", status: planned, focus: [governance_dependency_hash_lock, proxy_header_remediation]}
+  release_7_prefix: {target_version: "0.8.0", status: active, focus: [configurable_local_identity_prefix, session_proved_legacy_route_migration, accumulated_unreleased_hotfixes]}
+  release_8: {target_version: "0.8.1", status: planned, focus: [governance_dependency_hash_lock, proxy_header_remediation]}
 release_readiness:
   computed_by: bcf truth
   requirements_source: governance/evidence-policy.yml
