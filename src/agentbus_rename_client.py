@@ -8,7 +8,7 @@ import os
 import re
 
 from src.agentbus_poll_client import _append, _worker_lock, change_spool, ensure_worker, spool_path
-from src.agentbus_transport_client import ClientError, api
+from src.agentbus_transport_client import ClientError, api, local_prefix
 
 NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,31}$")
 
@@ -27,9 +27,11 @@ def rename_chat(ns, values: dict[str, str]) -> int:
     session = profile.get("participation")
     if not session or session.get("stopped"):
         raise ClientError("Routing rename requires an active participation session.")
-    if not NAME.fullmatch(ns.name):
+    name = ns.name or profile["name"]
+    if not NAME.fullmatch(name):
         raise ClientError("Chat names must be lowercase letters, digits, or hyphens (maximum 32).")
-    new_route = f"{profile['repo']}:{ns.name}"
+    prefix = local_prefix(values) or (old_route.split(":")[0] if old_route.count(":") == 2 else None)
+    new_route = f"{prefix + ':' if prefix else ''}{profile['repo']}:{name}"
     if len(new_route) > 80:
         raise ClientError("Combined AgentBus identity exceeds 80 characters.")
     if new_route == old_route:
@@ -62,7 +64,7 @@ def rename_chat(ns, values: dict[str, str]) -> int:
         os.chmod(directory_lock, 0o600)
         fcntl.flock(lock, fcntl.LOCK_EX)
         updated = dict(profile)
-        updated.update(identity=new_route, name=ns.name)
+        updated.update(identity=new_route, name=name)
         updated.pop("rename_pending", None)
         updated["rename_source"] = old_route
         if new_path.is_symlink():

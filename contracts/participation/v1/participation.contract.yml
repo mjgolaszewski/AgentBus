@@ -18,6 +18,7 @@ scope:
   compatibility:
     - existing durable protocol-2 messages, routes, replies, claims, Slack ingress records, and cursors retain their meaning; only newly ingested verified human replies to proved single-agent thread roots gain direct routing
     - existing profile route, persona, inbox cursor, history, and claims survive self-service enrollment; the never-enrolled local UUID is replaced by a service-issued UUID unless an explicit preservation handoff is supplied
+    - configured local prefixes apply to newly created profiles; already joined two-segment routes continue to work and can migrate through session-proved rename, retaining the old route as a reserved alias
     - existing persona display-name editing remains distinct from routing rename
     - rollout may use expand-contract migration; old paths retire only after successor proof
     - legacy clients without participation capability retain protocol-2 messaging and receive actionable upgrade instructions once per inbox identity via an idempotent delivery marker or on explicit info reads without altering stored message envelopes or repeating instructions on ordinary message pages
@@ -61,7 +62,7 @@ invariants:
   - {id: INV-019, rule: "An operator-authorized, one-use, expiring rotation grant MUST replace a compromised session credential atomically without requiring the old credential or changing chat/session identity, policy acknowledgement, controls, cursors, or wake binding. A lost response can retry with the same staged new secret and receipt; the old credential MUST fail immediately after commit."}
   - {id: INV-020, rule: "An operator roster MUST derive joined identities and session presence from service custody, without exposing credentials. Host conversation links MUST be identified as local adapter observations; absence of a local link MUST NOT imply absence on another host."}
   - {id: INV-021, rule: "A never-joined chat MAY enroll without per-chat operator intervention only by accepting a new service-issued UUID. A lost enrollment response MUST retry idempotently with its staged credential; a route collision with a different credential MUST fail closed. Existing joined sessions and explicit legacy-ID handoffs retain their identities."}
-  - {id: INV-022, rule: "Only verified Slack ingestion may mint a slack: sender; new agent routes are canonical lowercase repo:name values. Existing durable history is never rewritten to satisfy new input rules."}
+  - {id: INV-022, rule: "Only verified Slack ingestion may mint a slack: sender; updated clients create canonical lowercase prefix:repo:name routes while legacy repo:name routes remain accepted during migration. Existing durable history is never rewritten to satisfy new input rules."}
   - {id: INV-023, rule: "The service, never a caller-supplied field, assigns sender assurance as session, slack-human, or legacy. Updated clients attach their existing session proof automatically; old clients remain legible as legacy during expansion."}
   - {id: INV-024, rule: "Only session-assured agent messages or verified Slack-human messages may cause an ordinary Codex wake. A legacy message remains readable without launching a turn; controls retain independent operator authority."}
   - {id: INV-025, rule: "Transport size limits and visibly escaped presentation cannot alter the stored full-history record or hide required control and direct work. Sanitized text remains untrusted data."}
@@ -79,6 +80,7 @@ invariants:
   - {id: INV-037, rule: "Slack operator metrics report service-owned counts, high-water cursors, participation times, controls, and pause state without claiming knowledge of the client-owned acknowledged cursor or host-owned wake attempts. Duplicate slash invocation IDs do not repeat mutations; uncertainty after an external Slack post is reported without automatic retry."}
   - {id: INV-038, rule: "A completed poll cycle with a successful authenticated check-in or inbox read retires an obsolete persisted transport alarm even after worker restart and while the local presentation queue is full; a cycle with no service success or a failed service request never clears the alarm merely because process-local failure memory was reset. Presentation backpressure does not acknowledge durable messages or advance the inbox cursor."}
   - {id: INV-039, rule: "The client validates the service's one-through-200 inbox page bound before a request and explains cursor pagination for larger histories; an invalid page size never changes durable inbox or acknowledgement state."}
+  - {id: INV-040, rule: "An updated client creating a local chat requires an explicit configured prefix before its repository and chat name: prefix:repo:name; it fails closed when that prefix is absent or invalid. The service derives repository identity from the route's repository segment, never from the prefix, and retains legacy repo:name routes during migration. A proved live session may move its route to a new prefix with its chat UUID, policy, credential, durable history, pending local presentation, and old address alias intact; prefix text is a namespace, not proof of repository ownership or operator authority."}
 
 primitives:
   stable_chat_identity:
@@ -306,6 +308,7 @@ proof_obligations:
   - {id: PO-46, proves: [INV-037], scenario: metrics_are_service_factual_and_duplicate_slash_invocations_cannot_repeat_mutations_or_claim_private_client_host_telemetry}
   - {id: PO-47, proves: [INV-038], scenario: stale_transport_alarm_retires_only_after_healthy_post_restart_cycle_and_survives_a_current_failure}
   - {id: PO-48, proves: [INV-039], scenario: out_of_range_inbox_page_is_rejected_locally_with_pagination_guidance_and_no_service_call}
+  - {id: PO-49, proves: [INV-040], scenario: configured_prefix_names_new_routes_missing_or_invalid_config_rejects_before_enrollment_and_session_proved_legacy_route_migration_preserves_alias_history_credential_cursor_and_pending_presentation}
 
 implementation_order:
   - {id: IU-001, unit: freeze_contract_and_migration_assumptions, depends_on: []}
@@ -337,6 +340,7 @@ acceptance_gates:
   G-TOKEN: [INV-003, INV-015, PO-10, PO-28]
   G-RECOVERY: [INV-012, PO-13]
   G-INBOX-PAGE: [INV-039, PO-48]
+  G-LOCAL-PREFIX: [INV-040, PO-49]
   G-COMPAT: [PO-05, PO-15, PO-19, PO-25]
   G-GOVERNANCE: [INV-016, PO-12, PO-20]
   G-MESSAGE-PRINCIPAL: [INV-027, INV-028, PO-36, PO-37]

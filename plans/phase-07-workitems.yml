@@ -47,6 +47,18 @@ workitems:
   acceptance_evidence:
   - test
   - contract-test
+- id: P07-P0-12
+  priority: P0
+  status: DONE
+  summary: introduce configurable local chat route prefixes and session-proved migration without losing legacy aliases or pending work
+  acceptance:
+  - requires-workitem-closure:P07-P0-11
+  - new local profiles fail closed without a valid prefix and use prefix:repo:name
+  - service validates the repository segment independently of prefix and retains existing repo:name routes
+  - session-proved rename preserves UUID, credential, inbox cursor, presentation, and old alias
+  acceptance_evidence:
+  - test
+  - contract-test
 - id: P07-P0-04
   priority: P0
   status: TODO
@@ -54,6 +66,7 @@ workitems:
   acceptance:
   - requires-workitem-closure:P07-P0-03
   - requires-workitem-closure:P07-P0-11
+  - requires-workitem-closure:P07-P0-12
   - exact prospective, protected PR and main truth pass before published archive custody and isolated verification
   acceptance_evidence:
   - test

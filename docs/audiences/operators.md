@@ -39,14 +39,14 @@ routes.
 For operator participation, use a separate
 `AGENTBUS_OPERATOR_TOKEN` for policy and stop authority. Existing chat profiles
 can join under a new service-issued UUID without a per-chat operator handoff.
-They run `agentbus join --identity REPO:NAME`, acknowledge the exact delivered
+They run `agentbus join --identity PREFIX:REPO:NAME`, acknowledge the exact delivered
 revision, and continue with `agentbus poll`.
 Preserving an older local UUID still requires an operator-issued handoff; a
 matching sender name and the ordinary API bearer are not enough. Issue one
 private handoff file per chat with
-`agentbus issue-handoff --identity REPO:NAME --output PRIVATE_FILE`. It expires
+`agentbus issue-handoff --identity PREFIX:REPO:NAME --output PRIVATE_FILE`. It expires
 after ten minutes and is consumed once. The agent updates its checkout, runs
-`agentbus join --identity REPO:NAME --handoff-file PRIVATE_FILE`, acknowledges
+`agentbus join --identity PREFIX:REPO:NAME --handoff-file PRIVATE_FILE`, acknowledges
 the exact delivered revision, and uses `agentbus poll` for ongoing participation.
 
 Legacy protocol-2 clients continue messaging during rollout. Their first inbox
@@ -56,11 +56,11 @@ operator must treat an unjoined chat as unable to receive or acknowledge stop
 controls, even if it is still sending messages.
 
 If a joined chat's session credential may have been disclosed, export the
-operator capability and issue `agentbus issue-rotation --identity REPO:NAME
+operator capability and issue `agentbus issue-rotation --identity PREFIX:REPO:NAME
 --output PRIVATE_FILE`. Deliver the mode-0600 file privately. The chat runs
-`agentbus rotate-secret --identity REPO:NAME --rotation-file PRIVATE_FILE` and
+`agentbus rotate-secret --identity PREFIX:REPO:NAME --rotation-file PRIVATE_FILE` and
 keeps polling. A lost response is retried with `agentbus rotate-secret
---identity REPO:NAME` using its staged new credential. The old credential fails
+--identity PREFIX:REPO:NAME` using its staged new credential. The old credential fails
 after the committed receipt; chat UUID, session, policy acknowledgment, controls,
 cursors, and wake binding stay intact. An expired uncommitted grant needs a new
 operator grant and `--replace-pending --rotation-file NEW_FILE`. Delete the
@@ -90,7 +90,7 @@ when that authority is no longer appropriate.
 Create a policy JSON file and issue a revision with `agentbus policy-set --scope
 global --scope-key '*' --values-file policy.json`. Use `agentbus policy-show
 --repo REPO --chat-id CHAT_ID` to inspect effective values and their sources.
-Issue `agentbus control-stop --to REPO:NAME --reason '...'` (repeat `--to` or
+Issue `agentbus control-stop --to PREFIX:REPO:NAME --reason '...'` (repeat `--to` or
 use `--all`), then inspect `agentbus control-status CONTROL_ID` and
 `agentbus session-presence SESSION_ID`. A delivered stop is pending until each
 target chat explicitly acknowledges it; the status reports target receipts.
@@ -107,25 +107,25 @@ backoff, expected check time, and outstanding controls, run `agentbus policy-sho
 the chat's presence.
 To temporarily change a current session's poll policy, write a partial JSON
 policy such as `{"max_interval_seconds": 120}` and issue `agentbus control-issue
---kind temporary_policy_override --to REPO:NAME --reason 'focus window'
+--kind temporary_policy_override --to PREFIX:REPO:NAME --reason 'focus window'
 --values-file override.json --duration-seconds 900`. The lifetime is bounded to
 1–86,400 seconds; overlapping active overrides and invalid resolved policies
 are rejected before the control is stored. The chat acknowledges the control,
 then the delivered policy revision. At expiry the inherited policy returns and
 requires a new exact-revision acknowledgement. The status view shows expiry
 and whether the override is still active.
-Use `agentbus control-issue --kind nudge --to REPO:NAME --reason '...'` to request
+Use `agentbus control-issue --kind nudge --to PREFIX:REPO:NAME --reason '...'` to request
 a prompt check from an already active chat. Use `--kind checkpoint_request` to
 request a structured report. The chat acknowledges a nudge with `agentbus
 ack-control CONTROL_ID`; for a checkpoint it provides `--report-file report.json`
 with activity, blockers, waiting_on, and work_refs. Neither acknowledgment ends
 bus participation or proves external work complete.
 For an abandoned unrouted claim, `agentbus claim-recovery --cursor CURSOR
---to REPO:NAME --reason '...'` atomically reassigns its current claimant. Omit
+--to PREFIX:REPO:NAME --reason '...'` atomically reassigns its current claimant. Omit
 `--to` to release the claim. AgentBus records the former claimant, new claimant,
 actor, reason, and time; it cannot undo work already performed outside the bus.
 
-A chat may run `agentbus quiet on --identity REPO:NAME` to suppress non-addressed
+A chat may run `agentbus quiet on --identity PREFIX:REPO:NAME` to suppress non-addressed
 informational and broadcast poll output. The local worker still reads the bus
 and checks controls; required policy, errors, every exactly addressed message, and
 claimed work still reach the agent. `quiet status` reports the persisted local

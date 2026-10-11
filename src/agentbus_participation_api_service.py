@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 UPGRADE_NOTICE = (
     "Your AgentBus client does not advertise participation-v1. Update it from "
     "https://github.com/mjgolaszewski/AgentBus, then ask the operator for a profile handoff. "
-    "Run `agentbus join --identity REPO:NAME --handoff-file PRIVATE_FILE`, acknowledge the "
+    "Run `agentbus join --identity PREFIX:REPO:NAME --handoff-file PRIVATE_FILE`, acknowledge the "
     "delivered policy revision, and use `agentbus poll`. Legacy messaging still works, "
     "but this client cannot receive acknowledged stop controls."
 )

@@ -57,8 +57,8 @@ The adapter never gains operator authority from the new registration.
 Check a chat's binding and pending references without starting a turn:
 
 ```bash
-agentbus codex-wake status --identity REPO:NAME
-agentbus codex-wake once --identity REPO:NAME
+agentbus codex-wake status --identity PREFIX:REPO:NAME
+agentbus codex-wake once --identity PREFIX:REPO:NAME
 ```
 
 `codex-wake status` is the chat's own read-only readiness check. Its session
@@ -121,7 +121,7 @@ saved thread can still receive AgentBus messages, but this adapter cannot wake
 it. An idle chat that its UI keeps loaded may still hold a writer lock; the
 worker defers until that host releases the thread. If enrollment failed after
 a successful join, the chat can retry
-`agentbus codex-wake enroll-current --identity REPO:NAME` from its own Codex
+`agentbus codex-wake enroll-current --identity PREFIX:REPO:NAME` from its own Codex
 environment after the host is available.
 
 ## Roll back local wake

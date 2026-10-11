@@ -15,7 +15,8 @@ def setup_profile(tmp_path):
     state = tmp_path / "profiles"
     state.mkdir()
     old_route = "agentbus:flower"
-    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
+    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766",
+              "AGENTBUS_LOCAL_PREFIX": "home"}
     profile = {"schema_version": 2, "identity": old_route, "chat_id": "chat-1",
                "repo": "agentbus", "name": "flower", "display_name": "The Flower",
                "inbox_id": "inbox-1", "channel": "C123", "service_url": values["AGENTBUS_URL"],
@@ -43,37 +44,66 @@ def test_rename_recovers_uncertain_response_and_moves_undelivered_events(
         attempts.append((path, payload, kwargs))
         if len(attempts) == 1:
             raise ClientError("transport uncertain")
-        return {"chat_id": "chat-1", "new_route": "agentbus:night-flower"}
+        return {"chat_id": "chat-1", "new_route": "home:agentbus:night-flower"}
 
     monkeypatch.setattr(rename, "api", fake_rename)
     workers = []
     monkeypatch.setattr(rename, "ensure_worker", lambda path, _values: workers.append(path))
     command = ["rename", "--identity", "agentbus:flower", "--name", "night-flower"]
     assert client.main(command) == 1
-    assert json.loads(old_path.read_text())["rename_pending"] == "agentbus:night-flower"
+    assert json.loads(old_path.read_text())["rename_pending"] == "home:agentbus:night-flower"
     assert client.main(command) == 0
-    new_path = old_path.with_name("agentbus:night-flower.json")
+    new_path = old_path.with_name("home:agentbus:night-flower.json")
     migrated = json.loads(new_path.read_text())
     assert not old_path.exists()
-    assert migrated["chat_id"] == "chat-1" and migrated["identity"] == "agentbus:night-flower"
+    assert migrated["chat_id"] == "chat-1" and migrated["identity"] == "home:agentbus:night-flower"
     assert migrated["display_name"] == "The Flower" and migrated["ack_cursor"] == 7
     assert "rename_pending" not in migrated
     assert poll.peek_event(new_path, migrated)["control"]["control_id"] == "stop-1"
     assert not poll.spool_path(old_path).exists()
     assert workers == [new_path]
     assert len(attempts) == 2 and attempts[0] == attempts[1]
-    assert capsys.readouterr().out.endswith("ROUTE agentbus:flower -> agentbus:night-flower\n")
+    assert capsys.readouterr().out.endswith("ROUTE agentbus:flower -> home:agentbus:night-flower\n")
 
 
 def test_rename_rejects_local_collision_before_remote_mutation(tmp_path, monkeypatch):
     values, _, old_path = setup_profile(tmp_path)
-    old_path.with_name("agentbus:taken.json").write_text(json.dumps({"chat_id": "other"}))
+    old_path.with_name("home:agentbus:taken.json").write_text(json.dumps({"chat_id": "other"}))
     monkeypatch.setattr(client, "api", lambda *_args, **_kwargs:
                         {"inbox_id": "inbox-1", "channel": "C123"})
     monkeypatch.setattr(rename, "api", lambda *_args, **_kwargs:
                         pytest.fail("remote rename must not execute after local collision"))
     with pytest.raises(ClientError, match="another chat"):
         rename.rename_chat(client.argparse.Namespace(identity="agentbus:flower", name="taken"), values)
+    assert "rename_pending" not in json.loads(old_path.read_text())
+
+
+def test_rename_without_new_name_moves_joined_chat_to_configured_prefix(tmp_path, monkeypatch):
+    values, profile, old_path = setup_profile(tmp_path)
+    monkeypatch.setattr(client, "api", lambda *_args, **_kwargs:
+                        {"inbox_id": "inbox-1", "channel": "C123"})
+    monkeypatch.setattr(rename, "api", lambda *_args, **_kwargs:
+                        {"chat_id": "chat-1", "new_route": "home:agentbus:flower"})
+    monkeypatch.setattr(rename, "ensure_worker", lambda *_args: None)
+    assert rename.rename_chat(client.argparse.Namespace(identity=profile["identity"], name=None), values) == 0
+    new_path = old_path.with_name("home:agentbus:flower.json")
+    moved = json.loads(new_path.read_text())
+    assert not old_path.exists()
+    assert moved["chat_id"] == profile["chat_id"]
+    assert moved["participation"] == profile["participation"]
+    assert moved["ack_cursor"] == profile["ack_cursor"]
+
+
+def test_rename_rejects_invalid_configured_prefix_before_service_mutation(tmp_path, monkeypatch):
+    values, profile, old_path = setup_profile(tmp_path)
+    values["AGENTBUS_LOCAL_PREFIX"] = "Home!"
+    monkeypatch.setattr(client, "api", lambda *_args, **_kwargs:
+                        {"inbox_id": "inbox-1", "channel": "C123"})
+    monkeypatch.setattr(rename, "api", lambda *_args, **_kwargs:
+                        pytest.fail("invalid prefix reached the service"))
+    with pytest.raises(ClientError, match="AGENTBUS_LOCAL_PREFIX"):
+        rename.rename_chat(client.argparse.Namespace(identity=profile["identity"], name=None), values)
+    assert old_path.exists()
     assert "rename_pending" not in json.loads(old_path.read_text())
 
 

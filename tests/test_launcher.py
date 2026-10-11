@@ -372,7 +372,8 @@ def test_read_encodes_filter_query_without_leaking_token(launcher, monkeypatch):
 
 def test_onboard_creates_unique_chat_profiles_for_same_repo(launcher, tmp_path, monkeypatch, capsys):
     state = tmp_path / "consumers"
-    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
+    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766",
+              "AGENTBUS_LOCAL_PREFIX": "home"}
     monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
     monkeypatch.setattr(launcher, "api", lambda _values, path, payload=None: {
         "protocol_version": 2, "inbox_id": "inbox-1", "channel": "C123", "high_water_cursor": 42,
@@ -380,16 +381,35 @@ def test_onboard_creates_unique_chat_profiles_for_same_repo(launcher, tmp_path, 
     for name in ("weed", "fern"):
         assert launcher.main(["onboard", "--repo", "tools", "--name", name,
                               "--role", "maintainer"]) == 0
-    weed = json.loads((state / "tools:weed.json").read_text())
-    fern = json.loads((state / "tools:fern.json").read_text())
-    assert weed["identity"] == "tools:weed" and fern["identity"] == "tools:fern"
+    weed = json.loads((state / "home:tools:weed.json").read_text())
+    fern = json.loads((state / "home:tools:fern.json").read_text())
+    assert weed["identity"] == "home:tools:weed" and fern["identity"] == "home:tools:fern"
     assert weed["chat_id"] != fern["chat_id"]
     assert weed["ack_cursor"] == fern["ack_cursor"] == 42
     assert (state.stat().st_mode & 0o777) == 0o700
-    assert (state / "tools:weed.json").stat().st_mode & 0o777 == 0o600
+    assert (state / "home:tools:weed.json").stat().st_mode & 0o777 == 0o600
     assert launcher.main(["onboard", "--repo", "tools", "--name", "weed",
                           "--role", "maintainer"]) == 1
     assert "already exists" in capsys.readouterr().err
+
+
+def test_onboard_requires_valid_local_prefix_before_service_or_profile_write(
+    launcher, tmp_path, monkeypatch, capsys,
+):
+    state = tmp_path / "consumers"
+    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
+    monkeypatch.setattr(launcher, "configuration", lambda **_kwargs: (Path("/unused"), values))
+    monkeypatch.setattr(launcher, "api", lambda *_args, **_kwargs:
+                        pytest.fail("invalid prefix reached the service"))
+    command = ["onboard", "--repo", "tools", "--name", "weed", "--role", "maintainer"]
+    for prefix in (None, "Home", "slack", "bad:prefix", "x" * 33):
+        if prefix is None:
+            values.pop("AGENTBUS_LOCAL_PREFIX", None)
+        else:
+            values["AGENTBUS_LOCAL_PREFIX"] = prefix
+        assert launcher.main(command) == 1
+        assert "AGENTBUS_LOCAL_PREFIX" in capsys.readouterr().err
+        assert not state.exists()
 
 
 def test_inbox_after_zero_is_stateless_and_ack_is_bounded(launcher, tmp_path, monkeypatch, capsys):
@@ -484,23 +504,25 @@ def test_consumer_profiles_use_portable_xdg_default_and_explicit_migration_path(
 
 def test_onboard_accepts_realistic_repo_names(launcher, tmp_path, monkeypatch):
     state = tmp_path / "state"
-    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
+    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766",
+              "AGENTBUS_LOCAL_PREFIX": "home"}
     monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
     monkeypatch.setattr(launcher, "api", lambda *_args, **_kwargs: {
         "inbox_id": "inbox-1", "channel": "C123", "high_water_cursor": 9,
     })
     assert launcher.main(["onboard", "--repo", "economic_data", "--name", "fern",
                           "--role", "analyst"]) == 0
-    assert (state / "economic_data:fern.json").is_file()
+    assert (state / "home:economic_data:fern.json").is_file()
     long_repo = "bcf-protection-inspector-activation-prospective"
     assert launcher.main(["onboard", "--repo", long_repo, "--name", "moss",
                           "--role", "reviewer"]) == 0
-    assert (state / f"{long_repo}:moss.json").is_file()
+    assert (state / f"home:{long_repo}:moss.json").is_file()
 
 
 def test_onboard_derives_repo_and_records_rich_persona(launcher, tmp_path, monkeypatch):
     state = tmp_path / "state"
-    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
+    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766",
+              "AGENTBUS_LOCAL_PREFIX": "home"}
     monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
     monkeypatch.setattr(launcher, "current_repo", lambda: "some_repo")
     monkeypatch.setattr(launcher, "api", lambda *_args, **_kwargs: {
@@ -514,7 +536,7 @@ def test_onboard_derives_repo_and_records_rich_persona(launcher, tmp_path, monke
         "--working-style", "map the terrain, test assumptions, then leave a clear trail",
         "--signature", "finds the one loose wire in a dark machine room",
     ]) == 0
-    profile = json.loads((state / "some_repo:firefly.json").read_text())
+    profile = json.loads((state / "home:some_repo:firefly.json").read_text())
     assert profile.items() >= {
         "display_name": "Firefly", "role": "integration-scout",
         "values": "curiosity, evidence, and kindness",

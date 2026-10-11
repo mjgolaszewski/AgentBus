@@ -35,22 +35,22 @@ def test_rename_preserves_old_messages_claims_and_pending_stop(tmp_path) -> None
         routes=["agentbus:old-name"], reason="end turn", actor="operator",
     )
     assert targets == [session_id]
-    assert store.participation.rename(session_id, SECRET, "agentbus:new-name") == (
-        chat_id, "agentbus:old-name", "agentbus:new-name",
+    assert store.participation.rename(session_id, SECRET, "home:agentbus:new-name") == (
+        chat_id, "agentbus:old-name", "home:agentbus:new-name",
     )
-    assert store.participation.routes_for("agentbus:new-name") == (
-        "agentbus:new-name", "agentbus:old-name",
-    )
-    page = store.inbox(CHANNEL, "agentbus:new-name")
+    assert set(store.participation.routes_for("home:agentbus:new-name")) == {
+        "home:agentbus:new-name", "agentbus:old-name",
+    }
+    page = store.inbox(CHANNEL, "home:agentbus:new-name")
     assert [item.cursor for item in page.messages] == [direct.cursor, unrouted.cursor]
     assert all(item.actionable for item in page.messages)
     assert page.messages[0].recipient == "agentbus:old-name"
     store.validate_reply(CHANNEL, SendMessage(
-        sender="agentbus:new-name", recipient="peer:agent", audience="direct",
+        sender="home:agentbus:new-name", recipient="peer:agent", audience="direct",
         text="Handled", reply_to_cursor=direct.cursor,
     ))
     assert store.participation.enroll(
-        repo="agentbus", route="agentbus:new-name", display_name="Imposter",
+        repo="agentbus", route="home:agentbus:new-name", display_name="Imposter",
         session_secret=SECRET,
     ) == (chat_id, session_id, revision)
     with pytest.raises(ValueError, match="reserved"):
@@ -60,11 +60,29 @@ def test_rename_preserves_old_messages_claims_and_pending_stop(tmp_path) -> None
         )
     assert store.controls.deliver(session_id, SECRET)[0]["control_id"] == control_id
     store.close()
-
     store = MessageStore(path)
-    assert store.participation.routes_for("agentbus:new-name") == (
-        "agentbus:new-name", "agentbus:old-name",
-    )
+    assert set(store.participation.routes_for("home:agentbus:new-name")) == {
+        "home:agentbus:new-name", "agentbus:old-name",
+    }
     assert store.controls.acknowledge_stop(control_id, session_id, SECRET)
     assert store.participation.session_state(session_id)["state"] == "stopped"
+    store.close()
+
+
+def test_prefixed_routes_bind_repo_segment_and_reject_reserved_namespace(tmp_path) -> None:
+    store = MessageStore(tmp_path / "messages.sqlite3")
+    store.participation.set_policy(scope="global", scope_key="*", values=POLICY, actor="operator")
+    for route in ("home:other:flower", "slack:agentbus:flower", "home:agentbus:Flower"):
+        with pytest.raises(ValueError, match="invalid chat route"):
+            store.participation.enroll(
+                repo="agentbus", route=route, display_name="Flower", session_secret=SECRET,
+            )
+    chat_id, session_id, revision = store.participation.enroll(
+        repo="agentbus", route="home:agentbus:flower", display_name="Flower",
+        session_secret=SECRET,
+    )
+    store.participation.acknowledge_policy(session_id, SECRET, revision)
+    assert store.participation.session_for_secret(SECRET, "home:agentbus:flower")["chat_id"] == chat_id
+    with pytest.raises(ValueError, match="same repository"):
+        store.participation.rename(session_id, SECRET, "home:other:flower")
     store.close()

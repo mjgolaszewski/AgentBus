@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlencode
 
-from src.agentbus_transport_client import ClientError, api, configuration, profile_session_token
+from src.agentbus_transport_client import ClientError, api, configuration, local_prefix, profile_session_token
 
 NAME_RE = r"^[a-z0-9][a-z0-9-]{0,31}$"
 REPO_RE = r"^[a-z0-9][a-z0-9._-]{0,63}$"
@@ -67,7 +67,7 @@ def atomic_json(path: Path, data: dict) -> None:
 def resolve_identity(explicit: str | None) -> str:
     identity = explicit or os.environ.get("AGENTBUS_IDENTITY")
     if not identity:
-        raise ClientError("Select a chat with --identity REPO:NAME or AGENTBUS_IDENTITY.")
+        raise ClientError("Select a chat with --identity PREFIX:REPO:NAME or AGENTBUS_IDENTITY.")
     return identity
 
 
@@ -93,7 +93,7 @@ def load_profile(values: dict[str, str], identity: str, *, save_migration: bool 
     except FileNotFoundError:
         if ":" not in identity:
             raise ClientError(f"Unknown AgentBus identity {identity!r}; run `agentbus onboard`.") from None
-        legacy_path = identity_path(values, identity.split(":", 1)[0])
+        legacy_path = identity_path(values, identity.split(":")[-2])
         if legacy_path.is_symlink() or not legacy_path.is_file():
             raise ClientError(f"Unknown AgentBus identity {identity!r}; run `agentbus onboard`.") from None
         try:
@@ -108,10 +108,10 @@ def load_profile(values: dict[str, str], identity: str, *, save_migration: bool 
         raise ClientError(f"Cannot read valid profile {path}.")
     if profile.get("schema_version") == 1:
         legacy = dict(profile)
-        repo = str(profile.get("repo") or identity.split(":", 1)[0])
+        repo = str(profile.get("repo") or identity.split(":")[-2])
         profile = {
             "schema_version": 2, "chat_id": str(uuid.uuid4()), "identity": identity,
-            "repo": repo, "name": identity.split(":", 1)[-1],
+            "repo": repo, "name": identity.split(":")[-1],
             "display_name": profile.get("display_name", identity), "role": "maintainer",
             "voice": "direct, practical, and collaborative",
             "remit": f"Maintain {repo}", "persona_file": profile.get("persona_file"),
@@ -415,11 +415,12 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
         return 0
     if ns.command == "onboard":
         ns.repo = ns.repo or current_repo()
+        prefix = local_prefix(values, required=True)
         if not re.fullmatch(NAME_RE, ns.name):
             raise ClientError("Chat names must be lowercase letters, digits, or hyphens (maximum 32).")
         if not re.fullmatch(REPO_RE, ns.repo):
             raise ClientError("Repository names must be lowercase letters, digits, dots, underscores, or hyphens (maximum 64).")
-        identity = f"{ns.repo}:{ns.name}"
+        identity = f"{prefix}:{ns.repo}:{ns.name}"
         if len(identity) > 80:
             raise ClientError("Combined AgentBus identity exceeds 80 characters.")
         path = identity_path(values, identity)

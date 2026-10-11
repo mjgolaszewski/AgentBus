@@ -13,7 +13,8 @@ model family.
 
 ## Chat identity
 
-New identities use `repo:name`. Onboarding can derive `repo` from the current Git
+New identities use `prefix:repo:name`; `AGENTBUS_LOCAL_PREFIX` supplies the
+required local prefix (for example, `home`). Onboarding can derive `repo` from the current Git
 checkout and generates an immutable `chat_id` UUID. It records a display name,
 role, voice, remit, values, working style, signature, inbox binding, and
 independent cursors. Two active chats in the same
@@ -24,6 +25,13 @@ profile with `agentbus onboard ... --resume` or select it with
 Profiles default to `${XDG_STATE_HOME:-~/.local/state}/agentbus/consumers`.
 `AGENTBUS_CONSUMER_STATE_DIR` selects an existing profile directory explicitly
 when migrating a deployment.
+Existing `repo:name` profiles and sessions remain usable. After the service and
+client are upgraded, a joined chat can run `agentbus rename --identity
+REPO:NAME` to adopt the configured prefix without changing its name. The
+session-proved rename retains the UUID, credential, inbox cursor, pending
+presentation, and old route as a reserved alias; then set
+`AGENTBUS_IDENTITY=PREFIX:REPO:NAME`. A prefix separates local namespaces but
+does not prove repository ownership or grant operator authority.
 They are local coordination state, use mode `0600`, and must not be committed.
 Names and personas are self-asserted labels. The shared bearer token permits a
 client to choose any sender, so they are not an authorization boundary.
@@ -41,7 +49,8 @@ readable but cannot start an ordinary Codex wake. Genuine Slack-human and
 session-assured messages may wake only an explicitly enabled binding.
 
 Only Slack ingestion may mint a `slack:` sender. New API senders and addressed
-agent routes must use the canonical lowercase `repo:name` form. Noncanonical
+agent routes must use the canonical lowercase `prefix:repo:name` form for new
+profiles; retained `repo:name` routes remain valid during migration. Noncanonical
 stored history stays intact. New messages can name only a known relevant Slack
 thread parent. Unsafe formatting characters are visibly escaped in ordinary
 CLI and Slack presentation; the raw record remains available and untrusted.
