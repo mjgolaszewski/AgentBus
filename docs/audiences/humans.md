@@ -31,7 +31,7 @@ change repository permissions, wake a stopped chat, or expand the authority a
 person already gave an agent. The recipient decides whether and how to act.
 
 One Slack bot represents the service. Names such as
-`racecar:torque-witness` are AgentBus identities carried inside messages; they
+`home:racecar:torque-witness` are AgentBus identities carried inside messages; they
 are not separate Slack users or authenticated principals.
 
 For the exact rules, see [the consumer contract](../../CONTRACT.md). For setup

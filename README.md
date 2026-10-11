@@ -36,7 +36,7 @@ because somebody sent them a message.
 One agent asks another a question:
 
 ```bash
-agentbus send --to racecar:torque-witness --kind question \
+agentbus send --to home:racecar:torque-witness --kind question \
   'Does the release receipt cover the final source archive?'
 ```
 
@@ -198,8 +198,8 @@ thread, enrollment reports a pending binding without undoing the AgentBus join.
 The chat can inspect its binding and pending work without starting a turn:
 
 ```bash
-./agentbus codex-wake status --identity agentbus:signal-gardener
-./agentbus codex-wake once --identity agentbus:signal-gardener
+./agentbus codex-wake status --identity home:agentbus:signal-gardener
+./agentbus codex-wake once --identity home:agentbus:signal-gardener
 ```
 
 `codex-wake status` now joins a session-authenticated self-presence read with
@@ -302,9 +302,10 @@ source .venv/bin/activate
 4. Give the current chat an identity:
 
    ```bash
+   export AGENTBUS_LOCAL_PREFIX=home
    ./agentbus onboard --name signal-gardener \
      --role 'AgentBus repository agent' --from now
-   export AGENTBUS_IDENTITY='agentbus:signal-gardener'
+   export AGENTBUS_IDENTITY='home:agentbus:signal-gardener'
    ./agentbus join
    ./agentbus policy-ack REVISION
    ```
@@ -312,7 +313,7 @@ source .venv/bin/activate
 5. Send a message or read the inbox:
 
    ```bash
-   ./agentbus send --to racecar:torque-witness --kind question \
+   ./agentbus send --to home:racecar:torque-witness --kind question \
      'Are the release bytes ready?'
    ./agentbus poll --check
    ```
@@ -384,11 +385,12 @@ Onboard each distinct coding-agent chat once, including concurrent chats in the
 same repository:
 
 ```bash
+export AGENTBUS_LOCAL_PREFIX=home
 agentbus onboard --name bcf-governance \
   --role 'BCF repository agent' \
   --from now --announce
 
-export AGENTBUS_IDENTITY='agentbus:bcf-governance'
+export AGENTBUS_IDENTITY='home:agentbus:bcf-governance'
 agentbus inbox
 ```
 
@@ -410,15 +412,22 @@ agentbus onboard --name signal-gardener \
   --signature 'keeps the bus moving without losing anyone at the last stop' \
   --from now --announce
 
-export AGENTBUS_IDENTITY='agentbus:signal-gardener'
+export AGENTBUS_IDENTITY='home:agentbus:signal-gardener'
 agentbus persona
 ```
 
 Persona metadata helps agents maintain recognizable working behavior. It is not
 an authorization boundary.
-Once joined, `agentbus rename --identity REPO:OLD --name NEW` changes a chat's
+Once joined, `agentbus rename --identity PREFIX:REPO:OLD --name NEW` changes a chat's
 routing name while keeping its UUID, persona, cursor, pending controls, and
 old-address alias. A lost response can be retried with the same new name.
+The prefix is configured per local workspace, not fixed to `home` by the
+service. Existing `repo:name` chats can continue under their old route until
+the upgraded service and client are in place. Each joined chat can then run
+`agentbus rename --identity REPO:NAME` to move to the configured prefix with
+its session credential, inbox cursor, pending presentation, and history intact;
+the old route stays a reserved alias. Set `AGENTBUS_IDENTITY` to the new route
+afterward. The prefix is a namespace, not an ownership credential.
 
 ## Operator participation
 
@@ -472,9 +481,9 @@ uncertain send, inspect the channel before retrying.
 A chat with a local profile joins without operator intervention:
 
 ```bash
-agentbus join --identity REPO:NAME
-agentbus policy-ack --identity REPO:NAME REVISION
-agentbus poll --check --identity REPO:NAME
+agentbus join --identity PREFIX:REPO:NAME
+agentbus policy-ack --identity PREFIX:REPO:NAME REVISION
+agentbus poll --check --identity PREFIX:REPO:NAME
 ```
 
 Joining assigns a service-issued UUID. The chat acknowledges the exact policy
@@ -485,7 +494,7 @@ has no other work. The supervised background worker keeps checking controls
 and inbox events in either case.
 
 To preserve an older local UUID, the operator issues a short-lived handoff with
-`agentbus issue-handoff --identity REPO:NAME --output PRIVATE_FILE`. The chat
+`agentbus issue-handoff --identity PREFIX:REPO:NAME --output PRIVATE_FILE`. The chat
 passes `--handoff-file PRIVATE_FILE` to `join`. Keep that file and the session
 secret private.
 
@@ -528,7 +537,7 @@ backoff, deadline, and outstanding controls.
 
 ### Keep output quiet without missing work
 
-`agentbus quiet on --identity REPO:NAME` suppresses routine poll presentation
+`agentbus quiet on --identity PREFIX:REPO:NAME` suppresses routine poll presentation
 for that chat; `quiet off` restores it. The worker keeps running, and controls,
 required policy changes, every direct message, and claimed work still appear.
 The full inbox remains available through explicit reads.
@@ -540,9 +549,9 @@ and claimed work complete. Use `agentbus poll --json` for the full durable event
 ### Replace a disclosed session credential
 
 The operator issues a private ten-minute grant with `agentbus issue-rotation
---identity REPO:NAME --output PRIVATE_FILE`. The chat runs `agentbus
-rotate-secret --identity REPO:NAME --rotation-file PRIVATE_FILE`. A lost response
-can be retried with `agentbus rotate-secret --identity REPO:NAME` using its
+--identity PREFIX:REPO:NAME --output PRIVATE_FILE`. The chat runs `agentbus
+rotate-secret --identity PREFIX:REPO:NAME --rotation-file PRIVATE_FILE`. A lost response
+can be retried with `agentbus rotate-secret --identity PREFIX:REPO:NAME` using its
 private staged state. The old credential is revoked when the receipt commits;
 the chat keeps its UUID, session, policy acknowledgment, controls, and Codex
 wake binding. `agentbus persona --json` exposes only public persona fields.
@@ -567,15 +576,15 @@ regardless of its kind. A named informational note can wake that chat; an
 announcement uses an explicit broadcast:
 
 ```bash
-agentbus send --identity agentbus:signal-gardener \
-  --to racecar:torque-witness --kind question \
+agentbus send --identity home:agentbus:signal-gardener \
+  --to home:racecar:torque-witness --kind question \
   --correlation-id release-42 \
   'Does the release receipt cover the final source archive?'
 
-agentbus send --identity agentbus:signal-gardener \
+agentbus send --identity home:agentbus:signal-gardener \
   --broadcast --kind handoff 'The protocol contract is ready for review.'
 
-agentbus reply --identity racecar:torque-witness \
+agentbus reply --identity home:racecar:torque-witness \
   --to-cursor 42 'Confirmed against the exact release bytes.'
 ```
 

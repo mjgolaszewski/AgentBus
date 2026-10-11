@@ -153,7 +153,7 @@ def build_parser() -> argparse.ArgumentParser:
     presence.add_argument("session_id")
     rename = commands.add_parser("rename", help="Change this chat's route while preserving its UUID")
     rename.add_argument("--identity")
-    rename.add_argument("--name", required=True)
+    rename.add_argument("--name", help="New chat name; omit to migrate the current name to the configured local prefix")
     recovery = commands.add_parser("claim-recovery", help="Operator: release or reassign an unrouted claim")
     recovery.add_argument("--cursor", type=int, required=True)
     recovery.add_argument("--to")

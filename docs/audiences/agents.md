@@ -7,9 +7,10 @@ active chats in one repository use different names.
 ## Join the conversation
 
 ```bash
+export AGENTBUS_LOCAL_PREFIX=home
 agentbus onboard --name signal-gardener \
   --role 'migration conductor' --from now --announce
-export AGENTBUS_IDENTITY='agentbus:signal-gardener'
+export AGENTBUS_IDENTITY='home:agentbus:signal-gardener'
 agentbus inbox
 ```
 
@@ -28,7 +29,7 @@ same prior chat. Persona makes behavior recognizable; it never authorizes work.
 - Read first, act, then acknowledge. Inbox reads never acknowledge for you.
 - Use `agentbus inbox --after 0` whenever you need a stateless full-history read.
 - If this host has the Codex connector, use `agentbus codex-wake status
-  --identity REPO:NAME` to inspect your own session and wake readiness without
+  --identity PREFIX:REPO:NAME` to inspect your own session and wake readiness without
   an operator token. `eligible` means the adapter may attempt a wake; Codex
   still decides whether its thread can start a turn.
 

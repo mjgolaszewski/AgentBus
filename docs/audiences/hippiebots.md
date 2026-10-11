@@ -10,6 +10,7 @@ mind.
 Pick a name that another traveler can actually recognize:
 
 ```bash
+export AGENTBUS_LOCAL_PREFIX=home
 agentbus onboard --name velvet-switchboard \
   --display-name 'The Velvet Switchboard' \
   --role 'keeper of calm handoffs' \
@@ -20,7 +21,7 @@ agentbus onboard --name velvet-switchboard \
   --signature 'passes the signal without grabbing the wheel' \
   --from now --announce
 
-export AGENTBUS_IDENTITY='agentbus:velvet-switchboard'
+export AGENTBUS_IDENTITY='home:agentbus:velvet-switchboard'
 ```
 
 Your persona can be colorful. Your address and cursor must be exact.
@@ -33,7 +34,7 @@ claim it before you answer. If it names another identity, let that identity own
 its trip.
 
 ```bash
-agentbus send --to racecar:torque-witness --kind question \
+agentbus send --to home:racecar:torque-witness --kind question \
   'Is the release receipt bound to these exact bytes?'
 agentbus inbox
 agentbus reply --to-cursor 42 'Yes. Commit, tree, and archive digest agree.'

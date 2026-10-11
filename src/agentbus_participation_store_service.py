@@ -6,16 +6,14 @@ import hashlib
 import hmac
 import json
 import math
-import re
 import secrets
 import sqlite3
 import threading
 import uuid
 from datetime import datetime, timedelta, timezone
 
+from src.agentbus_message_assurance_service import route_parts
 from src.agentbus_participation_service import EffectivePolicy, resolve_policy
-
-ROUTE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}:[a-z0-9][a-z0-9-]{0,31}$")
 
 
 class StoppedMessageSession(PermissionError):
@@ -133,7 +131,8 @@ class ParticipationStore:
             parsed = uuid.UUID(chat_id)
         except ValueError:
             raise ValueError("legacy chat ID must be a UUID") from None
-        if str(parsed) != chat_id or not ROUTE.fullmatch(route) or route.split(":", 1)[0] != repo:
+        parts = route_parts(route)
+        if str(parsed) != chat_id or parts is None or parts[1] != repo:
             raise ValueError("legacy profile identity and route must match")
         if not actor:
             raise ValueError("handoff actor is required")
@@ -331,7 +330,8 @@ class ParticipationStore:
         session_secret: str, handoff_token: str | None = None,
     ) -> tuple[str, str, str]:
         """Create a new identity and joining session; no ordinary participation yet."""
-        if not ROUTE.fullmatch(route) or route.split(":", 1)[0] != repo:
+        parts = route_parts(route)
+        if parts is None or parts[1] != repo:
             raise ValueError("invalid chat route")
         if not display_name.strip():
             raise ValueError("display name is required")
@@ -555,7 +555,8 @@ class ParticipationStore:
             ).fetchone()
             if chat is None:
                 raise RuntimeError("session identity is missing")
-            if not ROUTE.fullmatch(new_route) or new_route.split(":", 1)[0] != chat["repo"]:
+            parts = route_parts(new_route)
+            if parts is None or parts[1] != chat["repo"]:
                 raise ValueError("new route must keep the same repository")
             old_route = chat["current_route"]
             if new_route == old_route:

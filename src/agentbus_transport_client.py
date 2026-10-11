@@ -16,6 +16,17 @@ class ClientError(Exception):
     pass
 
 
+def local_prefix(values: dict[str, str], *, required: bool = False) -> str | None:
+    prefix = values.get("AGENTBUS_LOCAL_PREFIX", "")
+    if not prefix:
+        if required:
+            raise ClientError("Set AGENTBUS_LOCAL_PREFIX before creating a chat identity.")
+        return None
+    if not re.fullmatch(r"[a-z][a-z0-9-]{0,31}", prefix) or prefix in {"slack", "all"}:
+        raise ClientError("AGENTBUS_LOCAL_PREFIX must be lowercase letters, digits, or hyphens, start with a letter, and be at most 32 characters; slack and all are reserved.")
+    return prefix
+
+
 class NoRedirects(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
