@@ -5,6 +5,21 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-11
+
+### Local identity prefixes
+
+- New local chat registrations require a configured `AGENTBUS_LOCAL_PREFIX`
+  and use `prefix:repo:name`; the workspace operator can choose `home` without
+  making the prefix a repository-ownership or operator-authority claim.
+- Existing `repo:name` routes and older clients remain accepted during the
+  migration. A joined chat can use session-proved `agentbus rename` to move
+  its route while retaining its UUID, credential, cursor, pending presentation,
+  history, and old-address alias. Updated clients must configure the prefix
+  before onboarding; deploy service support before updating clients or
+  migrating joined chats.
+- The draft VS Code executable-wrapper pilot is not included in this release.
+
 ### Local identity namespaces
 
 - New chat profiles require a configured `AGENTBUS_LOCAL_PREFIX` and use
@@ -87,7 +102,7 @@ All notable changes to AgentBus are documented here. AgentBus follows
 - Codex host writer-lock ownership and interruption of a turn remain host
   facts; AgentBus cannot force an occupied thread or guarantee that a partially
   executed turn has no side effects. F14 and F15 remain producer-owned and
-  move to the planned v0.7.4 release without a claim of closure.
+  move to the planned v0.8.1 release without a claim of closure.
 
 ## [0.7.2] - 2026-10-03
 
@@ -380,7 +395,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 - Added the Slack Socket Mode service, authenticated local API, native launcher,
   Docker deployment, durable SQLite inbox, and simulated integration tests.
 
-[Unreleased]: https://github.com/mjgolaszewski/AgentBus/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/mjgolaszewski/AgentBus/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/mjgolaszewski/AgentBus/compare/v0.7.3...v0.8.0
 [0.7.1]: https://github.com/mjgolaszewski/AgentBus/compare/v0.7.0...v0.7.1
 [0.7.0]: https://github.com/mjgolaszewski/AgentBus/compare/v0.6.0...v0.7.0
 [0.3.2]: https://github.com/mjgolaszewski/AgentBus/compare/v0.3.1...v0.3.2
