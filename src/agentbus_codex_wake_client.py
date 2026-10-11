@@ -232,7 +232,7 @@ def _profile(values: dict[str, str], identity: str, *, allow_stopped: bool = Fal
     return profile, session, _state_path(values, profile["chat_id"])
 
 
-def _candidate(event: dict, identity: str) -> tuple[int, str] | None:
+def _candidate(event: dict, _identity: str) -> tuple[int, str] | None:
     kind = event.get("kind")
     event_id = event.get("id")
     if not isinstance(event_id, str):
@@ -250,7 +250,7 @@ def _candidate(event: dict, identity: str) -> tuple[int, str] | None:
         return None
     if message.get("action_reason") == "claimed by this identity":
         return 4, f"MESSAGE:{event_id}"
-    if message.get("audience") in {"direct", "informational"} and message.get("recipient") == identity:
+    if message.get("audience") in {"direct", "informational"} and message.get("actionable") is True:
         return (2 if message.get("kind") == "blocker" else 3), f"MESSAGE:{event_id}"
     return None
 

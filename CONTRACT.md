@@ -29,7 +29,8 @@ Existing `repo:name` profiles and sessions remain usable. After the service and
 client are upgraded, a joined chat can run `agentbus rename --identity
 REPO:NAME` to adopt the configured prefix without changing its name. The
 session-proved rename retains the UUID, credential, inbox cursor, pending
-presentation, and old route as a reserved alias; then set
+presentation, and old route as a reserved alias. Service-actionable direct
+messages to the alias remain wake eligible; then set
 `AGENTBUS_IDENTITY=PREFIX:REPO:NAME`. A prefix separates local namespaces but
 does not prove repository ownership or grant operator authority.
 They are local coordination state, use mode `0600`, and must not be committed.

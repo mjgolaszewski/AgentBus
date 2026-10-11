@@ -55,7 +55,7 @@ workitems:
   - requires-workitem-closure:P07-P0-11
   - new local profiles fail closed without a valid prefix and use prefix:repo:name
   - service validates the repository segment independently of prefix and retains existing repo:name routes
-  - session-proved rename preserves UUID, credential, inbox cursor, presentation, and old alias
+  - session-proved rename preserves UUID, credential, inbox cursor, presentation, old alias, and service-actionable alias wake eligibility
   acceptance_evidence:
   - test
   - contract-test

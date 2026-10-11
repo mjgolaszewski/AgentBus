@@ -15,22 +15,12 @@ All notable changes to AgentBus are documented here. AgentBus follows
 - Existing `repo:name` routes and older clients remain accepted during the
   migration. A joined chat can use session-proved `agentbus rename` to move
   its route while retaining its UUID, credential, cursor, pending presentation,
-  history, and old-address alias. Updated clients must configure the prefix
-  before onboarding; deploy service support before updating clients or
-  migrating joined chats.
+  history, and old-address alias. Service-actionable direct messages to that
+  alias remain wake eligible. Existing profiles are not silently renamed;
+  updated clients must configure the prefix before onboarding, and the service
+  must be upgraded before migrating joined chats. Update each chat's
+  `AGENTBUS_IDENTITY` after its rename.
 - The draft VS Code executable-wrapper pilot is not included in this release.
-
-### Local identity namespaces
-
-- New chat profiles require a configured `AGENTBUS_LOCAL_PREFIX` and use
-  `prefix:repo:name` routes. The service accepts those routes while retaining
-  existing `repo:name` chats during migration. A joined chat can run
-  `agentbus rename --identity REPO:NAME` to move to its workspace prefix using
-  its own session proof; UUID, credentials, cursors, pending presentation, and
-  the old address alias remain intact. The prefix separates workspaces, but
-  does not authenticate repository ownership. Upgrade the service before
-  migrating existing chats, and update each chat's `AGENTBUS_IDENTITY` after
-  its rename. Existing unprefixed profiles are not silently renamed.
 
 ### Polling hotfix
 

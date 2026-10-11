@@ -2,6 +2,7 @@
 
 import pytest
 
+from src.agentbus_codex_wake_client import _candidate
 from src.agentbus_service import MessageStore, SendMessage
 
 POLICY = {
@@ -23,10 +24,12 @@ def test_rename_preserves_old_messages_claims_and_pending_stop(tmp_path) -> None
         session_secret=SECRET,
     )
     store.participation.acknowledge_policy(session_id, SECRET, revision)
-    direct = store.append(CHANNEL, "1700000000.000001", SendMessage(
+    direct_input = SendMessage(
         sender="peer:agent", recipient="agentbus:old-name", audience="direct",
         text="Addressed before rename",
-    ))
+    )
+    direct_input._sender_assurance = "session"
+    direct = store.append(CHANNEL, "1700000000.000001", direct_input)
     unrouted = store.append(CHANNEL, "1700000000.000002", SendMessage(
         sender="slack:U123", recipient="all", audience="unrouted", text="Needs an owner",
     ))
@@ -45,6 +48,10 @@ def test_rename_preserves_old_messages_claims_and_pending_stop(tmp_path) -> None
     assert [item.cursor for item in page.messages] == [direct.cursor, unrouted.cursor]
     assert all(item.actionable for item in page.messages)
     assert page.messages[0].recipient == "agentbus:old-name"
+    assert _candidate({"kind": "MESSAGE", "id": str(direct.cursor),
+                       "message": page.messages[0].model_dump()}, "home:agentbus:new-name") == (
+        3, f"MESSAGE:{direct.cursor}",
+    )
     store.validate_reply(CHANNEL, SendMessage(
         sender="home:agentbus:new-name", recipient="peer:agent", audience="direct",
         text="Handled", reply_to_cursor=direct.cursor,

@@ -1,0 +1,38 @@
+document:
+  kind: hotfix_execution_log
+  name: P07-HF06 Hotfix Log
+  id: project-phase-07-hotfix06
+  version: 1.0.0
+  generated_at_utc: '2026-10-11T00:00:00Z'
+  status: completed
+  path: phases/phase-07-hotfix06.yml
+hotfix:
+  id: P07-HF06
+  mode: full
+  related_phase_id: P07
+  hotfix_number: 6
+  summary: Restore wake eligibility for session-proved old route aliases
+execution_evidence:
+  planned_commands:
+  - bcf ci submit --repo-root . --intent workitem
+  executed_commands: []
+  notes:
+  - Pre-publication review found that the service correctly marks direct old-alias mail actionable after rename, while the wake adapter compared recipient text only to the new route.
+  - Use service-derived actionable status for direct or informational wake classification, retaining sender-assurance, audience, and stopped-session exclusions. Prove alias eligibility and negative cases, then reconcile and re-prove exact release bytes.
+closeout_requirements:
+  claims:
+    required_suites_green:
+      required_evidence:
+      - test
+      - contract-test
+    security_review_complete:
+      required_evidence:
+      - governance-validate
+    health_checks_green:
+      required_evidence:
+      - runtime-smoke
+  reconciliation:
+    required_evidence:
+    - governance-validate
+    - governance-exposure-scan
+  finding_registry: governance/findings.yml

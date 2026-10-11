@@ -14,6 +14,7 @@ summary:
   highlights:
   - P07 publishes AgentBus 0.7.1 after pinned uv bootstrap and released BCF #347/#348 are proven
   - operator moved F14 governance hashes and F15 proxy-header remediation into P08, now targeted at 0.8.1 after the Issue 33 hotfix and local-prefix release
+  - P07-HF06 holds the 0.8.0 archive until a service-actionable old-route alias can wake the renamed chat without treating broadcast, legacy, or other-route traffic as actionable
   - phase artifacts were scaffolded from the governance template
   - official uv 0.12.9 multiarch digest is pinned; local image build and runtime imports pass
   - P07-HF04 replaces the vulnerable uv 0.12.9 pin with 0.12.18 in the dev and governance environments, lockfile, and immutable official Docker bootstrap after the isolated BCF 2.2.0 security scan failed

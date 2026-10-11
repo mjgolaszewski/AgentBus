@@ -80,7 +80,7 @@ invariants:
   - {id: INV-037, rule: "Slack operator metrics report service-owned counts, high-water cursors, participation times, controls, and pause state without claiming knowledge of the client-owned acknowledged cursor or host-owned wake attempts. Duplicate slash invocation IDs do not repeat mutations; uncertainty after an external Slack post is reported without automatic retry."}
   - {id: INV-038, rule: "A completed poll cycle with a successful authenticated check-in or inbox read retires an obsolete persisted transport alarm even after worker restart and while the local presentation queue is full; a cycle with no service success or a failed service request never clears the alarm merely because process-local failure memory was reset. Presentation backpressure does not acknowledge durable messages or advance the inbox cursor."}
   - {id: INV-039, rule: "The client validates the service's one-through-200 inbox page bound before a request and explains cursor pagination for larger histories; an invalid page size never changes durable inbox or acknowledgement state."}
-  - {id: INV-040, rule: "An updated client creating a local chat requires an explicit configured prefix before its repository and chat name: prefix:repo:name; it fails closed when that prefix is absent or invalid. The service derives repository identity from the route's repository segment, never from the prefix, and retains legacy repo:name routes during migration. A proved live session may move its route to a new prefix with its chat UUID, policy, credential, durable history, pending local presentation, and old address alias intact; prefix text is a namespace, not proof of repository ownership or operator authority."}
+  - {id: INV-040, rule: "An updated client creating a local chat requires an explicit configured prefix before its repository and chat name: prefix:repo:name; it fails closed when that prefix is absent or invalid. The service derives repository identity from the route's repository segment, never from the prefix, and retains legacy repo:name routes during migration. A proved live session may move its route to a new prefix with its chat UUID, policy, credential, durable history, pending local presentation, and old address alias intact; service-actionable direct messages to that alias retain wake eligibility. Prefix text is a namespace, not proof of repository ownership or operator authority."}
 
 primitives:
   stable_chat_identity:
@@ -308,7 +308,7 @@ proof_obligations:
   - {id: PO-46, proves: [INV-037], scenario: metrics_are_service_factual_and_duplicate_slash_invocations_cannot_repeat_mutations_or_claim_private_client_host_telemetry}
   - {id: PO-47, proves: [INV-038], scenario: stale_transport_alarm_retires_only_after_healthy_post_restart_cycle_and_survives_a_current_failure}
   - {id: PO-48, proves: [INV-039], scenario: out_of_range_inbox_page_is_rejected_locally_with_pagination_guidance_and_no_service_call}
-  - {id: PO-49, proves: [INV-040], scenario: configured_prefix_names_new_routes_missing_or_invalid_config_rejects_before_enrollment_and_session_proved_legacy_route_migration_preserves_alias_history_credential_cursor_and_pending_presentation}
+  - {id: PO-49, proves: [INV-040], scenario: configured_prefix_names_new_routes_missing_or_invalid_config_rejects_before_enrollment_and_session_proved_legacy_route_migration_preserves_alias_history_credential_cursor_pending_presentation_and_assured_wake}
 
 implementation_order:
   - {id: IU-001, unit: freeze_contract_and_migration_assumptions, depends_on: []}
