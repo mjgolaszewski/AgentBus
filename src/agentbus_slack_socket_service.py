@@ -5,6 +5,7 @@ from __future__ import annotations
 import concurrent.futures
 import logging
 import sqlite3
+from typing import Any, cast
 
 from slack_sdk import WebClient
 from slack_sdk.socket_mode import SocketModeClient
@@ -42,6 +43,42 @@ class SlackReceiver:
             except Exception:
                 LOGGER.error("Could not report uncertain AgentBus Slack command outcome")
 
+    def _recover_thread(self, client: BaseSocketModeClient, event: dict) -> None:
+        """A hidden thread update is a signal, not the reply's message body."""
+        from src.agentbus_service import normalize_event
+
+        raw_channel = event.get("channel")
+        channel: str = raw_channel if isinstance(raw_channel, str) else ""
+        parent = event.get("message")
+        root = parent.get("ts") if isinstance(parent, dict) else event.get("thread_ts")
+        if not isinstance(root, str):
+            raise RuntimeError("Slack thread update lacks a root timestamp")
+        cursor = None
+        for _ in range(50):
+            page = client.web_client.conversations_replies(
+                channel=channel, ts=root, limit=200, cursor=cursor,
+            )
+            if not page.get("ok") or not isinstance(page.get("messages"), list):
+                raise RuntimeError("Slack thread recovery failed")
+            for raw in page["messages"]:
+                if not isinstance(raw, dict):
+                    continue
+                reply = {**raw, "type": "message", "channel": channel,
+                         "thread_ts": None if raw.get("ts") == root else root}
+                if reply.get("bot_id") == self.trusted_bot_id and not reply.get("subtype"):
+                    reply["subtype"] = "bot_message"
+                normalized = normalize_event(reply, channel, self.trusted_bot_id)
+                if normalized is not None:
+                    ts, message = normalized
+                    append_slack(self.store, channel, ts, message)
+            if not page.get("has_more"):
+                return
+            metadata = cast(dict[str, Any], page.get("response_metadata") or {})
+            cursor = metadata.get("next_cursor")
+            if not isinstance(cursor, str) or not cursor:
+                raise RuntimeError("Slack thread recovery pagination is incomplete")
+        raise RuntimeError("Slack thread recovery exceeded its bounded page count")
+
     def __call__(self, client: BaseSocketModeClient, request: SocketModeRequest) -> None:
         if request.type == "slash_commands":
             payload = request.payload if isinstance(request.payload, dict) else {}
@@ -65,15 +102,31 @@ class SlackReceiver:
         if request.type == "events_api":
             from src.agentbus_service import normalize_event
 
-            event = request.payload.get("event")
+            event = request.payload.get("event") if isinstance(request.payload, dict) else None
+            raw_channel = event.get("channel") if isinstance(event, dict) else None
+            channel: str = raw_channel if isinstance(raw_channel, str) else ""
+            allowed = self.settings.allowed_channels if self.settings is not None else {self.channel}
+            nested = event.get("message") if isinstance(event, dict) else None
+            thread_update = (isinstance(event, dict) and event.get("subtype") == "message_replied") or (
+                isinstance(event, dict) and event.get("hidden") is True
+                and isinstance(nested, dict) and isinstance(nested.get("reply_count"), int)
+                and nested["reply_count"] > 0
+            )
+            if (isinstance(event, dict) and channel in allowed
+                    and event.get("type") == "message" and thread_update):
+                try:
+                    self._recover_thread(client, event)
+                except Exception:
+                    LOGGER.error("Slack thread recovery failed; withholding event acknowledgement", exc_info=True)
+                    return
             normalized = (
-                normalize_event(event, self.channel, self.trusted_bot_id)
-                if isinstance(event, dict) else None
+                normalize_event(event, channel, self.trusted_bot_id)
+                if isinstance(event, dict) and channel in allowed else None
             )
             if normalized is not None:
                 ts, message = normalized
                 try:
-                    append_slack(self.store, self.channel, ts, message)
+                    append_slack(self.store, channel, ts, message)
                 except (sqlite3.Error, OSError):
                     LOGGER.error("Could not durably store Slack event; withholding acknowledgement")
                     return

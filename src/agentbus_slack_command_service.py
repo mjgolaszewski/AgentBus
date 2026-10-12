@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 
+from src.agentbus_channel_policy_service import route_channel
 from src.agentbus_metrics_service import session_metrics
 from src.agentbus_send_rate_service import SendRateExceeded
 
@@ -42,8 +43,8 @@ def short_session(session_id: str, all_ids: list[str]) -> str:
 
 def execute_command(payload: dict, settings, store, web_client) -> str:
     """Authorize by Slack's verified Socket Mode user ID and exact session ID."""
-    if payload.get("command") != "/agentbus" or payload.get("channel_id") != settings.slack_channel:
-        return "AgentBus commands are available only in the configured channel."
+    if payload.get("command") != "/agentbus" or payload.get("channel_id") not in settings.allowed_channels:
+        return "AgentBus commands are available only in a configured channel."
     user = payload.get("user_id")
     if not isinstance(user, str) or user not in settings.slack_operator_user_ids:
         return "AgentBus operator command access is not enabled for this Slack user."
@@ -81,11 +82,11 @@ def execute_command(payload: dict, settings, store, web_client) -> str:
                 f"pending controls: {len(presence['outstanding_controls'])}. "
                 "Host wake availability is local to the adapter.")
     if action == "metrics" and len(parts) == 2:
-        metrics = session_metrics(store, settings.slack_channel, session_id)
+        metrics = session_metrics(store, settings.slack_channel, session_id, settings.allowed_channels)
         return (f"{metrics['route']} | {session_id}\n"
                 f"Sent: {metrics['sent_messages']}; received: {metrics['received_messages']}; "
                 f"received high-water cursor: {metrics['received_high_water_cursor']}; "
-                f"channel high-water cursor: {metrics['channel_high_water_cursor']}.\n"
+                f"bus high-water cursor: {metrics['channel_high_water_cursor']}.\n"
                 f"Controls: {metrics['control_count']} total, "
                 f"{metrics['outstanding_control_count']} outstanding; "
                 f"work: {'paused' if metrics['work_paused'] else 'active'}; "
@@ -151,6 +152,7 @@ def execute_command(payload: dict, settings, store, web_client) -> str:
         except (ValueError, SendRateExceeded) as exc:
             return str(exc)
         display = visible_text(parts[2])
+        channel = route_channel(settings, presence["route"])
         blocks: list[dict[str, object]] = [
             {"type": "context", "elements": [{"type": "plain_text",
              "text": f"slack:{user} → {presence['route']} · request · direct"}]},
@@ -158,12 +160,12 @@ def execute_command(payload: dict, settings, store, web_client) -> str:
         blocks.extend({"type": "section", "text": {"type": "plain_text", "text": display[i:i + 3000]}}
                       for i in range(0, len(display), 3000))
         response = web_client.chat_postMessage(
-            channel=settings.slack_channel, text=encode_envelope(message),
+            channel=channel, text=encode_envelope(message),
             blocks=blocks,
             parse="none", unfurl_links=False, unfurl_media=False,
         )
-        if not response.get("ok") or response.get("channel") != settings.slack_channel:
+        if not response.get("ok") or response.get("channel") != channel:
             return "Slack delivery is uncertain; inspect the channel before retrying."
-        stored = store.append(settings.slack_channel, response["ts"], message)
-        return f"Delivered to {presence['route']} as cursor {stored.cursor}."
+        stored = store.append(channel, response["ts"], message)
+        return f"Delivered to {presence['route']} in {channel} as cursor {stored.cursor}."
     return HELP

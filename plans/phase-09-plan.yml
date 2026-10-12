@@ -1,0 +1,46 @@
+document:
+  kind: execution_phase_plan
+  name: Phase 09 Plan
+  id: project-phase-09-plan
+  version: 1.0.0
+  generated_at_utc: '2026-10-12T00:00:00Z'
+  status: planned
+  path: plans/phase-09-plan.yml
+phase:
+  id: P09
+  build_block: multichannel_and_thread_ingress
+  planner: codex
+  date: '2026-10-12'
+  scope_source:
+  - AGENTS.yml
+  - plans/product-spec.yml
+  - plans/build-plan.yml
+  - plans/phase-ledger.yml
+  - MEMORY.yml
+delivery_contract:
+  tightly_scoped_deliverables:
+  - derive configured room placement from canonical routes and exact parent ancestry
+  - preserve default binding and global cross-room inbox and wake semantics
+  - recover signalled Slack thread replies before acknowledgement
+  - prove compatibility, authorization, ambiguity, and negative controls
+  - refresh documentation and exact BCF candidate proof
+  parallelizable_workstreams:
+  - id: P09-WS1
+    name: routing
+  - id: P09-WS2
+    name: ingress
+  - id: P09-WS3
+    name: assurance
+  hard_dependencies:
+  - P07 protected release is complete
+  docker_first_local_runtime: repo_native_validation_and_governance_commands
+  completeness_standard: full_completeness_for_declared_scope
+scope_lock:
+- order: 1
+  statement: keep the phase narrowly scoped to declared deliverables and update canonical
+    governed artifacts in the same change
+verification_plan:
+- make governance-validate
+- make architecture-test
+- make contract-test
+- make release-check

@@ -55,7 +55,7 @@ environment_facts:
     - BCF 2.1.8 Standard profile contract v3 governs the repository through the canonical prospective train; uv 0.12.18 aligns development, governance, and immutable Docker bootstrap pins after GHSA-2cv4-cqwr-gwf7 blocked isolated BCF 2.2.0 qualification
     - direct protected-main authority is retained without trusted-controller or BCF release authority
     - production implementations live under src while top-level client and service shims preserve public executable and import paths
-    - routed Slack envelopes are admitted only from the bot identity authenticated from the configured bot token
+    - routed Slack envelopes require the authenticated bot; optional rooms are operator-allowlisted and repository-placed, while the original channel remains the client binding, the global cursor orders every room, and replies retain parent-room ancestry
     - new consumer profiles use the XDG state directory; existing deployments select their prior profile directory through explicit AgentBus configuration
     - identity-aware inbox reads filter and page in indexed SQLite queries with legacy audience migration
     - Phase 04 delivers operator participation and optional host-owned Codex wake without granting core turn authority; Phase 05 adds service-derived assurance; Phase 06 enforces enrolled-route proof and exact-session controls; Phase 07 preserves bounded Codex wake frames, verified human reply routing, recipient-derived wake, parent-derived replies, self wake status, allowlisted Slack controls, and configurable local route prefixes with session-proved alias-preserving migration
@@ -73,7 +73,7 @@ known_constraints:
   - use only immutable released BCF artifacts and digests; preserve provider boundaries without persistent trusted-controller capability
   - specialize repo_identity_provider and repo_observability_backend in the observability contracts before production use
   - per-agent credentials signed federation clustering and multi-tenant authorization remain outside the same-workspace product scope
-  - Slack retention and the local SQLite copy must both be approved for transported data
+  - Slack retention and the local SQLite copy must both be approved for transported data; additional rooms are topical organization, not raw-history API authorization, and signalled thread recovery depends on Slack event delivery and history API availability
   - Issue 6 operator control and participation behavior must derive from the versioned participation contract; no operator authority from sender labels or ordinary bearer tokens
   - legacy protocol-2 clients receive one upgrade notice per inbox identity, with repeatable instructions on explicit info reads; ordinary message pages stay unchanged
   - Issue 8 Codex wake is optional host-owned adapter behavior from contracts/codex-wake/v1/codex-wake.contract.yml; AgentBus core never owns threads, credentials, or turn lifecycle

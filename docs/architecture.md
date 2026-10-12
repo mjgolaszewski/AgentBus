@@ -12,7 +12,7 @@ flowchart LR
   C["Agent chat"] -->|CLI commands| L["AgentBus client"]
   O["Operator"] -->|separate capability| A["AgentBus service"]
   L -->|bearer and session proof| A
-  A <-->|Socket Mode and Web API| S["Slack channel"]
+  A <-->|Socket Mode and Web API| S["Configured Slack rooms"]
   A <--> D[("SQLite history, sessions, and controls")]
   L <--> P[("Local profile and cursor")]
   L -->|supervises| Worker["Local participation worker"]
@@ -56,12 +56,13 @@ one surface while remaining absent from the other inventory.
 | --- | --- |
 | Message protocol and envelope | `SendMessage`, `Message`, and `encode_envelope` |
 | Routing and reply authorization | `SendMessage.check_text`, `MessageStore.validate_reply`, and enrolled-route session proof |
-| Durable inbox and cursors | `MessageStore` and `Info` |
+| Room placement | `agentbus_channel_policy_service`, operator configuration, and durable parent ancestry |
+| Durable inbox and cursors | `MessageStore`, cross-room inbox projection, and `Info` |
 | Chat identity and persona | CLI profile load/save/onboard operations and service-issued chat UUIDs |
 | Participation, controls, and aliases | `ParticipationStore` and `ControlStore` |
 | Sender assurance and rate limits | Service-derived assurance and persistent send admission |
 | Optional Codex wake | Local binding, worker projection, and host-owned resume adapter |
-| Slack delivery | `SlackPoster`, `SlackReceiver`, and `normalize_event` |
+| Slack delivery | `SlackPoster`, `SlackReceiver`, thread-update recovery, and `normalize_event` |
 | Lifecycle and configuration | `Settings`, CLI configuration, and lifecycle operations |
 
 Protocol translations are explicit at Slack ingestion. Startup authenticates
@@ -72,6 +73,24 @@ routing fields, and local cursor, while Slack timestamps remain external message
 and thread identities. Stored sender assurance records whether a message was
 proved by a joined session, verified as Slack-human ingress, or admitted as
 legacy. Existing raw history is not rewritten.
+
+The default Slack channel remains the protocol-2 `Info.channel` value and the
+home for unmapped repositories. The operator may allow more IDs and assign
+repositories to them. A new direct send is placed from the recipient route's
+repository segment, a broadcast from the sender's, and a reply from its durable
+parent's channel. No caller-supplied channel or `repo` label chooses placement.
+The global SQLite cursor orders all rooms. The ordinary inbox projects direct
+and informational mail for current and reserved routes across configured rooms,
+plus home-room broadcasts and cross-room claims, while explicit history/context reads can
+select a room. Slack timestamps and thread roots are qualified by room; a bare
+timestamp that matches two rooms cannot select one silently.
+
+Socket Mode may deliver a hidden thread-update notification instead of the
+reply body. For a configured room, the receiver reads the thread through Slack,
+normalizes each message under the same bot/human assurance and ancestry rules,
+and durably deduplicates by `(channel, slack_ts)` before acknowledging the update.
+Failed or incomplete reads withhold that acknowledgement. The service cannot
+claim messages Slack never delivers or makes available through its API.
 
 ## Trust boundaries
 
@@ -86,7 +105,7 @@ legacy. Existing raw history is not rewritten.
   the default deployment does not claim isolation among hostile same-user agents.
 - The service never follows an HTTP redirect with a bearer token. The CLI allows
   plaintext HTTP only on loopback.
-- Socket events are untrusted until channel, event shape, authenticated bot
+- Socket events are untrusted until configured channel, event shape, authenticated bot
   provenance, envelope, and model validation pass. Failed durable ingestion is
   not acknowledged to Slack.
 - Candidate tests use fake sockets and HTTP transports. CI receives no live Slack
@@ -95,6 +114,9 @@ legacy. Existing raw history is not rewritten.
   archives.
 - Slack retains the transport copy under workspace policy; SQLite retains a local
   copy. Operators must approve both stores for the data agents exchange.
+- Multiple Slack rooms separate attention, not API authorization. The shared
+  bearer retains raw-history read scope across configured rooms; Slack room
+  membership has its own workspace authority and retention policy.
 
 ## Deployment boundaries
 

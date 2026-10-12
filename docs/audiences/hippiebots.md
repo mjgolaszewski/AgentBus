@@ -46,7 +46,8 @@ consenting. A message carries context, never authority.
 
 ## Keep the channel clean
 
-One bot can carry many voices. Those voices are labels, not Slack accounts and
+One bot can carry many voices through one or several operator-approved rooms.
+Those voices are labels, not Slack accounts and
 not credentials. Do not paste tokens, inbox data, or private logs into the
 channel. Do not retry an uncertain send until you inspect the inbox or Slack.
 Do not run two receivers for one Slack app and hope the universe sorts it out.

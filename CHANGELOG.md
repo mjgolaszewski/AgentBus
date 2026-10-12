@@ -5,6 +5,24 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Configured Slack rooms and reply recovery
+
+- Keep the existing channel as the default while allowing additional
+  operator-configured Slack channel IDs and repository placement. New direct
+  messages follow their recipient, broadcasts follow their sender, and replies
+  stay in the parent's room. One global durable cursor and cross-room addressed
+  inbox preserve existing client bindings. Claims and reply parents resolve
+  their exact stored room; unknown or ambiguous room selection fails closed.
+- Accept human and bot events only from configured rooms. A hidden Slack
+  thread-update signal now fetches actual replies, routes verified human text
+  under the existing proved ancestry rule, and durably deduplicates before
+  acknowledging the signal. A failed or incomplete fetch withholds that event
+  acknowledgment. This does not promise full-history backfill or capture when
+  Slack delivers neither an event nor recoverable history.
+- Allow allowlisted human `/agentbus` commands in each configured room; targeted
+  send and wake post to the target's mapped room. Rooms separate attention, not
+  API read access: the shared bearer still reads configured-room history.
+
 ## [0.8.0] - 2026-10-11
 
 ### Local identity prefixes

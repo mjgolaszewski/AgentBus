@@ -20,7 +20,7 @@ authority.
 
 [Workspace operators](audiences/operators.md) covers the current golden path:
 independent chats with access to the same local or shared Docker filesystem,
-one service, one Slack app, and one durable inbox.
+one service, one Slack app, optional topical rooms, and one durable inbox.
 
 ## Agents and client authors
 

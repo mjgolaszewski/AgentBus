@@ -1,0 +1,63 @@
+document:
+  kind: execution_phase_workitem_ledger
+  name: Phase 09 Workitems
+  id: project-phase-09-workitems
+  version: 1.0.0
+  generated_at_utc: '2026-10-12T00:00:00Z'
+  status: planned
+  path: plans/phase-09-workitems.yml
+  phase_id: P09
+workitems:
+- id: P09-P0-01
+  priority: P0
+  status: TODO
+  summary: deliver derive configured room placement from canonical routes and exact
+    parent ancestry
+  acceptance:
+  - only configured IDs are admitted and unknown room assignments fail before any Slack post
+  - direct and informational sends follow the recipient repo, broadcasts the sender repo, and replies their exact parent channel
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P09-P0-02
+  priority: P0
+  status: TODO
+  summary: deliver preserve default binding and global cross-room inbox and wake semantics
+  acceptance:
+  - the original info channel and inbox ID remain stable for existing profiles
+  - global cursor pagination includes cross-room addressed messages and claims without other-room broadcasts
+  - cross-room assured direct messages retain existing wake eligibility
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P09-P0-03
+  priority: P0
+  status: TODO
+  summary: deliver recover signalled Slack thread replies before acknowledgement
+  acceptance:
+  - a hidden or subtype-less thread-update signal fetches actual replies and applies existing assurance and single-agent ancestry
+  - room plus Slack timestamp deduplicates recovered replies; fetch or pagination failure withholds event acknowledgement
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P09-P0-04
+  priority: P0
+  status: TODO
+  summary: deliver prove compatibility, authorization, ambiguity, and negative controls
+  acceptance:
+  - same timestamp in two rooms cannot choose a thread without an explicit allowed room
+  - unapproved room reads, agent-selected channels, unauthorized slash commands, and spoofed sender assurance fail closed
+  - canonical BCF service claim producer includes new behavioral tests and mutation controls
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P09-P0-05
+  priority: P0
+  status: TODO
+  summary: deliver refresh documentation and exact BCF candidate proof
+  acceptance:
+  - README and each affected audience guide explain placement, recovery, compatibility, and residual provider or privacy boundaries
+  - final exact commit/tree passes canonical BCF prospective train, PR and main truth, and isolated release verification before custody
+  acceptance_evidence:
+  - test
+  - contract-test
