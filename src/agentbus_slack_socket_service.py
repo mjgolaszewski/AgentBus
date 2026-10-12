@@ -54,12 +54,16 @@ class SlackReceiver:
         if not isinstance(root, str):
             raise RuntimeError("Slack thread update lacks a root timestamp")
         cursor = None
-        for _ in range(50):
+        for page_index in range(50):
             page = client.web_client.conversations_replies(
                 channel=channel, ts=root, limit=200, cursor=cursor,
             )
             if not page.get("ok") or not isinstance(page.get("messages"), list):
                 raise RuntimeError("Slack thread recovery failed")
+            if page_index == 0 and not any(
+                    isinstance(item, dict) and item.get("ts") == root
+                    for item in page["messages"]):
+                raise RuntimeError("Slack thread recovery lacks its root")
             for raw in page["messages"]:
                 if not isinstance(raw, dict):
                     continue
@@ -72,6 +76,8 @@ class SlackReceiver:
                     ts, message = normalized
                     append_slack(self.store, channel, ts, message)
             if not page.get("has_more"):
+                if self.store.message_by_ts(channel, root) is None:
+                    raise RuntimeError("Slack thread recovery lacks a durable root")
                 return
             metadata = cast(dict[str, Any], page.get("response_metadata") or {})
             cursor = metadata.get("next_cursor")

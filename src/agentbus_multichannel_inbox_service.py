@@ -8,13 +8,24 @@ from src.agentbus_service import InboxMessage, InboxPage
 
 def read_inbox(settings, store, identity: str, after: int, limit: int,
                thread_ts: str | None, context: bool, channel: str | None) -> InboxPage:
+    explicit_channel = channel is not None
     if channel is not None and channel not in settings.allowed_channels:
         raise ValueError("unknown Slack room")
     if channel is None and thread_ts is not None and len(settings.allowed_channels) > 1:
         channel = thread_channel(settings, store, thread_ts)
-    if channel is not None or context or len(settings.allowed_channels) == 1:
-        return store.inbox(channel or settings.slack_channel, identity, after, limit,
-                           thread_ts, context)
+    if channel is not None:
+        page = store.inbox(channel, identity, after, limit, thread_ts,
+                           context=context or explicit_channel)
+        if channel != route_channel(settings, identity):
+            page.messages = [
+                item.model_copy(update={"actionable": False,
+                                        "action_reason": "broadcast in another room"})
+                if item.audience == "broadcast" else item
+                for item in page.messages
+            ]
+        return page
+    if context or len(settings.allowed_channels) == 1:
+        return store.inbox(settings.slack_channel, identity, after, limit, thread_ts, context)
     return inbox_across_rooms(store, settings.allowed_channels,
                               route_channel(settings, identity), identity, after, limit)
 

@@ -81,8 +81,9 @@ repository segment, a broadcast from the sender's, and a reply from its durable
 parent's channel. No caller-supplied channel or `repo` label chooses placement.
 The global SQLite cursor orders all rooms. The ordinary inbox projects direct
 and informational mail for current and reserved routes across configured rooms,
-plus home-room broadcasts and cross-room claims, while explicit history/context reads can
-select a room. Slack timestamps and thread roots are qualified by room; a bare
+plus home-room broadcasts and cross-room claims, while explicit history/context
+reads can select a room without making foreign broadcasts actionable. Slack
+timestamps and thread roots are qualified by room; a bare
 timestamp that matches two rooms cannot select one silently.
 
 Socket Mode may deliver a hidden thread-update notification instead of the

@@ -122,6 +122,13 @@ def test_room_placement_reply_ancestry_and_global_inbox(tmp_path):
                             params={"identity": "home:agentbus:flower"}).json()
         assert [m["text"] for m in flower["messages"]] == ["For my room", "Reply in parent room"]
         assert flower["next_cursor"] == reply.json()["cursor"]
+        foreign_context = client.get("/v1/inbox", headers=proof, params={
+            "identity": "home:agentbus:flower", "channel": OTHER,
+        }).json()
+        foreign_broadcast_context = next(item for item in foreign_context["messages"]
+                                         if item["text"] == "Not for flower's room")
+        assert foreign_broadcast_context["actionable"] is False
+        assert foreign_broadcast_context["action_reason"] == "broadcast in another room"
         claimable = store.append(OTHER, "1700000000.000099", SendMessage(
             sender="slack:U123", text="Needs a claimant", audience="unrouted"))
         claimed = client.post(f"/v1/messages/{claimable.cursor}/claim", headers=proof,
@@ -167,11 +174,17 @@ def test_thread_update_recovers_missing_human_reply_before_ack(tmp_path):
 
     class Web:
         fail = False
+        omit_root = False
 
         def conversations_replies(self, **kwargs):
             assert kwargs["channel"] == OTHER and kwargs["ts"] == stored.slack_ts
             if self.fail:
                 raise RuntimeError("upstream unavailable")
+            if self.omit_root:
+                return {"ok": True, "has_more": False, "messages": [
+                    {"ts": "1700000000.000003", "thread_ts": stored.slack_ts,
+                     "user": "U123", "text": "Orphaned page"},
+                ]}
             return {"ok": True, "has_more": False, "messages": [
                 {"ts": stored.slack_ts, "text": "Racecar finding"},
                 {"ts": "1700000000.000002", "thread_ts": stored.slack_ts,
@@ -200,6 +213,18 @@ def test_thread_update_recovers_missing_human_reply_before_ack(tmp_path):
     failed = SocketModeRequest(type="events_api", envelope_id="update-2", payload={"event": update})
     socket.receiver(socket, failed)
     assert socket.acks == ["update-1", "update-1", "update-hidden"]
+    socket.web_client.fail = False
+    socket.web_client.omit_root = True
+    socket.receiver(socket, SocketModeRequest(
+        type="events_api", envelope_id="update-without-root", payload={"event": update}))
+    assert "update-without-root" not in socket.acks
+    ordinary = {"type": "message", "channel": OTHER, "ts": "1700000000.000004",
+                "user": "U123", "text": "Ordinary room message"}
+    socket.receiver(socket, SocketModeRequest(
+        type="events_api", envelope_id="ordinary-other-room", payload={"event": ordinary}))
+    assert socket.acks[-1] == "ordinary-other-room"
+    assert store.message_by_ts(OTHER, ordinary["ts"]).sender == "slack:U123"
+    assert store.message_by_ts(DEFAULT, ordinary["ts"]) is None
     store.close()
 
 

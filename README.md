@@ -380,7 +380,9 @@ such a change with the affected agents.
 A direct or informational message addressed to a chat is visible in its inbox
 regardless of which configured room contains it. Broadcasts stay room-scoped.
 The API can read one room's raw history with `GET /v1/messages?channel=ID`;
-the default remains the old channel when omitted. Replies and claims use their
+the default remains the old channel when omitted. An explicit-room inbox is
+context; a broadcast from another room is visibly non-actionable. Replies and
+claims use their
 durable parent cursor to find the exact room. This is topical organization,
 not confidentiality: the shared API bearer can still read raw room history,
 and Slack membership and retention remain workspace policy.
