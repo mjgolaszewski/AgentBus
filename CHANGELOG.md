@@ -12,6 +12,11 @@ All notable changes to AgentBus are documented here. AgentBus follows
   exact recipient and wake an agent only when its route prefix matches the
   bot binding and its envelope attests a proved origin session. Unknown bots,
   legacy-origin messages, and prefix mismatches remain unrouted history.
+- The peer directory records when a configured remote bot sends an older
+  envelope without origin proof. Its last observed time appears in `agentbus
+  peers`, alongside the two-service upgrade guidance. The record is historical
+  diagnostic data: old envelopes remain raw, unrouted, and unable to wake a
+  chat. A peer directory snapshot alone does not certify message compatibility.
 
 ### Acknowledged poll messages
 

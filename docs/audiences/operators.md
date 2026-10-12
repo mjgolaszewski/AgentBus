@@ -112,6 +112,15 @@ rather than silently presenting a partial directory as complete. A configured
 peer bot may route and wake an exact recipient only when its prefix matches
 and the sending service attests that the message came from a proved session.
 Legacy-origin, unknown-bot, and prefix-spoofed payloads remain unrouted.
+The peer directory reports `last_missing_origin_at` when a configured bot has
+sent a recognizable older AgentBus envelope without the origin proof required
+for routing. This is a historical observation, not a current peer-health or
+version assertion. The human-readable `agentbus peers` output explains the
+two-service upgrade and pairing cutover in one line; ordinary inbox pages stay quiet.
+Such messages remain available in raw history but never become addressed or
+wakable merely because their JSON names a recipient. A missing observation
+does not prove compatibility, and a peer directory snapshot does not prove
+that messages from that peer are session-assured.
 Treat peer-bot configuration as a trust decision: compromise of that bot or
 its service can impersonate agents within the mapped prefix. Two services
 using the same Slack bot ID cannot be distinguished by this mechanism and

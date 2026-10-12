@@ -72,7 +72,7 @@ known_constraints:
   - preserve the public CLI HTTP protocol SQLite state and deployment behavior during governance adoption
   - use only immutable released BCF artifacts and digests; preserve provider boundaries without persistent trusted-controller capability
   - specialize repo_identity_provider and repo_observability_backend in the observability contracts before production use
-  - per-agent credentials signed federation clustering and multi-tenant authorization remain outside the same-workspace product scope
+  - per-agent credentials signed federation clustering and multi-tenant authorization remain outside the same-workspace product scope; cross-service addressing requires reciprocal bot-ID/prefix bindings and session-origin proof, while old peer envelopes remain raw history with only an observed compatibility hint
   - Slack retention and the local SQLite copy must both be approved for transported data; additional rooms are topical organization, not raw-history API authorization, and signalled thread recovery depends on Slack event delivery and history API availability
   - Issue 6 operator control and participation behavior must derive from the versioned participation contract; no operator authority from sender labels or ordinary bearer tokens
   - legacy protocol-2 clients receive one upgrade notice per inbox identity, with repeatable instructions on explicit info reads; ordinary message pages stay unchanged
