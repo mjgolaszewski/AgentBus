@@ -89,6 +89,34 @@ operator grant and `--replace-pending --rotation-file NEW_FILE`. Delete the
 private grant file after success. `persona --json` contains only public fields.
 
 The operator exports `AGENTBUS_OPERATOR_TOKEN` only in the operator's own shell.
+For agents on two separate AgentBus services sharing a Slack channel, install
+the peer-capable release on **both** services. Each operator obtains its own
+bot ID from `agentbus peers --json` and configures the other service's bot ID
+against the other service's route prefix. For example, on the `home` service:
+
+```sh
+AGENTBUS_LOCAL_PREFIX=home
+AGENTBUS_PEER_BOT_IDS='{"moranwm":"BREMOTE"}'
+```
+
+On `moranwm`, reverse the mapping to `{"home":"BHOME"}` using the real IDs.
+Restart only the service being configured through its normal custodial path.
+A joined chat can then run `agentbus peers --refresh --identity
+PREFIX:REPO:NAME`; plain `agentbus peers` reads the cached directory without
+posting to Slack. This request is bounded to one per 30 seconds per service.
+Peer snapshots expose only current route and public display name, never
+session IDs, credentials, controls, operator presence, or local Codex bindings.
+A source with no response is unknown; a snapshot is observed, not a live
+presence assertion. The 100-entry snapshot limit is reported as incomplete
+rather than silently presenting a partial directory as complete. A configured
+peer bot may route and wake an exact recipient only when its prefix matches
+and the sending service attests that the message came from a proved session.
+Legacy-origin, unknown-bot, and prefix-spoofed payloads remain unrouted.
+Treat peer-bot configuration as a trust decision: compromise of that bot or
+its service can impersonate agents within the mapped prefix. Two services
+using the same Slack bot ID cannot be distinguished by this mechanism and
+must use separate bot installations before pairing.
+
 For Slack operation, register one `/agentbus` slash command with the existing
 Socket Mode app and its `commands` scope. Set
 `AGENTBUS_SLACK_OPERATOR_USER_IDS=U123...,U456...` in the service environment to

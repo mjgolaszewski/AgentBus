@@ -42,5 +42,7 @@ def validate_reply(store, channel: str, message) -> None:
                same_chat(claimant, message.sender))
     if not allowed:
         raise PermissionError("sender is not an intended responder for the parent message")
-    if not same_chat(message.recipient, parent.sender) or message.audience != "direct":
+    target_matches = (same_chat(message.recipient, parent.sender) or
+                      (parent.sender_assurance == "peer" and message.recipient == parent.sender))
+    if not target_matches or message.audience != "direct":
         raise ValueError("replies must be direct messages to the parent sender")

@@ -23,6 +23,7 @@ from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError,
 from src.agentbus_channel_policy_service import cursor_channel, send_channel
 from src.agentbus_claim_recovery_service import ClaimRecoveryStore
 from src.agentbus_control_store_service import ControlStore
+from src.agentbus_message_assurance_service import route_parts
 from src.agentbus_message_authorization_service import require_message_route
 from src.agentbus_participation_api_service import (
     UPGRADE_NOTICE,
@@ -48,6 +49,8 @@ from src.agentbus_participation_api_service import (
     upgrade_notice,
 )
 from src.agentbus_participation_store_service import ParticipationStore, StoppedMessageSession
+from src.agentbus_peer_api_service import api_peer_refresh, api_peers
+from src.agentbus_peer_directory_service import PeerDirectoryStore
 from src.agentbus_reply_policy_service import validate_reply
 from src.agentbus_request_limits_service import RequestBodyLimit
 from src.agentbus_send_policy_service import SessionAuthorityError, validate_new_send
@@ -66,7 +69,8 @@ ACTIONABLE_KINDS = {"question", "request", "blocker", "handoff"}
 
 def encode_envelope(message: SendMessage) -> str:
     """Keep Slack's link/mention processing out of the machine-readable fallback."""
-    encoded = json.dumps({"agentbus": 2, **message.model_dump(include=set(SendMessage.model_fields))},
+    encoded = json.dumps({"agentbus": 2, "origin_assurance": message._sender_assurance,
+                          **message.model_dump(include=set(SendMessage.model_fields))},
                          ensure_ascii=True, separators=(",", ":"))
     for literal, escape in (("<", r"\u003c"), (">", r"\u003e"), ("&", r"\u0026"), ("/", r"\/")):
         encoded = encoded.replace(literal, escape)
@@ -121,7 +125,7 @@ class Message(SendMessage):
     cursor: int
     slack_ts: str
     received_at: str
-    sender_assurance: Literal["session", "slack-human", "legacy"] = "legacy"
+    sender_assurance: Literal["session", "peer", "slack-human", "legacy"] = "legacy"
 
 
 class MessagePage(BaseModel):
@@ -249,6 +253,7 @@ class MessageStore:
         )
         self._db.commit()
         self.participation = ParticipationStore(self._db, self._lock)
+        self.peers = PeerDirectoryStore(self._db, self._lock)
         self.send_rate = SendRateStore(self._db, self._lock)
         self.controls = ControlStore(self._db, self._lock, self.participation)
         self.claim_recovery = ClaimRecoveryStore(self._db, self._lock)
@@ -295,7 +300,7 @@ class MessageStore:
             """, (channel, slack_ts, message.thread_ts, message.recipient,
                   message.audience, datetime.now(timezone.utc).isoformat(),
                   message.model_dump_json(), message._sender_assurance))
-            if message._sender_assurance in {"session", "slack-human"}:
+            if message._sender_assurance in {"session", "peer", "slack-human"}:
                 self._db.execute(
                     "UPDATE messages SET sender_assurance = ?, payload = ?, recipient = ?, audience = ?, thread_ts = ? "
                     "WHERE channel = ? AND slack_ts = ? AND sender_assurance = 'legacy'",
@@ -351,7 +356,7 @@ class MessageStore:
                 ).fetchone()[0]
         return Info(inbox_id=inbox_id, channel=channel, high_water_cursor=high,
                     features=["profiles", "stateless-cursors", "explicit-routing",
-                              "parent-replies", "legacy-claims"])
+                              "parent-replies", "legacy-claims", "peer-directory"])
 
     def message(self, channel: str, cursor: int) -> Message | None:
         with self._lock:
@@ -479,7 +484,8 @@ class MessageStore:
             self._db.close()
 
 
-def normalize_event(event: dict, channel: str, trusted_bot_id: str) -> tuple[str, SendMessage] | None:
+def normalize_event(event: dict, channel: str, trusted_bot_id: str,
+                    peer_bot_ids: dict[str, str] | None = None) -> tuple[str, SendMessage] | None:
     if event.get("type") != "message" or event.get("channel") != channel:
         return None
     if event.get("subtype") not in (None, "bot_message", "thread_broadcast") or event.get("hidden"):
@@ -490,21 +496,28 @@ def normalize_event(event: dict, channel: str, trusted_bot_id: str) -> tuple[str
     thread_ts = event.get("thread_ts")
     if not isinstance(thread_ts, str) or not re.fullmatch(SLACK_TS, thread_ts):
         thread_ts = None
-    trusted_envelope = (
-        event.get("bot_id") == trusted_bot_id
-        and event.get("subtype") in ("bot_message", "thread_broadcast")
-    )
+    bot_id = event.get("bot_id")
+    peer_prefix = next((name for name, bot in (peer_bot_ids or {}).items() if bot == bot_id), None)
+    trusted_envelope = (bot_id in {trusted_bot_id, *(peer_bot_ids or {}).values()}
+                        and event.get("subtype") in ("bot_message", "thread_broadcast"))
     if trusted_envelope:
         try:
             envelope = json.loads(text)
             if isinstance(envelope, dict) and envelope.get("agentbus") in (1, 2):
                 version = envelope.pop("agentbus")
+                origin_assurance = envelope.pop("origin_assurance", None)
                 if version == 1:
                     envelope.pop("audience", None)
                     envelope.pop("reply_to_cursor", None)
                 envelope["thread_ts"] = thread_ts
                 message = SendMessage.model_validate(envelope)
-                if not message.sender.startswith("slack:"):
+                parts = route_parts(message.sender)
+                if (not message.sender.startswith("slack:") and
+                        (peer_prefix is None or (parts is not None and parts[0] == peer_prefix))):
+                    if peer_prefix is not None:
+                        if origin_assurance != "session":
+                            raise ValueError("peer message lacks proved origin session")
+                        message._sender_assurance = "peer"
                     return ts, message
         except (ValueError, RecursionError):
             pass
@@ -638,6 +651,8 @@ API_OPERATIONS: dict[str, Callable[..., object]] = {
     "read": api_read,
     "info": api_info,
     "inbox": api_inbox,
+    "peers": api_peers,
+    "peer_refresh": api_peer_refresh,
     "claim": api_claim,
     "policy_set": api_policy_set,
     "policy_effective": api_policy_effective,
@@ -672,6 +687,9 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
         try:
             poster = SlackPoster(settings, client)
             trusted_bot_id = await poster.authenticated_bot_id()
+            if trusted_bot_id in settings.peer_bot_ids.values():
+                raise RuntimeError("Own Slack bot ID cannot be configured as a peer")
+            app.state.local_bot_id = trusted_bot_id
             socket = socket_factory(
                 settings, SlackReceiver(store, settings.slack_channel, trusted_bot_id, settings)
             )
@@ -705,6 +723,9 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                       dependencies=auth, response_model=Info)
     app.add_api_route("/v1/inbox", API_OPERATIONS["inbox"], methods=["GET"],
                       dependencies=auth, response_model=InboxPage)
+    app.add_api_route("/v1/peers", API_OPERATIONS["peers"], methods=["GET"], dependencies=auth)
+    app.add_api_route("/v1/peers/refresh", API_OPERATIONS["peer_refresh"],
+                      methods=["POST"], dependencies=auth)
     app.add_api_route("/v1/messages/{cursor}/claim", API_OPERATIONS["claim"], methods=["POST"],
                       dependencies=auth, response_model=Claim)
     app.add_api_route("/v1/messages/{cursor}/claim-recovery", API_OPERATIONS["claim_recovery"],

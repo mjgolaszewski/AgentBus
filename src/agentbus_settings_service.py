@@ -21,6 +21,8 @@ class Settings:
     slack_operator_user_ids: frozenset[str] = frozenset()
     slack_channels: frozenset[str] = frozenset()
     slack_repo_channels: dict[str, str] = field(default_factory=dict)
+    local_prefix: str | None = None
+    peer_bot_ids: dict[str, str] = field(default_factory=dict)
 
     @property
     def allowed_channels(self) -> frozenset[str]:
@@ -72,6 +74,23 @@ class Settings:
             for repo, room in room_map.items()
         ):
             raise ValueError("AGENTBUS_SLACK_REPO_CHANNELS must map repository names to configured channel IDs")
+        prefix = os.environ.get("AGENTBUS_LOCAL_PREFIX", "").strip() or None
+        if prefix is not None and (prefix in {"all", "slack"} or not re.fullmatch(r"[a-z][a-z0-9-]{0,31}", prefix)):
+            raise ValueError("AGENTBUS_LOCAL_PREFIX must be a canonical prefix")
+        raw_peers = os.environ.get("AGENTBUS_PEER_BOT_IDS", "{}").strip() or "{}"
+        try:
+            peers = json.loads(raw_peers)
+        except ValueError:
+            raise ValueError("AGENTBUS_PEER_BOT_IDS must be a JSON object mapping prefixes to bot IDs") from None
+        if not isinstance(peers, dict) or any(
+            not isinstance(name, str) or not re.fullmatch(r"[a-z][a-z0-9-]{0,31}", name)
+            or name in {"all", "slack"} or name == prefix
+            or not isinstance(bot, str) or not re.fullmatch(r"B[A-Z0-9]+", bot)
+            for name, bot in peers.items()
+        ) or len(set(peers.values())) != len(peers):
+            raise ValueError("AGENTBUS_PEER_BOT_IDS must map distinct canonical prefixes to distinct Slack bot IDs")
+        if peers and prefix is None:
+            raise ValueError("AGENTBUS_LOCAL_PREFIX is required when peer bots are configured")
         return cls(**values, db_path=db_path.expanduser(), operator_token=operator_token,
                    slack_operator_user_ids=users, slack_channels=channels,
-                   slack_repo_channels=room_map)
+                   slack_repo_channels=room_map, local_prefix=prefix, peer_bot_ids=peers)

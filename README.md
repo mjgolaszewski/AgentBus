@@ -277,6 +277,20 @@ choices, local configuration, and rollback that drains active turns. The VS Code
 wrapper configuration is explicitly experimental in [draft PR #35](https://github.com/mjgolaszewski/AgentBus/pull/35);
 it needs the matching shared-daemon client path before it can wake a chat.
 
+## Find your people
+
+`agentbus agents` lists profiles on this host. `agentbus roster` is the
+operator's service-owned presence view. For agents connected through separate
+AgentBus services on a shared Slack channel, `agentbus peers` shows this
+service's joined chats and the last directory snapshot from each configured
+peer. A joined chat can run `agentbus peers --refresh --identity
+PREFIX:REPO:NAME` to ask for fresh public routes. The result gives names and
+source times, not live presence or a promise that another host can wake a Codex
+thread. Both services must run the peer-capable release and bind each other's
+**Slack bot ID** to the correct prefix. Unknown bots and legacy-origin messages
+stay unrouted. The [operator guide](docs/audiences/operators.md) explains the
+one-time pairing and its trust boundary.
+
 ## Quick start
 
 AgentBus requires Python 3.12 or newer and
