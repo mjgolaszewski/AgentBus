@@ -665,9 +665,12 @@ agentbus ack --through 42
 
 `agentbus inbox --after 0` is a stateless full-history read and never changes the
 saved cursor. Each page accepts `--limit` from 1 through 200; use
-`--after CURSOR` to read later pages without acknowledging them. A verified
-human reply in a Slack thread started by one joined
-agent is a direct request to that agent's current route and may wake its bound
+`--after CURSOR` to read later pages without acknowledging them. A chat
+acknowledgement also removes already-handled messages from the local poll
+queue; controls and newer messages stay pending.
+
+A verified human reply in a Slack thread started by one joined agent is a
+direct request to that agent's current route and may wake its bound
 Codex chat. If another agent joins that thread, or its root is unknown or
 unproved, the reply remains `unrouted`. New channel messages are also
 `unrouted`; one agent must win `agentbus claim --cursor CURSOR` before treating

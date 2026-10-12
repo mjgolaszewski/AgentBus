@@ -79,6 +79,14 @@ def _routine_message(event: dict, identity: str) -> bool:
     )
 
 
+def _reconcile_acknowledged(state: dict, profile: dict) -> None:
+    acknowledged = int(profile.get("ack_cursor", 0))
+    state["events"] = [event for event in state["events"]
+                       if event["kind"] != "MESSAGE"
+                       or int(event["message"]["cursor"]) > acknowledged]
+    state["cursor"] = max(int(state["cursor"]), acknowledged)
+
+
 def peek_event(profile_path: Path, profile: dict, *, quiet: bool = False) -> dict | None:
     def priority(event: dict) -> int:
         if event["kind"] == "CONTROL":
@@ -101,6 +109,7 @@ def peek_event(profile_path: Path, profile: dict, *, quiet: bool = False) -> dic
         return 7
 
     def pick(state: dict) -> dict | None:
+        _reconcile_acknowledged(state, profile)
         if quiet:
             # The service inbox remains authoritative; this is disposable
             # presentation state, not an acknowledgement or deletion.
@@ -121,6 +130,11 @@ def retire_event(profile_path: Path, profile: dict, kind: str, event_id: str) ->
                            if (event["kind"], event["id"]) != (kind, event_id)]
 
     change_spool(profile_path, profile, retire)
+
+
+def retire_acknowledged_messages(profile_path: Path, profile: dict) -> None:
+    """Reconcile disposable presentation with the chat's observed acknowledgement."""
+    change_spool(profile_path, profile, lambda state: _reconcile_acknowledged(state, profile))
 
 
 def policy_values_for_revision(profile_path: Path, profile: dict, revision: str) -> dict | None:

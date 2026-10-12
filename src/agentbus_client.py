@@ -516,6 +516,9 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
             raise ClientError("Cannot acknowledge beyond the highest cursor observed by this chat.")
         profile["ack_cursor"] = ns.through
         save_profile(values, profile)
+        from src.agentbus_poll_client import retire_acknowledged_messages
+
+        retire_acknowledged_messages(identity_path(values, identity).resolve(), profile)
         result = {"identity": identity, "ack_cursor": ns.through}
     elif ns.command == "rebind":
         identity = resolve_identity(ns.identity)

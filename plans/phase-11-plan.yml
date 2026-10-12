@@ -1,0 +1,42 @@
+document:
+  kind: execution_phase_plan
+  name: Phase 11 Plan
+  id: project-phase-11-plan
+  version: 1.0.0
+  generated_at_utc: '2026-10-12T00:00:00Z'
+  status: planned
+  path: plans/phase-11-plan.yml
+phase:
+  id: P11
+  build_block: acknowledged_poll_projection
+  planner: codex
+  date: '2026-10-12'
+  scope_source:
+  - AGENTS.yml
+  - plans/product-spec.yml
+  - plans/build-plan.yml
+  - plans/phase-ledger.yml
+  - MEMORY.yml
+delivery_contract:
+  tightly_scoped_deliverables:
+  - reconcile disposable poll messages against the exact acknowledged chat cursor
+  - preserve controls, policy transitions, alarms, newer messages, and durable history
+  - prove restart, queue-capacity, and historical-read boundaries with canonical tests
+  parallelizable_workstreams:
+  - id: P11-WS1
+    name: poll_projection
+  - id: P11-WS2
+    name: contract_and_assurance
+  hard_dependencies:
+  - P10 protected release is complete
+  docker_first_local_runtime: repo_native_validation_and_governance_commands
+  completeness_standard: full_completeness_for_declared_scope
+scope_lock:
+- order: 1
+  statement: keep the phase narrowly scoped to declared deliverables and update canonical
+    governed artifacts in the same change
+verification_plan:
+- make governance-validate
+- make test
+- make contract-test
+- make release-check
