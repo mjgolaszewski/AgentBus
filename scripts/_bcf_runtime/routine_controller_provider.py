@@ -31,6 +31,7 @@ from .ci_github_membership import (
 )
 from .ci_self_controller import (
     compile_self_controller_pin,
+    resolve_self_controller_artifact,
     validate_controller_installation,
     validate_controller_pin,
 )
@@ -40,10 +41,15 @@ from .controller_transition_provider_custody import (
     receipt_from_zip as _receipt_from_zip,
 )
 from .prior_evidence_transport import (
+    _archive_files,
     authenticate_merged_pull,
     authenticate_pr_certification,
 )
-from .controller_custody import compile_controller_custody, require_controller_execution
+from .controller_custody import (
+    compile_controller_custody,
+    require_controller_execution,
+    validate_controller_custody,
+)
 from .routine_controller_rotation import (
     RoutineRotationError,
     advance_transition,
@@ -191,7 +197,9 @@ def _active_receipts(
 ) -> tuple[dict[str, Any], ...]:
     receipts: list[dict[str, Any]] = []
     pattern = re.compile(rf"^{TRANSITION_ARTIFACT_PREFIX}([a-f0-9]{{64}})$")
-    for artifact in api.repository_artifacts(repository):
+    for artifact in api.repository_artifacts(
+        repository, name_prefix=TRANSITION_ARTIFACT_PREFIX
+    ):
         name = str(artifact.get("name", ""))
         match = pattern.fullmatch(name)
         if match is None:
@@ -278,10 +286,10 @@ def _active_receipts(
     return tuple(receipts)
 
 
-def resolve_effective_controller(
+def _resolve_effective_controller_state(
     api: GitHubAPI, *, repository: str
-) -> dict[str, Any]:
-    """Resolve source baseline plus the unique provider-authenticated active chain."""
+) -> tuple[dict[str, Any], tuple[dict[str, Any], ...]]:
+    """Resolve the public controller projection and its authenticated chain once."""
 
     current = resolve_main(api, repository)
     baseline, installation, _ = _runner_policy(
@@ -290,16 +298,19 @@ def resolve_effective_controller(
     authority = load_authority(api, repository, current, required_version="1.1")
     roles = authority.get("roles")
     if not isinstance(roles, dict) or "controller_rotation" not in roles:
-        return {
-            "source": "source_policy",
-            "subject": {
-                "commit_sha": current.checkout_sha,
-                "tree_sha": current.tree_sha,
+        return (
+            {
+                "source": "source_policy",
+                "subject": {
+                    "commit_sha": current.checkout_sha,
+                    "tree_sha": current.tree_sha,
+                },
+                "normalization_subject": installation["subject_commit_sha"],
+                "pin": baseline,
+                "transition_ids": [],
             },
-            "normalization_subject": installation["subject_commit_sha"],
-            "pin": baseline,
-            "transition_ids": [],
-        }
+            (),
+        )
     receipts = _active_receipts(
         api,
         repository,
@@ -317,16 +328,28 @@ def resolve_effective_controller(
         ancestor_commits=ancestors,
     )
     pin = validate_controller_pin(effective_controller_pin(baseline, chain))
-    return {
-        "source": "provider_transition" if chain else "source_policy",
-        "subject": {
-            "commit_sha": current.checkout_sha,
-            "tree_sha": current.tree_sha,
+    return (
+        {
+            "source": "provider_transition" if chain else "source_policy",
+            "subject": {
+                "commit_sha": current.checkout_sha,
+                "tree_sha": current.tree_sha,
+            },
+            "normalization_subject": installation["subject_commit_sha"],
+            "pin": pin,
+            "transition_ids": [value["transition_id"] for value in chain],
         },
-        "normalization_subject": installation["subject_commit_sha"],
-        "pin": pin,
-        "transition_ids": [value["transition_id"] for value in chain],
-    }
+        tuple(chain),
+    )
+
+
+def resolve_effective_controller(
+    api: GitHubAPI, *, repository: str
+) -> dict[str, Any]:
+    """Resolve source baseline plus the unique provider-authenticated active chain."""
+
+    resolved, _ = _resolve_effective_controller_state(api, repository=repository)
+    return resolved
 
 
 def effective_controller_authority(
@@ -346,6 +369,37 @@ def effective_controller_authority(
         "controller_commit_sha": pin["BCF_BOOTSTRAP_COMMIT_SHA"],
         "controller_bundle_sha256": pin["BCF_BOOTSTRAP_WHEEL_SHA256"],
     }
+
+
+def _materialize_provider_controller(
+    api: GitHubAPI,
+    *,
+    repository: str,
+    admission_run_id: object,
+    admission_run_attempt: object,
+    artifact_dir: Path,
+) -> None:
+    """Use exact pre-materialized N bytes or fetch N+1 after rotation is required."""
+
+    if artifact_dir.is_dir() and not artifact_dir.is_symlink():
+        return
+    if artifact_dir.exists() or artifact_dir.is_symlink():
+        raise GitHubControllerError("routine controller artifact root is not a directory")
+
+    _, artifact = resolve_self_controller_artifact(
+        api,
+        repository=repository,
+        trigger_run_id=admission_run_id,
+        trigger_run_attempt=admission_run_attempt,
+    )
+    raw = api.artifact_bytes(repository, artifact.artifact_id, maximum_bytes=104_857_600)
+    if artifact.provider_digest != f"sha256:{_sha256(raw)}":
+        raise GitHubControllerError("routine controller artifact differs from provider digest")
+    artifact_dir.mkdir(mode=0o700, parents=True)
+    for relative, content in _archive_files(raw).items():
+        target_path = artifact_dir / relative
+        target_path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        target_path.write_bytes(content)
 
 
 def project_effective_controller_custody_observation(
@@ -422,6 +476,13 @@ def authorize_transition(
             admission_run_attempt=admission_run_attempt,
             controller_custody=custody,
         )
+    _materialize_provider_controller(
+        api,
+        repository=repository,
+        admission_run_id=admission_run_id,
+        admission_run_attempt=admission_run_attempt,
+        artifact_dir=artifact_dir,
+    )
     target = compile_self_controller_pin(
         api,
         repository=repository,
@@ -603,12 +664,29 @@ def dispatch_post_rotation_certification(
         run_id=rotation.run_id,
         run_attempt=rotation.run_attempt,
     )
-    resolved = resolve_effective_controller(api, repository=repository)
+    resolved, active_chain = _resolve_effective_controller_state(
+        api, repository=repository
+    )
     custody = compile_controller_custody(resolved, repository=repository)
     require_controller_execution(custody)
     raw_outcome = load_callback_outcome(
         Path(os.environ.get("BCF_CONTROLLER_CUSTODY_PATH", ""))
     )
+    if topology == "admission_noncertifying":
+        if validate_controller_custody(raw_outcome) != validate_controller_custody(
+            custody
+        ):
+            raise GitHubControllerError(
+                "noncertifying rotation outcome differs from controller custody"
+            )
+        return {
+            "status": "admission_noncertifying",
+            "dispatched": False,
+            "subject": dict(custody["subject"]),
+            "rotation_run_id": rotation.run_id,
+            "rotation_run_attempt": rotation.run_attempt,
+            "release_authority": False,
+        }
     if topology == "no_transition":
         validate_no_transition_outcome(
             raw_outcome,
@@ -628,15 +706,9 @@ def dispatch_post_rotation_certification(
         }
     if resolved["source"] != "provider_transition":
         raise GitHubControllerError("no active provider controller transition exists")
-    receipts = _active_receipts(
-        api,
-        repository,
-        current=main,
-        normalization_subject=resolved["normalization_subject"],
-    )
     matching = [
         value
-        for value in receipts
+        for value in active_chain
         if value["transition_id"] == resolved["transition_ids"][-1]
     ]
     if len(matching) != 1 or matching[0]["activation"] != {

@@ -80,6 +80,55 @@ def copy_repository_shadow(
             symlinks=True,
             ignore=shutil.ignore_patterns(*IGNORED_SHADOW_NAMES),
         )
+        deleted = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(source),
+                "diff",
+                "--no-renames",
+                "--name-only",
+                "--diff-filter=D",
+                "-z",
+                "HEAD",
+                "--",
+            ],
+            capture_output=True,
+            check=False,
+        )
+        if deleted.returncode:
+            raise ValueError(
+                "could not project tracked deletions into Git-preserving shadow: "
+                + (deleted.stderr or deleted.stdout).decode(
+                    "utf-8", errors="replace"
+                ).strip()
+            )
+        deleted_paths: list[str] = []
+        for raw_relative in deleted.stdout.split(b"\0"):
+            if not raw_relative:
+                continue
+            relative = _safe_relative(os.fsdecode(raw_relative))
+            deleted_paths.append(relative.as_posix())
+            target = destination / relative
+            if target.is_symlink() or target.is_file():
+                target.unlink()
+            elif target.exists():
+                raise ValueError(
+                    "tracked file deletion resolved to a directory in transaction shadow: "
+                    + relative.as_posix()
+                )
+        if deleted_paths:
+            staged = subprocess.run(
+                ["git", "-C", str(destination), "add", "--update", "--", *deleted_paths],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if staged.returncode:
+                raise ValueError(
+                    "could not stage tracked deletions in Git-preserving shadow: "
+                    + (staged.stderr or staged.stdout).strip()
+                )
         return
     shutil.copytree(
         source,
@@ -127,6 +176,7 @@ def apply_transaction(
     mutate_shadow: Callable[[Path], None],
     preserve_git_history: bool = False,
     validate_promotion: Callable[[], None] | None = None,
+    validate_final: Callable[[], None] | None = None,
 ) -> None:
     """Mutate and validate a shadow, then atomically transfer only managed files."""
     repo_root = repo_root.resolve()
@@ -182,6 +232,8 @@ def apply_transaction(
                 applied.append(relative)
                 if validate_promotion is not None:
                     validate_promotion()
+            if validate_final is not None:
+                validate_final()
         except BaseException:
             for relative in reversed(applied):
                 destination = repo_root / relative

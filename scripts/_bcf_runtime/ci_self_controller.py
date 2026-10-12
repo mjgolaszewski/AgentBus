@@ -274,6 +274,21 @@ def compile_self_controller_pin(
         trigger_run_id=trigger_run_id,
         trigger_run_attempt=trigger_run_attempt,
     )
+    return compile_resolved_self_controller_pin(
+        subject=subject, artifact=artifact, artifact_dir=artifact_dir
+    )
+
+
+def compile_resolved_self_controller_pin(
+    *,
+    subject: dict[str, str],
+    artifact: ProviderArtifact,
+    artifact_dir: Path,
+) -> dict[str, str]:
+    """Compile one pin from an already authenticated immutable provider selection."""
+
+    if set(subject) != {"repository_id", "commit_sha", "tree_sha"}:
+        raise GitHubControllerError("self-controller subject inventory is not exact")
     root = artifact_dir.resolve()
     wheel, _ = verify_controller_inventory(root)
     verify_controller_subject_metadata(
@@ -455,14 +470,14 @@ def _write_atomic(path: Path, raw: bytes) -> None:
             os.unlink(temporary)
 
 
-def project_self_controller_pin(
+def project_self_controller_custody(
     repo_root: Path,
     *,
     pin: dict[str, str],
     confirmation: dict[str, str] | None = None,
     apply: bool,
 ) -> SelfControllerProjection:
-    """Project target and proven-installed controller state transactionally."""
+    """Project only canonical target and proven-installed controller custody."""
 
     root = repo_root.resolve()
     exact = _pin(pin)
@@ -527,6 +542,24 @@ def project_self_controller_pin(
         changed.add("governance/self-governance-policy.yml")
         if apply:
             _write_atomic(policy_path, projected_policy)
+    ordered = tuple(sorted(changed))
+    return SelfControllerProjection("changed" if ordered else "clean", ordered)
+
+
+def project_self_controller_pin(
+    repo_root: Path,
+    *,
+    pin: dict[str, str],
+    confirmation: dict[str, str] | None = None,
+    apply: bool,
+) -> SelfControllerProjection:
+    """Project controller custody and its immediate graph/workflow consequences."""
+
+    root = repo_root.resolve()
+    custody = project_self_controller_custody(
+        root, pin=pin, confirmation=confirmation, apply=apply
+    )
+    changed = set(custody.changed_paths)
     try:
         lock = apply_ci_graph_locks(root) if apply else check_ci_graph_locks(root)
         changed.update(lock.changed_inputs)

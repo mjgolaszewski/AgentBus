@@ -23,6 +23,13 @@ All notable changes to AgentBus are documented here. AgentBus follows
   send and wake post to the target's mapped room. Rooms separate attention, not
   API read access: the shared bearer still reads configured-room history.
 
+### Governance runtime
+
+- Upgrade the preserved Standard-v3 BCF installation from the authenticated
+  v2.1.8 release to the authenticated v2.3.0 release. AgentBus's application
+  claims, producers, controls, and direct protected-main authority remain
+  consumer-owned; no trusted controller is installed.
+
 ## [0.8.0] - 2026-10-11
 
 ### Local identity prefixes

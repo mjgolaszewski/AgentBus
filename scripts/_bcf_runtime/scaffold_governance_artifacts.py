@@ -43,6 +43,10 @@ from .reconcile_authority_transition import (
     result_json as authority_transition_json,
 )
 from .profile_surface_generation import reconcile_makefile, reconcile_template_workflow
+from .interpreter_environment import reconcile_interpreter_environment
+from .test_duration_observations import reconcile_test_duration_observations
+from .editorial_audit_projection import editorial_base
+from .evidence_storage_topology import compile_migration_plan
 
 HOTFIX_MODES = {"lite", "full"}
 
@@ -365,17 +369,6 @@ def _reconcile_workflow_authority(repo_root: Path, *, apply: bool) -> None:
     )
 
 
-def _editorial_base(audit: Path) -> str:
-    try:
-        payload = yaml.safe_load(audit.read_text(encoding="utf-8"))
-        base = payload["base_commit"]
-    except (OSError, TypeError, KeyError, yaml.YAMLError) as exc:
-        raise ReconcileError("editorial audit does not expose an immutable base") from exc
-    if not isinstance(base, str) or len(base) != 40 or any(c not in "0123456789abcdef" for c in base):
-        raise ReconcileError("editorial audit base is not an exact commit")
-    return base
-
-
 def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
     """Return the closed canonical projection order for this repository."""
 
@@ -387,7 +380,55 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
         if (repo_root / "governance/ci-graph.yml").is_file()
         else ()
     )
-    steps: list[ReconcileStep] = [
+    from .governance_validation.authored_phase_state import (
+        active_phase_paths,
+        validate_authored_phase_state,
+    )
+    from .governance_validation.ci_state_matrix import validate_ci_state_matrix
+
+    phase_ledger_present = (repo_root / "plans/phase-ledger.yml").is_file()
+    active_paths = active_phase_paths(repo_root) if phase_ledger_present else ()
+    steps: list[ReconcileStep] = []
+    if phase_ledger_present:
+        active_plan, active_workitems, active_log = active_paths
+        steps.append(ReconcileStep(
+            "authored-phase-state",
+            lambda: validate_authored_phase_state(repo_root),
+            lambda: validate_authored_phase_state(repo_root),
+            watch_paths=(
+                "plans/product-spec.yml",
+                "plans/build-plan.yml",
+                "plans/phase-ledger.yml",
+                "MEMORY.yml",
+                active_plan,
+                active_workitems,
+                active_log,
+            ),
+        ))
+        steps.append(ReconcileStep(
+            "ci-state-matrix",
+            lambda: validate_ci_state_matrix(repo_root),
+            lambda: validate_ci_state_matrix(repo_root),
+            watch_paths=(
+                "spec/RELEASE_TRAIN_STATE_DAG.md",
+                "governance/ci-graph.yml",
+                "bcf_governance/tooling",
+                ".github/workflows",
+            ),
+        ))
+    steps.extend([
+        ReconcileStep(
+            "interpreter-environment",
+            lambda: reconcile_interpreter_environment(repo_root, apply=False),
+            lambda: reconcile_interpreter_environment(repo_root, apply=True),
+            apply_verifies=True,
+            watch_paths=(
+                "pyproject.toml",
+                "governance/gate-contracts.yml",
+                "requirements-governance.txt",
+                "bcf_governance/tooling/interpreter_environment.py",
+            ),
+        ),
         ReconcileStep(
             "structural-limits",
             lambda: validate_structural_limits(repo_root),
@@ -409,7 +450,7 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
                 "governance/public-contracts.yml",
             ),
         ),
-    ]
+    ])
     if (repo_root / "governance/gate-contracts.yml").is_file():
         steps.append(
             ReconcileStep(
@@ -440,19 +481,20 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
                 ),
             )
         )
+    post_merge_watch_paths = ["plans/phase-ledger.yml"]
+    if active_paths:
+        post_merge_watch_paths.extend(active_paths[1:])
+    post_merge_watch_paths.extend((
+        "governance/ci-graph.yml",
+        "bcf_governance/tooling/ci_graph_post_merge.py",
+        "bcf_governance/tooling/evidence_workitem_lifecycle.py",
+    ))
     steps.append(
         ReconcileStep(
             "ci-graph-post-merge-scope",
             lambda: reconcile_post_merge_scope(repo_root, apply=False),
             lambda: reconcile_post_merge_scope(repo_root, apply=True),
-            watch_paths=(
-                "plans/phase-ledger.yml",
-                "plans/phase-29-workitems.yml",
-                "phases/phase-29-log.yml",
-                "governance/ci-graph.yml",
-                "bcf_governance/tooling/ci_graph_post_merge.py",
-                "bcf_governance/tooling/evidence_workitem_lifecycle.py",
-            ),
+            watch_paths=tuple(post_merge_watch_paths),
         )
     )
     pack = repo_root / ".github/scripts/build_pack_manifest.py"
@@ -514,6 +556,20 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
                 ),
             )
         )
+        steps.append(
+            ReconcileStep(
+                "test-duration-observations",
+                lambda: reconcile_test_duration_observations(repo_root, apply=False),
+                lambda: reconcile_test_duration_observations(repo_root, apply=True),
+                apply_verifies=True,
+                watch_paths=(
+                    "governance/test-manifests/test.txt",
+                    "governance/test-duration-observations.json",
+                    "governance/gate-contracts.yml",
+                    "bcf_governance/tooling/test_duration_observations.py",
+                ),
+            )
+        )
     for operation in ("lock", "render"):
         steps.append(
             ReconcileStep(
@@ -530,24 +586,24 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
                 ),
             )
         )
-    if (repo_root / "governance/ci-authority.yml").is_file():
-        steps.append(
-            ReconcileStep(
-                "workflow-authority",
-                lambda: _reconcile_workflow_authority(repo_root, apply=False),
-                lambda: _reconcile_workflow_authority(repo_root, apply=True),
-                watch_paths=(
-                    ".github/workflows",
-                    "governance/ci-authority.yml",
-                    "bcf_governance/tooling/ci_authority_pins.py",
-                ),
-            )
+    steps.append(
+        ReconcileStep(
+            "evidence-storage-topology",
+            lambda: compile_migration_plan(repo_root),
+            lambda: compile_migration_plan(repo_root),
+            watch_paths=(
+                "governance/ci-graph.yml",
+                "governance/ci-extensions",
+                "governance/evidence-storage.yml",
+                "bcf_governance/tooling/evidence_storage_*",
+            ),
         )
+    )
     checker = repo_root / ".github/scripts/check_editorial_contract.py"
     builder = repo_root / ".github/scripts/build_editorial_audit.py"
     if checker.is_file() and builder.is_file() and not checker.is_symlink() and not builder.is_symlink():
         audit = repo_root / f"audits/v{__version__}-editorial-review.yml"
-        base = _editorial_base(audit)
+        base = editorial_base(repo_root, audit)
         steps.append(
             ReconcileStep(
                 "editorial-audit",
@@ -563,6 +619,19 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
                     "audits",
                     ".github/scripts/check_editorial_contract.py",
                     ".github/scripts/build_editorial_audit.py",
+                ),
+            )
+        )
+    if (repo_root / "governance/ci-authority.yml").is_file():
+        steps.append(
+            ReconcileStep(
+                "workflow-authority",
+                lambda: _reconcile_workflow_authority(repo_root, apply=False),
+                lambda: _reconcile_workflow_authority(repo_root, apply=True),
+                watch_paths=(
+                    ".github/workflows",
+                    "governance/ci-authority.yml",
+                    "bcf_governance/tooling/ci_authority_pins.py",
                 ),
             )
         )
