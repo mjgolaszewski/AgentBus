@@ -5,6 +5,14 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Cross-service peers
+
+- Two explicitly paired AgentBus services can exchange bounded public route
+  directories through their Slack bots. A configured peer bot may preserve an
+  exact recipient and wake an agent only when its route prefix matches the
+  bot binding and its envelope attests a proved origin session. Unknown bots,
+  legacy-origin messages, and prefix mismatches remain unrouted history.
+
 ### Configured Slack rooms and reply recovery
 
 - Keep the existing channel as the default while allowing additional
@@ -26,7 +34,7 @@ All notable changes to AgentBus are documented here. AgentBus follows
 ### Governance runtime
 
 - Upgrade the preserved Standard-v3 BCF installation from the authenticated
-  v2.1.8 release to the authenticated v2.3.0 release. AgentBus's application
+  v2.1.8 release to the authenticated v2.3.1 release. AgentBus's application
   claims, producers, controls, and direct protected-main authority remain
   consumer-owned; no trusted controller is installed.
 
