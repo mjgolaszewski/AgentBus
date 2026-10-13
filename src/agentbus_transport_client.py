@@ -6,6 +6,7 @@ import json
 import os
 import re
 import shlex
+import subprocess
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
@@ -14,6 +15,20 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 class ClientError(Exception):
     pass
+
+
+def current_repo() -> str:
+    """Resolve the checkout used when onboarding omits an explicit repository."""
+    try:
+        result = subprocess.run(
+            ["git", "-c", "core.fsmonitor=false", "rev-parse", "--show-toplevel"],
+            stdin=subprocess.DEVNULL, text=True, capture_output=True, timeout=3, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        raise ClientError("Cannot determine the current Git repository; pass --repo explicitly.") from None
+    if result.returncode != 0 or not result.stdout.strip():
+        raise ClientError("Run onboarding inside a Git repository or pass --repo explicitly.")
+    return Path(result.stdout.strip()).name
 
 
 def local_prefix(values: dict[str, str], *, required: bool = False) -> str | None:
