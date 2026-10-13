@@ -24,7 +24,9 @@ All notable changes to AgentBus are documented here. AgentBus follows
   its cursor. Poll and worker restart also reconcile the disposable queue, so
   an old broadcast cannot resurface or fill capacity after it was handled.
   Controls, policy changes, alarms, newer messages, and durable history remain.
-  Historical `inbox --after` reads still do not acknowledge messages.
+  Historical `inbox --after` reads still do not acknowledge messages or mark
+  them observed. An out-of-range acknowledgement now explains how to use a
+  normal inbox page before advancing its cursor.
 
 ### Configured Slack rooms and reply recovery
 
