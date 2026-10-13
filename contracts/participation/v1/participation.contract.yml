@@ -1,7 +1,7 @@
 document:
   kind: agentbus_participation_contract
   id: agentbus-participation-v1
-  version: 1.11.0
+  version: 1.12.0
   status: active
   path: contracts/participation/v1/participation.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/6
@@ -89,6 +89,7 @@ invariants:
   - {id: INV-045, rule: "An agent-readable peer directory derives local entries only from service-joined nonstopped sessions and remote entries only from bounded directory snapshots delivered by explicitly configured Slack bot IDs. Every remote route must carry the prefix bound to that bot. Discovery exposes only route, display name, source prefix, and observation time; it never exposes session IDs, credentials, controls, host bindings, or operator presence. Cached remote entries are labelled observed rather than live, and an incomplete snapshot must be labelled incomplete."}
   - {id: INV-046, rule: "A peer bot's canonical AgentBus message may retain its exact recipient and gain peer assurance only when Slack supplies the configured bot ID, its sender route matches that bot's configured prefix, and the sending service's envelope carries its server-derived session assurance. The service records distinct peer assurance, never local session assurance. Unconfigured, malformed, legacy-origin, or prefix-spoofed bot payloads remain legacy unrouted text and cannot wake a chat. A configured peer's direct message may wake only under the same exact-recipient and stop/pause rules as other eligible addressed messages."}
   - {id: INV-047, rule: "Peer refresh is an explicit bounded request over the configured Slack channel, never background polling. A service responds with its current public directory, and the receiving service replaces only that source's snapshot. Missing or delayed peers remain unknown, not empty. Discovery data is a routing hint, not proof of repo ownership, chat activity, or Codex wakeability."}
+  - {id: INV-048, rule: "A monotonic chat acknowledgement through cursor N MUST make queued local MESSAGE projections at or below N ineligible for future poll output and queue capacity, including after worker restart or interruption between profile save and spool cleanup. Reconciliation MUST preserve controls, policy changes, alarms, messages above N, and full service history. Historical inbox reads alone MUST NOT acknowledge or retire queued messages."}
 
 primitives:
   stable_chat_identity:
@@ -343,6 +344,7 @@ proof_obligations:
   - {id: PO-53, proves: [INV-045], scenario: independent_service_snapshots_discover_silent_joined_agents_without_exposing_operator_or_session_state_and_malformed_snapshots_cannot_replace_good_state}
   - {id: PO-54, proves: [INV-046], scenario: only_prefix_bound_peer_bot_with_upstream_session_assurance_routes_and_wakes_direct_work_while_legacy_unknown_and_spoofed_inputs_fail_closed_and_exact_parent_reply_succeeds}
   - {id: PO-55, proves: [INV-047], scenario: joined_chat_refresh_is_bounded_and_service_socket_receivers_exchange_snapshot_without_creating_user_messages_or_background_polling}
+  - {id: PO-56, proves: [INV-048], scenario: acknowledged_queued_messages_are_pruned_before_poll_and_worker_capacity_even_after_restart_while_newer_messages_controls_policy_and_history_remain}
 
 implementation_order:
   - {id: IU-001, unit: freeze_contract_and_migration_assumptions, depends_on: []}
@@ -371,13 +373,14 @@ implementation_order:
   - {id: IU-024, unit: peer_directory_contract_and_bounded_snapshot_store, depends_on: [IU-002, IU-014]}
   - {id: IU-025, unit: configured_peer_bot_assurance_and_exact_reply, depends_on: [IU-024, IU-018]}
   - {id: IU-026, unit: agent_peer_query_and_explicit_refresh, depends_on: [IU-024, IU-025]}
+  - {id: IU-027, unit: acknowledged_poll_projection_reconciliation, depends_on: [IU-006, IU-010]}
 
 acceptance_gates:
   G-IDENTITY: [INV-008, PO-05, PO-15]
   G-POLICY: [INV-004, PO-02, PO-27]
   G-CONTROL: [INV-005, INV-007, INV-011, PO-03, PO-04, PO-08, PO-26]
   G-AUTHORITY: [INV-009, PO-06]
-  G-POLL: [INV-001, INV-002, INV-013, INV-014, INV-038, PO-01, PO-09, PO-14, PO-47]
+  G-POLL: [INV-001, INV-002, INV-013, INV-014, INV-038, INV-048, PO-01, PO-09, PO-14, PO-47, PO-56]
   G-TOKEN: [INV-003, INV-015, PO-10, PO-28]
   G-RECOVERY: [INV-012, PO-13]
   G-INBOX-PAGE: [INV-039, PO-48]

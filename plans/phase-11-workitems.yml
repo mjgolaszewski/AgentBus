@@ -1,0 +1,40 @@
+document:
+  kind: execution_phase_workitem_ledger
+  name: Phase 11 Workitems
+  id: project-phase-11-workitems
+  version: 1.0.0
+  generated_at_utc: '2026-10-12T00:00:00Z'
+  status: planned
+  path: plans/phase-11-workitems.yml
+  phase_id: P11
+workitems:
+- id: P11-P0-01
+  priority: P0
+  status: TODO
+  summary: deliver reconcile disposable poll messages against the exact acknowledged
+    chat cursor
+  acceptance:
+  - reconcile disposable poll messages against the exact acknowledged chat cursor_is_complete
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P11-P0-02
+  priority: P0
+  status: TODO
+  summary: deliver preserve controls, policy transitions, alarms, newer messages,
+    and durable history
+  acceptance:
+  - preserve controls, policy transitions, alarms, newer messages, and durable history_is_complete
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P11-P0-03
+  priority: P0
+  status: TODO
+  summary: deliver prove restart, queue-capacity, and historical-read boundaries with
+    canonical tests
+  acceptance:
+  - prove restart, queue-capacity, and historical-read boundaries with canonical tests_is_complete
+  acceptance_evidence:
+  - test
+  - contract-test

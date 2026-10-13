@@ -610,6 +610,7 @@ gates:
     - {id: self-status-route-mismatch-is-ineligible, mutation: {path: src/agentbus_codex_wake_client.py, search: '                               service_presence["route"] != identity or', replace: '                               False or'}, oracle: {kind: *id044, node_ids: ['tests.test_codex_wake_client::test_self_status_combines_proved_service_and_local_facts_without_side_effects']}}
     - {id: resume-control-remains-wakable, mutation: {path: src/agentbus_codex_wake_client.py, search: '    if kind == "CONTROL":', replace: '    if False:'}, oracle: {kind: *id044, node_ids: ['tests.test_codex_wake_client::test_resume_control_wakes_held_conversation']}}
     - {id: saturated-spool-cannot-hide-addressed-wake, mutation: {path: src/agentbus_codex_wake_client.py, search: 'if (live and state["enabled"] and workspace_status(values)["enabled"] and token and', replace: 'if (False and state["enabled"] and workspace_status(values)["enabled"] and token and'}, oracle: {kind: *id044, node_ids: ['tests.test_codex_wake_client::test_saturated_spool_cannot_block_service_backed_direct_wake']}}
+    - {id: acknowledged-poll-projection-is-reconciled, mutation: {path: src/agentbus_poll_client.py, search: '        _reconcile_acknowledged(state, profile)', replace: '        pass'}, oracle: {kind: *id044, node_ids: ['tests.test_poll_client::test_acknowledged_messages_are_reconciled_on_poll_after_restart']}}
   typecheck:
     invocation: {argv: [python3, *id037, *id015], cwd: ., env: {}, required_env: []}
     evidence: {kind: gate}

@@ -146,6 +146,70 @@ def test_control_precedes_queued_message_and_message_is_retired_independently(tm
     assert poll.peek_event(path, profile)["message"]["cursor"] == 10
 
 
+def test_acknowledged_messages_are_reconciled_on_poll_after_restart(tmp_path):
+    path, profile = profile_at(tmp_path)
+
+    def record(state):
+        for cursor in (245, 344, 345):
+            poll._append(state, {"kind": "MESSAGE", "id": str(cursor), "message": {
+                "cursor": cursor, "kind": "request", "audience": "direct",
+                "recipient": profile["identity"], "action_reason": "addressed to this identity",
+            }})
+        poll._append(state, {"kind": "CONTROL", "id": "pause", "control": {"control_id": "pause"}})
+        poll._append(state, {"kind": "POLICY_CHANGED", "id": "revision-2", "revision": "revision-2"})
+        poll._append(state, {"kind": "ATTENTION_REQUIRED", "id": "transport", "reason": "offline"})
+
+    poll.change_spool(path, profile, record)
+    profile["ack_cursor"] = 344
+    path.write_text(json.dumps(profile))
+    assert poll.peek_event(path, json.loads(path.read_text()))["kind"] == "CONTROL"
+    state = json.loads(poll.spool_path(path).read_text())
+    assert {event["id"] for event in state["events"]} == {
+        "345", "pause", "revision-2", "transport",
+    }
+    assert state["cursor"] == 344
+
+
+def test_worker_frees_queue_capacity_after_acknowledgement(tmp_path, monkeypatch):
+    path, profile = profile_at(tmp_path)
+
+    def fill(state):
+        state["cursor"] = 100
+        for cursor in range(1, 101):
+            poll._append(state, {"kind": "MESSAGE", "id": str(cursor), "message": {
+                "cursor": cursor, "kind": "message", "audience": "broadcast",
+            }})
+
+    poll.change_spool(path, profile, fill)
+    profile["ack_cursor"] = 100
+    path.write_text(json.dumps(profile))
+    clock = [0.0]
+    checks = [0]
+    reads = [0]
+    monkeypatch.setattr(poll.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(poll.time, "sleep", lambda seconds: clock.__setitem__(0, clock[0] + seconds))
+
+    def fake_api(_values, route, _payload=None, **_kwargs):
+        if route.endswith("/check-in"):
+            checks[0] += 1
+            if checks[0] == 2:
+                profile["participation"]["stopped"] = True
+                path.write_text(json.dumps(profile))
+            return {"revision": "r1", "values": POLICY, "sources": {}, "ack_required": False}
+        reads[0] += 1
+        return {"messages": [{"cursor": 101, "kind": "request", "audience": "direct",
+                             "recipient": profile["identity"],
+                             "action_reason": "addressed to this identity"}],
+                "next_cursor": 101, "has_more": False}
+
+    monkeypatch.setattr(poll, "api", fake_api)
+    poll._worker(path, {})
+    state = json.loads(poll.spool_path(path).read_text())
+    assert reads[0] >= 1
+    assert [event["id"] for event in state["events"]] == ["101"]
+    assert state["cursor"] == 101
+
+
 def test_actionable_message_priority_is_independent_of_backlog_cursor(tmp_path):
     path, profile = profile_at(tmp_path)
 

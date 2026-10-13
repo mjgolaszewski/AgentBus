@@ -413,6 +413,8 @@ def test_onboard_requires_valid_local_prefix_before_service_or_profile_write(
 
 
 def test_inbox_after_zero_is_stateless_and_ack_is_bounded(launcher, tmp_path, monkeypatch, capsys):
+    from src import agentbus_poll_client as poll
+
     state = tmp_path / "consumers"
     state.mkdir()
     profile = {"schema_version": 2, "chat_id": "chat-1", "identity": "tools:weed",
@@ -420,6 +422,11 @@ def test_inbox_after_zero_is_stateless_and_ack_is_bounded(launcher, tmp_path, mo
                "voice": "plain", "remit": "tools", "inbox_id": "inbox-1", "channel": "C123",
                "service_url": "http://127.0.0.1:8766", "ack_cursor": 8, "observed_cursor": 10}
     (state / "tools:weed.json").write_text(json.dumps(profile))
+    profile_path = state / "tools:weed.json"
+    poll.change_spool(profile_path, profile, lambda spool: spool["events"].extend([
+        {"kind": "MESSAGE", "id": str(cursor), "message": {"cursor": cursor}}
+        for cursor in (9, 10, 11)
+    ]))
     values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
     monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
 
@@ -432,11 +439,13 @@ def test_inbox_after_zero_is_stateless_and_ack_is_bounded(launcher, tmp_path, mo
     monkeypatch.setattr(launcher, "api", fake_api)
     assert launcher.main(["inbox", "--identity", "tools:weed", "--after", "0"]) == 0
     assert json.loads((state / "tools:weed.json").read_text())["observed_cursor"] == 10
+    assert [event["id"] for event in poll.read_spool_events(profile_path)] == ["9", "10", "11"]
     capsys.readouterr()
     assert launcher.main(["ack", "--identity", "tools:weed", "--through", "11"]) == 1
     assert "highest cursor observed" in capsys.readouterr().err
     assert launcher.main(["ack", "--identity", "tools:weed", "--through", "10"]) == 0
     assert json.loads((state / "tools:weed.json").read_text())["ack_cursor"] == 10
+    assert [event["id"] for event in poll.read_spool_events(profile_path)] == ["11"]
 
 
 def test_cli_rejects_ambiguous_actionable_send_before_api(launcher, monkeypatch, capsys):

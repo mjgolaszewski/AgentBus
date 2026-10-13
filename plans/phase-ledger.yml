@@ -98,6 +98,7 @@ release_trains:
   release_8: {target_version: "0.8.1", status: planned, focus: [governance_dependency_hash_lock, proxy_header_remediation]}
   release_9: {target_version: "0.9.0", status: planned, focus: [configured_slack_rooms, global_cross_room_inbox, signalled_thread_reply_recovery, compatibility_and_docs]}
   release_10: {target_version: "0.10.0", status: planned, focus: [bounded_peer_directory, configured_bot_identity, peer_assured_routing, multichannel_compatibility]}
+  release_11: {target_version: "0.10.1", status: planned, focus: [acknowledged_poll_projection, restart_reconciliation, queue_capacity]}
 release_readiness:
   computed_by: bcf truth
   requirements_source: governance/evidence-policy.yml

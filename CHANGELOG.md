@@ -13,6 +13,14 @@ All notable changes to AgentBus are documented here. AgentBus follows
   bot binding and its envelope attests a proved origin session. Unknown bots,
   legacy-origin messages, and prefix mismatches remain unrouted history.
 
+### Acknowledged poll messages
+
+- A chat acknowledgement now retires queued local poll messages at or below
+  its cursor. Poll and worker restart also reconcile the disposable queue, so
+  an old broadcast cannot resurface or fill capacity after it was handled.
+  Controls, policy changes, alarms, newer messages, and durable history remain.
+  Historical `inbox --after` reads still do not acknowledge messages.
+
 ### Configured Slack rooms and reply recovery
 
 - Keep the existing channel as the default while allowing additional

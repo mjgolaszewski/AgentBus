@@ -19,7 +19,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlencode
 
-from src.agentbus_transport_client import ClientError, api, configuration, local_prefix, profile_session_token
+from src.agentbus_transport_client import (
+    ClientError,
+    api,
+    configuration,
+    current_repo,
+    local_prefix,
+    profile_session_token,
+)
 
 NAME_RE = r"^[a-z0-9][a-z0-9-]{0,31}$"
 REPO_RE = r"^[a-z0-9][a-z0-9._-]{0,63}$"
@@ -69,19 +76,6 @@ def resolve_identity(explicit: str | None) -> str:
     if not identity:
         raise ClientError("Select a chat with --identity PREFIX:REPO:NAME or AGENTBUS_IDENTITY.")
     return identity
-
-
-def current_repo() -> str:
-    try:
-        result = subprocess.run(
-            ["git", "-c", "core.fsmonitor=false", "rev-parse", "--show-toplevel"],
-            stdin=subprocess.DEVNULL, text=True, capture_output=True, timeout=3, check=False,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        raise ClientError("Cannot determine the current Git repository; pass --repo explicitly.") from None
-    if result.returncode != 0 or not result.stdout.strip():
-        raise ClientError("Run onboarding inside a Git repository or pass --repo explicitly.")
-    return Path(result.stdout.strip()).name
 
 
 def load_profile(values: dict[str, str], identity: str, *, save_migration: bool = True) -> dict:
@@ -516,6 +510,9 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
             raise ClientError("Cannot acknowledge beyond the highest cursor observed by this chat.")
         profile["ack_cursor"] = ns.through
         save_profile(values, profile)
+        from src.agentbus_poll_client import retire_acknowledged_messages
+
+        retire_acknowledged_messages(identity_path(values, identity).resolve(), profile)
         result = {"identity": identity, "ack_cursor": ns.through}
     elif ns.command == "rebind":
         identity = resolve_identity(ns.identity)
