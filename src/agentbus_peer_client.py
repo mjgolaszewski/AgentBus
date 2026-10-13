@@ -45,6 +45,10 @@ def peers(ns, values: dict[str, str]) -> int:
             print(f"{agent['route']}\t{agent['display_name']}\t{agent['source_prefix']}"
                   f"\t{agent.get('observed_at', 'local')}")
         for source in result["sources"]:
+            if source["source"] == "peer" and source.get("last_missing_origin_at"):
+                print(f"# {source['prefix']}: old AgentBus envelope without origin proof observed "
+                      f"at {source['last_missing_origin_at']}; upgrade both services and pair bot IDs. "
+                      "Those messages remain unrouted and cannot wake agents.")
             if source["source"] == "peer" and source["observed_at"] is None:
                 print(f"# {source['prefix']}: no snapshot received; run peers --refresh")
             elif source["prefix"] in result.get("refresh_pending", []):

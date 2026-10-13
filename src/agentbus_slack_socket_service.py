@@ -13,7 +13,7 @@ from slack_sdk.socket_mode.client import BaseSocketModeClient
 from slack_sdk.socket_mode.request import SocketModeRequest
 from slack_sdk.socket_mode.response import SocketModeResponse
 
-from src.agentbus_peer_directory_service import parse_wire, wire
+from src.agentbus_peer_directory_service import missing_origin_peer, parse_wire, wire
 from src.agentbus_settings_service import Settings
 from src.agentbus_slack_command_service import execute_command
 from src.agentbus_slack_reply_service import append_slack
@@ -27,6 +27,15 @@ class SlackReceiver:
         self.store, self.channel, self.trusted_bot_id = store, channel, trusted_bot_id
         self.settings = settings
         self._commands = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+
+    def _append_message(self, event: dict, channel: str, ts: str, message) -> None:
+        stored = append_slack(self.store, channel, ts, message)
+        if (self.settings is None or message._sender_assurance != "legacy"
+                or message.audience != "unrouted"):
+            return
+        old_peer = missing_origin_peer(event, channel, self.settings.peer_bot_ids)
+        if old_peer is not None:
+            self.store.peers.record_missing_origin(*old_peer, stored.received_at)
 
     def _finish_command(self, client: BaseSocketModeClient, payload: dict) -> None:
         try:
@@ -70,13 +79,15 @@ class SlackReceiver:
                     continue
                 reply = {**raw, "type": "message", "channel": channel,
                          "thread_ts": None if raw.get("ts") == root else root}
-                if reply.get("bot_id") == self.trusted_bot_id and not reply.get("subtype"):
+                known_bots = {self.trusted_bot_id, *(self.settings.peer_bot_ids.values()
+                                                     if self.settings else ())}
+                if reply.get("bot_id") in known_bots and not reply.get("subtype"):
                     reply["subtype"] = "bot_message"
                 normalized = normalize_event(reply, channel, self.trusted_bot_id,
                                              self.settings.peer_bot_ids if self.settings else None)
                 if normalized is not None:
                     ts, message = normalized
-                    append_slack(self.store, channel, ts, message)
+                    self._append_message(reply, channel, ts, message)
             if not page.get("has_more"):
                 if self.store.message_by_ts(channel, root) is None:
                     raise RuntimeError("Slack thread recovery lacks a durable root")
@@ -163,10 +174,10 @@ class SlackReceiver:
                                 self.settings.peer_bot_ids if self.settings else None)
                 if isinstance(event, dict) and channel in allowed else None
             )
-            if normalized is not None:
+            if normalized is not None and isinstance(event, dict):
                 ts, message = normalized
                 try:
-                    append_slack(self.store, channel, ts, message)
+                    self._append_message(event, channel, ts, message)
                 except (sqlite3.Error, OSError):
                     LOGGER.error("Could not durably store Slack event; withholding acknowledgement")
                     return

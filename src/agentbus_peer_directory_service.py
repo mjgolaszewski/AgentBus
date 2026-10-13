@@ -48,6 +48,29 @@ def parse_wire(event: dict, channel: str, peers: dict[str, str]) -> tuple[str, s
     return bot, prefix, payload
 
 
+def missing_origin_peer(event: dict, channel: str,
+                        peers: dict[str, str]) -> tuple[str, str] | None:
+    """Recognize an old peer envelope for diagnostics, never for routing."""
+    bot = event.get("bot_id")
+    if (event.get("type") != "message" or event.get("channel") != channel
+            or event.get("subtype") not in ("bot_message", "thread_broadcast")
+            or event.get("hidden") or not isinstance(bot, str)):
+        return None
+    prefix = next((name for name, value in peers.items() if value == bot), None)
+    if prefix is None:
+        return None
+    try:
+        envelope = json.loads(event.get("text", ""))
+    except (TypeError, ValueError):
+        return None
+    if (not isinstance(envelope, dict) or envelope.get("agentbus") not in (1, 2)
+            or "origin_assurance" in envelope):
+        return None
+    sender = envelope.get("sender")
+    parts = route_parts(sender) if isinstance(sender, str) else None
+    return (bot, prefix) if parts is not None and parts[0] == prefix else None
+
+
 class PeerDirectoryStore:
     def __init__(self, db: sqlite3.Connection, lock: threading.RLock):
         self._db, self._lock = db, lock
@@ -71,6 +94,19 @@ class PeerDirectoryStore:
                 requested_at TEXT NOT NULL,
                 nonce TEXT NOT NULL
             )""")
+            db.execute("""CREATE TABLE IF NOT EXISTS peer_origin_compatibility (
+                source_bot_id TEXT PRIMARY KEY,
+                source_prefix TEXT NOT NULL,
+                last_missing_origin_at TEXT NOT NULL
+            )""")
+
+    def record_missing_origin(self, bot: str, prefix: str, observed_at: str) -> None:
+        with self._lock, self._db:
+            self._db.execute("""INSERT INTO peer_origin_compatibility VALUES (?, ?, ?)
+                ON CONFLICT(source_bot_id) DO UPDATE SET
+                    source_prefix=excluded.source_prefix,
+                    last_missing_origin_at=MAX(last_missing_origin_at, excluded.last_missing_origin_at)""",
+                (bot, prefix, observed_at))
 
     def claim_request(self, requester: str, nonce: str, *, interval_seconds: int = 30) -> bool:
         """Bound local refreshes and replies without process-local rate memory."""
@@ -135,6 +171,8 @@ class PeerDirectoryStore:
             rows = self._db.execute("SELECT * FROM peer_directory ORDER BY source_prefix, route").fetchall()
             snapshots = {row["source_bot_id"]: row for row in self._db.execute(
                 "SELECT * FROM peer_directory_snapshots")}
+            old_origins = {row["source_bot_id"]: row for row in self._db.execute(
+                "SELECT * FROM peer_origin_compatibility")}
         entries = [dict(entry, source_prefix=local_prefix, source="local") for entry in local]
         sources = [{"prefix": local_prefix, "source": "local", "complete": local_complete}]
         for prefix, bot in sorted(configured.items()):
@@ -143,7 +181,10 @@ class PeerDirectoryStore:
                 snapshot = None
             sources.append({"prefix": prefix, "source": "peer", "bot_id": bot,
                             "observed_at": snapshot["observed_at"] if snapshot else None,
-                            "complete": bool(snapshot["complete"]) if snapshot else None})
+                            "complete": bool(snapshot["complete"]) if snapshot else None,
+                            "last_missing_origin_at": (
+                                old_origins[bot]["last_missing_origin_at"]
+                                if bot in old_origins and old_origins[bot]["source_prefix"] == prefix else None)})
             if snapshot and snapshot["source_prefix"] == prefix:
                 entries.extend({"route": row["route"], "display_name": row["display_name"],
                                 "source_prefix": prefix, "source": "peer",

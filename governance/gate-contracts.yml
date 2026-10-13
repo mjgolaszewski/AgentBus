@@ -507,6 +507,7 @@ gates:
     - {id: configured-room-placement-is-enforced, mutation: {path: src/agentbus_channel_policy_service.py, search: '    return settings.slack_repo_channels.get(repo, settings.slack_channel)', replace: '    return settings.slack_channel'}, oracle: {kind: *id044, node_ids: ['tests.test_multichannel::test_room_placement_reply_ancestry_and_global_inbox']}}
     - {id: slack-thread-update-recovery-is-enforced, mutation: {path: src/agentbus_slack_socket_service.py, search: 'and event.get("type") == "message" and thread_update):', replace: 'and event.get("type") == "message" and False):'}, oracle: {kind: *id044, node_ids: ['tests.test_multichannel::test_thread_update_recovers_missing_human_reply_before_ack']}}
     - {id: peer-origin-session-proof-is-enforced, mutation: {path: src/agentbus_service.py, search: '                        if origin_assurance != "session":', replace: '                        if False:'}, oracle: {kind: *id044, node_ids: ['tests.test_peer_directory::test_only_configured_prefix_bound_bot_can_route_and_wake']}}
+    - {id: old-peer-origin-gap-is-reported, mutation: {path: src/agentbus_slack_socket_service.py, search: '        if old_peer is not None:', replace: '        if False:'}, oracle: {kind: *id044, node_ids: ['tests.test_peer_directory::test_peer_message_in_nondefault_room_reaches_global_inbox']}}
     - id: unauthenticated-envelope-routing-is-rejected
       mutation:
         path: src/agentbus_service.py

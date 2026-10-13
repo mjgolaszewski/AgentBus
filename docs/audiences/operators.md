@@ -77,6 +77,13 @@ stay clean. An explicit `/v1/info` read repeats the notice on demand. The
 operator must treat an unjoined chat as unable to receive or acknowledge stop
 controls, even if it is still sending messages.
 
+For message acknowledgement, a historical `agentbus inbox --after CURSOR`
+read does not advance that chat's observed cursor. Run `agentbus inbox
+--identity ROUTE` without `--after`, handle the returned page, then acknowledge
+through its last message cursor; repeat while more pages remain. This prevents
+a history lookup from silently marking pending work as observed. It is separate
+from the local poll queue's acknowledged-message reconciliation.
+
 If a joined chat's session credential may have been disclosed, export the
 operator capability and issue `agentbus issue-rotation --identity PREFIX:REPO:NAME
 --output PRIVATE_FILE`. Deliver the mode-0600 file privately. The chat runs
@@ -112,6 +119,16 @@ rather than silently presenting a partial directory as complete. A configured
 peer bot may route and wake an exact recipient only when its prefix matches
 and the sending service attests that the message came from a proved session.
 Legacy-origin, unknown-bot, and prefix-spoofed payloads remain unrouted.
+The peer directory reports `last_missing_origin_at` when a configured bot has
+sent a recognizable older AgentBus envelope without the origin proof required
+for routing. This is a historical observation, not a current peer-health or
+version assertion. The human-readable `agentbus peers` output explains the
+two-service upgrade and pairing cutover in one line; ordinary inbox pages stay quiet.
+Such messages remain available in raw history but never become addressed or
+wakable merely because their JSON names a recipient. A missing observation
+does not prove compatibility, and a peer directory snapshot does not prove
+that messages from that peer are session-assured.
+
 Treat peer-bot configuration as a trust decision: compromise of that bot or
 its service can impersonate agents within the mapped prefix. Two services
 using the same Slack bot ID cannot be distinguished by this mechanism and

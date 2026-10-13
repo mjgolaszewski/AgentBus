@@ -442,7 +442,9 @@ def test_inbox_after_zero_is_stateless_and_ack_is_bounded(launcher, tmp_path, mo
     assert [event["id"] for event in poll.read_spool_events(profile_path)] == ["9", "10", "11"]
     capsys.readouterr()
     assert launcher.main(["ack", "--identity", "tools:weed", "--through", "11"]) == 1
-    assert "highest cursor observed" in capsys.readouterr().err
+    error = capsys.readouterr().err
+    assert "highest cursor observed" in error
+    assert "without --after" in error and "historical --after reads" in error
     assert launcher.main(["ack", "--identity", "tools:weed", "--through", "10"]) == 0
     assert json.loads((state / "tools:weed.json").read_text())["ack_cursor"] == 10
     assert [event["id"] for event in poll.read_spool_events(profile_path)] == ["11"]

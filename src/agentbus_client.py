@@ -507,7 +507,10 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
         if ns.through < int(profile["ack_cursor"]):
             raise ClientError("Acknowledgements are monotonic and cannot move backward.")
         if ns.through > int(profile["observed_cursor"]):
-            raise ClientError("Cannot acknowledge beyond the highest cursor observed by this chat.")
+            raise ClientError("Cannot acknowledge beyond the highest cursor observed by this chat. "
+                              "Run agentbus inbox --identity IDENTITY without --after, handle the "
+                              "returned page, then acknowledge its last message cursor. Repeat for more pages; "
+                              "historical --after reads do not advance the observed cursor.")
         profile["ack_cursor"] = ns.through
         save_profile(values, profile)
         from src.agentbus_poll_client import retire_acknowledged_messages

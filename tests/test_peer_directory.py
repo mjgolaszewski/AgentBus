@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import json
 import uuid
+from types import SimpleNamespace
 
 import httpx
 import pytest
 from fastapi.testclient import TestClient
 from slack_sdk.socket_mode.request import SocketModeRequest
 
+from src import agentbus_peer_client
 from src.agentbus_codex_wake_client import _candidate
 from src.agentbus_peer_directory_service import parse_wire, wire
 from src.agentbus_send_policy_service import validate_new_send
@@ -190,7 +192,7 @@ def test_socket_receivers_exchange_directory_without_user_message_or_wake(tmp_pa
         remote.close()
 
 
-def test_peer_message_in_nondefault_room_reaches_global_inbox(tmp_path):
+def test_peer_message_in_nondefault_room_reaches_global_inbox(tmp_path, monkeypatch, capsys):
     other = "C987654"
     store = MessageStore(tmp_path / "rooms.sqlite3")
 
@@ -215,14 +217,34 @@ def test_peer_message_in_nondefault_room_reaches_global_inbox(tmp_path):
         event = dict(bot_event("BHOME", encode_envelope(sent)), channel=other)
         receiver = SlackReceiver(store, CHANNEL, "BREMOTE", settings)
         client = Client()
+        old_envelope = json.loads(encode_envelope(sent))
+        old_envelope.pop("origin_assurance")
+        old_event = dict(bot_event("BHOME", json.dumps(old_envelope), "1700000001.000000"),
+                         channel=other)
+        receiver(client, SocketModeRequest(type="events_api", envelope_id="old-peer",
+                                           payload={"event": old_event}))
+        legacy = store.read(other).messages[0]
+        assert legacy.sender == "slack:BHOME" and legacy.recipient == "all"
+        assert legacy.audience == "unrouted" and legacy.sender_assurance == "legacy"
+        source = store.peers.list("moranwm", {"home": "BHOME"})["sources"][1]
+        assert source["last_missing_origin_at"] == legacy.received_at
+        monkeypatch.setattr(agentbus_peer_client, "api", lambda *_args: store.peers.list(
+            "moranwm", {"home": "BHOME"}) | {"local_bot_id": "BREMOTE"})
+        agentbus_peer_client.peers(SimpleNamespace(refresh=False, json=False), {})
+        assert "old AgentBus envelope without origin proof observed" in capsys.readouterr().out
         receiver(client, SocketModeRequest(type="events_api", envelope_id="peer-room",
                                            payload={"event": event}))
-        assert client.acks == ["peer-room"]
+        assert client.acks == ["old-peer", "peer-room"]
         from src.agentbus_multichannel_inbox_service import read_inbox
         page = read_inbox(settings, store, "moranwm:racecar:maintainer", 0, 100, None, False, None)
         assert len(page.messages) == 1
         assert page.messages[0].sender_assurance == "peer"
         assert page.messages[0].channel == other and page.messages[0].actionable
+        assert len(store.read(other).messages) == 2
+        observed = store.peers.list("moranwm", {"home": "BHOME"})["sources"][1]["last_missing_origin_at"]
+        store.close()
+        store = MessageStore(tmp_path / "rooms.sqlite3")
+        assert store.peers.list("moranwm", {"home": "BHOME"})["sources"][1]["last_missing_origin_at"] == observed
     finally:
         store.close()
 
