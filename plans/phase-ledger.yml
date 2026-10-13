@@ -11,11 +11,11 @@ build_plan_mandate:
   required_fields: [tightly_scoped_deliverables, parallelizable_workstreams, hard_dependencies, docker_first_local_runtime, completeness_standard]
   completeness_standard: full_completeness_for_declared_scope
 active_phase:
-  id: P07
-  build_block: "producer_supply_chain_hardening"
-  plan: plans/phase-07-plan.yml
-  workitems: plans/phase-07-workitems.yml
-  log: phases/phase-07-log.yml
+  id: P09
+  build_block: "lightweight_federation_and_owner_mediated_wake"
+  plan: plans/phase-09-plan.yml
+  workitems: plans/phase-09-workitems.yml
+  log: phases/phase-09-log.yml
   memory: MEMORY.yml
   spec: plans/product-spec.yml
   build_plan: plans/build-plan.yml
@@ -96,6 +96,7 @@ release_trains:
   release_7_hotfix_2: {target_version: "0.7.3", status: active, focus: [interrupted_wake_recovery, stale_poll_alarm_recovery, bounded_inbox_cli, recent_wake_reference_visibility, terminal_turn_truth, vs_code_notification_only_boundary]}
   release_7_prefix: {target_version: "0.8.0", status: active, focus: [configurable_local_identity_prefix, session_proved_legacy_route_migration, accumulated_unreleased_hotfixes]}
   release_8: {target_version: "0.8.1", status: planned, focus: [governance_dependency_hash_lock, proxy_header_remediation]}
+  release_9: {target_version: "0.9.0", status: active, focus: [outbound_only_federation, durable_bridge_obligations, remote_directory_sync, owner_mediated_idle_wake, final_bcf_custody]}
 release_readiness:
   computed_by: bcf truth
   requirements_source: governance/evidence-policy.yml

@@ -65,9 +65,9 @@ environment_facts:
     build_plan: plans/build-plan.yml
     active_phase_ledger: plans/phase-ledger.yml
     phase_history: plans/phase-history.yml
-    active_phase_plan: plans/phase-07-plan.yml
-    active_workitem_ledger: plans/phase-07-workitems.yml
-    active_phase_log: phases/phase-07-log.yml
+    active_phase_plan: plans/phase-09-plan.yml
+    active_workitem_ledger: plans/phase-09-workitems.yml
+    active_phase_log: phases/phase-09-log.yml
 known_constraints:
   - preserve the public CLI HTTP protocol SQLite state and deployment behavior during governance adoption
   - use only immutable released BCF artifacts and digests; preserve provider boundaries without persistent trusted-controller capability
