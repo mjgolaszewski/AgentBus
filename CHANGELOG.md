@@ -5,6 +5,14 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Deterministic idle polling
+
+- Empty inbox cycles now use the bounded 1, 2, 4, 8, 12, 16, 24, then
+  32-minute cadence. Newly relevant traffic resets to the initial interval;
+  independent control checks retain their own maximum. The repaired BCF 2.3.2
+  candidate is adopted through canonical upgrade machinery and remains subject
+  to final custody qualification.
+
 ## [0.8.0] - 2026-10-11
 
 ### Local identity prefixes
