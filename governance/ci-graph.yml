@@ -140,7 +140,7 @@ step_components:
     kind: command
     name: Capture the mechanically derived evidence shard
     command: v3-capture-shard
-    environment: {}
+    environment: {GITHUB_TOKEN: '${{ github.token }}'}
     produces: []
     consumes: []
   upload-receipts:

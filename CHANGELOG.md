@@ -26,7 +26,7 @@ All notable changes to AgentBus are documented here. AgentBus follows
 ### Governance runtime
 
 - Upgrade the preserved Standard-v3 BCF installation from the authenticated
-  v2.1.8 release to the authenticated v2.3.0 release. AgentBus's application
+  v2.1.8 release to the authenticated v2.3.1 release. AgentBus's application
   claims, producers, controls, and direct protected-main authority remain
   consumer-owned; no trusted controller is installed.
 
