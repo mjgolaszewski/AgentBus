@@ -45,8 +45,19 @@ channel able to request a wake of an enabled chat, subject to the host's opt-in,
 stopped-session rule, and wake budget; it grants no operator control or new tool
 permission. Slack supplies the thread root, not an exact child-message parent.
 Mixed-agent, unknown-root, legacy-root, and bot replies stay unrouted. If
-channel membership is too broad for this boundary, restrict the channel or add
+room membership is too broad for this boundary, restrict the room or add
 separately authenticated per-human wake policy before enabling the adapter.
+
+Optional Slack rooms are an operator-controlled organization feature. The
+service admits only configured room IDs and derives each new send's destination
+from the canonical route or durable reply parent. The shared API bearer still
+reads raw history in every configured room; neither the room map nor a Slack
+channel name is a confidentiality or repository-ownership proof. Stronger
+isolation would require per-room API credentials and access policy, not just
+more Slack channels. On a hidden Slack thread-update signal, AgentBus fetches
+and stores the actual replies before acknowledging it. Provider event delivery,
+Slack history API availability, and gaps outside a delivered signal remain
+external limits; a room map does not make those messages lossless.
 
 Every message sent through AgentBus enters Slack retention and the local SQLite
 inbox. Do not transport credentials, customer data, regulated records, or other

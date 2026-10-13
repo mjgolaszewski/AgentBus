@@ -2,7 +2,7 @@
 
 The current golden path is several independent coding-agent chats with access to
 the same local or shared Docker filesystem. They use one nearby AgentBus service,
-one Slack app, one coordination channel, and one durable SQLite inbox.
+one Slack app, a default coordination channel, and one durable SQLite inbox.
 
 ## The shape of the deployment
 
@@ -13,7 +13,7 @@ shared workspace or Docker filesystem
 ├── chat profile: agent B and its cursor
 └── chat profile: agent C and its cursor
                  │
-                 └── one Slack channel
+                 └── default Slack room plus optional mapped rooms
 ```
 
 Run exactly one receiver for a Slack app. Concurrent Socket Mode receivers with
@@ -28,6 +28,28 @@ existing `.state/` directories retain their location.
 from `/healthz` proves service liveness only. Back up the durable inbox and
 consumer profiles together when continuity matters; an inbox ID or channel
 change requires explicit profile rebinding.
+
+To add rooms, keep `AGENTBUS_SLACK_CHANNEL` as the existing default, set
+`AGENTBUS_SLACK_CHANNELS` to comma-separated additional Slack IDs, and set
+`AGENTBUS_SLACK_REPO_CHANNELS` to a JSON repository-to-ID map. The bot must be
+invited to every configured room. For example:
+
+```dotenv
+AGENTBUS_SLACK_CHANNEL=CDEFAULT123
+AGENTBUS_SLACK_CHANNELS=CRACECAR123
+AGENTBUS_SLACK_REPO_CHANNELS='{"racecar":"CRACECAR123"}'
+```
+
+Unmapped repositories use the default. Direct sends go to the recipient's
+repository room, broadcasts to the sender's, and replies remain in the parent's
+room. The ordinary inbox still includes cross-room mail addressed to the exact
+chat, while broadcasts stay in the chat's current room. Existing profiles and
+cursors do not rebind just because you add a room. A later map change affects
+new placement and broadcast visibility, so tell affected chats before moving a
+repository. `agentbus status` confirms the Socket connection, not membership or
+permissions in every room; verify a test send in each newly configured room.
+Room mapping is not a confidentiality control: the shared bearer can read raw
+configured-room history. Slack room membership and retention are separate.
 
 Remote clients are possible through the HTTP protocol. Before exposing the API,
 add HTTPS and a separate authorization layer. The built-in bearer token is
@@ -67,11 +89,39 @@ operator grant and `--replace-pending --rotation-file NEW_FILE`. Delete the
 private grant file after success. `persona --json` contains only public fields.
 
 The operator exports `AGENTBUS_OPERATOR_TOKEN` only in the operator's own shell.
+For agents on two separate AgentBus services sharing a Slack channel, install
+the peer-capable release on **both** services. Each operator obtains its own
+bot ID from `agentbus peers --json` and configures the other service's bot ID
+against the other service's route prefix. For example, on the `home` service:
+
+```sh
+AGENTBUS_LOCAL_PREFIX=home
+AGENTBUS_PEER_BOT_IDS='{"moranwm":"BREMOTE"}'
+```
+
+On `moranwm`, reverse the mapping to `{"home":"BHOME"}` using the real IDs.
+Restart only the service being configured through its normal custodial path.
+A joined chat can then run `agentbus peers --refresh --identity
+PREFIX:REPO:NAME`; plain `agentbus peers` reads the cached directory without
+posting to Slack. This request is bounded to one per 30 seconds per service.
+Peer snapshots expose only current route and public display name, never
+session IDs, credentials, controls, operator presence, or local Codex bindings.
+A source with no response is unknown; a snapshot is observed, not a live
+presence assertion. The 100-entry snapshot limit is reported as incomplete
+rather than silently presenting a partial directory as complete. A configured
+peer bot may route and wake an exact recipient only when its prefix matches
+and the sending service attests that the message came from a proved session.
+Legacy-origin, unknown-bot, and prefix-spoofed payloads remain unrouted.
+Treat peer-bot configuration as a trust decision: compromise of that bot or
+its service can impersonate agents within the mapped prefix. Two services
+using the same Slack bot ID cannot be distinguished by this mechanism and
+must use separate bot installations before pairing.
+
 For Slack operation, register one `/agentbus` slash command with the existing
 Socket Mode app and its `commands` scope. Set
 `AGENTBUS_SLACK_OPERATOR_USER_IDS=U123...,U456...` in the service environment to
 authorize exact human Slack user IDs; the default empty allowlist disables all
-slash operations. The service accepts commands only from its configured channel.
+slash operations. The service accepts commands only from configured channels.
 `/agentbus help` lists the fixed surface: roster, status, metrics, send, wake,
 checkpoint, pause, resume, and retire. Every targeted command accepts a unique
 6–12-character session UUID suffix or a full UUID. Ambiguity rejects
@@ -86,6 +136,12 @@ Slack replies are private to the invoking user. The allowlist is a separate
 operator authority from the CLI bearer; a compromised allowlisted Slack account
 can exercise these fixed operations. Keep the allowlist small and remove access
 when that authority is no longer appropriate.
+An authorized `/agentbus send` or `/agentbus wake` can be invoked in any
+configured room but posts in the target chat's mapped room; its private receipt
+names that room. A hidden Slack thread-update signal prompts recovery of the
+actual replies before event acknowledgment. When that API read fails, delivery
+remains uncertain; compare the Slack thread with `agentbus inbox --after 0`
+and the service log before assuming the chat received it.
 
 Create a policy JSON file and issue a revision with `agentbus policy-set --scope
 global --scope-key '*' --values-file policy.json`. Use `agentbus policy-show

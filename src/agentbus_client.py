@@ -717,6 +717,11 @@ def cli_roster(ns: argparse.Namespace, project: Path, values: dict[str, str]) ->
     return roster(ns, values)
 
 
+def cli_peers(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    from src.agentbus_peer_client import peers
+    return peers(ns, values)
+
+
 def cli_rename(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
     from src.agentbus_rename_client import rename_chat
 
@@ -768,6 +773,7 @@ CLI_OPERATIONS = {
     "control-status": cli_control_status,
     "session-presence": cli_session_presence,
     "roster": cli_roster,
+    "peers": cli_peers,
     "rename": cli_rename,
     "claim-recovery": cli_claim_recovery,
     "codex-wake": cli_codex_wake,

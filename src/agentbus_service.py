@@ -20,8 +20,10 @@ import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError, model_validator
 
+from src.agentbus_channel_policy_service import cursor_channel, send_channel
 from src.agentbus_claim_recovery_service import ClaimRecoveryStore
 from src.agentbus_control_store_service import ControlStore
+from src.agentbus_message_assurance_service import route_parts
 from src.agentbus_message_authorization_service import require_message_route
 from src.agentbus_participation_api_service import (
     UPGRADE_NOTICE,
@@ -47,12 +49,14 @@ from src.agentbus_participation_api_service import (
     upgrade_notice,
 )
 from src.agentbus_participation_store_service import ParticipationStore, StoppedMessageSession
-from src.agentbus_presentation_service import visible_text
+from src.agentbus_peer_api_service import api_peer_refresh, api_peers
+from src.agentbus_peer_directory_service import PeerDirectoryStore
 from src.agentbus_reply_policy_service import validate_reply
 from src.agentbus_request_limits_service import RequestBodyLimit
 from src.agentbus_send_policy_service import SessionAuthorityError, validate_new_send
 from src.agentbus_send_rate_service import SendRateExceeded, SendRateStore
 from src.agentbus_settings_service import Settings
+from src.agentbus_slack_post_service import SlackPoster
 from src.agentbus_slack_socket_service import SlackReceiver, build_socket
 from src.agentbus_status_api_service import api_health, api_status
 
@@ -65,7 +69,8 @@ ACTIONABLE_KINDS = {"question", "request", "blocker", "handoff"}
 
 def encode_envelope(message: SendMessage) -> str:
     """Keep Slack's link/mention processing out of the machine-readable fallback."""
-    encoded = json.dumps({"agentbus": 2, **message.model_dump(include=set(SendMessage.model_fields))},
+    encoded = json.dumps({"agentbus": 2, "origin_assurance": message._sender_assurance,
+                          **message.model_dump(include=set(SendMessage.model_fields))},
                          ensure_ascii=True, separators=(",", ":"))
     for literal, escape in (("<", r"\u003c"), (">", r"\u003e"), ("&", r"\u0026"), ("/", r"\/")):
         encoded = encoded.replace(literal, escape)
@@ -116,10 +121,11 @@ class SendMessage(BaseModel):
 
 
 class Message(SendMessage):
+    channel: str
     cursor: int
     slack_ts: str
     received_at: str
-    sender_assurance: Literal["session", "slack-human", "legacy"] = "legacy"
+    sender_assurance: Literal["session", "peer", "slack-human", "legacy"] = "legacy"
 
 
 class MessagePage(BaseModel):
@@ -247,6 +253,7 @@ class MessageStore:
         )
         self._db.commit()
         self.participation = ParticipationStore(self._db, self._lock)
+        self.peers = PeerDirectoryStore(self._db, self._lock)
         self.send_rate = SendRateStore(self._db, self._lock)
         self.controls = ControlStore(self._db, self._lock, self.participation)
         self.claim_recovery = ClaimRecoveryStore(self._db, self._lock)
@@ -269,8 +276,20 @@ class MessageStore:
     @staticmethod
     def _message(row: sqlite3.Row) -> Message:
         return Message(**json.loads(row["payload"]), cursor=row["cursor"],
-                       slack_ts=row["slack_ts"], received_at=row["received_at"],
+                       channel=row["channel"], slack_ts=row["slack_ts"], received_at=row["received_at"],
                        sender_assurance=row["sender_assurance"])
+
+    def message_any(self, cursor: int) -> Message | None:
+        with self._lock:
+            row = self._db.execute("SELECT * FROM messages WHERE cursor = ?", (cursor,)).fetchone()
+        return self._message(row) if row else None
+
+    def channels_for_ts(self, slack_ts: str, allowed_channels: frozenset[str]) -> list[str]:
+        with self._lock:
+            rows = self._db.execute(
+                "SELECT channel FROM messages WHERE slack_ts = ?", (slack_ts,)
+            ).fetchall()
+        return [row[0] for row in rows if row[0] in allowed_channels]
 
     def append(self, channel: str, slack_ts: str, message: SendMessage) -> Message:
         with self._lock, self._db:
@@ -281,7 +300,7 @@ class MessageStore:
             """, (channel, slack_ts, message.thread_ts, message.recipient,
                   message.audience, datetime.now(timezone.utc).isoformat(),
                   message.model_dump_json(), message._sender_assurance))
-            if message._sender_assurance in {"session", "slack-human"}:
+            if message._sender_assurance in {"session", "peer", "slack-human"}:
                 self._db.execute(
                     "UPDATE messages SET sender_assurance = ?, payload = ?, recipient = ?, audience = ?, thread_ts = ? "
                     "WHERE channel = ? AND slack_ts = ? AND sender_assurance = 'legacy'",
@@ -323,14 +342,21 @@ class MessageStore:
         next_cursor = messages[-1].cursor if has_more else max(after, high)
         return MessagePage(messages=messages, next_cursor=next_cursor, has_more=has_more)
 
-    def info(self, channel: str) -> Info:
+    def info(self, channel: str, channels: frozenset[str] | None = None) -> Info:
         with self._lock:
             inbox_id = self._db.execute("SELECT value FROM metadata WHERE key = 'inbox_id'").fetchone()[0]
-            high = self._db.execute("SELECT COALESCE(MAX(cursor), 0) FROM messages WHERE channel = ?",
-                                    (channel,)).fetchone()[0]
+            if channels is None:
+                high = self._db.execute("SELECT COALESCE(MAX(cursor), 0) FROM messages WHERE channel = ?",
+                                        (channel,)).fetchone()[0]
+            else:
+                marks = ",".join("?" for _ in channels)
+                high = self._db.execute(
+                    f"SELECT COALESCE(MAX(cursor), 0) FROM messages WHERE channel IN ({marks})",
+                    tuple(channels),
+                ).fetchone()[0]
         return Info(inbox_id=inbox_id, channel=channel, high_water_cursor=high,
                     features=["profiles", "stateless-cursors", "explicit-routing",
-                              "parent-replies", "legacy-claims"])
+                              "parent-replies", "legacy-claims", "peer-directory"])
 
     def message(self, channel: str, cursor: int) -> Message | None:
         with self._lock:
@@ -458,7 +484,8 @@ class MessageStore:
             self._db.close()
 
 
-def normalize_event(event: dict, channel: str, trusted_bot_id: str) -> tuple[str, SendMessage] | None:
+def normalize_event(event: dict, channel: str, trusted_bot_id: str,
+                    peer_bot_ids: dict[str, str] | None = None) -> tuple[str, SendMessage] | None:
     if event.get("type") != "message" or event.get("channel") != channel:
         return None
     if event.get("subtype") not in (None, "bot_message", "thread_broadcast") or event.get("hidden"):
@@ -469,21 +496,28 @@ def normalize_event(event: dict, channel: str, trusted_bot_id: str) -> tuple[str
     thread_ts = event.get("thread_ts")
     if not isinstance(thread_ts, str) or not re.fullmatch(SLACK_TS, thread_ts):
         thread_ts = None
-    trusted_envelope = (
-        event.get("bot_id") == trusted_bot_id
-        and event.get("subtype") in ("bot_message", "thread_broadcast")
-    )
+    bot_id = event.get("bot_id")
+    peer_prefix = next((name for name, bot in (peer_bot_ids or {}).items() if bot == bot_id), None)
+    trusted_envelope = (bot_id in {trusted_bot_id, *(peer_bot_ids or {}).values()}
+                        and event.get("subtype") in ("bot_message", "thread_broadcast"))
     if trusted_envelope:
         try:
             envelope = json.loads(text)
             if isinstance(envelope, dict) and envelope.get("agentbus") in (1, 2):
                 version = envelope.pop("agentbus")
+                origin_assurance = envelope.pop("origin_assurance", None)
                 if version == 1:
                     envelope.pop("audience", None)
                     envelope.pop("reply_to_cursor", None)
                 envelope["thread_ts"] = thread_ts
                 message = SendMessage.model_validate(envelope)
-                if not message.sender.startswith("slack:"):
+                parts = route_parts(message.sender)
+                if (not message.sender.startswith("slack:") and
+                        (peer_prefix is None or (parts is not None and parts[0] == peer_prefix))):
+                    if peer_prefix is not None:
+                        if origin_assurance != "session":
+                            raise ValueError("peer message lacks proved origin session")
+                        message._sender_assurance = "peer"
                     return ts, message
         except (ValueError, RecursionError):
             pass
@@ -503,66 +537,6 @@ def normalize_event(event: dict, channel: str, trusted_bot_id: str) -> tuple[str
     return ts, message
 
 
-class SlackPoster:
-    def __init__(self, settings: Settings, client: httpx.AsyncClient):
-        self.settings, self.client = settings, client
-
-    async def authenticated_bot_id(self) -> str:
-        try:
-            response = await self.client.post(
-                "https://slack.com/api/auth.test",
-                headers={"Authorization": f"Bearer {self.settings.slack_bot_token}"},
-            )
-            data = response.json()
-        except (httpx.HTTPError, ValueError):
-            raise RuntimeError("Slack bot identity verification failed") from None
-        bot_id = data.get("bot_id") if response.is_success and isinstance(data, dict) else None
-        if (
-            not isinstance(data, dict) or data.get("ok") is not True
-            or not isinstance(bot_id, str) or not re.fullmatch(r"B[A-Z0-9]+", bot_id)
-        ):
-            raise RuntimeError("Slack bot identity verification failed")
-        return bot_id
-
-    async def post(self, message: SendMessage) -> str:
-        label = f"{message.sender} → {message.recipient} · {message.kind} · {message.audience}"
-        if message.repo:
-            label += f" · {message.repo}"
-        blocks: list[dict[str, object]] = [
-            {"type": "context", "elements": [{"type": "plain_text", "text": label, "emoji": False}]}
-        ]
-        display = visible_text(message.text)
-        blocks.extend({"type": "section", "text": {"type": "plain_text", "text": display[i:i + 3000], "emoji": False}}
-                      for i in range(0, len(display), 3000))
-        payload = {"channel": self.settings.slack_channel, "text": encode_envelope(message), "blocks": blocks,
-                   "parse": "none", "mrkdwn": False, "unfurl_links": False, "unfurl_media": False}
-        if message.thread_ts:
-            payload["thread_ts"] = message.thread_ts
-        try:
-            response = await self.client.post("https://slack.com/api/chat.postMessage", json=payload,
-                                              headers={"Authorization": f"Bearer {self.settings.slack_bot_token}"})
-        except httpx.TimeoutException:
-            raise HTTPException(504, "Slack timed out; delivery is uncertain. Check the channel before retrying.") from None
-        except httpx.RequestError:
-            raise HTTPException(502, "Slack request failed; delivery may be uncertain. Check the channel before retrying.") from None
-        if response.status_code == 429:
-            retry = response.headers.get("Retry-After", "1")
-            retry = retry if re.fullmatch(r"[0-9]{1,6}", retry) else "1"
-            raise HTTPException(429, "Slack rate limit reached", headers={"Retry-After": retry})
-        if not response.is_success:
-            raise HTTPException(502, "Slack request failed; delivery may be uncertain. Check the channel before retrying.")
-        try:
-            data = response.json()
-        except ValueError:
-            raise HTTPException(502, "Slack returned an invalid response; delivery is uncertain") from None
-        if not isinstance(data, dict) or data.get("ok") is not True:
-            raise HTTPException(502, "Slack rejected the message; check app permissions and channel membership")
-        ts = data.get("ts")
-        if not isinstance(ts, str) or not re.fullmatch(SLACK_TS, ts) or data.get("channel") != self.settings.slack_channel:
-            raise HTTPException(502, "Slack returned an unexpected message response; delivery is uncertain")
-        return ts
-
-
 def authenticate(request: Request,
                  authorization: Annotated[str | None, Header()] = None) -> None:
     """Authenticate every versioned API operation against the app's settings."""
@@ -577,7 +551,8 @@ async def api_send(request: Request, message: SendMessage,
                    x_agentbus_session_token: Annotated[str | None, Header()] = None) -> Message:
     settings = request.app.state.settings
     try:
-        rate_key = validate_new_send(request.app.state.store, settings.slack_channel, message,
+        channel = send_channel(settings, request.app.state.store, message)
+        rate_key = validate_new_send(request.app.state.store, channel, message,
                                      x_agentbus_session_token)
         request.app.state.store.send_rate.reserve(rate_key)
     except KeyError:
@@ -592,10 +567,11 @@ async def api_send(request: Request, message: SendMessage,
         raise HTTPException(409, str(exc)) from None
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from None
-    ts = await request.app.state.poster.post(message)
+    ts = (await request.app.state.poster.post(message) if channel == settings.slack_channel
+          else await request.app.state.poster.post(message, channel))
     try:
         return await asyncio.to_thread(
-            request.app.state.store.append, settings.slack_channel, ts, message
+            request.app.state.store.append, channel, ts, message
         )
     except (sqlite3.Error, OSError):
         raise HTTPException(
@@ -606,17 +582,20 @@ async def api_send(request: Request, message: SendMessage,
 def api_read(request: Request, after: Annotated[int, Query(ge=0)] = 0,
              recipient: Annotated[str | None, Query(pattern=IDENTIFIER)] = None,
              limit: Annotated[int, Query(ge=1, le=200)] = 100,
-             thread_ts: Annotated[str | None, Query(pattern=SLACK_TS)] = None) -> MessagePage:
+             thread_ts: Annotated[str | None, Query(pattern=SLACK_TS)] = None,
+             channel: Annotated[str | None, Query(pattern=r"^[CG][A-Z0-9]+$")] = None) -> MessagePage:
     settings = request.app.state.settings
+    if channel is not None and channel not in settings.allowed_channels:
+        raise HTTPException(422, "unknown Slack room")
     page = request.app.state.store.read(
-        settings.slack_channel, after, recipient, limit, thread_ts
+        channel or settings.slack_channel, after, recipient, limit, thread_ts
     )
     return page
 
 
 def api_info(request: Request) -> Info:
     settings = request.app.state.settings
-    info = request.app.state.store.info(settings.slack_channel)
+    info = request.app.state.store.info(settings.slack_channel, settings.allowed_channels)
     info.upgrade_notice = upgrade_notice(request)
     return info
 
@@ -626,12 +605,16 @@ def api_inbox(request: Request, identity: Annotated[str, Query(pattern=IDENTIFIE
               limit: Annotated[int, Query(ge=1, le=200)] = 100,
               thread_ts: Annotated[str | None, Query(pattern=SLACK_TS)] = None,
               context: bool = False,
+              channel: Annotated[str | None, Query(pattern=r"^[CG][A-Z0-9]+$")] = None,
               x_agentbus_session_token: Annotated[str | None, Header()] = None) -> InboxPage:
     settings = request.app.state.settings
     require_message_route(request.app.state.store, identity, x_agentbus_session_token)
-    page = request.app.state.store.inbox(
-        settings.slack_channel, identity, after, limit, thread_ts, context
-    )
+    from src.agentbus_multichannel_inbox_service import read_inbox
+    try:
+        page = read_inbox(settings, request.app.state.store, identity, after, limit,
+                          thread_ts, context, channel)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from None
     if upgrade_notice(request) and request.app.state.store.first_legacy_notice(
         settings.slack_channel, identity,
     ):
@@ -644,7 +627,8 @@ def api_claim(request: Request, cursor: int, claim: ClaimRequest,
     settings = request.app.state.settings
     require_message_route(request.app.state.store, claim.identity, x_agentbus_session_token)
     try:
-        result = request.app.state.store.claim(settings.slack_channel, cursor, claim.identity)
+        channel = cursor_channel(settings, request.app.state.store, cursor)
+        result = request.app.state.store.claim(channel, cursor, claim.identity)
     except KeyError:
         raise HTTPException(404, "message not found") from None
     except ValueError as exc:
@@ -667,6 +651,8 @@ API_OPERATIONS: dict[str, Callable[..., object]] = {
     "read": api_read,
     "info": api_info,
     "inbox": api_inbox,
+    "peers": api_peers,
+    "peer_refresh": api_peer_refresh,
     "claim": api_claim,
     "policy_set": api_policy_set,
     "policy_effective": api_policy_effective,
@@ -701,6 +687,9 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
         try:
             poster = SlackPoster(settings, client)
             trusted_bot_id = await poster.authenticated_bot_id()
+            if trusted_bot_id in settings.peer_bot_ids.values():
+                raise RuntimeError("Own Slack bot ID cannot be configured as a peer")
+            app.state.local_bot_id = trusted_bot_id
             socket = socket_factory(
                 settings, SlackReceiver(store, settings.slack_channel, trusted_bot_id, settings)
             )
@@ -734,6 +723,9 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                       dependencies=auth, response_model=Info)
     app.add_api_route("/v1/inbox", API_OPERATIONS["inbox"], methods=["GET"],
                       dependencies=auth, response_model=InboxPage)
+    app.add_api_route("/v1/peers", API_OPERATIONS["peers"], methods=["GET"], dependencies=auth)
+    app.add_api_route("/v1/peers/refresh", API_OPERATIONS["peer_refresh"],
+                      methods=["POST"], dependencies=auth)
     app.add_api_route("/v1/messages/{cursor}/claim", API_OPERATIONS["claim"], methods=["POST"],
                       dependencies=auth, response_model=Claim)
     app.add_api_route("/v1/messages/{cursor}/claim-recovery", API_OPERATIONS["claim_recovery"],

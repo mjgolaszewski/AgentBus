@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hmac
+import json
 import os
 import re
 from dataclasses import dataclass, field
@@ -18,6 +19,14 @@ class Settings:
     db_path: Path
     operator_token: str | None = field(default=None, repr=False)
     slack_operator_user_ids: frozenset[str] = frozenset()
+    slack_channels: frozenset[str] = frozenset()
+    slack_repo_channels: dict[str, str] = field(default_factory=dict)
+    local_prefix: str | None = None
+    peer_bot_ids: dict[str, str] = field(default_factory=dict)
+
+    @property
+    def allowed_channels(self) -> frozenset[str]:
+        return self.slack_channels | {self.slack_channel}
 
     def database_bytes(self) -> int:
         """Report current SQLite footprint, including its WAL sidecars."""
@@ -51,5 +60,37 @@ class Settings:
         users = frozenset(item.strip() for item in raw_users.split(",") if item.strip())
         if any(not re.fullmatch(r"[UW][A-Z0-9]{2,59}", item) for item in users):
             raise ValueError("AGENTBUS_SLACK_OPERATOR_USER_IDS must contain Slack user IDs")
+        channels = frozenset(item.strip() for item in
+                             os.environ.get("AGENTBUS_SLACK_CHANNELS", "").split(",") if item.strip())
+        if any(not re.fullmatch(r"[CG][A-Z0-9]+", item) for item in channels):
+            raise ValueError("AGENTBUS_SLACK_CHANNELS must contain channel IDs")
+        try:
+            room_map = json.loads(os.environ.get("AGENTBUS_SLACK_REPO_CHANNELS", "{}"))
+        except ValueError:
+            raise ValueError("AGENTBUS_SLACK_REPO_CHANNELS must be a JSON object") from None
+        if not isinstance(room_map, dict) or any(
+            not isinstance(repo, str) or not re.fullmatch(r"[a-z0-9][a-z0-9._-]{0,63}", repo)
+            or not isinstance(room, str) or room not in channels | {values["slack_channel"]}
+            for repo, room in room_map.items()
+        ):
+            raise ValueError("AGENTBUS_SLACK_REPO_CHANNELS must map repository names to configured channel IDs")
+        prefix = os.environ.get("AGENTBUS_LOCAL_PREFIX", "").strip() or None
+        if prefix is not None and (prefix in {"all", "slack"} or not re.fullmatch(r"[a-z][a-z0-9-]{0,31}", prefix)):
+            raise ValueError("AGENTBUS_LOCAL_PREFIX must be a canonical prefix")
+        raw_peers = os.environ.get("AGENTBUS_PEER_BOT_IDS", "{}").strip() or "{}"
+        try:
+            peers = json.loads(raw_peers)
+        except ValueError:
+            raise ValueError("AGENTBUS_PEER_BOT_IDS must be a JSON object mapping prefixes to bot IDs") from None
+        if not isinstance(peers, dict) or any(
+            not isinstance(name, str) or not re.fullmatch(r"[a-z][a-z0-9-]{0,31}", name)
+            or name in {"all", "slack"} or name == prefix
+            or not isinstance(bot, str) or not re.fullmatch(r"B[A-Z0-9]+", bot)
+            for name, bot in peers.items()
+        ) or len(set(peers.values())) != len(peers):
+            raise ValueError("AGENTBUS_PEER_BOT_IDS must map distinct canonical prefixes to distinct Slack bot IDs")
+        if peers and prefix is None:
+            raise ValueError("AGENTBUS_LOCAL_PREFIX is required when peer bots are configured")
         return cls(**values, db_path=db_path.expanduser(), operator_token=operator_token,
-                   slack_operator_user_ids=users)
+                   slack_operator_user_ids=users, slack_channels=channels,
+                   slack_repo_channels=room_map, local_prefix=prefix, peer_bot_ids=peers)

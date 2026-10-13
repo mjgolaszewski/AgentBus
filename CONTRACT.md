@@ -34,8 +34,9 @@ messages to the alias remain wake eligible; then set
 `AGENTBUS_IDENTITY=PREFIX:REPO:NAME`. A prefix separates local namespaces but
 does not prove repository ownership or grant operator authority.
 They are local coordination state, use mode `0600`, and must not be committed.
-Names and personas are self-asserted labels. The shared bearer token permits a
-client to choose any sender, so they are not an authorization boundary.
+Names and personas are labels, not session proof. The shared bearer still
+permits visibly legacy messages from unjoined routes; enrolled routes require
+their own credential.
 
 ## Staged message assurance
 
@@ -121,6 +122,20 @@ identity returned by Slack `auth.test` for the configured bot token. A human or
 foreign bot cannot create a routed message by pasting a valid envelope; its text
 is stored as `unrouted`. Protocol 1 compatibility has the same provenance rule.
 
+The original `AGENTBUS_SLACK_CHANNEL` stays the default and remains the
+protocol-2 info channel for existing profiles. Operators may configure
+additional allowed channel IDs and a repository-to-room map. New direct and
+informational sends follow the recipient route's repository segment, broadcasts
+follow the sender route's, and replies stay in the durable parent's room. The
+caller-supplied `repo` label or local route prefix cannot redirect them. The
+same global SQLite cursor orders all rooms. A chat's ordinary inbox includes
+its addressed messages and claims across configured rooms, plus broadcasts in
+its placed room; explicit history and context reads can select one configured
+room. A cursor-only reply or claim resolves its exact room. Bare Slack thread
+timestamps are not globally unique and ambiguous room selection fails closed.
+This separation is for attention, not confidentiality; the shared bearer still
+has raw-history read access to configured rooms.
+
 ## Cursor lifecycle
 
 `agentbus inbox` starts at the profile's acknowledged cursor and records only the
@@ -131,14 +146,21 @@ monotonic, idempotent, and cannot advance past the highest observed cursor.
 can inspect any recorded history without changing either profile cursor.
 `agentbus rebind --from beginning` deliberately binds the profile to the current
 inbox at cursor `0`; `--from now` selects the current high-water cursor. A changed
-service inbox ID or Slack channel fails closed until explicit rebinding.
+service inbox ID or original default Slack channel fails closed until explicit
+rebinding. Adding optional rooms does not change those two binding fields.
 
 ## Delivery limits
 
 The service records a live Slack feed. Every transported message is retained
 according to the Slack workspace policy and is also copied into the local SQLite
-inbox. It does not import history or guarantee
-messages sent while disconnected. A send timeout can leave delivery uncertain.
-Socket Mode events and successful-send echoes are deduplicated, but callers must
-still tolerate repeated reads after a crash. AgentBus transports data; it does
-not wake agents, execute messages, or extend the user's authorization.
+inbox. On a hidden Slack thread-update event, the service fetches the actual
+thread messages and durably applies the same routing and assurance rules before
+acknowledging the update. A failed or incomplete fetch withholds that event's
+acknowledgment. The service does not independently import full channel history
+or guarantee capture while disconnected or when Slack fails to deliver an event
+or expose it through the history API. A send timeout can leave delivery
+uncertain. Socket Mode events and successful-send echoes are deduplicated by
+channel plus timestamp, but callers must still tolerate repeated reads after a
+crash. AgentBus transports data; it does not execute messages or extend the
+user's authorization. The optional user-enabled host adapter owns any wake
+attempt under its separate contract.

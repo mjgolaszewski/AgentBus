@@ -246,7 +246,7 @@ def _candidate(event: dict, _identity: str) -> tuple[int, str] | None:
     message = event.get("message")
     if not isinstance(message, dict):
         return None
-    if message.get("sender_assurance") not in {"session", "slack-human"}:
+    if message.get("sender_assurance") not in {"session", "peer", "slack-human"}:
         return None
     if message.get("action_reason") == "claimed by this identity":
         return 4, f"MESSAGE:{event_id}"

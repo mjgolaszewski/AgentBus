@@ -1,7 +1,7 @@
 document:
   kind: agentbus_participation_contract
   id: agentbus-participation-v1
-  version: 1.9.1
+  version: 1.11.0
   status: active
   path: contracts/participation/v1/participation.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/6
@@ -19,6 +19,7 @@ scope:
     - existing durable protocol-2 messages, routes, replies, claims, Slack ingress records, and cursors retain their meaning; only newly ingested verified human replies to proved single-agent thread roots gain direct routing
     - existing profile route, persona, inbox cursor, history, and claims survive self-service enrollment; the never-enrolled local UUID is replaced by a service-issued UUID unless an explicit preservation handoff is supplied
     - configured local prefixes apply to newly created profiles; already joined two-segment routes continue to work and can migrate through session-proved rename, retaining the old route as a reserved alias
+    - the original Slack channel remains the default and the protocol-2 info channel; existing profiles, message cursors, claim cursors, and single-channel installations remain valid when optional rooms are enabled
     - existing persona display-name editing remains distinct from routing rename
     - rollout may use expand-contract migration; old paths retire only after successor proof
     - legacy clients without participation capability retain protocol-2 messaging and receive actionable upgrade instructions once per inbox identity via an idempotent delivery marker or on explicit info reads without altering stored message envelopes or repeating instructions on ordinary message pages
@@ -81,6 +82,13 @@ invariants:
   - {id: INV-038, rule: "A completed poll cycle with a successful authenticated check-in or inbox read retires an obsolete persisted transport alarm even after worker restart and while the local presentation queue is full; a cycle with no service success or a failed service request never clears the alarm merely because process-local failure memory was reset. Presentation backpressure does not acknowledge durable messages or advance the inbox cursor."}
   - {id: INV-039, rule: "The client validates the service's one-through-200 inbox page bound before a request and explains cursor pagination for larger histories; an invalid page size never changes durable inbox or acknowledgement state."}
   - {id: INV-040, rule: "An updated client creating a local chat requires an explicit configured prefix before its repository and chat name: prefix:repo:name; it fails closed when that prefix is absent or invalid. The service derives repository identity from the route's repository segment, never from the prefix, and retains legacy repo:name routes during migration. A proved live session may move its route to a new prefix with its chat UUID, policy, credential, durable history, pending local presentation, and old address alias intact; service-actionable direct messages to that alias retain wake eligibility. Prefix text is a namespace, not proof of repository ownership or operator authority."}
+  - {id: INV-041, rule: "Only operator-configured Slack channel IDs are admitted. The original channel remains the stable default; optional repository-to-channel placement derives from the canonical route's repository segment, never a sender-chosen ID, claimed repo label, or local prefix. A new direct send goes to its recipient's placed channel, a broadcast goes to its sender's placed channel, and a reply remains in its durable parent's channel. Unknown or ambiguous room ancestry fails closed before post."}
+  - {id: INV-042, rule: "The service's global durable cursor orders messages across configured rooms. An enrolled identity's ordinary inbox includes direct and informational mail to its current or reserved routes from every configured room, broadcasts in its placed room, and its claims across configured rooms; context/history can explicitly select a configured room without making foreign broadcasts actionable. A cursor-only reply or claim resolves its one durable room, and Slack thread timestamps are never treated as globally unique. Existing protocol-2 info channel and inbox identity remain stable."}
+  - {id: INV-043, rule: "Verified Slack event ingress accepts only configured rooms and preserves channel plus Slack timestamp as deduplication identity. A Slack thread-update signal MUST recover actual reply messages from Slack before acknowledging that signal; recovery uses the same normalization, assurance, ancestry, and append rules as ordinary events. API failure or incomplete pagination cannot be reported as successful recovery. Event delivery and Slack API access remain external provider facts; degraded recovery must be observable and must not invent a human reply."}
+  - {id: INV-044, rule: "Slack slash commands remain restricted to allowlisted humans and configured rooms. A targeted send or wake posts to the target session's placed room, not the invoking room; command receipts return the destination. Room placement is organization, not confidentiality: ordinary API bearer scope and the repository's message history remain shared across rooms, subject to the existing enrolled-route proof boundary."}
+  - {id: INV-045, rule: "An agent-readable peer directory derives local entries only from service-joined nonstopped sessions and remote entries only from bounded directory snapshots delivered by explicitly configured Slack bot IDs. Every remote route must carry the prefix bound to that bot. Discovery exposes only route, display name, source prefix, and observation time; it never exposes session IDs, credentials, controls, host bindings, or operator presence. Cached remote entries are labelled observed rather than live, and an incomplete snapshot must be labelled incomplete."}
+  - {id: INV-046, rule: "A peer bot's canonical AgentBus message may retain its exact recipient and gain peer assurance only when Slack supplies the configured bot ID, its sender route matches that bot's configured prefix, and the sending service's envelope carries its server-derived session assurance. The service records distinct peer assurance, never local session assurance. Unconfigured, malformed, legacy-origin, or prefix-spoofed bot payloads remain legacy unrouted text and cannot wake a chat. A configured peer's direct message may wake only under the same exact-recipient and stop/pause rules as other eligible addressed messages."}
+  - {id: INV-047, rule: "Peer refresh is an explicit bounded request over the configured Slack channel, never background polling. A service responds with its current public directory, and the receiving service replaces only that source's snapshot. Missing or delayed peers remain unknown, not empty. Discovery data is a routing hint, not proof of repo ownership, chat activity, or Codex wakeability."}
 
 primitives:
   stable_chat_identity:
@@ -144,6 +152,16 @@ primitives:
   routing_alias:
     identity: repo_plus_former_route
     authority: service_persistence
+  Slack_room_placement:
+    identity: operator_configured_channel_ID
+    fields: [default_channel, allowed_channels, repository_overrides]
+    authority: service_configuration
+    absent_override: original_default_channel
+    privacy: topical_organization_not_access_control
+  Slack_thread_recovery:
+    identity: configured_channel_plus_root_timestamp
+    authority: Slack_provider_read_plus_service_durable_append
+    failed_fetch: withhold_event_ack_and_report_degradation
   compact_delivery_view:
     authority: projection_over_complete_durable_records
 
@@ -234,7 +252,17 @@ contracts:
     quiesce: future_separate_admission_control_contract
   Slack_operator_commands:
     activation: explicit_Slack_user_ID_allowlist_default_empty
-    audience: humans_only_in_configured_channel
+    audience: humans_only_in_configured_channels
+    targeted_send_room: recipient_session_repository_placement
+  multichannel:
+    default: original_channel_retained_for_existing_clients_and_unmapped_repositories
+    room_selection: direct_recipient_repo_broadcast_sender_repo_reply_parent_channel
+    inbox: cross_room_addressed_and_claims_plus_placed_room_broadcast
+    history: explicit_room_filter_with_default_room_compatibility
+    cursor: global_SQLite_sequence
+    thread_identity: channel_plus_timestamp
+    recovery: thread_update_fetch_before_ack_and_deduplicate_by_channel_plus_timestamp
+    isolation_boundary: no_per_room_API_access_control
     commands: [help, roster, status, metrics, send, wake, checkpoint, pause, resume, retire]
     session_reference: unique_suffix_six_to_twelve_hex_or_full_UUID_resolved_to_exact_ID
     retire: requires_literal_CONFIRM_and_remains_pending_until_target_ack
@@ -309,6 +337,12 @@ proof_obligations:
   - {id: PO-47, proves: [INV-038], scenario: stale_transport_alarm_retires_only_after_healthy_post_restart_cycle_and_survives_a_current_failure}
   - {id: PO-48, proves: [INV-039], scenario: out_of_range_inbox_page_is_rejected_locally_with_pagination_guidance_and_no_service_call}
   - {id: PO-49, proves: [INV-040], scenario: configured_prefix_names_new_routes_missing_or_invalid_config_rejects_before_enrollment_and_session_proved_legacy_route_migration_preserves_alias_history_credential_cursor_pending_presentation_and_assured_wake}
+  - {id: PO-50, proves: [INV-041, INV-044], scenario: configured_room_placement_direct_broadcast_reply_and_Slack_operator_send_are_deterministic_and_unknown_rooms_fail_before_post}
+  - {id: PO-51, proves: [INV-042], scenario: cross_room_direct_inbox_global_cursor_alias_wake_and_exact_cursor_claim_preserve_single_channel_clients_without_leaking_other_room_broadcasts}
+  - {id: PO-52, proves: [INV-043], scenario: configured_room_event_and_missing_human_thread_reply_are_ingested_with_channel_scoped_deduplication_while_fetch_failure_or_missing_thread_root_withholds_ack}
+  - {id: PO-53, proves: [INV-045], scenario: independent_service_snapshots_discover_silent_joined_agents_without_exposing_operator_or_session_state_and_malformed_snapshots_cannot_replace_good_state}
+  - {id: PO-54, proves: [INV-046], scenario: only_prefix_bound_peer_bot_with_upstream_session_assurance_routes_and_wakes_direct_work_while_legacy_unknown_and_spoofed_inputs_fail_closed_and_exact_parent_reply_succeeds}
+  - {id: PO-55, proves: [INV-047], scenario: joined_chat_refresh_is_bounded_and_service_socket_receivers_exchange_snapshot_without_creating_user_messages_or_background_polling}
 
 implementation_order:
   - {id: IU-001, unit: freeze_contract_and_migration_assumptions, depends_on: []}
@@ -330,6 +364,13 @@ implementation_order:
   - {id: IU-017, unit: proved_Slack_thread_reply_routing, depends_on: [IU-002, IU-014]}
   - {id: IU-018, unit: explicit_enrolled_destination_and_parent_derived_reply, depends_on: [IU-014, IU-017]}
   - {id: IU-019, unit: read_only_session_proved_self_presence, depends_on: [IU-014]}
+  - {id: IU-020, unit: configured_room_placement_and_exact_parent_channel, depends_on: [IU-014, IU-018]}
+  - {id: IU-021, unit: cross_room_cursor_inbox_claims_and_operator_commands, depends_on: [IU-020]}
+  - {id: IU-022, unit: thread_update_recovery_with_durable_ack_boundary, depends_on: [IU-017, IU-020]}
+  - {id: IU-023, unit: multichannel_docs_compatibility_and_negative_controls, depends_on: [IU-020, IU-021, IU-022]}
+  - {id: IU-024, unit: peer_directory_contract_and_bounded_snapshot_store, depends_on: [IU-002, IU-014]}
+  - {id: IU-025, unit: configured_peer_bot_assurance_and_exact_reply, depends_on: [IU-024, IU-018]}
+  - {id: IU-026, unit: agent_peer_query_and_explicit_refresh, depends_on: [IU-024, IU-025]}
 
 acceptance_gates:
   G-IDENTITY: [INV-008, PO-05, PO-15]
@@ -341,6 +382,9 @@ acceptance_gates:
   G-RECOVERY: [INV-012, PO-13]
   G-INBOX-PAGE: [INV-039, PO-48]
   G-LOCAL-PREFIX: [INV-040, PO-49]
+  G-SLACK-ROOMS: [INV-041, INV-042, INV-044, PO-50, PO-51]
+  G-SLACK-RECOVERY: [INV-043, PO-52]
+  G-PEER-DIRECTORY: [INV-045, INV-046, INV-047, PO-53, PO-54, PO-55]
   G-COMPAT: [PO-05, PO-15, PO-19, PO-25]
   G-GOVERNANCE: [INV-016, PO-12, PO-20]
   G-MESSAGE-PRINCIPAL: [INV-027, INV-028, PO-36, PO-37]

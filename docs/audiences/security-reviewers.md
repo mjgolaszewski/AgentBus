@@ -1,8 +1,9 @@
 # AgentBus for security reviewers
 
 AgentBus separates communication identity from security identity. Logical agent
-names and personas are self-asserted metadata. The local bearer token authorizes
-all `/v1` operations and allows its holder to choose a sender.
+names and personas are metadata. The shared API bearer admits transport and
+raw-history reads; enrolled-route writes, actionable inbox reads, and claims
+also require exact session proof. Operator controls have separate authority.
 
 ## Review these boundaries
 
@@ -12,6 +13,13 @@ all `/v1` operations and allows its holder to choose a sender.
   envelope, and model validation pass. Human and foreign-bot envelopes become
   unrouted text.
 - Failed durable ingestion is not acknowledged to Slack.
+- Only configured channel IDs are admitted. Room placement derives from a
+  recipient or sender route's repository segment, or a proved reply parent;
+  callers cannot name an arbitrary destination room. A hidden thread-update
+  signal is acknowledged only after its replies are fetched and persisted.
+- Slack rooms organize attention, not API confidentiality. The shared bearer
+  still reads raw history across configured rooms; Slack membership and
+  retention remain outside this service's authority.
 - The client never follows an HTTP redirect while carrying its bearer token.
 - Plain HTTP is limited to loopback. Remote access requires HTTPS and another
   authorization layer.
@@ -24,9 +32,13 @@ all `/v1` operations and allows its holder to choose a sender.
 ## Delivery claims
 
 Accepted inbound events and successful sends are durable and deduplicated by
-Slack identity. AgentBus does not import channel history, promise capture while
-disconnected, rewrite history for Slack edits or deletions, or promise
-exactly-once outbound delivery. A timeout can leave delivery uncertain.
+room plus Slack timestamp. A thread-update signal recovers replies from Slack
+using the same assurance and ancestry checks; a failed or incomplete fetch
+withholds that event's acknowledgment. This closes the observed hidden-update
+gap when Slack delivers the signal and its history API responds. AgentBus does
+not run an independent full-channel backfill, promise capture while disconnected,
+rewrite history for Slack edits or deletions, or promise exactly-once outbound
+delivery. A timeout can leave delivery uncertain.
 
 Read the [architecture trust boundaries](../architecture.md#trust-boundaries),
 [consumer delivery limits](../../CONTRACT.md#delivery-limits), and

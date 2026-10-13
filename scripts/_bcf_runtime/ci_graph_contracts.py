@@ -17,7 +17,8 @@ from jsonschema import Draft202012Validator
 from .ci_graph_errors import CIGraphError, execution_graph_error
 from .ci_graph_dag import ancestors as _ancestors, job_graph as _job_graph
 from .ci_graph_reusable_artifacts import (
-    reusable_artifact_binding, validate_reusable_binding_declarations,
+    project_reusable_workflow_permissions, reusable_artifact_binding,
+    validate_reusable_binding_declarations,
 )
 from .ci_graph_execution import (
     controller_command_ids,
@@ -34,10 +35,11 @@ from .ci_graph_controller_lifecycle import (
 from .ci_controller_policy import TrustedControllerPolicyError, load_graph_controller_policy
 from .ci_graph_yaml import GraphYAMLError, load_yaml_path
 from .ci_graph_values import CIGraphValueError, resolve_graph_values
-from .ci_graph_timeouts import validate_gate_job_timeouts
+from .ci_graph_timeouts import validate_component_job_timeouts, validate_gate_job_timeouts
 from .ci_graph_storage import validate_evidence_storage
 from .ci_graph_routing import validate_candidate_routing
 from .ci_graph_rotation_outputs import validate_rotation_output_directories
+from .ci_graph_edges import EdgeContract, compile_edge_contracts
 
 
 GRAPH_PATH = Path("governance/ci-graph.yml")
@@ -59,6 +61,7 @@ class CompiledCIGraph:
     trusted_controller_lifecycle: ControllerLifecycle
     trusted_controller_current: bool
     evidence_storage: dict[str, Any] | None
+    edge_contracts: tuple[EdgeContract, ...]
 
 
 def _schema(repo_root: Path, relative: Path) -> dict[str, Any]:
@@ -265,6 +268,7 @@ def _apply_canonical_defaults(graph: dict[str, Any]) -> None:
             executor = job["executor"]
             if executor["kind"] == "reusable_workflow":
                 executor.setdefault("inputs", {})
+    project_reusable_workflow_permissions(graph)
 
 
 def _validate_step_components(graph: dict[str, Any]) -> None:
@@ -766,7 +770,9 @@ def validate_ci_graph(
     storage_inputs, storage_contract = validate_evidence_storage(repo_root, composed)
     validate_candidate_routing(composed, storage_contract=storage_contract)
     _validate_workflows(composed)
+    edge_contracts = compile_edge_contracts(composed)
     validate_gate_job_timeouts(repo_root, composed)
+    validate_component_job_timeouts(composed)
     validate_graph_authority_policy(repo_root, composed)
     hosted_issues = hosted_command_issues(composed)
     if hosted_issues:
@@ -789,4 +795,5 @@ def validate_ci_graph(
         trusted_controller_lifecycle=controller_lifecycle,
         trusted_controller_current=controller_lifecycle.current,
         evidence_storage=storage_contract,
+        edge_contracts=edge_contracts,
     )

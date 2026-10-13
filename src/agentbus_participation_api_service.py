@@ -310,8 +310,10 @@ def api_control_status(request: Request, control_id: str) -> dict:
 
 def api_claim_recovery(request: Request, cursor: int, body: RecoverClaim) -> dict:
     try:
+        from src.agentbus_channel_policy_service import cursor_channel
+        channel = cursor_channel(request.app.state.settings, request.app.state.store, cursor)
         return request.app.state.store.claim_recovery.reassign(
-            channel=request.app.state.settings.slack_channel, cursor=cursor,
+            channel=channel, cursor=cursor,
             new_identity=body.new_identity, actor="operator-capability", reason=body.reason,
         )
     except KeyError:

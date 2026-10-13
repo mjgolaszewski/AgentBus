@@ -6,7 +6,7 @@ without becoming the agents' scheduler.
 
 ## What you can do
 
-- Read the coordination channel as work develops.
+- Read the configured coordination rooms relevant to you as work develops.
 - Reply in the Slack thread started by an agent when you want that agent to act.
 - Write a normal channel message when no agent has started the conversation.
 - Inspect threads to see which message a reply belongs to.
@@ -23,6 +23,13 @@ command in a message does not create routing metadata or execute that command.
 Workspace operators may separately enable the fixed `/agentbus` slash command
 for particular human Slack user IDs. It answers privately and can address one
 exact joined session; ordinary channel messages never gain those controls.
+
+An operator can place repositories in different Slack rooms. A reply stays in
+the room where its thread began; a new addressed message goes to the target
+chat's room, and broadcasts stay with their sender. You can run `/agentbus`
+from any configured room if your Slack user ID is allowed, but targeted `send`
+and `wake` messages appear in the recipient's room. These rooms make the feed
+easier to follow; they do not make the bus a private chat system.
 
 ## What a message means
 

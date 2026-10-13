@@ -118,13 +118,15 @@ def test_public_api_operation_inventory_owns_registered_routes(settings):
         for route in app.routes
         for method in getattr(route, "methods", set())
     }
-    assert set(API_OPERATIONS) == {"health", "status", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "rotation_grant", "session_rotate_secret", "session_presence", "session_self_presence", "session_roster", "session_policy_ack", "session_policy_explain", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename"}
+    assert set(API_OPERATIONS) == {"health", "status", "send", "read", "info", "inbox", "peers", "peer_refresh", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "rotation_grant", "session_rotate_secret", "session_presence", "session_self_presence", "session_roster", "session_policy_ack", "session_policy_explain", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename"}
     assert routes[("GET", "/healthz")] is API_OPERATIONS["health"]
     assert routes[("GET", "/v1/status")] is API_OPERATIONS["status"]
     assert routes[("POST", "/v1/messages")] is API_OPERATIONS["send"]
     assert routes[("GET", "/v1/messages")] is API_OPERATIONS["read"]
     assert routes[("GET", "/v1/info")] is API_OPERATIONS["info"]
     assert routes[("GET", "/v1/inbox")] is API_OPERATIONS["inbox"]
+    assert routes[("GET", "/v1/peers")] is API_OPERATIONS["peers"]
+    assert routes[("POST", "/v1/peers/refresh")] is API_OPERATIONS["peer_refresh"]
     assert routes[("POST", "/v1/messages/{cursor}/claim")] is API_OPERATIONS["claim"]
     assert routes[("POST", "/v1/messages/{cursor}/claim-recovery")] is API_OPERATIONS["claim_recovery"]
     assert routes[("POST", "/v1/policy/revisions")] is API_OPERATIONS["policy_set"]
@@ -691,7 +693,7 @@ def test_send_roundtrip_and_plain_text_blocks_preserve_mentions_and_unicode(serv
     assert payload["blocks"][1]["text"] == {"type": "plain_text", "text": text, "emoji": False}
     assert "<" not in payload["text"] and "https://" not in payload["text"] and "&" not in payload["text"]
     assert json.loads(payload["text"]) == {
-        "agentbus": 2, **body, "audience": "direct", "reply_to_cursor": None,
+        "agentbus": 2, "origin_assurance": "legacy", **body, "audience": "direct", "reply_to_cursor": None,
     }
     app.state.socket.emit(event(payload["text"], ts=response.json()["slack_ts"],
                                 subtype="bot_message", bot_id="B123", thread_ts=body["thread_ts"]))

@@ -31,6 +31,7 @@ from .ci_github_identity import GitHubControllerError, positive_int, resolve_mai
 from .ci_github_membership import select_latest_admission
 from .controller_custody import require_controller_execution, validate_controller_custody
 from .release_asset_inventory import (
+    checksum_declared_assets,
     exact_assets,
     release_asset_version,
     verify_checksum_inventory,
@@ -38,11 +39,12 @@ from .release_asset_inventory import (
 from .release_closure import verify_archive, verify_release_lock, verify_wheelhouse
 from .release_receipts import build_trusted_release_receipt, emit_release_receipt
 from .release_runtime_verification import verify_runtime_evidence
+from .ci_github_release_qualification import require_provider_publication_qualification
 from .release_source_bindings import (
     release_source_bindings,
     verify_release_source_bindings,
 )
-from .release_tag_publication import ensure_release_tag
+from .release_publication_transaction import inspect_release, publish_release
 from .evaluation_scope import is_terminal_phase_certification
 
 def _now() -> str:
@@ -582,66 +584,6 @@ def collect_release(
     return receipt.payload
 
 
-def _require_attestations(
-    api: GitHubAPI, repository: str, digests: Iterable[str], error: str
-) -> None:
-    for digest in digests:
-        if not api.attestations(repository, f"sha256:{digest}"):
-            raise GitHubControllerError(error)
-
-
-def inspect_release(
-    api: GitHubAPI,
-    *,
-    repository: str,
-    tag: str,
-    expected_commit: str,
-    expected_assets: dict[str, str],
-) -> dict[str, Any]:
-    """Fail closed unless a future release has exact immutable provider custody."""
-
-    immutable = api.immutable_releases(repository)
-    if immutable.get("enabled") is not True:
-        raise GitHubControllerError("repository immutable releases are not enabled")
-    reference = api.reference(repository, f"tags/{tag}")
-    target = reference.get("object")
-    if not isinstance(target, dict) or target.get("type") != "tag":
-        raise GitHubControllerError("release tag must be annotated")
-    tag_object = api.tag_object(repository, str(target.get("sha")))
-    tag_target = tag_object.get("object")
-    verification = tag_object.get("verification")
-    if tag_object.get("tag") != tag or not isinstance(tag_target, dict) or (
-        tag_target.get("type") != "commit" or tag_target.get("sha") != expected_commit
-    ):
-        raise GitHubControllerError("annotated release tag identity is not exact")
-    if not isinstance(verification, dict) or verification.get("verified") is not False or (
-        verification.get("reason") != "unsigned"
-    ):
-        raise GitHubControllerError("release tag does not match annotated unsigned policy")
-    release = api.release_by_tag(repository, tag)
-    if release.get("immutable") is not True or release.get("draft") is not False:
-        raise GitHubControllerError("published release must be immutable and non-draft")
-    observed: dict[str, str] = {}
-    for asset in release.get("assets", []):
-        if not isinstance(asset, dict) or asset.get("name") in observed:
-            raise GitHubControllerError("release asset inventory is invalid")
-        digest = provider_digest(asset.get("digest"))
-        observed[str(asset["name"])] = digest.removeprefix("sha256:")
-    if observed != expected_assets:
-        raise GitHubControllerError("published release assets are not exact")
-    _require_attestations(
-        api, repository, observed.values(), "published release asset lacks attestation"
-    )
-    return {
-        "status": "verified",
-        "tag": tag,
-        "commit_sha": expected_commit,
-        "immutable": True,
-        "draft": False,
-        "assets": dict(sorted(observed.items())),
-    }
-
-
 def publish_certified_release(
     api: GitHubAPI,
     *,
@@ -654,6 +596,7 @@ def publish_certified_release(
     receipt_artifact_id: object,
     receipt_artifact_name: object,
     receipt_provider_digest: object,
+    qualification_path: Path,
     publisher_run_id: object,
     publisher_run_attempt: object,
 ) -> dict[str, Any]:
@@ -717,6 +660,14 @@ def publish_certified_release(
     )
     paths = tuple(release_artifacts)
     expected_assets = exact_assets(paths)
+    require_provider_publication_qualification(
+        api,
+        path=qualification_path,
+        main=main,
+        repository=repository,
+        version=release_asset_version(paths).value,
+        assets=checksum_declared_assets(paths),
+    )
     receipt_assets = receipt.get("observations", {}).get("release_artifacts")
     if not isinstance(receipt_assets, list) or any(
         not isinstance(value, dict) for value in receipt_assets
@@ -734,51 +685,4 @@ def publish_certified_release(
         expected_commit=expected_commit,
         release_artifacts=paths,
         body=body,
-    )
-
-
-def publish_release(
-    api: GitHubAPI,
-    *,
-    repository: str,
-    tag: str,
-    expected_commit: str,
-    release_artifacts: Iterable[Path],
-    body: str,
-) -> dict[str, Any]:
-    paths = tuple(release_artifacts)
-    if release_asset_version(paths).tag != tag:
-        raise GitHubControllerError(
-            "release tag does not match the closed archive version"
-        )
-    immutable = api.immutable_releases(repository)
-    if immutable.get("enabled") is not True:
-        raise GitHubControllerError("immutable releases must be enabled before publication")
-    expected_assets = exact_assets(paths)
-    attestation_error = "release assets must be attested before provider mutation"
-    _require_attestations(api, repository, expected_assets.values(), attestation_error)
-    ensure_release_tag(api, repository=repository, tag=tag, commit_sha=expected_commit)
-    draft = api.create_draft_release(repository, tag=tag, name=tag, body=body)
-    release_id = draft.get("id")
-    upload_url = str(draft.get("upload_url", ""))
-    uploaded: dict[str, str] = {}
-    for path in paths:
-        asset = api.upload_release_asset(
-            upload_url=upload_url,
-            repository=repository,
-            release_id=release_id,
-            name=path.name,
-            payload=path.read_bytes(),
-        )
-        digest = provider_digest(asset.get("digest"))
-        uploaded[path.name] = digest.removeprefix("sha256:")
-    if uploaded != expected_assets:
-        raise GitHubControllerError("provider release asset bytes differ before publication")
-    api.publish_release(repository, release_id)
-    return inspect_release(
-        api,
-        repository=repository,
-        tag=tag,
-        expected_commit=expected_commit,
-        expected_assets=expected_assets,
     )

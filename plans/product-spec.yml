@@ -21,6 +21,8 @@ constraints:
     - "bearer-authenticated HTTP is loopback-only unless an operator supplies a secure boundary"
     - "SQLite and consumer profiles remain outside source and release archives; Python 3.12 or newer uses dependencies locked by uv"
     - "routed Slack envelopes require the bot identity authenticated from the configured token"
+    - "additional Slack rooms are operator-allowlisted and repository-placed while the original default channel, global cursor, and existing client binding remain stable; room placement does not claim confidentiality"
+    - "cross-service peer discovery requires explicit reciprocal Slack bot-ID bindings; observed directory snapshots are routing hints, not live presence or ownership proof"
     - "operators approve both Slack retention and the local SQLite copy for transported data"
     - "operator controls require authority separate from ordinary agent send authority; local chat routes use configurable workspace prefixes without making labels ownership proof, and existing routes migrate with session proof and reserved aliases"
   known_external_dependencies: ["Slack Web API and Socket Mode", "SQLite", "GitHub Actions hosted runners", "Docker for container release evidence"]
@@ -37,4 +39,6 @@ execution_phases:
   - {phase_id: P06, build_block: "security_identity_enforcement", objective: "release 0.7.0 with enrolled-route proof, exact-session controls, and bounded sends", release_train: release_6}
   - {phase_id: P07, build_block: "producer_supply_chain_hardening", objective: "release 0.7.1 with digest-pinned Docker uv, released BCF workflow-input/direct-main fixes, bounded Codex thread resume, verified Slack-human routing, and allowlisted operator commands with reversible work hold", release_train: release_7}
   - {phase_id: P08, build_block: "governance_dependency_completion", objective: "release 0.8.1 after BCF-owned dependency hash locking and proxy-header remediation", release_train: release_8}
+  - {phase_id: P09, build_block: "multichannel_and_thread_ingress", objective: "deliver operator-configured Slack rooms and recover signalled thread replies under the existing assured inbox", release_train: release_9}
+  - {phase_id: P10, build_block: "cross_service_peer_directory", objective: "discover joined chats on configured peer services and route session-assured peer messages through the existing inbox", release_train: release_10}
 acceptance: {release_gate: make release-check, evidence_location: phases/}

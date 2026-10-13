@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 
-def session_metrics(store, channel: str, session_id: str) -> dict:
+def session_metrics(store, channel: str, session_id: str,
+                    channels: frozenset[str] | None = None) -> dict:
     presence = store.participation.presence(session_id)
+    rooms = tuple(sorted(channels or {channel}))
+    room_marks = ",".join("?" for _ in rooms)
     with store._lock:
         routes = [presence["route"]]
         routes.extend(row["route"] for row in store._db.execute(
@@ -13,16 +16,16 @@ def session_metrics(store, channel: str, session_id: str) -> dict:
         placeholders = ",".join("?" for _ in routes)
         received = store._db.execute(
             f"SELECT COUNT(*) AS count, MAX(cursor) AS high_water FROM messages "
-            f"WHERE channel = ? AND recipient IN ({placeholders})",
-            (channel, *routes),
+            f"WHERE channel IN ({room_marks}) AND recipient IN ({placeholders})",
+            (*rooms, *routes),
         ).fetchone()
         sent = store._db.execute(
             f"SELECT COUNT(*) AS count, MAX(cursor) AS high_water FROM messages "
-            f"WHERE channel = ? AND json_extract(payload, '$.sender') IN ({placeholders})",
-            (channel, *routes),
+            f"WHERE channel IN ({room_marks}) AND json_extract(payload, '$.sender') IN ({placeholders})",
+            (*rooms, *routes),
         ).fetchone()
         latest = store._db.execute(
-            "SELECT COALESCE(MAX(cursor), 0) FROM messages WHERE channel = ?", (channel,)
+            f"SELECT COALESCE(MAX(cursor), 0) FROM messages WHERE channel IN ({room_marks})", rooms
         ).fetchone()[0]
         control_count = store._db.execute(
             "SELECT COUNT(*) FROM control_targets WHERE session_id = ?", (session_id,)

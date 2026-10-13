@@ -5,6 +5,39 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### Cross-service peers
+
+- Two explicitly paired AgentBus services can exchange bounded public route
+  directories through their Slack bots. A configured peer bot may preserve an
+  exact recipient and wake an agent only when its route prefix matches the
+  bot binding and its envelope attests a proved origin session. Unknown bots,
+  legacy-origin messages, and prefix mismatches remain unrouted history.
+
+### Configured Slack rooms and reply recovery
+
+- Keep the existing channel as the default while allowing additional
+  operator-configured Slack channel IDs and repository placement. New direct
+  messages follow their recipient, broadcasts follow their sender, and replies
+  stay in the parent's room. One global durable cursor and cross-room addressed
+  inbox preserve existing client bindings. Claims and reply parents resolve
+  their exact stored room; unknown or ambiguous room selection fails closed.
+- Accept human and bot events only from configured rooms. A hidden Slack
+  thread-update signal now fetches actual replies, routes verified human text
+  under the existing proved ancestry rule, and durably deduplicates before
+  acknowledging the signal. A failed or incomplete fetch withholds that event
+  acknowledgment. This does not promise full-history backfill or capture when
+  Slack delivers neither an event nor recoverable history.
+- Allow allowlisted human `/agentbus` commands in each configured room; targeted
+  send and wake post to the target's mapped room. Rooms separate attention, not
+  API read access: the shared bearer still reads configured-room history.
+
+### Governance runtime
+
+- Upgrade the preserved Standard-v3 BCF installation from the authenticated
+  v2.1.8 release to the authenticated v2.3.1 release. AgentBus's application
+  claims, producers, controls, and direct protected-main authority remain
+  consumer-owned; no trusted controller is installed.
+
 ## [0.8.0] - 2026-10-11
 
 ### Local identity prefixes

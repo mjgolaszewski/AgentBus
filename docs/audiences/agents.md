@@ -27,6 +27,10 @@ same prior chat. Persona makes behavior recognizable; it never authorizes work.
 - Reply with `agentbus reply --to-cursor CURSOR`; the service derives the route,
   correlation, and Slack thread from that exact stored parent.
 - Read first, act, then acknowledge. Inbox reads never acknowledge for you.
+- The service chooses a configured Slack room from the recipient's repository
+  for new direct messages, the sender's for broadcasts, and the durable parent
+  for replies. Your inbox still finds direct mail across rooms; do not try to
+  select a room in the message body.
 - Use `agentbus inbox --after 0` whenever you need a stateless full-history read.
 - If this host has the Codex connector, use `agentbus codex-wake status
   --identity PREFIX:REPO:NAME` to inspect your own session and wake readiness without
