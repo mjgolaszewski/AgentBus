@@ -4,15 +4,15 @@
   "non_authoritative": true,
   "runtime_version": "2.3.2",
   "candidate": {
-    "commit_sha": "6f1253932c8bd10335066abd6eb66e01dee1d397",
-    "tree_sha": "f3f9f02b1af261e52ee31ebb63034cf6e55efb18",
-    "pack_manifest_sha256": "00e4d5e173594c33460cdcde34f56cfc735cccea4ade0c84499a27fcc0ffef6d"
+    "commit_sha": "d386a83d7038533ae495ba7d48120fbcadf3f0a2",
+    "tree_sha": "c6067f7ad5e6fa0bb88f270e2b2579d380106a9a",
+    "pack_manifest_sha256": "e026718812ac05ffab02e46cc2808b2fd384a00dfc6a602e7e9d0d8a7f22294b"
   },
   "adopter": {
-    "commit_sha": "c7c2170dd43c03f273aa889a95c90060c2ef1b33",
-    "tree_sha": "ae8f917a3c2be88a4b40b64ad4377431e4e0e050"
+    "commit_sha": "580c619f7abc7e5e063d2a66825a4ee61b7a5aca",
+    "tree_sha": "1e64f51281294614023d07232b478f5b93d79d84"
   },
-  "predecessor_runtime_lock_sha256": "a2fe67c3302e978c3dfa4865299290eaca85691e495e4cf3c076a8e8798bf228",
+  "predecessor_runtime_lock_sha256": "dacfe3b1663bc50703bd8fdca790b8b86476feae9d2ef91ce554662fe41224c1",
   "files": {
     "backend/tests/architecture/test_boundaries_ast.py": "d0dfc6eb29506030f89b4a697bbc3429d962cd8d70574e99ab6ba8e17c842b26",
     "governance/REPO_CLEANUP.md": "de9ef41d490809e112ff4b8a44633469c44d4029d31a6155dab3c5167b47b69d",
@@ -256,8 +256,8 @@
     "scripts/_bcf_runtime/install_governance_pack.py": "2ad48bb12787e5d95d311214a962902ac39736af10e111db7a0b79ee4e7ff87c",
     "scripts/_bcf_runtime/interpreter_environment.py": "e78735f91f4c252ac79009ac4ab9c45ce6d9ccd414033456ebde770c6b1d0a64",
     "scripts/_bcf_runtime/local_execution_admission.py": "da97bd9cbb2b3e8537c773676a015bdaafb061812a7b8ec8181877810796ff10",
-    "scripts/_bcf_runtime/local_pr.py": "7486990ae645f9d437cd9b5874f352e8f8b724cadac12957e3dfded8dfbea65f",
-    "scripts/_bcf_runtime/local_pr_context.py": "c1ebacb90b5d05a89a1ec45b5879904a36f685b82aebfa0b4a7dd2939adb922c",
+    "scripts/_bcf_runtime/local_pr.py": "28c00cd73a6c507b3dbf48a4255c300dee2d1715e627b1448b8bac6b25a5657c",
+    "scripts/_bcf_runtime/local_pr_context.py": "75a901d3a0dd3c27b2c3d54af874e7a5c5f71ec90427f766c52bfe0960da319e",
     "scripts/_bcf_runtime/local_proof_bundles.py": "514bcc3434f12f84e966926f7e8167c8470535c4626f2e27372f20359b0cee71",
     "scripts/_bcf_runtime/migrate_contracts.py": "00121807c5bd8d5e0f219b2e20f1319f9e5903b507672a96cacb1bb33b9fdefd",
     "scripts/_bcf_runtime/migrate_governance_evidence.py": "f684d916b71d37298b29d5eecd02288c7c1bec51012fb746102155dcde06b4ec",
@@ -331,7 +331,7 @@
     "scripts/_bcf_runtime/semantic_typescript_effects.mjs": "31408663183720568c0ae4bb99b0238ef7353a43f869dab6fbfb1b356a397cb7",
     "scripts/_bcf_runtime/semantic_yaml.py": "dd8c267d2cc8dbdffe47e94eb6e096355765ecb73265384d06ac80a4de13c0c4",
     "scripts/_bcf_runtime/test_duration_observations.py": "d9d1b204dd8723307af8f7e5e6a8e2dc88401f98cc317efe057cb26ca62b297e",
-    "scripts/_bcf_runtime/test_manifests.py": "e517c03e64c28372e4cd1eaa27eefb558a6d03ddaf25f15be2a65bd0a9c82112",
+    "scripts/_bcf_runtime/test_manifests.py": "71173c9bf3b6b43554267121a4afe7a6b70d71b81c9df46e663d33eed8b883f9",
     "scripts/_bcf_runtime/test_splinter_proofs.py": "1c42bff51e29aefc8b5a9fdc9cdc1f256281dd9070ea75c72f4f05a693040ce0",
     "scripts/_bcf_runtime/trusted_controller_compatibility.py": "ea5f3e3f1c14938a0a795d8349f53b85d0f59575fc6024b8471f0b6187729c1d",
     "scripts/_bcf_runtime/trusted_inputs.py": "64a9454abe247230d5a66e020b569d28bd15ae20fecf6df391384379928d277c",
