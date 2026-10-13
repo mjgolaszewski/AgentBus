@@ -13,6 +13,7 @@ from typing import Callable, TypeVar
 from urllib.parse import urlencode
 
 from src.agentbus_client import atomic_json
+from src.agentbus_participation_service import next_inbox_interval_values
 from src.agentbus_transport_client import ClientError, api, configuration, profile_session_token
 
 T = TypeVar("T")
@@ -269,9 +270,9 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
                     if relevant:
                         interval = float(policy["initial_interval_seconds"])
                     else:
-                        interval = (float(policy["initial_interval_seconds"]) if interval is None else
-                                    min(float(policy["max_interval_seconds"]),
-                                        interval * float(policy["backoff_factor"])))
+                        interval = next_inbox_interval_values(
+                            policy, interval, semantic_delta=False,
+                        )
                     next_inbox = time.monotonic() if page["has_more"] else time.monotonic() + interval
             # A durable alarm outlives process-local failures. Only authenticated
             # service success can retire it, including when presentation is full.

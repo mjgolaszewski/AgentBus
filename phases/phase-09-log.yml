@@ -14,6 +14,7 @@ workitems:
   - {id: P09-P0-02, status: DONE, summary: "publish invariant, owner, producer, consumer, evidence, and prohibited-edge mapping"}
   - {id: P09-P0-03, status: BLOCKED, summary: "qualify multi-installation provider fan-out, origin authentication, and recovery on a dedicated candidate"}
   - {id: P09-P1-01, status: TODO, summary: "define federation, bridge, directory, and owner-mediated wake laws"}
+  - {id: P09-P1-02, status: DONE, summary: "implement deterministic token-efficient idle polling backoff with independent control checks"}
   - {id: P09-P2-01, status: TODO, summary: "bind primitives to canonical AgentBus and BCF owners"}
   - {id: P09-P3-01, status: TODO, summary: "implement state transitions and edge controls"}
   - {id: P09-P4-01, status: TODO, summary: "add durable bridge, directory, and owner-admission operations"}
@@ -37,11 +38,15 @@ execution_evidence:
   - make test
   - make contract-test
   - make release-check
-  executed_commands: []
+  executed_commands:
+  - uv run --locked --extra dev python -m pytest -q tests/test_participation_service.py tests/test_poll_client.py
+  - uv run --locked --extra dev ruff check src/agentbus_participation_service.py src/agentbus_poll_client.py tests/test_participation_service.py tests/test_poll_client.py
+  - uv run --locked --extra dev python scripts/validate_governance_yaml.py
   notes:
   - P09-P0 records released BCF 2.1.8 and candidate 2.3.2 custody identities without upgrading generated runtime files.
   - The BCF developer was notified over AgentBus at phase opening and asked to coordinate the next authorized candidate or release.
   - Local contracts, fake-provider behavior, compatibility, and deterministic failure controls may proceed; cross-instance claims remain gated.
+  - "P09-P1-02 is complete: empty worker cycles now use the fixed 1/2/4/8/12/16/24/32-minute cadence, while control checks retain their own bound."
 closeout_requirements:
   claims:
     workitems_closed:
@@ -74,5 +79,5 @@ known_constraints:
   - BCF candidate custody is non-authoritative until the final P09-P8 upgrade and protected proof
   - existing notification-only wake remains the safe fallback until owner admission is proven
 next_work:
-  - qualify provider fan-out and origin authentication before P09-P1 implementation
+  - continue P09-P1 contract work while provider fan-out and origin authentication remain deferred
   - request the next authorized BCF candidate or release and preserve its exact custody identity

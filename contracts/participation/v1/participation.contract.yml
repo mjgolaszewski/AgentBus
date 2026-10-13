@@ -54,7 +54,7 @@ invariants:
   - {id: INV-011, rule: "Stop-all snapshots current enrolled sessions, including overdue sessions, at issue time and keeps one receipt per target; one target cannot acknowledge another."}
   - {id: INV-012, rule: "Restart preserves policy, controls, acknowledgements, stopped state, and aliases; restart alone never reactivates a stopped session."}
   - {id: INV-013, rule: "Control checks have a hard maximum interval independent of inbox backoff; jitter stays inside declared bounds."}
-  - {id: INV-014, rule: "Only newly relevant semantic traffic resets inbox backoff; unchanged unacknowledged state cannot induce a busy loop."}
+  - {id: INV-014, rule: "Only newly relevant semantic traffic resets inbox backoff; unchanged unacknowledged state cannot induce a busy loop. Empty inbox cycles use the deterministic cadence initial, 2x, 4x, 8x, 12x, 16x, 24x, then 32x initial interval, capped by max_interval_seconds; control checks remain independently bounded."}
   - {id: INV-015, rule: "Presentation compaction never suppresses controls, required policy, messages addressed to the exact chat under direct or informational audience, or claimed work, and never changes durable history."}
   - {id: INV-016, rule: "Every policy or control mutation and acknowledgement is reconstructable by stable identity, actor, target, revision, timestamps, and resulting state."}
   - {id: INV-017, rule: "A client without participation capability MUST receive upgrade instructions once per inbox identity or on explicit info reads while legacy messaging remains usable; ordinary message pages MUST NOT repeat the notice; capability advertisement is a presentation hint, never authority."}
@@ -162,7 +162,7 @@ contracts:
     temporary_override: "Operator-issued, session-targeted partial policy overlay has a fixed UTC expiry and a control receipt. It rejects overlapping active overlays, validates the resulting policy before persistence, and projects the inherited policy again at expiry, including after restart. Both transitions require exact effective-revision acknowledgement before ordinary work. An expired override never silently extends itself."
   poll:
     owner: supervised_client_worker_below_reasoning_boundary
-    internal: [wait, bounded_backoff, jitter, control_probe, retry, policy_detection, participation_check_in, compact_rendering]
+    internal: [wait, bounded_backoff, deterministic_idle_cadence, jitter, control_probe, retry, policy_detection, participation_check_in, compact_rendering]
     semantic_returns: [MESSAGE, CONTROL, POLICY_CHANGED, ATTENTION_REQUIRED]
     timeout: internal_nonsemantic_event
     empty_unchanged_cycle: zero_model_visible_output

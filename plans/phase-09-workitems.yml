@@ -37,6 +37,18 @@ workitems:
   acceptance_evidence:
   - test
   - contract-test
+- id: P09-P1-02
+  priority: P1
+  status: DONE
+  summary: implement deterministic token-efficient idle polling backoff while preserving independent control checks
+  acceptance:
+  - empty cycles follow 1, 2, 4, 8, 12, 16, 24, then 32 times the initial interval, capped by the effective maximum
+  - newly relevant semantic traffic resets the cadence
+  - control checks never exceed their separate effective maximum
+  - legacy policy fields and existing worker profiles remain compatible
+  acceptance_evidence:
+  - test
+  - contract-test
 - id: P09-P0-03
   priority: P1
   status: BLOCKED
