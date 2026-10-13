@@ -73,7 +73,15 @@ def require_success(result: subprocess.CompletedProcess[str]) -> None:
             print(result.stdout, end="", file=sys.stdout)
         if result.stderr:
             print(result.stderr, end="", file=sys.stderr)
-        raise SystemExit(result.returncode)
+        # Preserve the child process' exact failure as a subprocess failure.
+        # Raising here is part of the producer contract: callers must never
+        # continue to emit a successful gate result after a failed child.
+        raise subprocess.CalledProcessError(
+            result.returncode,
+            result.args,
+            output=result.stdout,
+            stderr=result.stderr,
+        ) from None
 
 
 def test_gate(gate: str, junit: Path) -> None:
