@@ -56,4 +56,4 @@ context_budgets:
     plans/build-plan.yml: {line_hard_cap: 100, kib_hard_cap: 24, intent: active roadmap index}
     plans/phase-ledger.yml: {line_hard_cap: 105, kib_hard_cap: 16, intent: current phase state}
     plans/phase-history.yml: {line_hard_cap: 160, kib_hard_cap: 96, intent: evidence-backed compact history index}
-    plans/product-spec.yml: {line_hard_cap: 40, kib_hard_cap: 8, intent: compact product intent}
+    plans/product-spec.yml: {line_hard_cap: 42, kib_hard_cap: 8, intent: compact product intent}

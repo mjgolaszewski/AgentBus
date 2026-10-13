@@ -19,7 +19,7 @@ flowchart LR
   B["Racecar chat"] -->|messages and inbox| Bus
   C["Other chats"] -->|messages and inbox| Bus
   Op["Operator<br/>separate capability"] -->|policy and controls| Bus
-  Bus <-->|Socket Mode and Web API| Slack["Slack channel<br/>human-visible"]
+  Bus <-->|Socket Mode and Web API| Slack["Operator-approved Slack rooms"]
   Bus <--> DB[("Local SQLite<br/>history and sessions")]
   Worker["Local participation worker"] -->|check-in and inbox| Bus
   Worker -->|pending event references| Wake["Optional Codex wake adapter"]
@@ -105,7 +105,7 @@ BCF proxy-header handling remain tracked for a follow-up release; the
 ```mermaid
 flowchart LR
   Chat["Joined chat"] -->|session proof and message| Gate["AgentBus<br/>route, stop, and rate checks"]
-  Gate -->|protocol 2| Slack["Slack channel"]
+  Gate -->|protocol 2| Slack["Configured Slack room"]
   Slack -->|receipt or echo| Store["SQLite<br/>raw text and assurance"]
   Store -->|addressed work| Worker["Local participation worker"]
   Worker -->|event references| Wake["Optional wake adapter"]
@@ -120,6 +120,14 @@ verified Slack human, or arrived through the legacy path.
 
 **One durable feed. Independent consumer cursors.** Every chat reads and
 acknowledges at its own pace.
+
+**One bus. A few rooms, if you want them.** The original Slack channel stays
+the default. An operator can allow additional channel IDs and place each
+repository in a room. Direct messages follow the recipient's repository;
+broadcasts stay in the sender's room; replies stay beside their parent. The
+durable cursor still orders the whole bus, so a chat sees addressed messages
+sent from another room without watching every channel. Rooms help people
+follow the right conversation; they are not a privacy or API access boundary.
 
 **Messages carry context, not authority.** AgentBus core never launches an agent,
 runs a command, expands a user's authorization, or owns an agent's lifecycle.
@@ -282,7 +290,7 @@ source .venv/bin/activate
 ```
 
 1. Create a Slack app from [`slack-app-manifest.json`](slack-app-manifest.json),
-   install it, and invite the bot to a coordination channel.
+   install it, and invite the bot to the default coordination channel.
 2. Create local configuration and add the app-level token, bot token, channel
    ID, and a generated API token:
 
@@ -327,8 +335,8 @@ The sections below cover each step and its operational boundaries.
    workspace.
 2. Under **Basic Information → App-Level Tokens**, create an `xapp-…` token with
    `connections:write`. Copy the installed bot's `xoxb-…` token.
-3. Invite the bot to the coordination channel and copy the channel **ID**, not
-   its display name.
+3. Invite the bot to the default coordination channel and copy the channel
+   **ID**, not its display name. Invite it to each optional room too.
 4. Create the local configuration:
 
    ```bash
@@ -345,6 +353,46 @@ signing secret. At startup AgentBus calls Slack's `auth.test` method with the bo
 token and binds routed envelopes to the returned bot ID. Startup fails closed if
 that identity cannot be authenticated. Envelope-shaped text from a human or a
 different bot remains an ordinary `unrouted` Slack message.
+
+### Give the bus more than one room
+
+The default `AGENTBUS_SLACK_CHANNEL` remains required and keeps existing
+profiles bound to the same inbox. To spread topics across Slack, configure
+additional allowed IDs and a repository map in the service `.env`:
+
+```dotenv
+AGENTBUS_SLACK_CHANNEL=CDEFAULT123
+AGENTBUS_SLACK_CHANNELS=CRACECAR123,CAGENTBUS123
+AGENTBUS_SLACK_REPO_CHANNELS='{"racecar":"CRACECAR123","agentbus":"CAGENTBUS123"}'
+```
+
+Use real IDs from your workspace. A repository without an override stays in the
+default room. The repository segment of `prefix:repo:name` determines
+placement; an agent cannot select an arbitrary channel in a send request or
+redirect a reply. `/agentbus` commands from allowlisted humans work in any
+configured room; `/agentbus send` and `/agentbus wake` post to the target
+chat's room. The command response names that destination. Unapproved room IDs
+fail closed. Invite the bot to every room and restart the service after changing
+the configuration. Existing messages and cursors stay put; changing a map
+affects new messages and the broadcast room visible to a chat, so coordinate
+such a change with the affected agents.
+
+A direct or informational message addressed to a chat is visible in its inbox
+regardless of which configured room contains it. Broadcasts stay room-scoped.
+The API can read one room's raw history with `GET /v1/messages?channel=ID`;
+the default remains the old channel when omitted. An explicit-room inbox is
+context; a broadcast from another room is visibly non-actionable. Replies and
+claims use their
+durable parent cursor to find the exact room. This is topical organization,
+not confidentiality: the shared API bearer can still read raw room history,
+and Slack membership and retention remain workspace policy.
+
+When Slack emits a thread-update signal, AgentBus fetches the thread's actual
+replies before acknowledging that signal. This recovers a reply omitted from
+the ordinary message event and deduplicates it by room and Slack timestamp.
+If that fetch fails, AgentBus withholds the event acknowledgement. Slack event
+delivery and history API availability remain provider boundaries; inspect
+Slack and the durable inbox when delivery is uncertain.
 
 Real tokens belong in `.env` or the environment. AgentBus parses a restricted
 `KEY=value` format; it does not execute the file or expand shell expressions.
@@ -653,7 +701,8 @@ workspace's access, export, discovery, and retention policies. The local SQLite
 inbox is an additional copy. Do not send credentials, client data, regulated
 records, or other restricted material unless the operator has approved both
 storage systems for that data. Use a private channel with the smallest useful
-membership and apply the organization's normal Slack retention policy.
+membership in each configured room and apply the organization's normal Slack
+retention policy.
 
 The current product is intentionally a same-workspace, single-service bus:
 
@@ -689,10 +738,10 @@ session-bound operations and assured sends.
 | --- | --- | --- |
 | `GET` | `/healthz` | Public liveness only |
 | `GET` | `/v1/status` | Authenticated Slack connectivity and local SQLite footprint |
-| `GET` | `/v1/info` | Protocol features, inbox ID, channel, and high-water cursor |
+| `GET` | `/v1/info` | Protocol features, inbox ID, stable default channel, and global high-water cursor |
 | `POST` | `/v1/messages` | Post a bounded message and persist server-derived sender assurance |
-| `GET` | `/v1/messages` | Read durable history by cursor, recipient, or Slack thread |
-| `GET` | `/v1/inbox` | Read identity-aware routing and actionable annotations |
+| `GET` | `/v1/messages` | Read one configured room's durable history by cursor, recipient, or Slack thread; optional `channel=ID` |
+| `GET` | `/v1/inbox` | Read addressed work across rooms and home-room broadcasts; optional `channel=ID` for one-room context |
 | `POST` | `/v1/messages/{cursor}/claim` | Atomically claim an unrouted message |
 | `POST` | `/v1/sessions` | Join a chat and receive a service-issued UUID and policy revision |
 | `GET` | `/v1/sessions/{id}/self-presence` | Read only the proved session's current presence without an operator token |
@@ -721,8 +770,10 @@ Message reads return:
 ```
 
 Save `next_cursor` per consumer and filter. Continue while `has_more` is true.
-Local cursors are monotonic integers; Slack timestamps remain strings and carry
-thread identity.
+Messages also carry their `channel` ID. Local cursors are monotonic integers
+across rooms; Slack timestamps remain strings and identify a thread only within
+one room. If a timestamp occurs in two configured rooms, supply `channel=ID`
+for an explicit thread read.
 
 ## Docker
 
