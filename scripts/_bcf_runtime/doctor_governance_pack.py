@@ -44,6 +44,22 @@ PLACEHOLDER_SCAN_EXCLUDE_PARTS = {
 PLACEHOLDER_SCAN_EXTENSIONS = {".yml", ".yaml", ".json", ".md", ".toml", ".txt"}
 
 
+def _is_foreign_template_literal(value: str) -> bool:
+    """Recognize the disjoint Docker Go-template field grammar."""
+
+    inner = value[2:-2].strip()
+    fields = inner[1:].split(".") if inner.startswith(".") else []
+    return bool(
+        fields
+        and all(
+            field
+            and (field[0].isalpha() or field[0] == "_")
+            and field.replace("_", "").isalnum()
+            for field in fields
+        )
+    )
+
+
 def _placeholder_scan_paths(repo_root: Path) -> list[Path]:
     try:
         result = subprocess.run(
@@ -97,6 +113,8 @@ def _scan_placeholders(repo_root: Path) -> list[str]:
             continue
         for line_number, line in enumerate(text.splitlines(), start=1):
             for match in validator.PLACEHOLDER_PATTERN.finditer(line):
+                if _is_foreign_template_literal(match.group(0)):
+                    continue
                 violations.append(
                     f"{relative.as_posix()}:{line_number}: {match.group(0)}"
                 )
@@ -183,7 +201,8 @@ def doctor_repo(repo_root: Path) -> dict[str, Any]:
     next_actions: list[str] = []
 
     runtime_lock = repo_root / "governance/bcf-runtime-lock.json"
-    if runtime_lock.exists():
+    candidate_qualification = repo_root / "governance/bcf-candidate-qualification.json"
+    if runtime_lock.exists() or candidate_qualification.exists():
         try:
             custody = inspect_runtime_custody(repo_root)
         except RuntimeCustodyError as exc:
@@ -204,6 +223,10 @@ def doctor_repo(repo_root: Path) -> dict[str, Any]:
                 warnings.append(
                     "runtime custody has exact legacy ownership overlap; "
                     "the next authenticated upgrade will preserve and normalize it"
+                )
+            if custody.state is RuntimeCustodyState.CANDIDATE_QUALIFICATION_EXACT:
+                warnings.append(
+                    "runtime custody is an exact non-authoritative candidate qualification"
                 )
 
     placeholders = _scan_placeholders(repo_root)

@@ -43,9 +43,16 @@ from .reconcile_authority_transition import (
     result_json as authority_transition_json,
 )
 from .profile_surface_generation import reconcile_makefile, reconcile_template_workflow
-
-HOTFIX_MODES = {"lite", "full"}
-
+from .interpreter_environment import reconcile_interpreter_environment
+from .test_duration_observations import reconcile_test_duration_observations
+from .editorial_audit_projection import editorial_base
+from .evidence_storage_topology import compile_migration_plan
+from .hotfix_scaffolding import (
+    HOTFIX_MODES,
+    register_hotfix_log,
+    scaffold_hotfix_log,
+)
+from .nested_cli_runtime import exact_nested_cli_command
 
 def _portable_governed_commands(commands: list[str]) -> list[str]:
     """Reject machine-local command records before any artifact is written."""
@@ -72,30 +79,6 @@ def _phase_number(phase_id: str) -> int:
 
 def _phase_stem(phase_id: str) -> str:
     return f"phase-{_phase_number(phase_id):02d}"
-
-
-def _hotfix_number(hotfix_number: int | str) -> int:
-    try:
-        number = int(hotfix_number)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(
-            f"invalid hotfix number {hotfix_number!r}; expected a positive integer"
-        ) from exc
-    if number <= 0:
-        raise ValueError(
-            f"invalid hotfix number {hotfix_number!r}; expected a positive integer"
-        )
-    return number
-
-
-def _hotfix_stem(related_phase_id: str, hotfix_number: int | str) -> str:
-    return f"{_phase_stem(related_phase_id)}-hotfix{_hotfix_number(hotfix_number):02d}"
-
-
-def _hotfix_mode(mode: str) -> str:
-    if mode not in HOTFIX_MODES:
-        raise ValueError(f"invalid hotfix mode {mode!r}; expected one of {sorted(HOTFIX_MODES)}")
-    return mode
 
 
 def _write_yaml(path: Path, payload: dict[str, Any], *, force: bool) -> None:
@@ -259,62 +242,6 @@ def scaffold_phase_artifacts(
     return {"plan": plan_path, "workitems": workitems_path, "log": log_path}
 
 
-def scaffold_hotfix_log(
-    *,
-    repo_root: Path,
-    project_id: str,
-    hotfix_id: str,
-    mode: str,
-    hotfix_number: int,
-    summary: str,
-    related_phase_id: str,
-    date: str,
-    validation_commands: list[str],
-    force: bool,
-) -> Path:
-    validation_commands = _portable_governed_commands(validation_commands)
-    hotfix_stem = _hotfix_stem(related_phase_id, hotfix_number)
-    log_path = repo_root / "phases" / f"{hotfix_stem}.yml"
-    payload = {
-        "document": {
-            "kind": "hotfix_execution_log",
-            "name": f"{hotfix_id} Hotfix Log",
-            "id": f"{project_id}-{hotfix_stem}",
-            "version": "1.0.0",
-            "generated_at_utc": f"{date}T00:00:00Z",
-            "status": "planned",
-            "path": _repo_relative_path(repo_root, log_path),
-        },
-        "hotfix": {
-            "id": hotfix_id,
-            "mode": _hotfix_mode(mode),
-            "related_phase_id": related_phase_id,
-            "hotfix_number": hotfix_number,
-            "summary": summary,
-        },
-        "execution_evidence": {
-            "planned_commands": validation_commands,
-            "executed_commands": [],
-            "notes": [
-                "record failing workflows, diagnosed root cause, remediation scope, and merge-back status"
-            ],
-        },
-        "closeout_requirements": {
-            "claims": {
-                "required_suites_green": {"required_evidence": ["test", "contract-test"]},
-                "security_review_complete": {"required_evidence": ["governance-validate"]},
-                "health_checks_green": {"required_evidence": ["runtime-smoke"]},
-            },
-            "reconciliation": {
-                "required_evidence": ["governance-validate", "governance-exposure-scan"]
-            },
-            "finding_registry": "governance/findings.yml",
-        },
-    }
-    _write_yaml(log_path, payload, force=force)
-    return log_path
-
-
 Action = Callable[[], None]
 
 
@@ -365,29 +292,68 @@ def _reconcile_workflow_authority(repo_root: Path, *, apply: bool) -> None:
     )
 
 
-def _editorial_base(audit: Path) -> str:
-    try:
-        payload = yaml.safe_load(audit.read_text(encoding="utf-8"))
-        base = payload["base_commit"]
-    except (OSError, TypeError, KeyError, yaml.YAMLError) as exc:
-        raise ReconcileError("editorial audit does not expose an immutable base") from exc
-    if not isinstance(base, str) or len(base) != 40 or any(c not in "0123456789abcdef" for c in base):
-        raise ReconcileError("editorial audit base is not an exact commit")
-    return base
-
-
 def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
     """Return the closed canonical projection order for this repository."""
 
     project_python = python.absolute()
     tool_python = Path(sys.executable).absolute()
-    cli = [str(tool_python), "-m", "bcf_governance.cli"]
     graph_value_sources = (
         declared_graph_value_source_paths(repo_root)
         if (repo_root / "governance/ci-graph.yml").is_file()
         else ()
     )
-    steps: list[ReconcileStep] = [
+    from .governance_validation.authored_phase_state import (
+        active_phase_paths,
+        validate_authored_hotfix_state,
+        validate_authored_phase_state,
+    )
+    from .governance_validation.ci_state_matrix import validate_ci_state_matrix
+
+    phase_ledger_present = (repo_root / "plans/phase-ledger.yml").is_file()
+    active_paths = active_phase_paths(repo_root) if phase_ledger_present else ()
+    hotfix_paths = validate_authored_hotfix_state(repo_root) if phase_ledger_present else ()
+    steps: list[ReconcileStep] = []
+    if phase_ledger_present:
+        active_plan, active_workitems, active_log = active_paths
+        steps.append(ReconcileStep(
+            "authored-phase-state",
+            lambda: validate_authored_phase_state(repo_root),
+            lambda: validate_authored_phase_state(repo_root),
+            watch_paths=(
+                "plans/product-spec.yml",
+                "plans/build-plan.yml",
+                "plans/phase-ledger.yml",
+                "MEMORY.yml",
+                active_plan,
+                active_workitems,
+                active_log,
+                *hotfix_paths,
+            ),
+        ))
+        steps.append(ReconcileStep(
+            "ci-state-matrix",
+            lambda: validate_ci_state_matrix(repo_root),
+            lambda: validate_ci_state_matrix(repo_root),
+            watch_paths=(
+                "spec/RELEASE_TRAIN_STATE_DAG.md",
+                "governance/ci-graph.yml",
+                "bcf_governance/tooling",
+                ".github/workflows",
+            ),
+        ))
+    steps.extend([
+        ReconcileStep(
+            "interpreter-environment",
+            lambda: reconcile_interpreter_environment(repo_root, apply=False),
+            lambda: reconcile_interpreter_environment(repo_root, apply=True),
+            apply_verifies=True,
+            watch_paths=(
+                "pyproject.toml",
+                "governance/gate-contracts.yml",
+                "requirements-governance.txt",
+                "bcf_governance/tooling/interpreter_environment.py",
+            ),
+        ),
         ReconcileStep(
             "structural-limits",
             lambda: validate_structural_limits(repo_root),
@@ -409,7 +375,7 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
                 "governance/public-contracts.yml",
             ),
         ),
-    ]
+    ])
     if (repo_root / "governance/gate-contracts.yml").is_file():
         steps.append(
             ReconcileStep(
@@ -440,19 +406,20 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
                 ),
             )
         )
+    post_merge_watch_paths = ["plans/phase-ledger.yml"]
+    if active_paths:
+        post_merge_watch_paths.extend(active_paths[1:])
+    post_merge_watch_paths.extend((
+        "governance/ci-graph.yml",
+        "bcf_governance/tooling/ci_graph_post_merge.py",
+        "bcf_governance/tooling/evidence_workitem_lifecycle.py",
+    ))
     steps.append(
         ReconcileStep(
             "ci-graph-post-merge-scope",
             lambda: reconcile_post_merge_scope(repo_root, apply=False),
             lambda: reconcile_post_merge_scope(repo_root, apply=True),
-            watch_paths=(
-                "plans/phase-ledger.yml",
-                "plans/phase-29-workitems.yml",
-                "phases/phase-29-log.yml",
-                "governance/ci-graph.yml",
-                "bcf_governance/tooling/ci_graph_post_merge.py",
-                "bcf_governance/tooling/evidence_workitem_lifecycle.py",
-            ),
+            watch_paths=tuple(post_merge_watch_paths),
         )
     )
     pack = repo_root / ".github/scripts/build_pack_manifest.py"
@@ -479,8 +446,8 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
         steps.append(
             ReconcileStep(
                 "semantic-lock",
-                _reconcile_action(repo_root, "semantic-lock", [*cli, "semantic-ownership", "lock", "--repo-root", str(repo_root), "--check"]),
-                _reconcile_action(repo_root, "semantic-lock", [*cli, "semantic-ownership", "lock", "--repo-root", str(repo_root), "--apply"]),
+                _reconcile_action(repo_root, "semantic-lock", exact_nested_cli_command("semantic-ownership", "lock", "--repo-root", str(repo_root), "--check")),
+                _reconcile_action(repo_root, "semantic-lock", exact_nested_cli_command("semantic-ownership", "lock", "--repo-root", str(repo_root), "--apply")),
                 apply_verifies=True,
                 watch_paths=(
                     "bcf_governance/tooling/semantic_*",
@@ -498,7 +465,7 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
             + ", ".join(present)
         )
     if declared_test_gates(repo_root):
-        common = [*cli, "test-manifest"]
+        common = exact_nested_cli_command("test-manifest")
         suffix = ["--all", "--repo-root", str(repo_root), "--python", str(project_python)]
         steps.append(
             ReconcileStep(
@@ -514,12 +481,26 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
                 ),
             )
         )
+        steps.append(
+            ReconcileStep(
+                "test-duration-observations",
+                lambda: reconcile_test_duration_observations(repo_root, apply=False),
+                lambda: reconcile_test_duration_observations(repo_root, apply=True),
+                apply_verifies=True,
+                watch_paths=(
+                    "governance/test-manifests/test.txt",
+                    "governance/test-duration-observations.json",
+                    "governance/gate-contracts.yml",
+                    "bcf_governance/tooling/test_duration_observations.py",
+                ),
+            )
+        )
     for operation in ("lock", "render"):
         steps.append(
             ReconcileStep(
                 f"ci-graph-{operation}",
-                _reconcile_action(repo_root, f"ci-graph-{operation}", [*cli, "ci", "graph", operation, "--repo-root", str(repo_root), "--check"]),
-                _reconcile_action(repo_root, f"ci-graph-{operation}", [*cli, "ci", "graph", operation, "--repo-root", str(repo_root), "--apply"]),
+                _reconcile_action(repo_root, f"ci-graph-{operation}", exact_nested_cli_command("ci", "graph", operation, "--repo-root", str(repo_root), "--check")),
+                _reconcile_action(repo_root, f"ci-graph-{operation}", exact_nested_cli_command("ci", "graph", operation, "--repo-root", str(repo_root), "--apply")),
                 watch_paths=(
                     "governance/ci-graph.yml",
                     "governance/ci-graph.lock.yml",
@@ -530,24 +511,24 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
                 ),
             )
         )
-    if (repo_root / "governance/ci-authority.yml").is_file():
-        steps.append(
-            ReconcileStep(
-                "workflow-authority",
-                lambda: _reconcile_workflow_authority(repo_root, apply=False),
-                lambda: _reconcile_workflow_authority(repo_root, apply=True),
-                watch_paths=(
-                    ".github/workflows",
-                    "governance/ci-authority.yml",
-                    "bcf_governance/tooling/ci_authority_pins.py",
-                ),
-            )
+    steps.append(
+        ReconcileStep(
+            "evidence-storage-topology",
+            lambda: compile_migration_plan(repo_root),
+            lambda: compile_migration_plan(repo_root),
+            watch_paths=(
+                "governance/ci-graph.yml",
+                "governance/ci-extensions",
+                "governance/evidence-storage.yml",
+                "bcf_governance/tooling/evidence_storage_*",
+            ),
         )
+    )
     checker = repo_root / ".github/scripts/check_editorial_contract.py"
     builder = repo_root / ".github/scripts/build_editorial_audit.py"
     if checker.is_file() and builder.is_file() and not checker.is_symlink() and not builder.is_symlink():
         audit = repo_root / f"audits/v{__version__}-editorial-review.yml"
-        base = _editorial_base(audit)
+        base = editorial_base(repo_root, audit)
         steps.append(
             ReconcileStep(
                 "editorial-audit",
@@ -563,6 +544,19 @@ def reconcile_steps(repo_root: Path, python: Path) -> tuple[ReconcileStep, ...]:
                     "audits",
                     ".github/scripts/check_editorial_contract.py",
                     ".github/scripts/build_editorial_audit.py",
+                ),
+            )
+        )
+    if (repo_root / "governance/ci-authority.yml").is_file():
+        steps.append(
+            ReconcileStep(
+                "workflow-authority",
+                lambda: _reconcile_workflow_authority(repo_root, apply=False),
+                lambda: _reconcile_workflow_authority(repo_root, apply=True),
+                watch_paths=(
+                    ".github/workflows",
+                    "governance/ci-authority.yml",
+                    "bcf_governance/tooling/ci_authority_pins.py",
                 ),
             )
         )
@@ -687,6 +681,10 @@ def _parser() -> argparse.ArgumentParser:
     hotfix.add_argument("--related-phase-id", required=True)
     hotfix.add_argument("--date", required=True)
     hotfix.add_argument("--validation-command", action="append", required=True)
+    hotfix.add_argument("--triggered-by-commit", action="append", required=True)
+    hotfix.add_argument("--failing-workflow", action="append", default=[])
+    hotfix.add_argument("--root-cause", required=True)
+    hotfix.add_argument("--canonical-artifact", action="append", default=[])
     return parser
 
 
@@ -723,6 +721,17 @@ def main(argv: list[str] | None = None) -> None:
             date=args.date,
             validation_commands=args.validation_command,
             force=args.force,
+        )
+        register_hotfix_log(
+            repo_root=repo_root,
+            hotfix_log=created_path,
+            hotfix_id=args.hotfix_id,
+            mode=args.mode,
+            related_phase_id=args.related_phase_id,
+            triggered_by_commits=args.triggered_by_commit,
+            failing_workflows=args.failing_workflow,
+            root_cause=args.root_cause,
+            canonical_artifacts=args.canonical_artifact,
         )
         print(f"hotfix_log: {created_path.relative_to(repo_root)}")
 

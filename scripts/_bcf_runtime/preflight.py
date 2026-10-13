@@ -20,7 +20,7 @@ from .evidence_workitem_lifecycle import (
     WorkitemContractError,
     validate_bounded_target_successor,
 )
-from .evidence_planning import load_prior_receipts, verification_plan as build_verification_plan
+from .evidence_planning import verification_plan as build_verification_plan
 from .evaluation_scope import EvaluationIntent, evaluation_scope
 from .ci_authority_pins import CIAuthorityPinError
 from .ci_authority_preflight import verify_workflow_authority_preflight
@@ -33,6 +33,12 @@ from .evidence_sessions import (
 )
 from .governance_validation.runner import check_editorial, validate_repo_root
 from .governance_validation.structural_limits import validate_structural_limits
+from .governance_validation.authored_phase_state import validate_authored_phase_state
+from .governance_validation.ci_state_matrix import validate_ci_state_matrix
+from .governance_validation.required_artifacts import (
+    validate_pull_request_changelog_update,
+)
+from .governance_validation.preflight_diagnostics import write_preflight_diagnostic
 from .install_governance_pack import _pack_manifest_entries
 from .interpreter_environment import (
     InterpreterEnvironmentError,
@@ -40,8 +46,14 @@ from .interpreter_environment import (
     validate_runtime_import_dependencies,
     verify_interpreter_environment_projection,
 )
-from .prior_evidence_receipts import load_provisional_transport, provisional_receipts
-from .governance_validation.preflight_repository_context import pr_context as _pr_context
+from .prior_evidence_receipts import load_prior_receipts, load_provisional_transport, provisional_receipts
+from .governance_validation.preflight_repository_context import (
+    RepositoryContextError,
+    git_value as _git,
+    git_state as _inspect_git_state,
+    pr_context as _pr_context,
+    tracked_files as _tracked_files,
+)
 from .governance_validation.preflight_negative_controls import (
     NegativeControlPreflightError,
     inspect_negative_control_targets,
@@ -62,6 +74,7 @@ from .ci_controller_preflight import (
     self_controller_preflight,
 )
 from .controller_custody_prospective import validate_controller_contracts_preflight
+from .evidence_storage_topology import compile_migration_plan
 
 
 class PreflightError(ValueError):
@@ -89,50 +102,11 @@ _UniqueKeyLoader.add_constructor(
 )
 
 
-def _git(repo_root: Path, *args: str) -> str:
-    result = subprocess.run(
-        ["git", *args], cwd=repo_root, capture_output=True, text=True, check=False
-    )
-    if result.returncode != 0:
-        raise PreflightError(result.stderr.strip() or f"git {' '.join(args)} failed")
-    return result.stdout.strip()
-
-
-def _tracked_files(repo_root: Path) -> list[Path]:
-    output = subprocess.run(
-        ["git", "ls-files", "-z"], cwd=repo_root, capture_output=True, check=True
-    ).stdout
-    return [
-        repo_root / value.decode("utf-8")
-        for value in output.split(b"\0")
-        if value and (repo_root / value.decode("utf-8")).is_file()
-    ]
-
-
 def _git_state(repo_root: Path) -> dict[str, Any]:
-    status_value = _git(
-        repo_root, "status", "--porcelain=v1", "--untracked-files=all", "--ignored=no"
-    )
-    if status_value:
-        raise PreflightError("preflight requires a clean committed HEAD")
-    commit = _git(repo_root, "rev-parse", "HEAD")
-    tree = _git(repo_root, "rev-parse", "HEAD^{tree}")
-    root = repo_root.resolve()
-    for line in _git(repo_root, "ls-files", "-s").splitlines():
-        fields = line.split(maxsplit=3)
-        if len(fields) != 4 or fields[0] != "120000":
-            continue
-        relative = Path(fields[3])
-        link = repo_root / relative
-        target = Path(os.readlink(link))
-        resolved = target if target.is_absolute() else (link.parent / target).resolve()
-        if target.is_absolute() or not resolved.is_relative_to(root):
-            raise PreflightError(f"tracked symlink escapes governed tree: {relative}")
-    return {
-        "commit_sha": commit,
-        "tree_sha": tree,
-        "status_porcelain_sha256": hashlib.sha256(status_value.encode()).hexdigest(),
-    }
+    try:
+        return _inspect_git_state(repo_root)
+    except RepositoryContextError as exc:
+        raise PreflightError(str(exc)) from exc
 
 
 def _syntax_checks(repo_root: Path) -> dict[str, int]:
@@ -351,10 +325,11 @@ def _interpreter_requirements(repo_root: Path, python: Path) -> dict[str, Any]:
         " if req.specifier and not req.specifier.contains(installed,prereleases=True):\n"
         "  raise SystemExit(f'{req.name} {installed} violates {req.specifier}')\n"
         " versions[req.name]=installed\n"
-        "python_spec=SpecifierSet(sys.argv[2])\n"
-        "python_version=platform.python_version()\n"
-        "if not python_spec.contains(python_version,prereleases=True):\n"
-        " raise SystemExit(f'Python {python_version} violates {python_spec}')\n"
+        "if sys.argv[2]:\n"
+        " python_spec=SpecifierSet(sys.argv[2])\n"
+        " python_version=platform.python_version()\n"
+        " if not python_spec.contains(python_version,prereleases=True):\n"
+        "  raise SystemExit(f'Python {python_version} violates {python_spec}')\n"
         "print(json.dumps(versions,sort_keys=True))\n"
     )
     try:
@@ -365,7 +340,7 @@ def _interpreter_requirements(repo_root: Path, python: Path) -> dict[str, Any]:
                 "-c",
                 probe,
                 json.dumps(list(plan.requirements)),
-                plan.requires_python,
+                plan.requires_python or "",
             ],
             capture_output=True,
             text=True,
@@ -517,9 +492,22 @@ def _pack_manifest(repo_root: Path) -> dict[str, Any]:
         return {"applicable": False}
     try:
         entries = _pack_manifest_entries(template_root)
-    except ValueError as exc:
+        interpreter = derive_interpreter_environment(template_root)
+        if interpreter is not None:
+            verify_interpreter_environment_projection(interpreter)
+    except (InterpreterEnvironmentError, ValueError) as exc:
         raise PreflightError(str(exc)) from exc
-    return {"applicable": True, "file_count": len(entries)}
+    return {
+        "applicable": True,
+        "file_count": len(entries),
+        "template_interpreter": (
+            "not_declared"
+            if interpreter is None
+            else "dependencies_and_python"
+            if interpreter.requires_python is not None
+            else "dependencies_only"
+        ),
+    }
 
 
 def run_preflight(
@@ -559,6 +547,20 @@ def run_preflight(
         return operation()
 
     subject = step("git-state", lambda: _git_state(repo_root))
+    authored_phase_state = step(
+        "authored-phase-state", lambda: validate_authored_phase_state(repo_root)
+    )
+    ci_state_matrix = step(
+        "ci-state-matrix", lambda: validate_ci_state_matrix(repo_root)
+    )
+    if mode == "pr" and os.environ.get("BCF_ENFORCE_PR_CHANGELOG", "").lower() in {
+        "1",
+        "true",
+    }:
+        step(
+            "pr-changelog",
+            lambda: validate_pull_request_changelog_update(repo_root),
+        )
     structural_limits = step(
         "structural-limits", lambda: validate_structural_limits(repo_root)
     )
@@ -650,6 +652,9 @@ def run_preflight(
     )
     source_locks = step("source-locks", lambda: _vendored_source_locks(repo_root))
     pack_manifest = step("pack-manifest", lambda: _pack_manifest(repo_root))
+    evidence_storage = step(
+        "evidence-storage-topology", lambda: compile_migration_plan(repo_root)
+    )
     editorial_contract = step("editorial-contract", lambda: check_editorial(repo_root, python))
     test_manifests = step(
         "test-manifests", lambda: check_all(repo_root, python_executable=python)
@@ -683,12 +688,15 @@ def run_preflight(
         "mode": mode,
         "subject": subject,
         "structural_limits": structural_limits,
+        "authored_phase_state": authored_phase_state,
+        "ci_state_matrix": ci_state_matrix,
         "syntax": syntax,
         "exposure": exposure,
         "interpreter": interpreter,
         "source_entrypoints": source_entrypoints,
         "source_locks": source_locks,
         "pack_manifest": pack_manifest,
+        "evidence_storage": evidence_storage,
         "editorial_contract": editorial_contract,
         "self_workflows": self_workflows,
         "workflow_authority": workflow_authority,
@@ -731,16 +739,20 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--prior-evidence-dir", type=Path)
     parser.add_argument("--prior-evidence-digest")
     parser.add_argument("--format", choices=("text", "json"), default="text")
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args(argv)
+    effective_mode = args.mode or preflight_mode_for_evaluation(args.evaluation_mode)
+    effective_evaluation = args.evaluation_mode or "pr"
     try:
         prior_receipts = (
             load_prior_receipts(
-                args.repo_root, args.prior_evidence_dir, args.prior_evidence_digest
+                args.repo_root, args.prior_evidence_dir, args.prior_evidence_digest,
+                current_subject=_git_state(args.repo_root.resolve()),
             ) if args.prior_evidence_digest else []
         )
         report = run_preflight(
             args.repo_root,
-            mode=args.mode or preflight_mode_for_evaluation(args.evaluation_mode),
+            mode=effective_mode,
             python_executable=args.python,
             artifact_root=args.artifact_root,
             expected_producers=args.expected_producer,
@@ -757,7 +769,21 @@ def main(argv: list[str] | None = None) -> None:
             ),
         )
     except (OSError, subprocess.SubprocessError, ValueError) as exc:
+        if args.output is not None:
+            write_preflight_diagnostic(
+                args.output,
+                mode=effective_mode,
+                evaluation_mode=effective_evaluation,
+                error=str(exc),
+            )
         raise SystemExit(str(exc)) from exc
+    if args.output is not None:
+        write_preflight_diagnostic(
+            args.output,
+            mode=effective_mode,
+            evaluation_mode=effective_evaluation,
+            report=report,
+        )
     if args.format == "json":
         print(json.dumps(report, indent=2, sort_keys=True))
     else:

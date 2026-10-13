@@ -3,17 +3,116 @@
 from __future__ import annotations
 
 import json
+import hashlib
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 from typing import Any, Mapping, Sequence
 
 from .ci_github_identity import GitHubControllerError
 from .ci_graph_contracts import validate_ci_graph
+from .ci_graph_defaults import build_reference_ci_graph
+from .ci_graph_yaml import render_yaml
 from .ci_graph_post_merge import post_merge_evaluation
+from .governance_install.ci_graph import (
+    exact_main_controller_artifact_condition,
+    project_trusted_controller_management,
+    release_authority_enabled,
+)
+from .ci_controller_policy import validate_installed_controller_policy
 from .self_workflow_contracts import validate_self_workflow_contracts
 from .controller_custody import compile_controller_custody
 from .routine_controller_rotation import prospective_no_transition_topology
+
+
+_ADOPTER_TRUSTED_LABELS = ["Linux", "X64", "fixture", "self-hosted"]
+
+
+def _managed_adopter_policy() -> dict[str, Any]:
+    commit = "1" * 40
+    tree = "2" * 40
+    digest = "3" * 64
+    return {
+        "schema_version": "1.0",
+        "runner_security": {
+            "trusted_labels": _ADOPTER_TRUSTED_LABELS,
+            "trusted_instance_labels": ["fixture-control-1", "fixture-control-2"],
+            "trusted_controller_artifact": {
+                "BCF_BOOTSTRAP_ARTIFACT_ID": "1",
+                "BCF_BOOTSTRAP_ARTIFACT_NAME": f"bcf-trusted-control-{commit}-1",
+                "BCF_BOOTSTRAP_ARTIFACT_DIGEST": f"sha256:{digest}",
+                "BCF_BOOTSTRAP_RUN_ID": "1",
+                "BCF_BOOTSTRAP_RUN_ATTEMPT": "1",
+                "BCF_BOOTSTRAP_COMMIT_SHA": commit,
+                "BCF_BOOTSTRAP_TREE_SHA": tree,
+                "BCF_BOOTSTRAP_REPOSITORY_ID": "1",
+                "BCF_BOOTSTRAP_WHEEL_SHA256": digest,
+            },
+            "trusted_controller_installation": {
+                "schema_version": "1.0",
+                "installed_commit_sha": commit,
+                "subject_commit_sha": commit,
+                "subject_tree_sha": tree,
+                "bootstrap_run_id": "1",
+                "bootstrap_run_attempt": "1",
+                "probe_run_id": "2",
+                "probe_run_attempt": "1",
+            },
+        },
+        "rotation_policy_paths": sorted(
+            [
+                "governance/ci-extensions/bcf-controller-rotation.yml",
+                "governance/ci-graph.yml",
+                "governance/github-protection.yml",
+                "governance/trusted-controller-policy.yml",
+                "schemas/controller-transition.schema.json",
+            ]
+        ),
+    }
+
+
+def compile_managed_adopter_graphs() -> tuple[dict[str, Any], ...]:
+    """Compile supported managed-controller contracts from packaged adopter bytes."""
+
+    template = Path(__file__).resolve().parents[1] / "pack/template-repo"
+    compiled: list[dict[str, Any]] = []
+    with tempfile.TemporaryDirectory(prefix="bcf-managed-adopter-prospective-") as raw:
+        root = Path(raw)
+        for contract_version in ("1.0", "3.0"):
+            target = root / contract_version
+            shutil.copytree(template, target)
+            graph = build_reference_ci_graph(
+                project_id=f"managed-adopter-{contract_version.replace('.', '-')}",
+                profile="standard",
+                profile_contract_version=contract_version,
+                gates=["governance-validate"],
+                candidate_labels=["ubuntu-24.04"],
+                trusted_labels=_ADOPTER_TRUSTED_LABELS,
+                candidate_hosted=True,
+                trusted_hosted=False,
+            )
+            storage = target / "governance/evidence-storage.yml"
+            graph["evidence_storage"] = {
+                "path": "governance/evidence-storage.yml",
+                "sha256": hashlib.sha256(storage.read_bytes()).hexdigest(),
+            }
+            policy = _managed_adopter_policy()
+            policy_path = target / "governance/trusted-controller-policy.yml"
+            policy_path.write_bytes(render_yaml(policy))
+            validate_installed_controller_policy(target, policy)
+            extension_path = (
+                target / "governance/ci-extensions/bcf-controller-rotation.yml"
+            )
+            project_trusted_controller_management(
+                graph,
+                _ADOPTER_TRUSTED_LABELS,
+                policy_sha256=hashlib.sha256(policy_path.read_bytes()).hexdigest(),
+                extension_sha256=hashlib.sha256(extension_path.read_bytes()).hexdigest(),
+            )
+            (target / "governance/ci-graph.yml").write_bytes(render_yaml(graph))
+            compiled.append(validate_ci_graph(target).graph)
+    return tuple(compiled)
 
 
 _BASE_ROUTED_JOBS = {
@@ -104,9 +203,8 @@ def _route(
             text=True,
             check=False,
         )
-        if result.returncode == 0 and output.read_text(encoding="utf-8") != (
-            f"controller_commit_sha={expected_commit}\n"
-        ):
+        expected = f"controller_commit_sha={expected_commit}\n"
+        if result.returncode == 0 and output.read_text(encoding="utf-8") != expected:
             raise GitHubControllerError("controller route projected a different identity")
         return result
 
@@ -176,10 +274,52 @@ def validate_controller_custody_chain(
         raise GitHubControllerError("exact-main admission target is not builder-routed")
     controller_builder = _job(graph, "exact-main", "trusted-controller-build")
     custody_components = _components(controller_builder)
-    if not _ordered(
+    ordinary_custody = _ordered(
         custody_components, "project-controller-custody", "upload-controller-custody"
-    ) or "controller-custody" not in controller_builder.get("produces", []):
+    )
+    recovery_exclusion = _ordered(
+        custody_components,
+        "resolve-recovery-controller-candidate",
+        "upload-controller-custody",
+    )
+    if ordinary_custody == recovery_exclusion:
+        raise GitHubControllerError(
+            "exact-main route-custody producer lane is ambiguous or missing"
+        )
+    if "controller-custody" not in controller_builder.get("produces", []):
         raise GitHubControllerError("exact-main route-custody producer is not closed")
+    if recovery_exclusion:
+        recovery_component = graph.get("step_components", {}).get(
+            "resolve-recovery-controller-candidate", {}
+        )
+        recovery_command = graph.get("commands", {}).get(
+            "resolve-recovery-controller-candidate", {}
+        )
+        recovery_argv = (
+            recovery_command.get("argv")
+            if isinstance(recovery_command, Mapping)
+            else None
+        )
+        if (
+            "resolve-effective-controller-candidate" in custody_components
+            or "project-controller-custody" in custody_components
+            or recovery_component.get("produces") != ["controller-custody"]
+            or recovery_component.get("consumes") != []
+            or not isinstance(recovery_argv, list)
+            or recovery_argv[:4]
+            != ["{python}", "-m", "bcf_governance.cli", "ci"]
+            or "controller-recovery-route" not in recovery_argv
+            or "--output" not in recovery_argv
+            or exact_admit.get("controller_requirement")
+            != "current-or-recovery-reentry"
+        ):
+            raise GitHubControllerError(
+                "exact-main recovery custody exclusion is not closed"
+            )
+    elif "resolve-recovery-controller-candidate" in custody_components:
+        raise GitHubControllerError(
+            "ordinary exact-main custody includes recovery routing"
+        )
     finalizer = _job(graph, "exact-main-finalizer", "finalize")
     finalizer_components = _components(finalizer)
     if (
@@ -209,6 +349,59 @@ def validate_controller_custody_chain(
         raise GitHubControllerError(
             "publisher controller-custody pass-through contract is not closed"
         )
+    build_condition = "exact-main-controller-build-required"
+    admission = _job(graph, "exact-main", "admit")
+    evaluation_mode = str(admission.get("executor", {}).get("evaluation_mode", ""))
+    try:
+        expected_build_condition = exact_main_controller_artifact_condition(
+            evaluation_mode,
+            release_enabled=release_authority_enabled(dict(graph)),
+        )
+    except RuntimeError as exc:
+        raise GitHubControllerError(str(exc)) from exc
+    if (
+        graph.get("conditions", {}).get(build_condition)
+        != expected_build_condition
+        or graph.get("step_components", {}).get(
+            "build-trusted-controller", {}
+        ).get("condition") != build_condition
+        or graph.get("step_components", {}).get(
+            "upload-trusted-controller", {}
+        ).get("condition") != build_condition
+    ):
+        raise GitHubControllerError(
+            "controller bundle production is not transition/release-materialization exact"
+        )
+    rotation_authorize = _job(graph, rotation_id, "authorize")
+    rotation_components = _components(rotation_authorize)
+    if (
+        "routine-controller-bundle-required" in graph.get("conditions", {})
+        or "download-routine-controller-for-authorization"
+        in graph.get("step_components", {})
+        or graph.get("step_components", {}).get(
+            "download-routine-controller", {}
+        ).get("condition") is not None
+        or not _ordered(
+            rotation_components,
+            "project-custody-controller-route",
+            "authorize-routine-transition",
+        )
+    ):
+        raise GitHubControllerError(
+            "rotation artifact selection is not owned by typed authorization"
+        )
+    for lifecycle_job in (
+        "bootstrap", "advance-bootstrap", "probe", "advance-probe",
+        "promote", "activate",
+    ):
+        components = _components(_job(graph, rotation_id, lifecycle_job))
+        if (
+            "download-routine-controller" not in components
+            or "download-routine-controller-for-authorization" in components
+        ):
+            raise GitHubControllerError(
+                "post-authorization controller materialization inherited authorize routing"
+            )
     components = graph.get("step_components")
     upload = components.get("upload-finalizer-controller-custody", {})
     download = components.get("download-finalizer-controller-custody", {})
@@ -269,6 +462,7 @@ def validate_controller_custody_chain(
         or outcome.get("produces") != ["controller-rotation-outcome"]
         or set(outcome.get("consumes", []))
         != {
+            "controller-custody",
             "controller-transition-decision",
             "controller-transition-active-callback-source",
         }
@@ -364,6 +558,15 @@ def validate_controller_custody_graph(
     """Compile the graph once and prove only its applicable custody lane."""
 
     graph = validate_ci_graph(repo_root).graph
+    managed_adopter_contracts: list[str] = []
+    if (repo_root / "governance/self-governance-policy.yml").is_file():
+        for adopter_graph in compile_managed_adopter_graphs():
+            validate_controller_custody_chain(
+                adopter_graph, python_executable=python_executable
+            )
+            managed_adopter_contracts.append(
+                str(adopter_graph["profile_contract_version"])
+            )
     evaluation = post_merge_evaluation(graph)
     if evaluation.lane == "direct_protected_main":
         return evaluation, {
@@ -393,6 +596,7 @@ def validate_controller_custody_graph(
     proof["no_transition_callback_probe"] = prospective_no_transition_topology(
         repo_root
     )
+    proof["managed_adopter_contracts"] = managed_adopter_contracts
     return evaluation, proof
 
 

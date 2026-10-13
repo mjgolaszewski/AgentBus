@@ -20,6 +20,8 @@ from ..semantic_authority_contracts import (
 from .common import *  # noqa: F403,F405
 from .artifact_policy import _load_phase_history, _validate_artifact_manifest, _validate_observability_contracts
 from .context_budgets import _context_budget_advisories
+from .authored_phase_state import validate_authored_phase_state
+from .ci_state_matrix import validate_ci_state_matrix
 from .evidence_contracts import _load_evidence_contracts, _validate_gate_contract_registry
 from .editorial_contract import check_editorial
 from .phase_artifacts import _validate_agents
@@ -65,6 +67,7 @@ def validate_repo_root(
     allow_release_gate_placeholders: bool = False,
 ) -> None:
     validate_runtime_custody(repo_root)
+    validate_authored_phase_state(repo_root)
     schema_cache: dict[str, dict[str, Any]] = {}
     agents = _load_yaml(repo_root / "AGENTS.yml")
     memory = _load_yaml(repo_root / "MEMORY.yml")
@@ -243,6 +246,12 @@ def validate_repo_root(
             raise GovernanceValidationError(
                 "generated CI workflow drift: " + ", ".join(graph_parity.changed_paths)
             )
+    # Candidate matrix freshness remains a mandatory cheap-preflight invariant,
+    # but it must not mask the intrinsic semantic cause of a declared isolated
+    # negative-control mutation whose graph-owned projections are intentionally
+    # dirty.  No caller state exempts a candidate: otherwise-valid candidates
+    # still reach this guard before evidence allocation.
+    validate_ci_state_matrix(repo_root)
     if not allow_placeholders:
         optional_paths = [
             repo_root / relative_path

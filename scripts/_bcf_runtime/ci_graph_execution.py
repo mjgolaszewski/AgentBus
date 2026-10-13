@@ -32,6 +32,7 @@ _EFFECTIVE_RELEASE_OPERATIONS = frozenset(
 )
 _TRIGGER_RELEASE_OPERATIONS = frozenset({"runtime", "verify-evidence", "collect"})
 _INPUT_REFERENCE = re.compile(r"inputs\.([A-Za-z_][A-Za-z0-9_-]*)")
+_GITHUB_EXPRESSION = re.compile(r"\$\{\{([^}]*)\}\}")
 _LITERAL_INPUT_FALLBACK = re.compile(
     r"inputs\.([A-Za-z_][A-Za-z0-9_-]*)\s*\|\|\s*(['\"])(.*?)\2"
 )
@@ -43,6 +44,13 @@ _DIRECT_POST_MERGE_TARGET = re.compile(
     r"^\$\{\{ inputs\.evaluation_target \|\| "
     r"\(github\.event_name == 'push' && '([^']+)' \|\| ''\) \}\}$"
 )
+CANDIDATE_MATERIALIZATION_RELATIVE = (
+    ".bcf-pr-candidate-${{ github.run_id }}-${{ github.run_attempt }}"
+)
+CANDIDATE_MATERIALIZATION_ROOT = (
+    "${{ github.workspace }}/" + CANDIDATE_MATERIALIZATION_RELATIVE
+)
+
 
 def direct_post_merge_mode(mode: str) -> str:
     """Render one event-safe direct-push evaluation intent."""
@@ -353,6 +361,80 @@ def job_execution_issues(
     """Return deterministic interpreter and trusted-input contract violations."""
 
     issues: list[str] = []
+    evaluator_source = executor.get("evaluator_source")
+    if evaluator_source is not None:
+        component_ids = executor.get("components", [])
+        checkouts = [
+            graph["step_components"][component_id]
+            for component_id in component_ids
+            if graph["step_components"][component_id].get("action") == "checkout"
+        ]
+        controller_commands = controller_command_ids(graph, executor)
+        materializers = [
+            component for component in checkouts
+            if "path" in component.get("with", {})
+        ]
+        if materializers:
+            finalize_commands = [
+                graph["commands"][command_id]
+                for command_id in _command_ids(graph, executor)
+                if "ci-github" in graph["commands"][command_id]["argv"]
+                and "pr" in graph["commands"][command_id]["argv"]
+                and "finalize" in graph["commands"][command_id]["argv"]
+            ]
+            if (
+                len(materializers) != 1
+                or materializers[0]["with"]["path"]
+                != CANDIDATE_MATERIALIZATION_RELATIVE
+                or len(finalize_commands) != 1
+            ):
+                issues.append(
+                    f"evaluator job {job['id']} candidate materialization must bind one run-owned workspace-relative checkout to its consumer"
+                )
+            elif evaluator_source == "protected_base" and (
+                _argument(finalize_commands[0]["argv"], "--candidate-root")
+                != CANDIDATE_MATERIALIZATION_ROOT
+            ):
+                issues.append(
+                    f"evaluator job {job['id']} candidate materialization must bind one run-owned workspace-relative checkout to its consumer"
+                )
+            elif evaluator_source == "managed_controller" and (
+                _argument(finalize_commands[0]["argv"], "--candidate-root")
+                is not None
+                or finalize_commands[0]["cwd"] != "."
+                or finalize_commands[0]["argv"][:4]
+                != [
+                    "/usr/bin/env",
+                    "-C",
+                    "{env:BCF_PR_CANDIDATE_ROOT}",
+                    "{controller}",
+                ]
+                or finalize_commands[0]["environment"].get(
+                    "BCF_PR_CANDIDATE_ROOT"
+                ) != CANDIDATE_MATERIALIZATION_ROOT
+            ):
+                issues.append(
+                    f"evaluator job {job['id']} managed controller must consume the run-owned candidate through its repository-root contract"
+                )
+        if evaluator_source == "protected_base":
+            refs = [component.get("with", {}).get("ref") for component in checkouts]
+            allowed_sets = {
+                ("${{ github.event.workflow_run.head_sha }}",),
+                (
+                    "${{ github.event.workflow_run.pull_requests[0].base.sha }}",
+                    "${{ github.event.workflow_run.head_sha }}",
+                ),
+            }
+            if tuple(refs) not in allowed_sets or controller_commands:
+                issues.append(
+                    f"protected-base evaluator job {job['id']} has an invalid exact checkout/controller contract"
+                )
+        elif evaluator_source == "managed_controller":
+            refs = [component.get("with", {}).get("ref") for component in checkouts]
+            if refs not in ([], ["${{ github.event.workflow_run.head_sha }}"]) or len(controller_commands) != 1:
+                issues.append(
+                    f"managed-controller evaluator job {job['id']} has an invalid controller/candidate-materialization contract"
+                )
     if job_requires_full_history(graph, executor):
         explicit_checkouts = [
             graph["step_components"][component_id]
@@ -466,7 +548,11 @@ def job_execution_issues(
         issues.append(
             f"CI graph job {job['id']} must provision selected Python before governed commands"
         )
-    if job["trust"] == "trusted" and job["checkout"] is False:
+    if (
+        job["trust"] == "trusted"
+        and job["checkout"] is False
+        and evaluator_source != "protected_base"
+    ):
         execution_inputs: list[Any] = [job.get("environment", {})]
         execution_inputs.extend(
             graph["commands"][command_id]
@@ -525,7 +611,12 @@ def workflow_input_issues(
             surfaces.append(("reusable-workflow inputs", executor["inputs"]))
         for surface, payload in surfaces:
             for value in _strings(payload):
-                references = set(_INPUT_REFERENCE.findall(value))
+                expressions = _GITHUB_EXPRESSION.findall(value)
+                references = {
+                    name
+                    for expression in expressions
+                    for name in _INPUT_REFERENCE.findall(expression)
+                }
                 if references and "||" not in value:
                     issues.append(
                         f"direct-event workflow {workflow['id']} {surface} "
@@ -534,7 +625,8 @@ def workflow_input_issues(
                     continue
                 fallbacks = {
                     name: literal
-                    for name, _, literal in _LITERAL_INPUT_FALLBACK.findall(value)
+                    for expression in expressions
+                    for name, _, literal in _LITERAL_INPUT_FALLBACK.findall(expression)
                 }
                 for name in sorted(references):
                     contract = declared_inputs.get(name)

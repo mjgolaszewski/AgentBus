@@ -24,7 +24,7 @@ from .ci_authority_prospective_lanes import (
 )
 from .ci_exact_main_truth import validate_exact_main_truth_payload
 from .ci_github_identity import GitHubControllerError
-from .ci_graph_execution import local_gate_job_environments, resolve_local_job_environment
+from .ci_graph_execution import local_gate_job_environments
 from .controller_custody_prospective import validate_controller_custody_graph
 from .evaluation_scope import (
     EvaluationIntent,
@@ -32,15 +32,14 @@ from .evaluation_scope import (
     evaluation_scope,
 )
 from .evidence_execution import EvidenceError
-from .evidence_scheduling import receipt_duration_ms
+from .evidence_shards import planned_gate_targets
 from .evidence_sessions import allocate_session, local_producer_identity
 from .evidence_workitem_lifecycle import (
     WorkitemContractError,
     validate_evaluation_authored_ready,
 )
-from .governance_evidence import capture_gate
 from .governance_truth import TruthfulnessError, derive_truth
-from .preflight import PreflightError, preflight_mode_for_evaluation, run_preflight
+from .preflight import PreflightError, run_preflight
 from .ci_authority_prospective_telemetry import (
     ProspectiveTelemetryError,
     elapsed_ms as _elapsed_ms,
@@ -62,6 +61,14 @@ from .local_execution_admission import (
     selected_toolchain_environment,
     validate_local_toolchain,
 )
+from .local_proof_bundles import (
+    LocalProofBundleError,
+    cached_producer_observations,
+    capture_producers,
+    proof_identity,
+    restore_proof_bundle,
+    store_proof_bundle,
+)
 from .operational_observations import (
     amplification_observation,
     lifecycle_projection,
@@ -69,10 +76,15 @@ from .operational_observations import (
     validate_operational_observation,
     validate_progress_stream,
 )
+from .ordinary_protection_projection import (
+    validate_direct_protection_prospective,
+    validate_ordinary_protection_submission,
+)
 from .local_pr_context import (
     CandidateIdentity,
     LocalPRContext,
     LocalPRError,
+    LocalValidationLane,
     ProspectiveValidationError,
     Runner,
     _checked,
@@ -87,6 +99,7 @@ from .local_pr_context import (
 
 
 ProgressSink = Callable[[dict[str, Any]], None]
+_capture_planned_evidence = capture_producers
 
 
 def _confirm_unchanged(
@@ -125,69 +138,6 @@ BOUNDARY_CHAIN = (
 )
 
 
-def _capture_planned_evidence(
-    repo_root: Path,
-    *,
-    python_executable: Path,
-    session_manifest: Path,
-    session_root: Path,
-    producers: tuple[str, ...],
-    producer_environments: dict[str, dict[str, str]],
-) -> list[dict[str, Any]]:
-    observations: list[dict[str, Any]] = []
-    for producer in producers:
-        environment = resolve_local_job_environment(
-            producer_environments[producer], repo_root
-        )
-        receipt = capture_gate(
-            repo_root,
-            producer,
-            session_root / producer,
-            python_executable=python_executable,
-            session_manifest=session_manifest,
-            job_environment=environment,
-        )
-        if not receipt.is_file():
-            raise ProspectiveValidationError(
-                f"local evidence producer {producer} emitted no receipt"
-            )
-        payload = json.loads(receipt.read_text(encoding="utf-8"))
-        if payload.get("result") != "passed":
-            producer_observations = payload.get("observations")
-            exit_code = (
-                producer_observations.get("exit_code")
-                if isinstance(producer_observations, dict)
-                else "unknown"
-            )
-            diagnostics = []
-            for suffix in ("stderr", "stdout"):
-                path = receipt.parent / f"{producer}.{suffix}.txt"
-                if path.is_file():
-                    value = path.read_text(
-                        encoding="utf-8", errors="replace"
-                    ).strip()
-                    if value:
-                        diagnostics.append(f"{suffix}: {value[-20000:]}")
-            raise ProspectiveValidationError(
-                f"local evidence producer {producer} failed with exit {exit_code}"
-                + (": " + " | ".join(diagnostics) if diagnostics else "")
-            )
-        duration = receipt_duration_ms(payload)
-        if duration is None:
-            raise ProspectiveValidationError(
-                f"local evidence producer {producer} emitted no valid duration"
-            )
-        observations.append(
-            {
-                "producer": producer,
-                "duration_ms": duration,
-                "claim_count": len(payload.get("claims") or ()),
-                "control_count": len(payload.get("behavioral_probes") or ()),
-            }
-        )
-    return observations
-
-
 def _require_truth(report: Mapping[str, Any], *, boundary: str) -> dict[str, Any]:
     if report.get("status") != "pass":
         detail = ", ".join(str(value) for value in report.get("issues") or ())
@@ -217,6 +167,8 @@ def _run_prospective_train(
     controller_authority: Mapping[str, Any] | None = None,
     repository: str | None = None,
     provider_api: GitHubAPI | None = None,
+    toolchain_identity: Mapping[str, Any] | None = None,
+    validation_lane: LocalValidationLane = LocalValidationLane.PROVIDER_PR,
     runner: Runner = _run,
     progress_sink: ProgressSink | None = None,
 ) -> dict[str, Any]:
@@ -253,6 +205,16 @@ def _run_prospective_train(
         raise ProspectiveValidationError(
             "prospective train subject does not match the exact committed tree"
         )
+    if repository is not None and provider_api is not None:
+        try:
+            validate_ordinary_protection_submission(
+                provider_api,
+                repo_root=root,
+                repository=repository,
+                base_sha=context.base_sha,
+            )
+        except GitHubControllerError as exc:
+            raise ProspectiveValidationError(str(exc)) from exc
     try:
         requested_scope = evaluation_scope(
             semantic_intent,
@@ -306,17 +268,18 @@ def _run_prospective_train(
     changed_paths = _changed_paths(root, identity, runner=runner)
     custody_state = str(custody_contract.get("custody_state", "managed_controller"))
     try:
+        base_tree = _checked(
+            runner,
+            ["git", "rev-parse", "--verify", f"{identity.base_sha}^{{tree}}"],
+            cwd=root,
+        )
         transition_class, policy_identity = prospective_policy_binding(
             root,
             lane=evaluation.lane,
             custody_state=custody_state,
             changed_paths=changed_paths,
             base_sha=identity.base_sha,
-            base_tree=_checked(
-                runner,
-                ["git", "rev-parse", "--verify", f"{identity.base_sha}^{{tree}}"],
-                cwd=root,
-            ),
+            base_tree=base_tree,
             candidate_sha=identity.commit_sha,
             candidate_tree=identity.tree_sha,
         )
@@ -352,7 +315,7 @@ def _run_prospective_train(
 
     with tempfile.TemporaryDirectory(prefix="bcf-prospective-") as temporary:
         artifact_root = Path(temporary) / "evidence"
-        with _pr_environment(context):
+        with _pr_environment(context, validation_lane=validation_lane):
             try:
                 emit("preflight", "started")
                 preflight_started = time.monotonic_ns()
@@ -396,7 +359,7 @@ def _run_prospective_train(
             ):
                 post_merge_preflight = run_preflight(
                     root,
-                    mode=preflight_mode_for_evaluation(post_merge_mode),
+                    mode="release",
                     python_executable=python_executable,
                     evaluation_mode=post_merge_mode,
                     evaluation_target=post_merge_target,
@@ -488,40 +451,84 @@ def _run_prospective_train(
             return report
 
         verification_plan = preflight["verification_plan"]
-        nodes = verification_plan["execution_dag"]["nodes"]
-        producers = tuple(str(node["producer"]) for node in nodes)
-        if len(producers) != len(set(producers)) or any(not value for value in producers):
-            raise ProspectiveValidationError(
-                "planned local producer topology is incomplete or ambiguous"
-            )
+        execution_dag = verification_plan.get("execution_dag")
+        try:
+            nodes = execution_dag.get("nodes") if isinstance(execution_dag, dict) else ()
+            inventory = [str(node.get("producer", "")) for node in nodes if isinstance(node, dict)]
+            producers = tuple(planned_gate_targets(
+                root, planned_targets=inventory, execution_dag=execution_dag,
+            ))
+        except (TypeError, ValueError) as exc:
+            raise ProspectiveValidationError(str(exc)) from exc
         try:
             producer_environments = local_gate_job_environments(
                 validate_ci_graph(root).graph, producers
             )
         except CIGraphError as exc:
             raise ProspectiveValidationError(str(exc)) from exc
-        try:
-            session = allocate_session(
-                root,
-                artifact_root,
-                producers,
-                expected_producers=["prospective-local"],
-                producer_identity=local_producer_identity(root, "prospective-local"),
-                verification_plan=verification_plan,
-            )
-        except EvidenceError as exc:
-            raise ProspectiveValidationError(str(exc)) from exc
+        bundle_identity = None
+        bundle_manifest = None
+        bundle_reused = False
+        session_root = None
+        if repository is not None:
+            try:
+                bundle_identity = proof_identity(
+                    repository=repository,
+                    base_commit=identity.base_sha,
+                    base_tree=base_tree,
+                    candidate_commit=identity.commit_sha,
+                    candidate_tree=identity.tree_sha,
+                    evaluation_mode=post_merge_mode,
+                    evaluation_target=post_merge_target,
+                    verification_plan=verification_plan,
+                    controller={
+                        "state": controller_state,
+                        "authority": dict(controller_authority or {}),
+                        "custody": custody_contract,
+                    },
+                    policy=policy_identity,
+                    toolchain=dict(toolchain_identity or {}),
+                    python_executable=python_executable,
+                )
+                session_root = artifact_root / "reused"
+                bundle_manifest = restore_proof_bundle(
+                    root, identity=bundle_identity, destination=session_root
+                )
+                if bundle_manifest is None:
+                    session_root = None
+                else:
+                    bundle_reused = True
+            except LocalProofBundleError as exc:
+                raise ProspectiveValidationError(str(exc)) from exc
+        session = None
+        if session_root is None:
+            try:
+                session = allocate_session(
+                    root,
+                    artifact_root,
+                    producers,
+                    expected_producers=["prospective-local"],
+                    producer_identity=local_producer_identity(root, "prospective-local"),
+                    verification_plan=verification_plan,
+                )
+                session_root = session.root
+            except EvidenceError as exc:
+                raise ProspectiveValidationError(str(exc)) from exc
         try:
             emit("evidence", "started")
             evidence_started = time.monotonic_ns()
-            producer_observations = _capture_planned_evidence(
-                root,
-                python_executable=python_executable,
-                session_manifest=session.manifest_path,
-                session_root=session.root,
-                producers=producers,
-                producer_environments=producer_environments,
-            ) or []
+            producer_observations = (
+                cached_producer_observations(session_root, producers)
+                if bundle_manifest is not None
+                else _capture_planned_evidence(
+                    root,
+                    python_executable=python_executable,
+                    session_manifest=session.manifest_path,
+                    session_root=session_root,
+                    producers=producers,
+                    producer_environments=producer_environments,
+                ) or []
+            )
             evidence_duration = _elapsed_ms(evidence_started)
             measurements.extend(
                 [
@@ -532,12 +539,12 @@ def _run_prospective_train(
             )
             truth_started = time.monotonic_ns()
             pr_truth = _require_truth(
-                derive_truth(root, session.root, evaluation_mode="pr"),
+                derive_truth(root, session_root, evaluation_mode="pr"),
                 boundary="PR truth",
             )
             pr_truth_duration = _elapsed_ms(truth_started)
             emit("evidence", "complete")
-        except (EvidenceError, TruthfulnessError) as exc:
+        except (EvidenceError, TruthfulnessError, LocalProofBundleError) as exc:
             fail_stage("evidence")
             raise ProspectiveValidationError(str(exc)) from exc
         if pr_truth.get("merge_eligibility") != "eligible":
@@ -572,7 +579,7 @@ def _run_prospective_train(
             bounded_truth = _require_truth(
                 derive_truth(
                     root,
-                    session.root,
+                    session_root,
                     evaluation_mode=post_merge_mode,
                     evaluation_target=post_merge_target,
                 ),
@@ -593,6 +600,13 @@ def _run_prospective_train(
         proposition_sha256 = hashlib.sha256(
             json.dumps(proposition, sort_keys=True, separators=(",", ":")).encode()
         ).hexdigest()
+        if bundle_identity is not None and bundle_manifest is None:
+            try:
+                bundle_manifest = store_proof_bundle(
+                    root, identity=bundle_identity, source=session_root
+                )
+            except LocalProofBundleError as exc:
+                raise ProspectiveValidationError(str(exc)) from exc
         boundaries.extend(
             [{
                 "id": "bounded_or_phase_truth",
@@ -661,6 +675,18 @@ def _run_prospective_train(
         "post_merge_evaluation": evaluation.as_dict(),
         "boundaries": boundaries,
         "provider_authority_substituted": False,
+        "proof_bundle": (
+            {
+                "status": "reused" if bundle_reused else "created",
+                "bundle_sha256": bundle_manifest["bundle_sha256"],
+                "authority": "local_non_authoritative",
+            }
+            if bundle_manifest is not None
+            else {
+                "status": "not_persisted",
+                "authority": "local_non_authoritative",
+            }
+        ),
         "telemetry": telemetry,
         "reconciliation": reconciliation,
         "progress": progress,
@@ -686,6 +712,7 @@ def run_prospective_train(
     python_executable: Path,
     repository: str | None = None,
     provider_api: GitHubAPI | None = None,
+    validation_lane: LocalValidationLane = LocalValidationLane.PROVIDER_PR,
     runner: Runner = _run,
     progress_sink: ProgressSink | None = None,
 ) -> dict[str, Any]:
@@ -711,6 +738,13 @@ def run_prospective_train(
                 lane = post_merge_evaluation(graph).lane
             except CIGraphError as exc:
                 raise ProspectiveValidationError(str(exc)) from exc
+            try:
+                validate_direct_protection_prospective(
+                    provider_api, repo_root=repo_root, repository=repository,
+                    lane=lane, remote=remote, runner=runner,
+                )
+            except GitHubControllerError as exc:
+                raise ProspectiveValidationError(str(exc)) from exc
             admission = validate_local_toolchain(
                 repo_root.resolve(),
                 python_executable,
@@ -730,6 +764,8 @@ def run_prospective_train(
                     execute_evidence=True,
                     repository=repository if lane == "trusted_exact_main" else None,
                     provider_api=provider_api if lane == "trusted_exact_main" else None,
+                    toolchain_identity=admission.as_dict(),
+                    validation_lane=validation_lane,
                     runner=runner,
                     progress_sink=progress_sink,
                 )
