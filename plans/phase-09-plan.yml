@@ -41,7 +41,7 @@ delivery_contract:
     name: bcf_custody_and_release
   hard_dependencies:
   - current BCF candidate identity recorded as a non-authoritative golden-master baseline
-  - provider fan-out, origin authentication, and recovery feasibility qualified before cross-instance claims
+  - provider fan-out, origin authentication, and recovery qualification are deferred to a dedicated multi-installation-qualifying candidate
   - no BCF candidate or release upgrade is applied by hand
   docker_first_local_runtime: repo_native_validation_and_governance_commands
   completeness_standard: full_completeness_for_declared_scope
@@ -56,6 +56,8 @@ scope_lock:
   statement: owner-mediated wake may only admit a verified idle owner; queued-after-busy behavior is not equivalent to atomic idle-only admission
 - order: 5
   statement: BCF candidate qualification may be non-authoritative during construction, but final publication requires the newest authorized BCF custody and exact re-proof
+- order: 6
+  statement: local contracts, fake-provider behavior, compatibility, and failure controls may proceed before multi-installation qualification; cross-instance delivery claims remain gated
 verification_plan:
 - make governance-validate
 - make architecture-test

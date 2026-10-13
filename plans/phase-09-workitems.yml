@@ -37,6 +37,15 @@ workitems:
   acceptance_evidence:
   - test
   - contract-test
+- id: P09-P0-03
+  priority: P1
+  status: BLOCKED
+  summary: qualify actual multi-installation provider fan-out, origin authentication, and recovery on a dedicated qualifying candidate
+  acceptance:
+  - provider topology, scopes, listener coverage, history recovery, rate limits, and origin mapping are evidenced by operator-approved multi-installation testing
+  - no cross-instance delivery or directory convergence claim is published before this evidence exists
+  acceptance_evidence:
+  - contract-test
 - id: P09-P2-01
   priority: P0
   status: TODO

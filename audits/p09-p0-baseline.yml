@@ -4,7 +4,7 @@ document:
   id: p09-p0-baseline
   version: 1.0.0
   generated_at_utc: '2026-10-13T00:00:00Z'
-  status: complete_with_provider_unknowns
+  status: complete_with_deferred_provider_gate
   path: audits/p09-p0-baseline.yml
 phase: P09
 subject:
@@ -37,6 +37,11 @@ unknowns:
   - actual multi-installation Slack listener fan-out and event recovery are not proven by shared Socket Mode credentials
   - origin-to-publisher mapping and destination receipt behavior require a qualified provider arrangement
   - deployed installation count, retention, scopes, rate limits, and provider history availability require operator evidence
+deferred_qualification:
+  status: required_before_cross_instance_claims_or_publication
+  candidate: dedicated_multi_installation_qualifying_candidate
+  allowed_before_gate: [local_contracts, fake_provider_tests, fake_owner_tests, compatibility, replay, crash_recovery, deterministic_negative_controls, resource_baseline]
+  prohibited_before_gate: [claiming_provider_fanout, claiming_destination_receipt, publishing_remote_directory_convergence, live_cross_instance_rollout]
 budgets:
   status: baseline_to_measure_before_behavioral_implementation
   dimensions: [processes, memory, storage_growth, provider_requests, reconnect_cost, registration_events, directory_bytes, idle_token_use]

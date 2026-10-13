@@ -12,6 +12,7 @@ phase:
 workitems:
   - {id: P09-P0-01, status: DONE, summary: "characterize custody, provider assumptions, wake ownership, BCF authority, and lightweight budgets"}
   - {id: P09-P0-02, status: DONE, summary: "publish invariant, owner, producer, consumer, evidence, and prohibited-edge mapping"}
+  - {id: P09-P0-03, status: BLOCKED, summary: "qualify multi-installation provider fan-out, origin authentication, and recovery on a dedicated candidate"}
   - {id: P09-P1-01, status: TODO, summary: "define federation, bridge, directory, and owner-mediated wake laws"}
   - {id: P09-P2-01, status: TODO, summary: "bind primitives to canonical AgentBus and BCF owners"}
   - {id: P09-P3-01, status: TODO, summary: "implement state transitions and edge controls"}
@@ -26,7 +27,7 @@ summary:
   - Issue #48 is the P09 construction authority.
   - P09-P0 baseline and invariant ownership mapping are recorded.
   - Current BCF candidate custody is non-authoritative and publication remains blocked pending BCF handoff.
-  - Provider fan-out and origin authentication remain feasibility gates before cross-instance implementation claims.
+  - Provider fan-out and origin authentication are deferred to a dedicated multi-installation-qualifying candidate; local deterministic construction may proceed.
 execution_evidence:
   planned_commands:
   - make governance-validate
@@ -40,7 +41,7 @@ execution_evidence:
   notes:
   - P09-P0 records released BCF 2.1.8 and candidate 2.3.2 custody identities without upgrading generated runtime files.
   - The BCF developer was notified over AgentBus at phase opening and asked to coordinate the next authorized candidate or release.
-  - No product implementation begins until provider fan-out and origin-authentication assumptions are qualified.
+  - Local contracts, fake-provider behavior, compatibility, and deterministic failure controls may proceed; cross-instance claims remain gated.
 closeout_requirements:
   claims:
     workitems_closed:
@@ -69,6 +70,7 @@ closeout_requirements:
   finding_registry: governance/findings.yml
 known_constraints:
   - provider fan-out and origin authentication are not yet qualified for a multi-installation claim
+  - multi-installation qualification is deferred to a dedicated qualifying candidate
   - BCF candidate custody is non-authoritative until the final P09-P8 upgrade and protected proof
   - existing notification-only wake remains the safe fallback until owner admission is proven
 next_work:
