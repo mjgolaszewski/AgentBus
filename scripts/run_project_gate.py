@@ -153,11 +153,27 @@ def verify_declared_environment() -> None:
     print("declared-environment-ok")
 
 
+def _runtime_smoke_image_tag(namespace: str) -> str:
+    namespace = namespace.strip()
+    if not namespace:
+        raise ValueError("runtime-smoke requires BCF_EXECUTION_STATE_NAMESPACE")
+    # The BCF executor owns the namespace.  Keep the Docker tag deterministic
+    # while preventing concurrent baseline/mutant/repository runs from sharing
+    # a mutable name or cleaning up one another's image.
+    namespace_digest = hashlib.sha256(namespace.encode("utf-8")).hexdigest()[:16]
+    return f"agentbus:bcf-runtime-smoke-{namespace_digest}"
+
+
 def runtime_smoke() -> None:
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
+    namespace = os.environ.get("BCF_EXECUTION_STATE_NAMESPACE", "")
+    try:
+        image_tag = _runtime_smoke_image_tag(namespace)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from None
     with tempfile.TemporaryDirectory(prefix="agentbus-runtime-") as directory:
         iid = Path(directory) / "image-id"
-        require_success(run(["docker", "build", "--iidfile", str(iid), "-t", "agentbus:bcf-runtime-smoke", "."]))
+        require_success(run(["docker", "build", "--iidfile", str(iid), "-t", image_tag, "."]))
         image = iid.read_text(encoding="utf-8").strip()
         try:
             require_success(run([
@@ -169,7 +185,7 @@ def runtime_smoke() -> None:
                 ),
             ]))
         finally:
-            run(["docker", "image", "rm", "--force", image], capture=True)
+            run(["docker", "image", "rm", "--force", image_tag, image], capture=True)
     print("runtime-smoke-ok")
 
 
