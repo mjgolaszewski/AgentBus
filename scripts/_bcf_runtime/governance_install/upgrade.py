@@ -11,6 +11,7 @@ import yaml  # type: ignore[import-untyped]
 
 from ..ci_graph_yaml import render_yaml
 from ..ci_graph_defaults import evidence_capture_environment
+from ..ci_graph_provider_permissions import project_provider_permission_edges
 from ..profile_surface_generation import reconcile_makefile
 from ..profile_yaml import render_governance_profile
 from ..runtime_capacity import EXECUTION_STATE_POLICY
@@ -278,6 +279,30 @@ def _upgrade_evidence_capture_environment(target_root: Path) -> list[Path]:
     component["environment"] = expected
     path.write_bytes(render_yaml(payload))
     return [path]
+
+
+def _upgrade_provider_permission_edges(target_root: Path) -> list[Path]:
+    """Project provider reads required by preserved executable components."""
+
+    path = target_root / "governance/ci-graph.yml"
+    if not path.exists():
+        return []
+    payload = _load_yaml_mapping(path)
+    if not project_provider_permission_edges(payload):
+        return []
+    path.write_bytes(render_yaml(payload))
+    return [path]
+
+
+def upgrade_graph_contracts(target_root: Path) -> list[Path]:
+    """Project every closed legacy graph migration in canonical order."""
+
+    changed = [
+        *_upgrade_direct_comparison_input(target_root),
+        *_upgrade_evidence_capture_environment(target_root),
+        *_upgrade_provider_permission_edges(target_root),
+    ]
+    return list(dict.fromkeys(changed))
 
 
 
@@ -597,8 +622,7 @@ def _upgrade_state_files(
     )
     _upgrade_makefile_fragment(target_root)
     created.extend(_upgrade_runtime_contract(target_root))
-    created.extend(_upgrade_direct_comparison_input(target_root))
-    created.extend(_upgrade_evidence_capture_environment(target_root))
+    created.extend(upgrade_graph_contracts(target_root))
     return created
 
 

@@ -143,6 +143,7 @@ step_components:
     environment: {GITHUB_TOKEN: '${{ github.token }}'}
     produces: []
     consumes: []
+    required_permissions: {actions: read}
   upload-receipts:
     kind: action
     name: Upload this attempt's exact evidence shard
@@ -238,7 +239,7 @@ workflows:
     needs: [preflight]
     condition: success
     timeout_minutes: 45
-    permissions: {contents: read}
+    permissions: {contents: read, actions: read}
     checkout: false
     components: []
     executor:
