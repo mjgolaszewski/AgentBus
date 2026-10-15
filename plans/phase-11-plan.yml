@@ -42,6 +42,17 @@ scope_lock:
 - order: 1
   statement: keep the phase narrowly scoped to declared deliverables and update canonical
     governed artifacts in the same change
+- order: 2
+  statement: do not activate P11 until P10 closes through BCF canonical lifecycle
+- order: 3
+  statement: provider fan-out and origin authentication require a dedicated qualifying
+    candidate before any cross-instance claim
+- order: 4
+  statement: remote transport and discovery never authorize local execution, sessions,
+    privileges, wake, or acknowledgement
+- order: 5
+  statement: reuse the existing AgentBus service, SQLite store, provider adapter, and
+    BCF assurance graph; no second broker, registry, writer, or public endpoint
 verification_plan:
 - make governance-validate
 - make architecture-test
