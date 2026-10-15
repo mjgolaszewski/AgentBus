@@ -7,6 +7,12 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ### P11 federation foundation
 
+- Complete the bounded two-installation signed-adapter canary against the
+  protected `35f0950` tree: both installations used operator-pinned Ed25519
+  origins, durable recovery baselines, destination receipts, replay
+  deduplication, conflicting-payload rejection, and signature-failure
+  controls. This evidence is limited to the canary and does not claim late
+  join, directory convergence, or general multi-installation qualification.
 - Add an opt-in Ed25519-signed Slack bridge with operator-owned publisher
   bindings, local atomic message/obligation custody, bounded durable retries,
   authenticated destination receipts and deduplication, and bounded history
