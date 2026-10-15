@@ -1,0 +1,63 @@
+document:
+  kind: execution_phase_plan
+  name: Phase 10 Plan
+  id: agentbus-phase-10-plan
+  version: 1.0.0
+  generated_at_utc: '2026-10-15T00:00:00Z'
+  status: planned
+  path: plans/phase-10-plan.yml
+phase:
+  id: P10
+  build_block: security_wake_recovery
+  planner: codex
+  date: '2026-10-15'
+  scope_source:
+  - AGENTS.yml
+  - plans/product-spec.yml
+  - plans/build-plan.yml
+  - plans/phase-ledger.yml
+  - MEMORY.yml
+delivery_contract:
+  tightly_scoped_deliverables:
+  - decompose Issue 20 into owned security claims and disclosed residuals
+  - enforce canonical identity and session authorization
+  - finish owner-truth wake eligibility and recovery
+  - bound resources and preserve supported credential and audit guarantees
+  - retire acknowledged messages from disposable presentation projection
+  - prove exact final candidate through canonical BCF graph
+  parallelizable_workstreams:
+  - id: P10-WS1
+    name: security_identity
+  - id: P10-WS2
+    name: wake_recovery
+  - id: P10-WS3
+    name: projection_cleanup
+  - id: P10-WS4
+    name: evidence_custody
+  hard_dependencies:
+  - P09 canonical closeout through BCF lifecycle
+  - BCF 2.3.2 exact runtime remains entry authority
+  docker_first_local_runtime: repo_native_validation_and_governance_commands
+  completeness_standard: full_completeness_for_declared_scope
+scope_lock:
+- order: 1
+  statement: keep the phase narrowly scoped to declared deliverables and update canonical
+    governed artifacts in the same change
+- order: 2
+  statement: do not activate P10 until canonical P09 closeout advances the phase ledger
+- order: 3
+  statement: preserve protocol 2, durable cursors, Slack threads, sessions, aliases,
+    controls, wake fallback, and historical records
+- order: 4
+  statement: no second bus, registry, database, writer, provider, or assurance graph
+- order: 5
+  statement: unsupported owner or provider capabilities remain notification-only or
+    explicitly blocked; no timing heuristic substitutes for authority
+verification_plan:
+- make governance-validate
+- make architecture-test
+- make lint
+- make typecheck
+- make test
+- make contract-test
+- make release-check

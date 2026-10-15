@@ -134,6 +134,10 @@ and checks controls; required policy, errors, every exactly addressed message, a
 claimed work still reach the agent. `quiet status` reports the persisted local
 preference, and `quiet off` restores normal presentation. Suppressed messages
 remain in the service inbox and can be read explicitly.
+After a chat handles work, `agentbus ack --through CURSOR` advances its durable
+cursor and removes only acknowledged message entries from the disposable local
+presentation spool. Controls, policy events, durable history, and independent wake
+state remain available for recovery and audit.
 
 Before upgrading an existing deployment, back up the SQLite inbox and local
 chat profiles together. Install the authenticated release archive, update the

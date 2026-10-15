@@ -1,0 +1,52 @@
+document:
+  kind: execution_phase_plan
+  name: Phase 11 Plan
+  id: agentbus-phase-11-plan
+  version: 1.0.0
+  generated_at_utc: '2026-10-15T00:00:00Z'
+  status: planned
+  path: plans/phase-11-plan.yml
+phase:
+  id: P11
+  build_block: qualified_federation_runtime
+  planner: codex
+  date: '2026-10-15'
+  scope_source:
+  - AGENTS.yml
+  - plans/product-spec.yml
+  - plans/build-plan.yml
+  - plans/phase-ledger.yml
+  - MEMORY.yml
+delivery_contract:
+  tightly_scoped_deliverables:
+  - qualify provider fan-out and origin authentication
+  - implement durable federation bridge and remote directory primitives
+  - close federation replay deduplication resync and authority exclusions
+  - prove deterministic and provider evidence
+  - publish only after final BCF custody
+  parallelizable_workstreams:
+  - id: P11-WS1
+    name: provider_qualification
+  - id: P11-WS2
+    name: bridge_and_directory
+  - id: P11-WS3
+    name: federation_state_machines
+  - id: P11-WS4
+    name: evidence_and_custody
+  hard_dependencies:
+  - P10 closed on exact main
+  - provider fan-out and origin authentication qualified on a dedicated candidate
+  docker_first_local_runtime: repo_native_validation_and_governance_commands
+  completeness_standard: full_completeness_for_declared_scope
+scope_lock:
+- order: 1
+  statement: keep the phase narrowly scoped to declared deliverables and update canonical
+    governed artifacts in the same change
+verification_plan:
+- make governance-validate
+- make architecture-test
+- make lint
+- make typecheck
+- make test
+- make contract-test
+- make release-check

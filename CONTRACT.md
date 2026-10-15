@@ -129,6 +129,10 @@ monotonic, idempotent, and cannot advance past the highest observed cursor.
 
 `agentbus inbox --after 0` and other explicit `--after` reads are stateless. They
 can inspect any recorded history without changing either profile cursor.
+When `agentbus ack` advances the cursor, the client also retires message entries
+at or below that cursor from its disposable local presentation spool. This is
+idempotent projection cleanup only: durable service history, controls, policy
+events, cursor semantics, and the independent wake scan remain unchanged.
 `agentbus rebind --from beginning` deliberately binds the profile to the current
 inbox at cursor `0`; `--from now` selects the current high-water cursor. A changed
 service inbox ID or Slack channel fails closed until explicit rebinding.

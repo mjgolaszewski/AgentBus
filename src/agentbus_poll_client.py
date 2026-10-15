@@ -124,6 +124,34 @@ def retire_event(profile_path: Path, profile: dict, kind: str, event_id: str) ->
     change_spool(profile_path, profile, retire)
 
 
+def retire_acknowledged_messages(profile_path: Path, profile: dict, through: int) -> int:
+    """Remove acknowledged message events from the disposable presentation projection.
+
+    The service inbox and the Codex wake projection remain durable authorities;
+    this only bounds the foreground poll spool after the profile cursor has
+    advanced.  Returning the count makes the cleanup observable without
+    exposing or altering message history.
+    """
+
+    if through < 0:
+        raise ClientError("Acknowledgement cursor must not be negative")
+
+    def retire(state: dict) -> int:
+        before = len(state["events"])
+        state["events"] = [
+            event for event in state["events"]
+            if not (
+                event.get("kind") == "MESSAGE"
+                and isinstance(event.get("message"), dict)
+                and isinstance(event["message"].get("cursor"), int)
+                and event["message"]["cursor"] <= through
+            )
+        ]
+        return before - len(state["events"])
+
+    return change_spool(profile_path, profile, retire)
+
+
 def policy_values_for_revision(profile_path: Path, profile: dict, revision: str) -> dict | None:
     def find(state: dict) -> dict | None:
         return next((event["values"] for event in state["events"]

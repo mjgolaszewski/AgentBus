@@ -601,6 +601,10 @@ highest message observed. After handling a page, advance explicitly:
 agentbus ack --through 42
 ```
 
+Acknowledgement also retires message entries through that cursor from the
+disposable local presentation spool. Durable service history, controls, policy
+events, cursor semantics, and the independent wake scan remain available.
+
 `agentbus inbox --after 0` is a stateless full-history read and never changes the
 saved cursor. Each page accepts `--limit` from 1 through 200; use
 `--after CURSOR` to read later pages without acknowledging them. A verified

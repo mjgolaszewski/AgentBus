@@ -81,6 +81,7 @@ invariants:
   - {id: INV-038, rule: "A completed poll cycle with a successful authenticated check-in or inbox read retires an obsolete persisted transport alarm even after worker restart and while the local presentation queue is full; a cycle with no service success or a failed service request never clears the alarm merely because process-local failure memory was reset. Presentation backpressure does not acknowledge durable messages or advance the inbox cursor."}
   - {id: INV-039, rule: "The client validates the service's one-through-200 inbox page bound before a request and explains cursor pagination for larger histories; an invalid page size never changes durable inbox or acknowledgement state."}
   - {id: INV-040, rule: "An updated client creating a local chat requires an explicit configured prefix before its repository and chat name: prefix:repo:name; it fails closed when that prefix is absent or invalid. The service derives repository identity from the route's repository segment, never from the prefix, and retains legacy repo:name routes during migration. A proved live session may move its route to a new prefix with its chat UUID, policy, credential, durable history, pending local presentation, and old address alias intact; service-actionable direct messages to that alias retain wake eligibility. Prefix text is a namespace, not proof of repository ownership or operator authority."}
+  - {id: INV-041, rule: "Advancing a client's acknowledged cursor retires only message entries at or below that cursor from the disposable local presentation projection. Durable service history, cursor semantics, controls, policy events, and the independent Codex wake projection remain available and unchanged; cleanup is idempotent and may never acknowledge or delete durable work."}
 
 primitives:
   stable_chat_identity:
@@ -309,6 +310,7 @@ proof_obligations:
   - {id: PO-47, proves: [INV-038], scenario: stale_transport_alarm_retires_only_after_healthy_post_restart_cycle_and_survives_a_current_failure}
   - {id: PO-48, proves: [INV-039], scenario: out_of_range_inbox_page_is_rejected_locally_with_pagination_guidance_and_no_service_call}
   - {id: PO-49, proves: [INV-040], scenario: configured_prefix_names_new_routes_missing_or_invalid_config_rejects_before_enrollment_and_session_proved_legacy_route_migration_preserves_alias_history_credential_cursor_pending_presentation_and_assured_wake}
+  - {id: PO-50, proves: [INV-041], scenario: acknowledged_cursor_retirement_removes_only_disposable_message_projection_entries_and_preserves_controls_durable_history_wake_candidates_and_idempotent_retries}
 
 implementation_order:
   - {id: IU-001, unit: freeze_contract_and_migration_assumptions, depends_on: []}
@@ -330,6 +332,7 @@ implementation_order:
   - {id: IU-017, unit: proved_Slack_thread_reply_routing, depends_on: [IU-002, IU-014]}
   - {id: IU-018, unit: explicit_enrolled_destination_and_parent_derived_reply, depends_on: [IU-014, IU-017]}
   - {id: IU-019, unit: read_only_session_proved_self_presence, depends_on: [IU-014]}
+  - {id: IU-020, unit: acknowledged_cursor_presentation_retirement, depends_on: [IU-010, IU-013]}
 
 acceptance_gates:
   G-IDENTITY: [INV-008, PO-05, PO-15]
@@ -350,4 +353,5 @@ acceptance_gates:
   G-DESTINATION: [INV-032, PO-41]
   G-PARENT-REPLY: [INV-033, PO-42]
   G-SELF-PRESENCE: [INV-034, PO-43]
+  G-PROJECTION: [INV-041, PO-50]
   G-SLACK-OPERATOR: [INV-035, INV-036, INV-037, PO-44, PO-45, PO-46]
