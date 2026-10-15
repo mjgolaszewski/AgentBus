@@ -102,6 +102,8 @@ def test_forged_publisher_signature_destination_and_conflicting_replay_fail_clos
     event = providers['home'].events[0]
     with pytest.raises(ValueError):
         bridges['remote'].receive(dict(event, publisher_id='foreign'))
+    with pytest.raises(ValueError):
+        decode_frame(event['text'], 'foreign', 'remote', bindings)
     frame = json.loads(event['text'])
     frame['payload'] = payload('changed')
     with pytest.raises(ValueError):
