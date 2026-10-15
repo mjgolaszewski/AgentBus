@@ -27,7 +27,10 @@ from .governance_truth_support import (
 )
 from .evidence_workitem_lifecycle import workitem_observation
 from .evidence_execution import EvidenceError
+from .evidence_plan_scope import truth_scope_projection
 from .evidence_reuse_attestations import compose_local_reuse
+from .affected_proof_closure import verify_session_affected_proof_set
+from .prior_evidence_receipts import load_provisional_transport, provisional_receipts
 from .truth_receipts import ReceiptError, load_receipts
 from .evidence_planning import load_claim_model
 from .truth_reporting import (
@@ -285,6 +288,26 @@ def derive_truth(
         if contract_version == "3.0"
         else {}
     )
+    if session_plan.get("schema_version") == "3.0":
+        try:
+            prior_receipts = (
+                provisional_receipts(load_provisional_transport(
+                    repo_root, prior_transport_dir, current_subject=current,
+                ))
+                if prior_transport_dir is not None
+                else []
+            )
+            verify_session_affected_proof_set(
+                repo_root,
+                claim_model,
+                session_plan,
+                current_subject=current,
+                prior_receipts=prior_receipts,
+            )
+        except (EvidenceError, OSError, ValueError) as exc:
+            raise TruthfulnessError(
+                "evidence session affected proof set is not canonical"
+            ) from exc
     reuse_session_binding = (
         exact_session_binding(evidence_dir, current, session_plan)
         if session_plan.get("reused_evidence") else None
@@ -329,6 +352,10 @@ def derive_truth(
         )
     except EvaluationScopeError as exc:
         raise TruthfulnessError(str(exc)) from exc
+    scoped_gate_ids, session_scope_issues = truth_scope_projection(
+        repo_root, session_plan, evaluation_mode=evaluation_mode,
+        evaluation_target=evaluation_target, enabled=contract_version == "3.0",
+    )
     if authored_state not in AUTHORED_STATES:
         raise TruthfulnessError(
             f"phase authored status {authored_state!r} is invalid; verified and closed are computed"
@@ -526,7 +553,11 @@ def derive_truth(
         )
     )
     workflow_issues = _workflow_gate_issues(
-        repo_root, policy, required_gate_ids | release_gate_ids
+        repo_root,
+        policy,
+        scoped_gate_ids
+        if scoped_gate_ids is not None
+        else required_gate_ids | release_gate_ids,
     )
     attestation = verify_attestation(repo_root, evidence_dir, policy, current)
     signature_required = selected_profile == "regulated"
@@ -542,12 +573,10 @@ def derive_truth(
         evidence_dir, exclude_names=attestation_names | {"truth-report.json"}
     )
     digest_issue = bool(trusted_digest and trusted_digest != actual_bundle_digest)
-    truth_issues = (
-        list(workflow_issues)
-        + list(findings["issues"])
-        + list(attestation["issues"])
-        + hotfix_issues
-    )
+    truth_issues = list(workflow_issues) + list(attestation["issues"]) + session_scope_issues
+    if scope.intent is not EvaluationIntent.WORKITEM_CERTIFICATION:
+        truth_issues.extend(findings["issues"])
+        truth_issues.extend(hotfix_issues)
     if scope.intent is EvaluationIntent.PR_PROGRESS:
         truth_issues = [
             issue
@@ -593,10 +622,11 @@ def derive_truth(
                 }
             if ci_certification.get("status") != "pass":
                 truth_issues.append("ci_certification_not_verified")
-    truth_issues.extend(
-        f"required_claim_{claim_id}_not_declared"
-        for claim_id in missing_claim_declarations
-    )
+    if scope.intent is not EvaluationIntent.WORKITEM_CERTIFICATION:
+        truth_issues.extend(
+            f"required_claim_{claim_id}_not_declared"
+            for claim_id in missing_claim_declarations
+        )
     if not lifecycle_consistent and scope.intent is EvaluationIntent.PHASE_CLOSURE:
         truth_issues.append("ledger_log_lifecycle_mismatch")
     if ledger_state in {"blocked", "paused", "abandoned"} and scope.intent is EvaluationIntent.PHASE_CLOSURE:
@@ -615,7 +645,11 @@ def derive_truth(
             truth_issues.append(
                 f"{candidate.get('gate_id')}:unsupported_schema_version"
             )
-    truth_issues.extend(f"release_gate_{gate_id}_missing_or_invalid" for gate_id in missing_release_gates)
+    if scope.intent is not EvaluationIntent.WORKITEM_CERTIFICATION:
+        truth_issues.extend(
+            f"release_gate_{gate_id}_missing_or_invalid"
+            for gate_id in missing_release_gates
+        )
     if digest_issue:
         truth_issues.append("trusted_bundle_digest_mismatch")
     if signature_required and not provenance_ok:

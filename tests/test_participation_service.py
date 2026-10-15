@@ -47,12 +47,23 @@ def test_backoff_caps_without_stopping_and_controls_keep_their_own_bound() -> No
     for _ in range(10):
         previous = next_inbox_interval(policy, previous, semantic_delta=False)
         intervals.append(previous)
-    assert intervals == [60, 120, 240, 480, 960, 1920, 1920, 1920, 1920, 1920]
+    assert intervals == [60, 120, 240, 480, 720, 960, 1440, 1920, 1920, 1920]
     assert next_control_check_interval(policy, previous) == 60
     assert next_inbox_interval(policy, previous, semantic_delta=True) == 60
     assert next_inbox_interval(policy, previous, semantic_delta=False) == 1920
     with pytest.raises(ValueError, match="nonnegative"):
         next_control_check_interval(policy, -1)
+
+
+def test_idle_backoff_uses_declared_token_saving_cadence() -> None:
+    policy = resolve_policy(("global-1", BASE_POLICY))
+    previous = None
+    observed = []
+    for _ in range(8):
+        previous = next_inbox_interval(policy, previous, semantic_delta=False)
+        observed.append(previous)
+    assert observed == [60, 120, 240, 480, 720, 960, 1440, 1920]
+    assert next_inbox_interval(policy, 1920, semantic_delta=False) == 1920
 
 
 @pytest.mark.parametrize("field", [

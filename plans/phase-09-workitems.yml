@@ -1,0 +1,129 @@
+document:
+  kind: execution_phase_workitem_ledger
+  name: Phase 09 Workitems
+  id: project-phase-09-workitems
+  version: 1.0.0
+  generated_at_utc: '2026-10-13T00:00:00Z'
+  status: active
+  path: plans/phase-09-workitems.yml
+  phase_id: P09
+workitems:
+- id: P09-P0-01
+  priority: P0
+  status: DONE
+  summary: characterize provider topology, local custody, wake ownership, and BCF authority; record lightweight budgets
+  acceptance:
+  - current service, clients, stores, sessions, Slack paths, wake paths, writer boundaries, and operator controls are inventoried
+  - provider fan-out, origin authentication, listener recovery, and retention assumptions are explicitly recorded as proved, unknown, or blocked
+  - current released BCF lock and non-authoritative candidate identity are recorded
+  acceptance_evidence:
+  - contract-test
+- id: P09-P0-02
+  priority: P0
+  status: DONE
+  summary: define federation, bridge-obligation, directory, owner-capability, wake-intent, and execution-correlation contracts through the invariant-to-owner-to-evidence mapping
+  acceptance:
+  - every P09 invariant names one canonical owner, primitive, contract, producer, consumer, and evidence path
+  - credential, privilege, execution, and acknowledgement promotion edges are explicitly excluded
+  acceptance_evidence:
+  - contract-test
+- id: P09-P1-01
+  priority: P0
+  status: DONE
+  summary: preserve protocol 2, historical cursors, Slack threads, claims, sessions, wake cursors, and operator controls while implementing owner-mediated idle-only wake admission without active-turn steering or implicit acknowledgement
+  acceptance:
+  - local acceptance, provider submission, destination acceptance, owner admission, execution, and semantic acknowledgement remain distinct
+  - replay, idempotency, unknown owner, active-turn steering, and bounded-token laws are executable
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P09-P1-02
+  priority: P1
+  status: DONE
+  summary: implement deterministic token-efficient idle polling backoff while preserving independent control checks
+  acceptance:
+  - empty cycles follow 1, 2, 4, 8, 12, 16, 24, then 32 times the initial interval, capped by the effective maximum
+  - newly relevant semantic traffic resets the cadence
+  - control checks never exceed their separate effective maximum
+  - legacy policy fields and existing worker profiles remain compatible
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P09-P0-03
+  priority: P1
+  status: DONE
+  summary: enforce the typed deferral boundary for multi-installation provider fan-out, origin authentication, and recovery
+  acceptance:
+  - P11-P0-01 is the sole owner of future provider qualification
+  - P09 publishes no cross-instance delivery or directory-convergence claim
+  - remote transport and directory metadata cannot create sessions, grant authority, wake, or acknowledge local work
+  acceptance_evidence:
+  - contract-test
+- id: P09-P2-01
+  priority: P0
+  status: DONE
+  summary: bind P09 primitives to existing AgentBus and BCF canonical owners
+  acceptance:
+  - no second bus, registry, database, writer, participation worker, or parallel assurance model is introduced
+  acceptance_evidence:
+  - architecture-test
+  - contract-test
+- id: P09-P3-01
+  priority: P0
+  status: DONE
+  summary: implement typed session, owner, wake, bridge, and directory state transitions
+  acceptance:
+  - every transition has authority, guard, idempotency, retry, invalidation, and negative controls
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P09-P4-01
+  priority: P0
+  status: DONE
+  summary: implement owner-mediated idle-only wake admission without active-turn steering or implicit acknowledgement; implement outbound-only provider bridging and service-driven remote-directory synchronization without a new broker or registry, plus durable bridge obligations and bounded directory sync
+  acceptance:
+  - local commit precedes provider side effect and crash recovery reconciles uncertainty
+  - owner admission cannot steer an active turn or acknowledge queued work
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P09-P5-01
+  priority: P0
+  status: DONE
+  summary: connect canonical producers and consumers for federation and wake
+  acceptance:
+  - local message acceptance and bridge obligation persistence use the existing SQLite owner
+  - remote transport cannot authorize local execution or participation changes
+  - provider submission remains an explicit deferred edge owned by P11-P0-01
+  acceptance_evidence:
+  - architecture-test
+  - contract-test
+- id: P09-P6-01
+  priority: P0
+  status: DONE
+  summary: prove deterministic failure, replay, crash recovery, compatibility, and lightweight resource budgets
+  acceptance:
+  - fake-provider and fake-owner tests cover replay, outage, late join, resync, duplicate prompts, and acknowledgement boundaries
+  - existing AgentBus suites remain green
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P09-P7-01
+  priority: P1
+  status: DONE
+  summary: transfer live Codex wake canary qualification to the P10 owner-truth workitem
+  acceptance:
+  - P10-P2-01 owns any future isolated live canary
+  - P09 claims no live wake capability beyond deterministic owner-admission evidence
+  acceptance_evidence:
+  - contract-test
+- id: P09-P8-01
+  priority: P0
+  status: TODO
+  summary: upgrade to the newest authorized BCF candidate or release at the final custody boundary and publish only after exact-tree BCF, protected-main, archive, and isolated-installation proof
+  acceptance:
+  - newest authorized BCF candidate or release is installed without hand-editing generated governance
+  - reconcile, prospective train, protected PR/main truth, archive verification, and isolated install pass on final bytes
+  acceptance_evidence:
+  - test
+  - contract-test

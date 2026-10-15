@@ -16,6 +16,10 @@ from typing import Any, Iterable, Mapping
 import yaml  # type: ignore[import-untyped]
 
 from .evidence_execution import EvidenceError
+from .evidence_session_schema import (
+    EvidenceSessionSchemaError,
+    active_planned_session_version,
+)
 
 
 SESSION_FILENAME = "evidence-session.json"
@@ -195,8 +199,16 @@ def _manifest_payload(
     verification_plan: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
     profile, contract_version = _profile(repo_root)
+    try:
+        session_version = (
+            active_planned_session_version(repo_root)
+            if contract_version == "3.0"
+            else "1.0"
+        )
+    except EvidenceSessionSchemaError as exc:
+        raise EvidenceError(str(exc)) from exc
     payload = {
-        "schema_version": "2.0" if contract_version == "3.0" else "1.0",
+        "schema_version": session_version,
         "session_id": session_id,
         "subject": {
             "commit_sha": _git(repo_root, "rev-parse", "HEAD"),
@@ -232,11 +244,27 @@ def _manifest_payload(
             "invalidated_evidence",
             "execution_dag",
             "decision_explanations",
+            *({"affected_proof_set"} if session_version == "3.0" else set()),
         }
         if not expected.issubset(verification_plan):
             raise EvidenceError("verification plan is incomplete")
         if verification_plan["current_subject"] != payload["subject"]:
             raise EvidenceError("verification plan subject differs from session subject")
+        from .evidence_plan_scope import verification_scope_issues
+
+        scope = verification_plan.get("evaluation_scope")
+        if not isinstance(scope, dict):
+            raise EvidenceError("verification plan lacks canonical evaluation scope")
+        issues = verification_scope_issues(
+            repo_root,
+            verification_plan,
+            evaluation_mode=str(scope.get("mode", "")),
+            evaluation_target=(
+                str(scope["target"]) if isinstance(scope.get("target"), str) else None
+            ),
+        )
+        if issues:
+            raise EvidenceError("verification plan scope is invalid: " + "; ".join(issues))
         payload.update(
             {key: verification_plan[key] for key in expected if key != "current_subject"}
         )
@@ -371,8 +399,8 @@ def load_session(manifest_path: Path) -> EvidenceSession:
         payload = json.loads(encoded)
     except (json.JSONDecodeError, UnicodeDecodeError) as exc:
         raise EvidenceError(f"evidence session manifest is invalid: {exc}") from exc
-    if not isinstance(payload, dict) or payload.get("schema_version") not in {"1.0", "2.0"}:
-        raise EvidenceError("evidence session manifest schema_version must be 1.0 or 2.0")
+    if not isinstance(payload, dict) or payload.get("schema_version") not in {"1.0", "2.0", "3.0"}:
+        raise EvidenceError("evidence session manifest schema_version must be 1.0, 2.0, or 3.0")
     session_id = payload.get("session_id")
     if (
         not isinstance(session_id, str)

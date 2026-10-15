@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from ..ci_graph_defaults import build_reference_ci_graph
+from ..ci_graph_execution import CANDIDATE_MATERIALIZATION_ROOT
 from ..ci_graph_render import apply_ci_graph
 from ..ci_graph_yaml import load_yaml_path, render_yaml
 from ..ci_controller_policy import (
@@ -19,6 +20,138 @@ from ..ci_controller_policy import (
 
 def _command(argv: list[str], *, environment: dict[str, str] | None = None) -> dict[str, Any]:
     return {"argv": argv, "cwd": ".", "environment": environment or {}}
+
+
+def exact_main_controller_artifact_condition(
+    evaluation_mode: str, *, release_enabled: bool
+) -> str:
+    """Derive when exact-main must materialize downloadable controller bytes."""
+
+    if release_enabled and evaluation_mode not in {"pr", "workitem", "closure"}:
+        raise RuntimeError("exact-main evaluation mode is unsupported")
+    condition = (
+        "steps.exact-main-applicability.outputs.controller_state == 'pending_rotation'"
+    )
+    if release_enabled and evaluation_mode == "closure":
+        condition += (
+            " || steps.exact-main-applicability.outputs.controller_state == 'current'"
+        )
+    return condition
+
+
+def release_authority_enabled(graph: dict[str, Any]) -> bool:
+    """Recognize release authority in either raw or extension-composed graph form."""
+
+    workflows = {str(value.get("id")) for value in graph.get("workflows", [])}
+    extensions = {str(value.get("id")) for value in graph.get("extensions", [])}
+    return {"release-authority", "release-publisher"} <= workflows or (
+        "bcf-release" in extensions
+    )
+
+
+def _project_exact_main_builder_topology(
+    graph: dict[str, Any], *, recovery_reentry: bool
+) -> None:
+    exact_main = next(
+        item for item in graph["workflows"] if item["id"] == "exact-main"
+    )
+    builder = next(
+        item for item in exact_main["jobs"] if item["id"] == "trusted-controller-build"
+    )
+    builder["executor"]["components"] = [
+        "checkout-candidate",
+        "setup-python",
+        "install-governance",
+        *(["setup-controller-custody-directory"] if recovery_reentry else []),
+        (
+            "resolve-recovery-controller-candidate"
+            if recovery_reentry
+            else "resolve-effective-controller-candidate"
+        ),
+        "classify-exact-main-controller",
+        *(
+            ["upload-controller-custody"]
+            if recovery_reentry
+            else [
+                "setup-controller-custody-directory",
+                "project-controller-custody",
+                "upload-controller-custody",
+            ]
+        ),
+        "build-trusted-controller",
+        "upload-trusted-controller",
+    ]
+    builder["produces"] = ["controller-custody", "trusted-controller-bundle"]
+
+
+def _ensure_recovery_builder_primitives(graph: dict[str, Any]) -> None:
+    graph["commands"]["resolve-recovery-controller-candidate"] = _command(
+        [
+            "{python}",
+            "-m",
+            "bcf_governance.cli",
+            "ci",
+            "controller-recovery-route",
+            "--repo-root",
+            ".",
+            "--github-output",
+            "--format",
+            "json",
+            "--output",
+            "${{ runner.temp }}/bcf-controller-custody/controller-custody.json",
+        ]
+    )
+    graph["step_components"]["resolve-recovery-controller-candidate"] = {
+        "kind": "command",
+        "name": (
+            "Derive authenticated recovery controller for non-authoritative "
+            "builder routing"
+        ),
+        "id": "candidate-effective-controller",
+        "command": "resolve-recovery-controller-candidate",
+        "environment": {},
+        "produces": ["controller-custody"],
+        "consumes": [],
+    }
+
+
+def reconcile_trusted_controller_runtime_topology(
+    repo_root: Path, *, apply: bool
+) -> tuple[str, ...]:
+    """Derive recovery/current builder routing from the authenticated policy state."""
+
+    root = repo_root.resolve()
+    graph_path = root / "governance/ci-graph.yml"
+    graph = load_yaml_path(graph_path)
+    policy_reference = graph.get("trusted_controller")
+    if (
+        isinstance(policy_reference, dict)
+        and policy_reference.get("kind") == "executable"
+    ):
+        return ()
+    if not isinstance(policy_reference, dict) or policy_reference.get("kind") not in {
+        "governed_controller_policy",
+        "self_governance_policy",
+    }:
+        raise RuntimeError("CI graph lacks managed controller policy ownership")
+    policy_path = str(policy_reference.get("policy_path", ""))
+    if not policy_path:
+        raise RuntimeError("CI graph managed controller policy path is missing")
+    policy = load_yaml_path(root / policy_path)
+    runner = policy.get("runner_security") if isinstance(policy, dict) else None
+    if not isinstance(runner, dict):
+        raise RuntimeError("trusted controller policy lacks runner security")
+    projected = load_yaml_path(graph_path)
+    _ensure_recovery_builder_primitives(projected)
+    _project_exact_main_builder_topology(
+        projected,
+        recovery_reentry="trusted_controller_recovery_reentry" in runner,
+    )
+    rendered = render_yaml(projected)
+    changed = graph_path.read_bytes() != rendered
+    if changed and apply:
+        graph_path.write_bytes(rendered)
+    return ("governance/ci-graph.yml",) if changed else ()
 
 
 def apply_trusted_controller_management(
@@ -45,6 +178,29 @@ def apply_trusted_controller_management(
     extension_path = target_root / ROTATION_EXTENSION
     if not extension_path.is_file() or extension_path.is_symlink():
         raise RuntimeError("canonical controller rotation extension is unavailable")
+    project_trusted_controller_management(
+        graph,
+        trusted_labels,
+        policy_sha256=hashlib.sha256(policy_path.read_bytes()).hexdigest(),
+        extension_sha256=hashlib.sha256(extension_path.read_bytes()).hexdigest(),
+        recovery_installed_commit=(
+            str(runner["trusted_controller_installation"]["installed_commit_sha"])
+            if "trusted_controller_recovery_reentry" in runner
+            else None
+        ),
+    )
+
+
+def project_trusted_controller_management(
+    graph: dict[str, Any],
+    trusted_labels: list[str],
+    *,
+    policy_sha256: str,
+    extension_sha256: str,
+    recovery_installed_commit: str | None = None,
+) -> None:
+    """Purely project validated managed-controller inputs into a CI graph."""
+
     graph["trusted_controller"] = {
         "kind": "governed_controller_policy",
         "policy_path": POLICY_PATH,
@@ -52,13 +208,13 @@ def apply_trusted_controller_management(
     graph["value_sources"]["controller-policy"] = {
         "kind": "yaml",
         "path": POLICY_PATH,
-        "sha256": hashlib.sha256(policy_path.read_bytes()).hexdigest(),
+        "sha256": policy_sha256,
     }
     graph["extensions"].append(
         {
             "id": "bcf-controller-rotation",
             "path": ROTATION_EXTENSION,
-            "sha256": hashlib.sha256(extension_path.read_bytes()).hexdigest(),
+            "sha256": extension_sha256,
         }
     )
     graph["resource_classes"]["trusted-control-instance"] = {
@@ -96,6 +252,7 @@ def apply_trusted_controller_management(
         {
             "exact-main-authority-enabled": "vars.BCF_CI_AUTHORITY_ENABLED == 'true'",
             "exact-main-semantic-admission-enabled": "vars.BCF_CI_AUTHORITY_ENABLED == 'true' && needs.trusted-controller-build.outputs.semantic_evidence_applicable == 'true'",
+            "exact-main-controller-build-required": "steps.exact-main-applicability.outputs.controller_state == 'pending_rotation'",
         }
     )
     graph["commands"].update(
@@ -115,6 +272,13 @@ def apply_trusted_controller_management(
                 ],
                 environment={"GITHUB_TOKEN": "${{ github.token }}"},
             ),
+            "resolve-recovery-controller-candidate": _command(
+                [
+                    "{python}", "-m", "bcf_governance.cli", "ci",
+                    "controller-recovery-route", "--repo-root", ".",
+                    "--github-output", "--format", "json",
+                ]
+            ),
             "classify-exact-main-controller": _command(
                 [
                     "{python}", "-m", "bcf_governance.cli", "ci",
@@ -126,7 +290,7 @@ def apply_trusted_controller_management(
             "project-controller-route": _command(
                 [
                     "{python}", "-c",
-                    'import json,os,pathlib,re;source=pathlib.Path(os.environ["BCF_CONTROLLER_ROUTE_FILE"]);files=[source] if source.is_file() else sorted(source.glob("*.json"));assert len(files)==1;p=json.loads(files[0].read_text());candidates=(p.get("controller_custody",{}).get("controller",{}).get("commit_sha"),p.get("authority",{}).get("controller_commit_sha"),p.get("controller",{}).get("commit_sha"),p.get("artifact",{}).get("commit_sha"),p.get("observations",{}).get("controller_custody",{}).get("controller",{}).get("commit_sha"));values=[v for v in candidates if isinstance(v,str)];assert values and len(set(values))==1 and re.fullmatch(r"[a-f0-9]{40}",values[0]);pathlib.Path(os.environ["GITHUB_OUTPUT"]).open("a").write("controller_commit_sha="+values[0]+"\\n")',
+                    'import json,os,pathlib,re;source=pathlib.Path(os.environ["BCF_CONTROLLER_ROUTE_FILE"]);files=[source] if source.is_file() else sorted(source.glob("*.json"));assert len(files)==1;p=json.loads(files[0].read_text());custody=p.get("controller_custody",p.get("observations",{}).get("controller_custody",p));candidates=(custody.get("controller",{}).get("commit_sha"),p.get("authority",{}).get("controller_commit_sha"),p.get("controller",{}).get("commit_sha"),p.get("artifact",{}).get("commit_sha"));values=[v for v in candidates if isinstance(v,str)];assert values and len(set(values))==1 and re.fullmatch(r"[a-f0-9]{40}",values[0]);out=pathlib.Path(os.environ["GITHUB_OUTPUT"]);out.open("a").write("controller_commit_sha="+values[0]+"\\n")',
                 ],
                 environment={},
             ),
@@ -164,6 +328,20 @@ def apply_trusted_controller_management(
             ),
         }
     )
+    prior_evidence = graph.get("profile_contract_version") == "3.0"
+    if prior_evidence:
+        graph["commands"]["transport-prior-evidence-effective"] = _command(
+            [
+                "${{ runner.tool_cache }}/bcf-governance/${{ needs.trusted-controller-build.outputs.target_commit }}/bin/bcf",
+                "ci-github", "prior-evidence", "transport", "--repository",
+                "${{ github.repository }}", "--main-sha", "${{ github.sha }}",
+                "--output", "${{ runner.temp }}/bcf-prior-evidence",
+            ],
+            environment={
+                "GITHUB_TOKEN": "${{ github.token }}",
+                "BCF_CONTROLLER_EXECUTION_REQUIRED": "true",
+            },
+        )
     graph["commands"].setdefault(
         "install-governance-dependencies",
         _command(["{python}", "-m", "pip", "install", "-r", "requirements-governance.txt"]),
@@ -183,8 +361,9 @@ def apply_trusted_controller_management(
     )
     components.update(
         {
-            "build-trusted-controller": {"kind": "command", "name": "Build the exact-main trusted controller bundle", "command": "build-trusted-controller", "environment": {}, "produces": ["trusted-controller-bundle"], "consumes": []},
+            "build-trusted-controller": {"kind": "command", "name": "Build the exact-main trusted controller bundle", "condition": "exact-main-controller-build-required", "command": "build-trusted-controller", "environment": {}, "produces": ["trusted-controller-bundle"], "consumes": []},
             "resolve-effective-controller-candidate": {"kind": "command", "name": "Observe provider-effective controller for non-authoritative routing", "id": "candidate-effective-controller", "command": "resolve-effective-controller-candidate", "environment": {}, "produces": [], "consumes": []},
+            "resolve-recovery-controller-candidate": {"kind": "command", "name": "Derive authenticated recovery controller for non-authoritative builder routing", "id": "candidate-effective-controller", "command": "resolve-recovery-controller-candidate", "environment": {}, "produces": [], "consumes": []},
             "classify-exact-main-controller": {"kind": "command", "name": "Classify exact-main semantic evidence applicability", "id": "exact-main-applicability", "command": "classify-exact-main-controller", "environment": {}, "produces": [], "consumes": []},
             "setup-controller-custody-directory": {"kind": "directory_setup", "name": "Allocate the exact-main controller custody directory", "paths": ["${{ runner.temp }}/bcf-controller-custody"], "produces": [], "consumes": []},
             "project-controller-custody": {"kind": "command", "name": "Project provider-authenticated controller custody", "command": "project-controller-custody", "environment": {}, "produces": ["controller-custody"], "consumes": []},
@@ -195,7 +374,7 @@ def apply_trusted_controller_management(
             "project-custody-controller-route": {"kind": "command", "name": "Project non-authoritative routing from admission custody", "id": "controller-route", "command": "project-controller-route", "environment": {"BCF_CONTROLLER_ROUTE_FILE": "${{ runner.temp }}/bcf-controller-custody/controller-custody.json"}, "produces": [], "consumes": ["controller-custody"]},
             "project-certification-controller-route": {"kind": "command", "name": "Project non-authoritative routing from finalizer custody", "id": "controller-route", "command": "project-controller-route", "environment": {"BCF_CONTROLLER_ROUTE_FILE": "${{ runner.temp }}/bcf-exact-main-certification/controller-custody.json"}, "produces": [], "consumes": ["exact-main-certification"]},
             "project-finalizer-controller-route": {"kind": "command", "name": "Project non-authoritative routing from finalizer-preserved admission custody", "id": "controller-route", "command": "project-controller-route", "environment": {"BCF_CONTROLLER_ROUTE_FILE": "${{ runner.temp }}/bcf-controller-custody/controller-custody.json"}, "produces": [], "consumes": ["finalizer-controller-custody"]},
-            "upload-trusted-controller": {"kind": "action", "name": "Upload the exact-main trusted controller bundle", "action": "upload-artifact", "with": {"name": "bcf-trusted-control-${{ github.sha }}-${{ github.run_attempt }}", "path": ".artifacts/trusted-control", "if-no-files-found": "error", "retention-days": 30}, "environment": {}, "produces": ["trusted-controller-bundle"], "consumes": []},
+            "upload-trusted-controller": {"kind": "action", "name": "Upload the exact-main trusted controller bundle", "condition": "exact-main-controller-build-required", "action": "upload-artifact", "with": {"name": "bcf-trusted-control-${{ github.sha }}-${{ github.run_attempt }}", "path": ".artifacts/trusted-control", "if-no-files-found": "error", "retention-days": 30}, "environment": {}, "produces": ["trusted-controller-bundle"], "consumes": []},
             "exact-main-finalize-effective": {"kind": "command", "name": "Reconstruct exact-main evidence with the effective controller", "command": "exact-main-finalize-effective", "environment": {}, "produces": ["exact-main-certification"], "consumes": []},
             "upload-exact-main-certification-effective": {"kind": "action", "name": "Upload exact-main certification bundle", "action": "upload-artifact", "with": {"name": "bcf-exact-main-certification-${{ github.run_id }}-${{ github.run_attempt }}", "path": "${{ runner.temp }}/bcf-exact-main-certification", "if-no-files-found": "error", "retention-days": 30}, "environment": {}, "produces": ["exact-main-certification"], "consumes": []},
             "download-exact-main-certification-effective": {"kind": "action", "name": "Download exact finalizer certification bundle", "action": "download-artifact", "with": {"name": "bcf-exact-main-certification-${{ github.event.workflow_run.id }}-${{ github.event.workflow_run.run_attempt }}", "github-token": "${{ github.token }}", "repository": "${{ github.repository }}", "run-id": "${{ github.event.workflow_run.id }}", "path": "${{ runner.temp }}/bcf-exact-main-certification"}, "environment": {}, "produces": [], "consumes": ["exact-main-certification"]},
@@ -208,6 +387,12 @@ def apply_trusted_controller_management(
     scope = admit["executor"]
     mode = str(scope.get("evaluation_mode", "closure"))
     target = str(scope.get("evaluation_target", ""))
+    graph["conditions"]["exact-main-controller-build-required"] = (
+        exact_main_controller_artifact_condition(
+            mode,
+            release_enabled=release_authority_enabled(graph),
+        )
+    )
     graph["commands"]["exact-main-admit-effective"] = _command(
         [
             "${{ runner.tool_cache }}/bcf-governance/${{ needs.trusted-controller-build.outputs.target_commit }}/bin/bcf",
@@ -220,14 +405,49 @@ def apply_trusted_controller_management(
         environment={"GITHUB_TOKEN": "${{ github.token }}"},
     )
     components["exact-main-admit-effective"] = {"kind": "command", "name": "Authenticate exact-main admission with the effective controller", "command": "exact-main-admit-effective", "environment": {}, "produces": [], "consumes": []}
+    if prior_evidence:
+        components["transport-prior-evidence-effective"] = {
+            "kind": "command",
+            "name": "Authenticate and preserve prior merged-PR evidence",
+            "command": "transport-prior-evidence-effective",
+            "environment": {},
+            "produces": ["prior-evidence-transport"],
+            "consumes": [],
+        }
+        components["upload-prior-evidence-effective"] = {
+            "kind": "action",
+            "name": "Upload exact prior evidence transport",
+            "action": "upload-artifact",
+            "with": {
+                "name": "bcf-prior-evidence-transport-${{ github.run_id }}-${{ github.run_attempt }}",
+                "path": "${{ runner.temp }}/bcf-prior-evidence",
+                "if-no-files-found": "error",
+                "retention-days": 30,
+            },
+            "environment": {},
+            "produces": ["prior-evidence-transport"],
+            "consumes": [],
+        }
     admit.update(
         {
             "needs": ["trusted-controller-build"],
             "condition": "exact-main-semantic-admission-enabled",
             "controller_requirement": "current",
-            "executor": {"kind": "component_sequence", "components": ["setup-python", "exact-main-admit-effective"]},
+            "executor": {
+                "kind": "component_sequence",
+                "components": [
+                    "setup-python", "exact-main-admit-effective",
+                    *(
+                        [
+                            "transport-prior-evidence-effective",
+                            "upload-prior-evidence-effective",
+                        ]
+                        if prior_evidence else []
+                    ),
+                ],
+            },
             "permissions": {"actions": "write", "contents": "read", "statuses": "write"},
-            "produces": [],
+            "produces": ["prior-evidence-transport"] if prior_evidence else [],
             "consumes": [],
         }
     )
@@ -242,12 +462,79 @@ def apply_trusted_controller_management(
             "produces": ["controller-custody", "trusted-controller-bundle"], "consumes": [], "required": True,
         }
     )
+    _ensure_recovery_builder_primitives(graph)
+    _project_exact_main_builder_topology(
+        graph, recovery_reentry=recovery_installed_commit is not None
+    )
     finalizer = next(item for item in graph["workflows"] if item["id"] == "exact-main-finalizer")
     finalizer["events"][0]["workflows"] = ["bcf/exact-main-admission"]
     finalizer["jobs"][0].update({"controller_requirement": "current", "executor": {"kind": "component_sequence", "components": ["setup-python", "download-trigger-controller-custody", "project-custody-controller-route", "exact-main-finalize-effective", "upload-exact-main-certification-effective", "upload-finalizer-controller-custody"]}, "produces": ["exact-main-certification", "finalizer-controller-custody"], "consumes": ["controller-custody"]})
     publisher = next(item for item in graph["workflows"] if item["id"] == "exact-main-publisher")
     publisher["events"][0]["workflows"].append("bcf/controller-rotation")
     publisher["jobs"][0].update({"controller_requirement": "current", "executor": {"kind": "component_sequence", "components": ["setup-python", "download-exact-main-certification-effective", "download-finalizer-controller-custody", "project-finalizer-controller-route", "exact-main-publish-effective"]}, "consumes": ["exact-main-certification", "finalizer-controller-custody"]})
+    pr_finalizers = [item for item in graph["workflows"] if item["id"] == "pr-finalizer"]
+    pr_publishers = [item for item in graph["workflows"] if item["id"] == "pr-status-publisher"]
+    if pr_finalizers or pr_publishers:
+        if len(pr_finalizers) != 1 or len(pr_publishers) != 1:
+            raise RuntimeError("managed PR evaluator topology is incomplete")
+        graph["commands"]["pr-finalize-managed-controller"] = _command(
+            [
+                "/usr/bin/env", "-C", "{env:BCF_PR_CANDIDATE_ROOT}",
+                "{controller}", "ci-github", "pr", "finalize", "--repository",
+                "${{ github.repository }}", "--output",
+                "${{ runner.temp }}/bcf-pr-finalization",
+            ],
+            environment={
+                "BCF_PR_CANDIDATE_ROOT": CANDIDATE_MATERIALIZATION_ROOT,
+                "GITHUB_TOKEN": "${{ github.token }}",
+            },
+        )
+        graph["commands"]["pr-publish-managed-controller"] = _command(
+            [
+                "{controller}", "ci-github", "pr", "publish", "--repository",
+                "${{ github.repository }}", "--bundle",
+                "${{ runner.temp }}/bcf-pr-finalization", "--target-url",
+                "https://github.com/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}",
+            ],
+            environment={"GITHUB_TOKEN": "${{ github.token }}"},
+        )
+        components["pr-finalize-managed-controller"] = {
+            "kind": "command", "name": "Evaluate the exact candidate with managed-controller authority",
+            "command": "pr-finalize-managed-controller", "environment": {},
+            "produces": ["pr-finalization"], "consumes": [],
+        }
+        components["pr-publish-managed-controller"] = {
+            "kind": "command", "name": "Publish the exact managed PR certification",
+            "command": "pr-publish-managed-controller", "environment": {},
+            "produces": [], "consumes": [],
+        }
+        pr_finalizers[0]["jobs"][0].update(
+            {
+                "controller_requirement": "current",
+                "executor": {
+                    "kind": "component_sequence",
+                    "evaluator_source": "managed_controller",
+                    "components": [
+                        "checkout-pr-candidate-material", "setup-python",
+                        "pr-finalize-managed-controller",
+                        "upload-pr-finalization",
+                    ],
+                },
+            }
+        )
+        pr_publishers[0]["jobs"][0].update(
+            {
+                "controller_requirement": "current",
+                "executor": {
+                    "kind": "component_sequence",
+                    "evaluator_source": "managed_controller",
+                    "components": [
+                        "setup-python", "download-pr-finalization",
+                        "pr-publish-managed-controller",
+                    ],
+                },
+            }
+        )
 
 
 def _sync_evidence_workflow_contract(
@@ -306,14 +593,14 @@ def _runner_mapping(
     )
 
 
-def write_reference_ci_graph(
-    args: Any, target_root: Path, contract: dict[str, Any]
-) -> None:
+def reference_ci_graph(args: Any, contract: dict[str, Any]) -> dict[str, Any]:
+    """Derive a fresh-install graph before the install transaction mutates bytes."""
+
     contract_version = str(contract.get("profile_contract_version", "1.0"))
     candidate, trusted, candidate_hosted, trusted_hosted = _runner_mapping(
         args, contract_version=contract_version
     )
-    graph = build_reference_ci_graph(
+    return build_reference_ci_graph(
         project_id=args.project_id,
         profile=args.profile,
         profile_contract_version=contract_version,
@@ -323,6 +610,12 @@ def write_reference_ci_graph(
         candidate_hosted=candidate_hosted,
         trusted_hosted=trusted_hosted,
     )
+
+
+def write_reference_ci_graph(
+    args: Any, target_root: Path, contract: dict[str, Any]
+) -> None:
+    graph = reference_ci_graph(args, contract)
     extension_path = target_root / ROTATION_EXTENSION
     if extension_path.is_symlink():
         raise RuntimeError("canonical controller rotation extension is unsafe")

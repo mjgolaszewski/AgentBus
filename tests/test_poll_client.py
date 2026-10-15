@@ -146,6 +146,30 @@ def test_control_precedes_queued_message_and_message_is_retired_independently(tm
     assert poll.peek_event(path, profile)["message"]["cursor"] == 10
 
 
+def test_acknowledged_messages_are_retired_without_touching_controls(tmp_path):
+    path, profile = profile_at(tmp_path)
+
+    def record(state):
+        poll._append(state, {"kind": "MESSAGE", "id": "2", "message": {"cursor": 2}})
+        poll._append(state, {"kind": "MESSAGE", "id": "4", "message": {"cursor": 4}})
+        poll._append(state, {"kind": "CONTROL", "id": "stop-1",
+                             "control": {"control_id": "stop-1"}})
+
+    poll.change_spool(path, profile, record)
+    assert poll.retire_acknowledged_messages(path, profile, 2) == 1
+    state = json.loads(poll.spool_path(path).read_text())
+    assert [event["id"] for event in state["events"]] == ["4", "stop-1"]
+
+
+def test_acknowledged_message_cleanup_is_idempotent(tmp_path):
+    path, profile = profile_at(tmp_path)
+    poll.change_spool(path, profile, lambda state: poll._append(
+        state, {"kind": "MESSAGE", "id": "2", "message": {"cursor": 2}}
+    ))
+    assert poll.retire_acknowledged_messages(path, profile, 2) == 1
+    assert poll.retire_acknowledged_messages(path, profile, 2) == 0
+
+
 def test_actionable_message_priority_is_independent_of_backlog_cursor(tmp_path):
     path, profile = profile_at(tmp_path)
 

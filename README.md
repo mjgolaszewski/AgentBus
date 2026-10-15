@@ -31,6 +31,12 @@ because somebody sent them a message.
 
 **Messages invite. Operator controls and Codex turns keep their own authority.**
 
+Federation construction is documented in
+[docs/federation.md](docs/federation.md). The local foundation records
+outbound obligations and remote-directory observations in the existing store;
+provider fan-out and cross-installation delivery remain separately qualified
+boundaries.
+
 ## See it work
 
 One agent asks another a question:
@@ -601,6 +607,10 @@ highest message observed. After handling a page, advance explicitly:
 agentbus ack --through 42
 ```
 
+Acknowledgement also retires message entries through that cursor from the
+disposable local presentation spool. Durable service history, controls, policy
+events, cursor semantics, and the independent wake scan remain available.
+
 `agentbus inbox --after 0` is a stateless full-history read and never changes the
 saved cursor. Each page accepts `--limit` from 1 through 200; use
 `--after CURSOR` to read later pages without acknowledging them. A verified
@@ -661,9 +671,11 @@ The current product is intentionally a same-workspace, single-service bus:
   credentials for service-derived assurance; self-service enrollment does not
   prove repository ownership, and processes sharing a Unix account can access
   one another's local state. Stronger isolation needs a different trust domain.
-- The authenticated Slack bot binding protects routed ingress. Signed envelope
-  federation is deferred because the current topology has one service and one
-  Slack app.
+- The authenticated Slack bot binding protects routed ingress. Issue #48's
+  outbound-only federation and owner-mediated wake laws are now specified in
+  `contracts/federation/v1/`; cross-instance delivery, origin authentication,
+  and directory convergence remain explicitly unclaimed until a qualifying
+  multi-installation provider candidate proves them.
 - SQLite inbox reads are bounded and indexed, but clustering, multi-tenant
   authorization, and distributed storage remain outside the current scope.
 - The Python distribution and Compose project retain the legacy

@@ -22,6 +22,12 @@ POLICY_FIELDS = frozenset({
     "presentation_budget_bytes",
 })
 
+# The idle cadence is deliberately finite and predictable.  The first four
+# steps double quickly, then widen more gently before reaching the 32-minute
+# ceiling.  This keeps dormant workers cheap without making addressed work
+# depend on an unbounded or agent-selected schedule.
+IDLE_BACKOFF_MULTIPLIERS = (1, 2, 4, 8, 12, 16, 24, 32)
+
 
 @dataclass(frozen=True)
 class EffectivePolicy:
@@ -109,10 +115,37 @@ def _positive(values: Mapping[str, int | float | None], field: str) -> float:
 def next_inbox_interval(
     policy: EffectivePolicy, previous_interval_seconds: float | None, *, semantic_delta: bool,
 ) -> float:
-    """New semantic information resets backoff; unchanged reads do not."""
+    """Return the next deterministic idle interval for an effective policy."""
     if semantic_delta or previous_interval_seconds is None:
         return policy.initial_interval_seconds
-    return min(policy.max_interval_seconds, previous_interval_seconds * policy.backoff_factor)
+    return _next_idle_interval(
+        policy.initial_interval_seconds,
+        policy.max_interval_seconds,
+        previous_interval_seconds,
+    )
+
+
+def next_inbox_interval_values(
+    values: Mapping[str, int | float | None],
+    previous_interval_seconds: float | None,
+    *,
+    semantic_delta: bool,
+) -> float:
+    """Worker-side equivalent that avoids reconstructing a policy revision."""
+    initial = _positive(values, "initial_interval_seconds")
+    maximum = _positive(values, "max_interval_seconds")
+    if semantic_delta or previous_interval_seconds is None:
+        return initial
+    return _next_idle_interval(initial, maximum, previous_interval_seconds)
+
+
+def _next_idle_interval(initial: float, maximum: float, previous: float) -> float:
+    """Advance through the canonical cadence, preserving custom caps."""
+    candidates = [min(maximum, initial * multiplier) for multiplier in IDLE_BACKOFF_MULTIPLIERS]
+    for candidate in candidates:
+        if candidate > previous:
+            return candidate
+    return maximum
 
 
 def next_control_check_interval(policy: EffectivePolicy, requested_interval_seconds: float) -> float:

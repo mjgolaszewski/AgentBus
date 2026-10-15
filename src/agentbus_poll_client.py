@@ -13,6 +13,7 @@ from typing import Callable, TypeVar
 from urllib.parse import urlencode
 
 from src.agentbus_client import atomic_json
+from src.agentbus_participation_service import next_inbox_interval_values
 from src.agentbus_transport_client import ClientError, api, configuration, profile_session_token
 
 T = TypeVar("T")
@@ -121,6 +122,34 @@ def retire_event(profile_path: Path, profile: dict, kind: str, event_id: str) ->
                            if (event["kind"], event["id"]) != (kind, event_id)]
 
     change_spool(profile_path, profile, retire)
+
+
+def retire_acknowledged_messages(profile_path: Path, profile: dict, through: int) -> int:
+    """Remove acknowledged message events from the disposable presentation projection.
+
+    The service inbox and the Codex wake projection remain durable authorities;
+    this only bounds the foreground poll spool after the profile cursor has
+    advanced.  Returning the count makes the cleanup observable without
+    exposing or altering message history.
+    """
+
+    if through < 0:
+        raise ClientError("Acknowledgement cursor must not be negative")
+
+    def retire(state: dict) -> int:
+        before = len(state["events"])
+        state["events"] = [
+            event for event in state["events"]
+            if not (
+                event.get("kind") == "MESSAGE"
+                and isinstance(event.get("message"), dict)
+                and isinstance(event["message"].get("cursor"), int)
+                and event["message"]["cursor"] <= through
+            )
+        ]
+        return before - len(state["events"])
+
+    return change_spool(profile_path, profile, retire)
 
 
 def policy_values_for_revision(profile_path: Path, profile: dict, revision: str) -> dict | None:
@@ -269,9 +298,9 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
                     if relevant:
                         interval = float(policy["initial_interval_seconds"])
                     else:
-                        interval = (float(policy["initial_interval_seconds"]) if interval is None else
-                                    min(float(policy["max_interval_seconds"]),
-                                        interval * float(policy["backoff_factor"])))
+                        interval = next_inbox_interval_values(
+                            policy, interval, semantic_delta=False,
+                        )
                     next_inbox = time.monotonic() if page["has_more"] else time.monotonic() + interval
             # A durable alarm outlives process-local failures. Only authenticated
             # service success can retire it, including when presentation is full.

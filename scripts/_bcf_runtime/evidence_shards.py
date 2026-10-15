@@ -3,21 +3,27 @@
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
 import yaml
 
 from .ci_graph_contracts import validate_ci_graph
+from .ci_github_api import GitHubAPI
 from .ci_graph_execution import (
     local_gate_job_environments,
     resolve_local_job_environment,
 )
 from .evidence_sessions import load_session, select_session
+from .evidence_session_schema import is_planned_session
 from .evidence_test_adapters import captured_receipt_succeeded
 from .governance_evidence import capture_gate
+from .test_splinter_proofs import materialize_prior_provider_proofs
 
 
 SHARD_DISPLAY_NAMES = tuple(f"Evidence shard {index}" for index in range(4))
@@ -53,6 +59,43 @@ def required_gate_targets(repo_root: Path) -> list[str]:
     if any(target not in executable or target not in catalog_targets for target in targets):
         raise ValueError("every required target needs one executable catalog owner")
     return targets
+
+
+def local_gate_execution_environments(
+    repo_root: Path,
+    graph: dict[str, Any],
+    producers: tuple[str, ...],
+) -> dict[str, dict[str, str]]:
+    """Bind local gates to graph jobs or the closed profile-v1 direct lane."""
+
+    profile = _mapping(repo_root / "governance-profile.yml", repo_root)
+    allowed_unmapped: frozenset[str] = frozenset()
+    if str(profile.get("profile_contract_version", "1.0")) == "1.0":
+        ci_profile = profile.get("ci_profile")
+        required_push_jobs = (
+            ci_profile.get("required_push_jobs")
+            if isinstance(ci_profile, dict)
+            else None
+        )
+        if (
+            not isinstance(required_push_jobs, list)
+            or not all(isinstance(value, str) and value for value in required_push_jobs)
+            or len(required_push_jobs) != len(set(required_push_jobs))
+        ):
+            raise ValueError(
+                "profile-v1 local execution requires exact unique required_push_jobs"
+            )
+        required = set(required_gate_targets(repo_root))
+        invalid = sorted(set(required_push_jobs) - required)
+        if invalid:
+            raise ValueError(
+                "profile-v1 required_push_jobs are not required executable gates: "
+                + ", ".join(invalid)
+            )
+        allowed_unmapped = frozenset(required_push_jobs)
+    return local_gate_job_environments(
+        graph, producers, allowed_unmapped=allowed_unmapped
+    )
 
 
 def partition_required_gates(
@@ -208,12 +251,12 @@ def main(argv: list[str] | None = None) -> None:
         output_root = session.root
     planned = (
         [str(value) for value in session.payload.get("expected_gate_inventory", [])]
-        if session is not None and session.payload.get("schema_version") == "2.0"
+        if session is not None and is_planned_session(session.payload)
         else None
     )
     execution_dag = (
         session.payload.get("execution_dag")
-        if session is not None and session.payload.get("schema_version") == "2.0"
+        if session is not None and is_planned_session(session.payload)
         else None
     )
     if args.all_planned:
@@ -222,8 +265,8 @@ def main(argv: list[str] | None = None) -> None:
         gates = planned_gate_targets(
             repo_root, planned_targets=planned, execution_dag=execution_dag
         )
-        graph_environments = local_gate_job_environments(
-            validate_ci_graph(repo_root).graph, tuple(gates)
+        graph_environments = local_gate_execution_environments(
+            repo_root, validate_ci_graph(repo_root).graph, tuple(gates)
         )
     else:
         if args.shard_index is None or args.shard_count is None:
@@ -235,42 +278,69 @@ def main(argv: list[str] | None = None) -> None:
             planned_targets=planned,
             execution_dag=execution_dag,
         )
-    for gate in gates:
-        if args.all_planned:
-            receipt = capture_gate(
-                repo_root,
-                gate,
-                output_root / gate,
-                python_executable=sys.executable,
-                session_manifest=session_manifest,
-                job_environment=resolve_local_job_environment(
-                    graph_environments[gate], repo_root
+    prior_temp: tempfile.TemporaryDirectory[str] | None = None
+    try:
+        if not args.all_planned and "test" in gates and os.environ.get("GITHUB_ACTIONS") == "true":
+            prior_temp = tempfile.TemporaryDirectory(prefix="bcf-prior-splinter-proofs-")
+            prior_root = Path(prior_temp.name)
+            report = materialize_prior_provider_proofs(
+                GitHubAPI(
+                    token=os.environ.get("GITHUB_TOKEN", ""),
+                    api_url=os.environ.get("GITHUB_API_URL", "https://api.github.com"),
                 ),
+                prior_root,
+                repository=os.environ.get("GITHUB_REPOSITORY", ""),
+                repository_id=os.environ.get("GITHUB_REPOSITORY_ID", ""),
+                head_sha=os.environ.get("GITHUB_SHA", ""),
+                run_id=os.environ.get("GITHUB_RUN_ID", ""),
+                current_attempt=int(os.environ.get("GITHUB_RUN_ATTEMPT", "0")),
+                job=os.environ.get("GITHUB_JOB", ""),
+                shard=int(args.shard_index),
             )
-            if not captured_receipt_succeeded(receipt):
-                raise SystemExit(1)
-            continue
-        result = subprocess.run(
-            [
-                sys.executable,
-                "scripts/governance_evidence.py",
-                "--repo-root",
-                ".",
-                "run",
-                "--gate",
-                gate,
-                "--output",
-                str(output_root / gate),
-                "--python",
-                sys.executable,
-                "--session-manifest",
-                str(session_manifest),
-            ],
-            cwd=repo_root,
-            check=False,
-        )
-        if result.returncode:
-            raise SystemExit(result.returncode)
+            (prior_root / "provider.json").write_text(
+                json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+            )
+            os.environ["BCF_PRIOR_SPLINTER_PROOF_ROOT"] = str(prior_root)
+            os.environ["BCF_EVIDENCE_SHARD"] = str(args.shard_index)
+        for gate in gates:
+            if args.all_planned:
+                receipt = capture_gate(
+                    repo_root,
+                    gate,
+                    output_root / gate,
+                    python_executable=sys.executable,
+                    session_manifest=session_manifest,
+                    job_environment=resolve_local_job_environment(
+                        graph_environments[gate], repo_root
+                    ),
+                )
+                if not captured_receipt_succeeded(receipt):
+                    raise SystemExit(1)
+                continue
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/governance_evidence.py",
+                    "--repo-root",
+                    ".",
+                    "run",
+                    "--gate",
+                    gate,
+                    "--output",
+                    str(output_root / gate),
+                    "--python",
+                    sys.executable,
+                    "--session-manifest",
+                    str(session_manifest),
+                ],
+                cwd=repo_root,
+                check=False,
+            )
+            if result.returncode:
+                raise SystemExit(result.returncode)
+    finally:
+        if prior_temp is not None:
+            prior_temp.cleanup()
 
 
 if __name__ == "__main__":

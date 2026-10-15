@@ -1,0 +1,97 @@
+document:
+  kind: semantic_ownership_mapping
+  name: P09 Invariant Owner Producer Consumer Evidence Mapping
+  id: p09-invariant-mapping
+  version: 1.0.0
+  generated_at_utc: '2026-10-13T00:00:00Z'
+  status: baseline_complete
+  path: audits/p09-p0-mapping.yml
+phase: P09
+entries:
+- id: AB-MSG-01
+  invariant: authorized send is durable at the origin before provider side effects
+  owner: src/agentbus_service.py::api_send
+  primitive: SQLite transaction and outbound obligation
+  contract: future contracts/federation/v1/bridge-obligation.contract.yml
+  producer: local send command
+  consumer: bridge worker/provider adapter
+  evidence: test, contract-test, runtime-smoke
+- id: AB-MSG-02
+  invariant: origin acceptance, provider submission, destination acceptance, and semantic acknowledgement are distinct
+  owner: future src/agentbus_bridge_service.py
+  primitive: typed delivery-state projection
+  contract: future contracts/federation/v1/delivery.contract.yml
+  producer: bridge obligation producer
+  consumer: local status and remote inbox
+  evidence: test, contract-test
+- id: AB-MSG-03
+  invariant: origin instance and message identity survive transport while destination allocates a local cursor
+  owner: src/agentbus_service.py::normalize_event plus future federation adapter
+  primitive: protocol-2 envelope identity
+  contract: future contracts/federation/v1/origin.contract.yml
+  producer: authenticated provider ingress
+  consumer: destination deduplication and directory projection
+  evidence: contract-test, security-secret-scan
+- id: AB-MSG-04
+  invariant: federation is outbound-only through a qualified existing provider
+  owner: current Slack adapter boundary
+  primitive: typed provider port
+  contract: future contracts/federation/v1/provider.contract.yml
+  producer: bridge submission
+  consumer: authorized installation listener
+  evidence: provider qualification, contract-test
+- id: AB-MSG-07
+  invariant: remote facts never grant local session, privilege, or execution authority
+  owner: participation and wake authorization boundaries
+  primitive: session proof and owner capability guard
+  contract: existing contracts/participation/v1 and contracts/codex-wake/v1 plus future federation contracts
+  producer: remote directory/message consumer
+  consumer: local operator and wake adapter
+  evidence: negative controls, contract-test
+- id: AB-MSG-08
+  invariant: retries and replay are idempotent and conflicting payload reuse fails closed
+  owner: future bridge/directory persistence adapter
+  primitive: scoped idempotency identity and revision
+  contract: future contracts/federation/v1/idempotency.contract.yml
+  producer: provider receive/retry path
+  consumer: destination store
+  evidence: test, contract-test
+- id: AB-MSG-11
+  invariant: observation and transport never acknowledge agent work
+  owner: src/agentbus_wake_inbox_client.py and existing participation store
+  primitive: independent service, presentation, and semantic cursors
+  contract: existing wake and participation contracts
+  producer: poll, directory, and wake scans
+  consumer: owner adapter and agent
+  evidence: existing test and contract suites
+- id: AB-MSG-12
+  invariant: directory freshness, registration, running state, wakeability, and active turn remain separate facts
+  owner: future remote-directory projection and owner capability adapter
+  primitive: typed observation with revision and freshness
+  contract: future contracts/federation/v1/directory.contract.yml
+  producer: registration lifecycle and provider replay
+  consumer: roster/status surfaces
+  evidence: test, contract-test
+- id: AB-WAKE-01
+  invariant: wake admission is owner-mediated and idle-only
+  owner: existing Codex wake adapter boundary
+  primitive: owner capability, epoch, and wake intent
+  contract: contracts/codex-wake/v1 plus future owner-admission contract
+  producer: pending selector and wake policy
+  consumer: owner RPC and conversation
+  evidence: fake-owner race matrix and authorized canary
+- id: AB-WAKE-02
+  invariant: uncertain queue or owner responses never create duplicate prompts or implicit acknowledgements
+  owner: existing wake adapter state machine
+  primitive: wake correlation and reconciliation
+  contract: future owner-admission contract
+  producer: wake submission
+  consumer: wake status and semantic ack path
+  evidence: test, contract-test
+excluded_edges:
+- remote_directory_to_local_session_creation
+- remote_message_to_local_privilege_grant
+- remote_message_to_local_execution
+- provider_submission_to_semantic_acknowledgement
+- queued_after_busy_to_atomic_idle_admission
+- provider_metadata_to_secret_or_credential_authority

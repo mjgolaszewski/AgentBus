@@ -18,6 +18,8 @@ from .ci_github_pr import finalize_pr, publish_pr
 from .github_protection import apply_protection, inspect_protection
 from .prior_evidence_transport import transport_prior_evidence
 from .routine_controller_provider import resolve_effective_controller
+from .scheduled_control_preflight import run_scheduled_control_preflight
+from .scheduled_control_execution import run_scheduled_control_profiles
 
 
 def _event() -> dict[str, object]:
@@ -66,13 +68,15 @@ def _pr(argv: list[str]) -> dict[str, object]:
     finalize = operations.add_parser("finalize")
     finalize.add_argument("--repository", required=True)
     finalize.add_argument("--output", type=Path, required=True)
+    finalize.add_argument("--candidate-root", type=Path)
     publish = operations.add_parser("publish")
     publish.add_argument("--repository", required=True)
     publish.add_argument("--bundle", type=Path, required=True)
     publish.add_argument("--target-url", required=True)
     args = parser.parse_args(argv)
+    api = environment_api()
     common = {
-        "api": environment_api(),
+        "api": api,
         "repository": args.repository,
         "event": _event(),
     }
@@ -82,6 +86,7 @@ def _pr(argv: list[str]) -> dict[str, object]:
             finalizer_run_id=required_environment("GITHUB_RUN_ID"),
             finalizer_run_attempt=required_environment("GITHUB_RUN_ATTEMPT"),
             output_root=args.output,
+            candidate_root=args.candidate_root,
         )
     return publish_pr(
         **common,
@@ -141,6 +146,36 @@ def _prior_evidence(argv: list[str]) -> dict[str, object]:
     }
 
 
+def _scheduled_control(argv: list[str]) -> dict[str, object]:
+    parser = argparse.ArgumentParser(description="Run a provider-bound scheduled control.")
+    operations = parser.add_subparsers(dest="operation", required=True)
+    preflight = operations.add_parser("preflight")
+    preflight.add_argument("--repository", required=True)
+    preflight.add_argument("--repo-root", type=Path, default=Path.cwd())
+    preflight.add_argument("--python", type=Path, required=True)
+    preflight.add_argument("--output", type=Path, required=True)
+    execute = operations.add_parser("execute")
+    execute.add_argument("--repo-root", type=Path, default=Path.cwd())
+    execute.add_argument("--python", type=Path, required=True)
+    execute.add_argument("--schedule", choices=("nightly", "weekly"), required=True)
+    execute.add_argument("--output-dir", type=Path, required=True)
+    args = parser.parse_args(argv)
+    if args.operation == "execute":
+        return run_scheduled_control_profiles(
+            repo_root=args.repo_root,
+            python_executable=args.python,
+            schedule=args.schedule,
+            output_dir=args.output_dir,
+        )
+    return run_scheduled_control_preflight(
+        environment_api(),
+        repository=args.repository,
+        repo_root=args.repo_root,
+        python_executable=args.python,
+        output_path=args.output,
+    )
+
+
 def run_extension_command(argv: list[str]) -> None:
     """Dispatch additive trusted commands without expanding the legacy parser."""
 
@@ -155,6 +190,9 @@ def run_extension_command(argv: list[str]) -> None:
         elif operation == "prior-evidence":
             result = _prior_evidence(remaining)
             output = github_output_path()
+        elif operation == "scheduled-control":
+            result = _scheduled_control(remaining)
+            output = None
         else:
             result = _protection(remaining)
             output = None

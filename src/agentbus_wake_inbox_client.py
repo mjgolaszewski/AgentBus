@@ -11,7 +11,10 @@ from urllib.parse import urlencode
 from src.agentbus_client import atomic_json, consumer_state_dir
 from src.agentbus_transport_client import ClientError, api, profile_session_token
 
-MAX_CANDIDATES = 64
+# This is a fail-closed storage bound, never a lossy compaction threshold.
+# Unacknowledged candidates must remain replayable; exceeding the bound leaves
+# the service cursor unchanged so an operator can drain or raise capacity.
+MAX_CANDIDATES = 4096
 PAGES_PER_SCAN = 8
 Classifier = Callable[[dict, str], tuple[int, str] | None]
 
@@ -118,8 +121,10 @@ def scan(values: dict[str, str], profile: dict, generation: int,
                 seen.add(cursor)
         state["pending"].sort(key=lambda item: item["cursor"])
         if len(state["pending"]) > MAX_CANDIDATES:
-            state["pending"] = state["pending"][-MAX_CANDIDATES:]
-            state["compacted"] = True
+            # Do not advance the cursor past candidates that cannot be
+            # retained.  The caller retries after draining or operator
+            # capacity adjustment; durable work is never silently dropped.
+            raise ClientError("Codex wake candidate capacity exhausted; drain acknowledged work")
         state["cursor"] = next_cursor
         state["caught_up"] = not has_more
         # A page and its candidate identities are one durable transition.

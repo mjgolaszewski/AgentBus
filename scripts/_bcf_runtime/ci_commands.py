@@ -14,11 +14,16 @@ from .ci_adopt_github import (
     plan_github_adoption,
     render_github_adoption,
 )
+from .ordinary_protection_projection import (
+    apply_ordinary_protection_projection,
+    project_ordinary_protection,
+)
 from .ci_graph_commands import add_graph_parser, run_graph_command
 from .automation_commands import adopt_dependabot
 from .automation_contracts import AutomationContractError, load_automation_registry
 from .ci_github_api import GitHubAPI
 from .ci_graph_contracts import CIGraphError, validate_ci_graph
+from .ci_graph_controller_lifecycle import recovery_builder_route
 from .ci_graph_render import apply_ci_graph, check_ci_graph
 from .ci_authority_pins import (
     CIAuthorityPinError,
@@ -38,14 +43,19 @@ from .local_pr import (
     ProspectiveValidationError,
     run_prospective_train,
 )
+from .prospective_candidate_identity import canonical_prospective_inputs
 from .local_execution_admission import (
+    ensure_local_project_python,
     LocalExecutionAdmissionError,
-    resolve_local_project_python,
 )
 from .runtime_capacity import (
     RuntimeCapacityError,
     check_runtime_capacity,
     load_runtime_contract,
+)
+from .release_adopter_qualification import (
+    ReleaseQualificationError,
+    qualify_release,
 )
 from .trusted_controller_compatibility import (
     TrustedControllerCompatibilityError,
@@ -66,7 +76,7 @@ def _local_pr_command(
         return command
     selected_python = str(
         project_python
-        or resolve_local_project_python(repo_root, Path(sys.executable))
+        or ensure_local_project_python(repo_root, Path(sys.executable))
     )
     return (
         selected_python,
@@ -91,6 +101,10 @@ def _adopt_parser(subparsers: argparse._SubParsersAction[argparse.ArgumentParser
     github.add_argument("--candidate-label", action="append")
     github.add_argument("--trusted-label", action="append")
     github.add_argument("--producer-arg", action="append")
+    github.add_argument(
+        "--repository",
+        help="compile the ordinary-adopter protection proposal from exact provider state",
+    )
     mode = github.add_mutually_exclusive_group(required=True)
     mode.add_argument("--check", action="store_true")
     mode.add_argument("--apply", action="store_true")
@@ -128,6 +142,11 @@ def _parser() -> argparse.ArgumentParser:
     _adopt_parser(subparsers)
     _automation_parser(subparsers)
     add_graph_parser(subparsers)
+    project_python = subparsers.add_parser(
+        "project-python",
+        help="Derive the authenticated project interpreter for generated local surfaces.",
+    )
+    project_python.add_argument("--repo-root", type=Path, default=Path.cwd())
     local = subparsers.add_parser("local-pr", help="Run exact local PR validation.")
     local.add_argument("--repo-root", type=Path, default=Path.cwd())
     local.add_argument("--remote", default="origin")
@@ -144,11 +163,39 @@ def _parser() -> argparse.ArgumentParser:
         help="resolve the provider-authenticated effective controller for this repository",
     )
     prospective.add_argument("--python", type=Path)
-    prospective.add_argument("--intent", choices=("pr", "workitem", "closure"), required=True)
+    prospective.add_argument(
+        "--intent",
+        choices=("pr", "workitem", "closure"),
+        help="optional consistency assertion; canonical intent is derived from the graph",
+    )
     prospective.add_argument("--target")
-    prospective.add_argument("--subject-commit", required=True)
-    prospective.add_argument("--subject-tree", required=True)
+    prospective.add_argument(
+        "--subject-commit",
+        help="optional consistency assertion; the exact clean commit is derived from Git",
+    )
+    prospective.add_argument(
+        "--subject-tree",
+        help="optional consistency assertion; the exact clean tree is derived from Git",
+    )
     prospective.add_argument("--format", choices=("text", "json"), default="json")
+    qualify = subparsers.add_parser(
+        "qualify-release",
+        help="qualify exact release assets across the canonical adopter matrix",
+    )
+    qualify.add_argument("--repo-root", type=Path, default=Path.cwd())
+    qualify.add_argument("--repository", required=True)
+    qualify.add_argument("--release-assets", type=Path, required=True)
+    qualify.add_argument("--release-build-manifest", type=Path, required=True)
+    qualify.add_argument("--adopter-root", type=Path, action="append", default=[])
+    qualify.add_argument(
+        "--adopter-python",
+        action="append",
+        default=[],
+        metavar="OWNER/REPO=PATH",
+        help="environmental interpreter provisioning; repository semantics remain canonical",
+    )
+    qualify.add_argument("--output", type=Path, required=True)
+    qualify.add_argument("--format", choices=("text", "json"), default="json")
     submit = subparsers.add_parser(
         "submit",
         help="run the canonical prospective train and push only its exact proved commit",
@@ -175,6 +222,14 @@ def _parser() -> argparse.ArgumentParser:
     applicability.add_argument("--target-commit", required=True)
     applicability.add_argument("--github-output", action="store_true")
     applicability.add_argument("--format", choices=("text", "json"), default="json")
+    recovery_route = subparsers.add_parser(
+        "controller-recovery-route",
+        help="Derive non-authoritative exact-main builder routing from recovery custody.",
+    )
+    recovery_route.add_argument("--repo-root", type=Path, default=Path.cwd())
+    recovery_route.add_argument("--output", type=Path)
+    recovery_route.add_argument("--github-output", action="store_true")
+    recovery_route.add_argument("--format", choices=("text", "json"), default="json")
     pin = subparsers.add_parser(
         "pin-authority", help="Derive exact workflow authority pins from Git."
     )
@@ -266,12 +321,34 @@ def main(argv: list[str] | None = None) -> None:
             graph_path = args.repo_root / "governance/ci-graph.yml"
             legacy_values = (args.candidate_label, args.trusted_label, args.producer_arg)
             if graph_path.is_file() and not any(legacy_values):
+                protection = None
+                if args.repository:
+                    protection = project_ordinary_protection(
+                        GitHubAPI(token=os.environ.get("GITHUB_TOKEN", "")),
+                        repo_root=args.repo_root,
+                        repository=args.repository,
+                        apply=False,
+                    )
                 result = apply_ci_graph(args.repo_root) if args.apply else check_ci_graph(args.repo_root)
+                if args.apply and protection is not None:
+                    protection = apply_ordinary_protection_projection(
+                        repo_root=args.repo_root,
+                        projection=protection,
+                    )
+                changed_paths = set(result.changed_paths)
+                if protection is not None:
+                    changed_paths.update(protection.changed_paths)
+                status = (
+                    "clean"
+                    if result.status == "clean"
+                    and (protection is None or protection.status == "clean")
+                    else ("changed" if args.apply else "actionable")
+                )
                 _print(
-                    {"status": result.status, "changed_paths": list(result.changed_paths)},
+                    {"status": status, "changed_paths": sorted(changed_paths)},
                     args.format,
                 )
-                if args.check and result.status != "clean":
+                if args.check and status != "clean":
                     raise SystemExit(1)
                 return
             if not all(legacy_values):
@@ -305,10 +382,31 @@ def main(argv: list[str] | None = None) -> None:
             )
             _print(report.as_dict(), args.format)
             return
-        if args.operation == "prospective-train":
-            project_python = args.python or resolve_local_project_python(
-                args.repo_root, Path(sys.executable)
+        if args.operation == "project-python":
+            print(
+                ensure_local_project_python(
+                    args.repo_root, Path(sys.executable)
+                ).absolute()
             )
+            return
+        if args.operation == "prospective-train":
+            project_python = ensure_local_project_python(
+                args.repo_root, Path(sys.executable), requested=args.python
+            )
+            canonical = canonical_prospective_inputs(
+                args.repo_root, remote=args.remote
+            )
+            supplied = {
+                "semantic_intent": args.intent,
+                "evaluation_target": args.target,
+                "subject_commit": args.subject_commit,
+                "subject_tree": args.subject_tree,
+            }
+            for key, value in supplied.items():
+                if value is not None and value != canonical[key]:
+                    raise ProspectiveValidationError(
+                        f"prospective {key} assertion differs from canonical state"
+                    )
             provider_api = None
             if args.repository is not None:
                 from .ci_github_controller import environment_api
@@ -316,10 +414,10 @@ def main(argv: list[str] | None = None) -> None:
                 provider_api = environment_api()
             result = run_prospective_train(
                 args.repo_root,
-                semantic_intent=args.intent,
-                evaluation_target=args.target,
-                subject_commit=args.subject_commit,
-                subject_tree=args.subject_tree,
+                semantic_intent=str(canonical["semantic_intent"]),
+                evaluation_target=canonical["evaluation_target"],
+                subject_commit=str(canonical["subject_commit"]),
+                subject_tree=str(canonical["subject_tree"]),
                 remote=args.remote,
                 python_executable=project_python,
                 repository=args.repository,
@@ -330,11 +428,36 @@ def main(argv: list[str] | None = None) -> None:
             )
             _print(result, args.format)
             return
+        if args.operation == "qualify-release":
+            interpreters: dict[str, Path] = {}
+            for raw in args.adopter_python:
+                repository, separator, path = raw.partition("=")
+                if not separator or not repository or not path or repository in interpreters:
+                    raise ReleaseQualificationError(
+                        "--adopter-python requires unique OWNER/REPO=PATH values"
+                    )
+                interpreters[repository] = Path(path)
+            producer = {
+                "kind": "local",
+                "id": "bcf-release-compatibility",
+            }
+            result = qualify_release(
+                args.repo_root,
+                repository=args.repository,
+                release_assets=args.release_assets,
+                release_build_manifest=args.release_build_manifest,
+                adopter_roots=tuple(args.adopter_root),
+                adopter_pythons=interpreters,
+                producer=producer,
+                output=args.output,
+            )
+            _print(result, args.format)
+            return
         if args.operation == "submit":
             from .ci_github_controller import environment_api
 
-            project_python = args.python or resolve_local_project_python(
-                args.repo_root, Path(sys.executable)
+            project_python = ensure_local_project_python(
+                args.repo_root, Path(sys.executable), requested=args.python
             )
             result = submit_candidate(
                 args.repo_root,
@@ -349,6 +472,14 @@ def main(argv: list[str] | None = None) -> None:
             result = classify_trusted_controller_applicability(
                 args.repo_root.resolve(), target_commit=args.target_commit
             ).as_dict()
+            if args.github_output:
+                github_output(result, path=github_output_path())
+            _print(result, args.format)
+            return
+        if args.operation == "controller-recovery-route":
+            result = recovery_builder_route(
+                args.repo_root.resolve(), output=args.output
+            )
             if args.github_output:
                 github_output(result, path=github_output_path())
             _print(result, args.format)
@@ -408,7 +539,7 @@ def main(argv: list[str] | None = None) -> None:
             return
         explicit_command = bool(args.command)
         project_python = (
-            resolve_local_project_python(
+            ensure_local_project_python(
                 args.repo_root, Path(sys.executable), requested=args.python
             )
             if args.python is not None or not explicit_command
@@ -439,6 +570,7 @@ def main(argv: list[str] | None = None) -> None:
         LocalExecutionAdmissionError,
         LocalPRError,
         ProspectiveValidationError,
+        ReleaseQualificationError,
         RuntimeCapacityError,
         TrustedControllerCompatibilityError,
     ) as exc:

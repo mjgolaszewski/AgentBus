@@ -4,13 +4,21 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
+from enum import Enum
 import json
 import os
 from pathlib import Path
 import subprocess
 import tempfile
+import time
 from typing import Callable, Iterator
 
+from .governance_install.runtime_custody import (
+    RuntimeCustodyError,
+    RuntimeCustodyState,
+    candidate_qualification_matches,
+    inspect_runtime_custody,
+)
 from .local_execution_admission import project_python_environment
 
 
@@ -22,7 +30,21 @@ class ProspectiveValidationError(ValueError):
     """The exact candidate has a mechanically knowable downstream rejection."""
 
 
+class LocalValidationLane(str, Enum):
+    """Closed local validation contexts that cannot confer provider authority."""
+
+    PROVIDER_PR = "provider_pr"
+    ISOLATED_CANDIDATE_QUALIFICATION = "isolated_candidate_qualification"
+
+
 Runner = Callable[..., subprocess.CompletedProcess[str]]
+_REMOTE_READ_ATTEMPTS = 2
+_TRANSIENT_REMOTE_READ_MARKERS = (
+    "connection reset by peer",
+    "operation timed out",
+    "received disconnect",
+    "remote end hung up unexpectedly",
+)
 
 
 @dataclass(frozen=True)
@@ -47,6 +69,37 @@ class CandidateIdentity:
         return asdict(self)
 
 
+def derive_local_validation_lane(
+    repo_root: Path,
+    context: LocalPRContext,
+    *,
+    requested: LocalValidationLane | None = None,
+    runner: Runner | None = None,
+) -> LocalValidationLane:
+    """Derive candidate qualification only from exact custody and base identity."""
+
+    if requested is not None:
+        return requested
+    try:
+        snapshot = inspect_runtime_custody(repo_root.resolve())
+    except RuntimeCustodyError as exc:
+        raise LocalPRError(f"local validation custody is invalid: {exc}") from exc
+    if snapshot.state is not RuntimeCustodyState.CANDIDATE_QUALIFICATION_EXACT:
+        return LocalValidationLane.PROVIDER_PR
+    base_tree = _checked(
+        _run if runner is None else runner,
+        ["git", "rev-parse", f"{context.base_sha}^{{tree}}"],
+        cwd=repo_root.resolve(),
+    )
+    if (
+        candidate_qualification_matches(
+            snapshot, commit_sha=context.base_sha, tree_sha=base_tree
+        )
+    ):
+        return LocalValidationLane.ISOLATED_CANDIDATE_QUALIFICATION
+    return LocalValidationLane.PROVIDER_PR
+
+
 def _run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, check=False, capture_output=True, text=True, **kwargs)
 
@@ -59,13 +112,34 @@ def _checked(runner: Runner, command: list[str], *, cwd: Path) -> str:
     return result.stdout.strip()
 
 
+def _checked_remote_read(runner: Runner, command: list[str], *, cwd: Path) -> str:
+    """Run one immutable Git remote read with one closed transient retry."""
+
+    if command[:2] not in (["git", "ls-remote"], ["git", "fetch"]):
+        raise LocalPRError("remote-read retry accepts immutable Git reads only")
+    for attempt in range(_REMOTE_READ_ATTEMPTS):
+        result = runner(command, cwd=cwd)
+        if result.returncode == 0:
+            return result.stdout.strip()
+        detail = result.stderr.strip() or result.stdout.strip() or "command failed"
+        transient = any(
+            marker in detail.lower() for marker in _TRANSIENT_REMOTE_READ_MARKERS
+        )
+        if not transient or attempt + 1 == _REMOTE_READ_ATTEMPTS:
+            raise LocalPRError(f"{' '.join(command)}: {detail}")
+        time.sleep(1.0)
+    raise AssertionError("bounded remote read loop did not terminate")
+
+
 def resolve_local_pr_context(
     repo_root: Path, *, remote: str = "origin", runner: Runner = _run
 ) -> LocalPRContext:
     """Resolve/fetch remote default branch and prove current HEAD descends from it."""
 
     repo_root = repo_root.resolve()
-    symbolic = _checked(runner, ["git", "ls-remote", "--symref", remote, "HEAD"], cwd=repo_root)
+    symbolic = _checked_remote_read(
+        runner, ["git", "ls-remote", "--symref", remote, "HEAD"], cwd=repo_root
+    )
     prefix = "ref: refs/heads/"
     default_branch = ""
     for line in symbolic.splitlines():
@@ -75,7 +149,7 @@ def resolve_local_pr_context(
     if not default_branch or "/" in default_branch and default_branch.startswith("../"):
         raise LocalPRError("remote HEAD did not identify a safe default branch")
     remote_ref = f"refs/remotes/{remote}/{default_branch}"
-    _checked(
+    _checked_remote_read(
         runner,
         ["git", "fetch", "--no-tags", remote, f"refs/heads/{default_branch}:{remote_ref}"],
         cwd=repo_root,
@@ -92,7 +166,10 @@ def resolve_local_pr_context(
 
 
 def _pr_environment_values(
-    context: LocalPRContext, *, event_path: str | None = None
+    context: LocalPRContext,
+    *,
+    event_path: str | None = None,
+    validation_lane: LocalValidationLane = LocalValidationLane.PROVIDER_PR,
 ) -> dict[str, str]:
     values = {
         "BCF_PROVIDER_EVENT": "pull_request",
@@ -102,6 +179,7 @@ def _pr_environment_values(
         "BCF_COMPARISON_BASE_SHA": context.base_sha,
         "BCF_ENFORCE_PR_CHANGELOG": "true",
         "BCF_PR_BASE_SHA": context.base_sha,
+        "BCF_VALIDATION_LANE": validation_lane.value,
         "GITHUB_BASE_REF": context.default_branch,
         "GITHUB_EVENT_NAME": "pull_request",
         "GITHUB_HEAD_REF": context.head_ref,
@@ -162,8 +240,12 @@ def _candidate_identity(
 
 
 @contextmanager
-def _pr_environment(context: LocalPRContext) -> Iterator[None]:
-    values = _pr_environment_values(context)
+def _pr_environment(
+    context: LocalPRContext,
+    *,
+    validation_lane: LocalValidationLane = LocalValidationLane.PROVIDER_PR,
+) -> Iterator[None]:
+    values = _pr_environment_values(context, validation_lane=validation_lane)
     previous = {key: os.environ.get(key) for key in values}
     os.environ.update(values)
     try:

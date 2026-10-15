@@ -192,18 +192,32 @@ def test_service_actionable_old_route_alias_remains_wakable_after_prefix_rename(
     assert wake_inbox.candidates(state, 0) == [(3, "MESSAGE:1")]
 
 
-def test_wake_scan_compacts_only_local_candidate_projection(setup, monkeypatch):
+def test_wake_scan_retains_all_unacknowledged_candidates(setup, monkeypatch):
     values, identity, profile, _path, _host = setup
     profile["participation"]["session_secret"] = "session-proof"
     profile["ack_cursor"] = 0
     messages = [service_message(i) for i in range(1, 132)]
     monkeypatch.setattr(wake_inbox, "api", fake_inbox(messages))
     state = wake_inbox.scan(values, profile, 1, wake._candidate)
-    assert state["cursor"] == 131 and state["compacted"] is True
-    assert len(state["pending"]) == wake_inbox.MAX_CANDIDATES
+    assert state["cursor"] == 131 and state["compacted"] is False
+    assert len(state["pending"]) == 131
     assert wake_inbox.candidates(state, 0)[-1] == (3, "MESSAGE:131")
+    profile["ack_cursor"] = 64
+    replayed = wake_inbox.scan(values, profile, 1, wake._candidate)
+    assert (3, "MESSAGE:65") in wake_inbox.candidates(replayed, 64)
     profile["ack_cursor"] = 131
     assert wake_inbox.candidates(wake_inbox.scan(values, profile, 1, wake._candidate), 131) == []
+
+
+def test_wake_scan_fails_closed_before_cursor_advance_at_capacity(setup, monkeypatch):
+    values, _identity, profile, _path, _host = setup
+    profile["participation"]["session_secret"] = "session-proof"
+    monkeypatch.setattr(wake_inbox, "MAX_CANDIDATES", 2)
+    monkeypatch.setattr(wake_inbox, "api", fake_inbox([service_message(1), service_message(2), service_message(3)]))
+    with pytest.raises(ClientError, match="capacity exhausted"):
+        wake_inbox.scan(values, profile, 1, wake._candidate)
+    state = wake_inbox.read_state(values, profile, 1)
+    assert state["cursor"] == 0 and state["pending"] == []
 
 
 def test_wake_scan_rejects_out_of_order_page_without_skipping_direct_message(setup, monkeypatch):

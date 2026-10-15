@@ -5,7 +5,6 @@ from __future__ import annotations
 import base64
 from dataclasses import asdict, dataclass
 import json
-from pathlib import Path
 import re
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -20,16 +19,19 @@ from .ci_github_downloads import (
     GitHubDownloadKind,
     open_download,
 )
-from .release_versions import ReleaseVersionError, parse_release_tag
 from .provider_read import ProviderReadAttempt
+from .ci_github_errors import GitHubAPIConflictError, GitHubAPIError
+from .ci_github_release_api import GitHubReleaseAPIMixin
 from .ci_github_transport import GitHubTransportError, request_bytes, request_json
-
-
-REPOSITORY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
-
-
-class GitHubAPIError(ValueError):
-    """Raised when provider state cannot be obtained or authenticated safely."""
+from .ci_github_pr_mutations import GitHubPRMutationMixin
+from .ci_github_check_observations import GitHubCheckObservationMixin
+from .ci_github_values import (
+    GitHubValueError,
+    positive_id as _provider_positive_id,
+    repository as _provider_repository,
+    sha as _provider_sha,
+    workflow_reference as _provider_workflow_reference,
+)
 
 
 @dataclass(frozen=True)
@@ -39,7 +41,9 @@ class GitHubContent:
     content: bytes
 
 
-class GitHubAPI:
+class GitHubAPI(
+    GitHubReleaseAPIMixin, GitHubCheckObservationMixin, GitHubPRMutationMixin
+):
     """Small JSON-only client whose token is supplied by the trusted workflow."""
 
     def __init__(self, *, token: str, api_url: str = "https://api.github.com") -> None:
@@ -77,6 +81,8 @@ class GitHubAPI:
                 observations=self._provider_read_observations,
             )
         except GitHubTransportError as exc:
+            if exc.status_code in {409, 422}:
+                raise GitHubAPIConflictError(str(exc)) from exc
             raise GitHubAPIError(str(exc)) from exc
 
     def _request_bytes(
@@ -120,6 +126,10 @@ class GitHubAPI:
             with open_download(request, timeout=60) as response:
                 raw = response.read(1_048_577)
         except HTTPError as exc:
+            if exc.code in {409, 422}:
+                raise GitHubAPIConflictError(
+                    f"GitHub release asset upload returned {exc.code}"
+                ) from exc
             raise GitHubAPIError(f"GitHub release asset upload returned {exc.code}") from exc
         except (OSError, URLError) as exc:
             raise GitHubAPIError("GitHub release asset upload failed") from exc
@@ -135,14 +145,10 @@ class GitHubAPI:
 
     @staticmethod
     def _repository(repository: str) -> str:
-        parts = repository.split("/")
-        if (
-            not REPOSITORY_PATTERN.fullmatch(repository)
-            or len(parts) != 2
-            or any(part in {".", ".."} for part in parts)
-        ):
-            raise GitHubAPIError("repository must be exact owner/name identity")
-        return repository
+        try:
+            return _provider_repository(repository)
+        except GitHubValueError as exc:
+            raise GitHubAPIError(str(exc)) from exc
 
     def repository(self, repository: str) -> dict[str, Any]:
         value = self._request("GET", f"/repos/{self._repository(repository)}")
@@ -405,12 +411,14 @@ class GitHubAPI:
         return tuple(artifacts)
 
     def repository_artifacts(
-        self, repository: str, *, name: str | None = None
+        self, repository: str, *, name: str | None = None,
+        name_prefix: str | None = None,
     ) -> tuple[dict[str, Any], ...]:
         endpoint = f"/repos/{self._repository(repository)}/actions/artifacts"
         try:
             return complete_repository_artifacts(
-                self._request, endpoint=endpoint, name=name
+                self._request, endpoint=endpoint, name=name,
+                name_prefix=name_prefix,
             )
         except ArtifactInventoryError as exc:
             raise GitHubAPIError(str(exc)) from exc
@@ -428,110 +436,6 @@ class GitHubAPI:
             kind=GitHubDownloadKind.ACTIONS_ARTIFACT,
             maximum_bytes=maximum_bytes,
         )
-
-    def immutable_releases(self, repository: str) -> dict[str, Any]:
-        value = self._request(
-            "GET", f"/repos/{self._repository(repository)}/immutable-releases"
-        )
-        if not isinstance(value, dict):
-            raise GitHubAPIError("immutable-release setting must be an object")
-        return value
-
-    def release_by_tag(self, repository: str, tag: str) -> dict[str, Any]:
-        try:
-            parse_release_tag(tag)
-        except ReleaseVersionError as exc:
-            raise GitHubAPIError("release tag must be one canonical public version") from exc
-        value = self._request(
-            "GET", f"/repos/{self._repository(repository)}/releases/tags/{quote(tag)}"
-        )
-        if not isinstance(value, dict):
-            raise GitHubAPIError("release response must be an object")
-        return value
-
-    def create_draft_release(
-        self, repository: str, *, tag: str, name: str, body: str
-    ) -> dict[str, Any]:
-        try:
-            release_version = parse_release_tag(tag)
-        except ReleaseVersionError as exc:
-            raise GitHubAPIError("draft release identity must be one canonical public version") from exc
-        if name != tag:
-            raise GitHubAPIError("draft release name must equal its canonical tag")
-        value = self._request(
-            "POST",
-            f"/repos/{self._repository(repository)}/releases",
-            payload={
-                "tag_name": tag,
-                "name": name,
-                "body": body,
-                "draft": True,
-                "prerelease": release_version.prerelease,
-                "generate_release_notes": False,
-            },
-        )
-        if not isinstance(value, dict) or value.get("draft") is not True:
-            raise GitHubAPIError("provider did not create an exact draft release")
-        return value
-
-    def upload_release_asset(
-        self,
-        *,
-        upload_url: str,
-        repository: str,
-        release_id: object,
-        name: str,
-        payload: bytes,
-    ) -> dict[str, Any]:
-        numeric = _positive_id(release_id, field="release ID")
-        base = upload_url.split("{", 1)[0]
-        expected = (
-            f"https://uploads.github.com/repos/{self._repository(repository)}"
-            f"/releases/{numeric}/assets"
-        )
-        if base != expected or Path(name).name != name or not name:
-            raise GitHubAPIError("release asset upload identity is unsafe")
-        return self._upload_bytes(
-            f"{base}?{urlencode({'name': name})}",
-            payload=payload,
-            media_type="application/octet-stream",
-        )
-
-    def publish_release(self, repository: str, release_id: object) -> dict[str, Any]:
-        numeric = _positive_id(release_id, field="release ID")
-        value = self._request(
-            "PATCH",
-            f"/repos/{self._repository(repository)}/releases/{numeric}",
-            payload={"draft": False},
-        )
-        if not isinstance(value, dict) or value.get("draft") is not False:
-            raise GitHubAPIError("provider did not publish the release")
-        return value
-
-    def tag_object(self, repository: str, tag_object_sha: str) -> dict[str, Any]:
-        value = self._request(
-            "GET",
-            f"/repos/{self._repository(repository)}/git/tags/{_sha(tag_object_sha, field='tag object SHA')}",
-        )
-        if not isinstance(value, dict):
-            raise GitHubAPIError("annotated tag response must be an object")
-        return value
-
-    def attestations(
-        self, repository: str, subject_digest: str
-    ) -> tuple[dict[str, Any], ...]:
-        if not re.fullmatch(r"sha256:[a-f0-9]{64}", subject_digest):
-            raise GitHubAPIError("attestation subject digest must be SHA-256")
-        value = self._request(
-            "GET",
-            f"/repos/{self._repository(repository)}/attestations/{subject_digest}",
-        )
-        attestations = value.get("attestations") if isinstance(value, dict) else None
-        if not isinstance(attestations, list) or any(
-            not isinstance(item, dict) for item in attestations
-        ):
-            raise GitHubAPIError("attestation response must contain an object list")
-        return tuple(attestations)
 
     def dispatch(self, repository: str, *, event_type: str, client_payload: dict[str, Any]) -> None:
         if not re.fullmatch(r"[A-Za-z0-9._-]+", event_type):
@@ -759,23 +663,21 @@ class GitHubAPI:
 
 
 def _positive_id(value: object, *, field: str) -> str:
-    text = str(value)
-    if not text.isdigit() or int(text) < 1:
-        raise GitHubAPIError(f"{field} must be a positive numeric provider ID")
-    return text
+    try:
+        return _provider_positive_id(value, field=field)
+    except GitHubValueError as exc:
+        raise GitHubAPIError(str(exc)) from exc
 
 
 def _workflow_reference(value: object) -> str:
-    text = str(value)
-    if text.isdigit():
-        return _positive_id(text, field="workflow ID")
-    if not re.fullmatch(r"[A-Za-z0-9_.-]+\.ya?ml", text):
-        raise GitHubAPIError("workflow reference must be a numeric ID or exact file name")
-    return quote(text, safe="")
+    try:
+        return _provider_workflow_reference(value)
+    except GitHubValueError as exc:
+        raise GitHubAPIError(str(exc)) from exc
 
 
 def _sha(value: object, *, field: str) -> str:
-    text = str(value)
-    if not re.fullmatch(r"[a-f0-9]{40}", text):
-        raise GitHubAPIError(f"{field} must be an exact 40-character Git SHA")
-    return text
+    try:
+        return _provider_sha(value, field=field)
+    except GitHubValueError as exc:
+        raise GitHubAPIError(str(exc)) from exc

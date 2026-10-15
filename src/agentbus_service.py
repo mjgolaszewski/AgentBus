@@ -22,6 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError,
 
 from src.agentbus_claim_recovery_service import ClaimRecoveryStore
 from src.agentbus_control_store_service import ControlStore
+from src.agentbus_federation_service import FederationStore
 from src.agentbus_message_authorization_service import require_message_route
 from src.agentbus_participation_api_service import (
     UPGRADE_NOTICE,
@@ -250,6 +251,7 @@ class MessageStore:
         self.send_rate = SendRateStore(self._db, self._lock)
         self.controls = ControlStore(self._db, self._lock, self.participation)
         self.claim_recovery = ClaimRecoveryStore(self._db, self._lock)
+        self.federation = FederationStore(self._db, self._lock)
 
     def first_legacy_notice(self, channel: str, identity: str) -> bool:
         """Return an onboarding notice once per legacy inbox identity."""

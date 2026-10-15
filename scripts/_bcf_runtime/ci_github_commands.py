@@ -247,6 +247,8 @@ def _release_parser() -> argparse.ArgumentParser:
     resolve.add_argument("--output", type=Path, required=True)
     publication = operations.add_parser("resolve-publication")
     publication.add_argument("--repository", required=True)
+    publication.add_argument("--trigger-run-id", required=True)
+    publication.add_argument("--trigger-run-attempt", required=True)
     publication.add_argument("--output", type=Path, required=True)
     authorize = operations.add_parser("authorize")
     authorize.add_argument("--repository", required=True)
@@ -409,12 +411,15 @@ def _release(argv: list[str]) -> None:
         return
     if args.operation == "resolve-publication":
         result = resolve_release_publication_inputs(
-            environment_api(), repository=args.repository, output_path=args.output
+            environment_api(), repository=args.repository,
+            trigger_run_id=args.trigger_run_id,
+            trigger_run_attempt=args.trigger_run_attempt,
+            output_path=args.output,
         )
         _github_output(release_publication_outputs(result), path=github_output)
         print(json.dumps(result, sort_keys=True))
         return
-    elif args.operation in {"verify", "runtime"}:
+    if args.operation in {"verify", "runtime"}:
         release_artifacts = _release_artifacts(args)
         wheels = [path for path in release_artifacts if path.suffix == ".whl"]
         sdists = [
@@ -631,7 +636,9 @@ def _parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> None:
     raw = list(sys.argv[1:] if argv is None else argv)
     try:
-        if raw and raw[0] in {"automation", "pr", "prior-evidence", "protection"}:
+        if raw and raw[0] in {
+            "automation", "pr", "prior-evidence", "protection", "scheduled-control"
+        }:
             run_extension_command(raw)
             return
         if raw and raw[0] == "bootstrap":

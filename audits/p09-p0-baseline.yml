@@ -1,0 +1,51 @@
+document:
+  kind: phase_baseline_audit
+  name: P09 P0 Baseline and Ownership Audit
+  id: p09-p0-baseline
+  version: 1.0.0
+  generated_at_utc: '2026-10-13T00:00:00Z'
+  status: complete_with_deferred_provider_gate
+  path: audits/p09-p0-baseline.yml
+phase: P09
+subject:
+  repository: mjgolaszewski/AgentBus
+  construction_branch: main
+  commit: ac8afb21eb40fccf87b90312d1fa23c098f9e8f8
+  tree: e16bf42de4b7844c9401e4ca81e69014c697e38d
+bcf:
+  released_runtime:
+    version: 2.1.8
+    source_commit: 030a38ed443ccb5b46f26b68f5ad271a12a2a48d
+    wheel_sha256: 88683fd94bae7e9c4b96ecc19d3ad6ba12967c7426f7d9ebc792a465a3688b4b
+    authority: released
+  construction_candidate:
+    version: 2.3.2-candidate
+    source_commit: 6f1253932c8bd10335066abd6eb66e01dee1d397
+    source_tree: f3f9f02b1af261e52ee31ebb63034cf6e55efb18
+    pack_manifest_sha256: 00e4d5e173594c33460cdcde34f56cfc735cccea4ade0c84499a27fcc0ffef6d
+    authority: non_authoritative_paused_before_protected_submission
+    supersedes: [08d36dc4eb2584b61912baacf8c83bc958496cce, 9aa6f3b425ee647e6350c538f4669ccf70096b9c]
+  upgrade_rule: use the newest authorized candidate or release only through canonical BCF install and reconciliation at P09-P8
+  installed_subject: {commit: ac8afb21eb40fccf87b90312d1fa23c098f9e8f8, tree: e16bf42de4b7844c9401e4ca81e69014c697e38d}
+surfaces:
+  local_custody: [SQLite WAL store, local consumer profiles, independent service and client cursors, explicit semantic acknowledgement]
+  provider: [Slack Web API, Slack Socket Mode, authenticated bot identity, human reply and command adapter]
+  participation: [joining, active, stopped sessions, session proof, configurable local prefixes, aliases]
+  wake: [non_acknowledging wake inbox, exact recipient eligibility, owner-owned Codex RPC adapter, notification-only fallback]
+  operators: [allowlisted Slack commands, exact session targeting, pause/resume/retire controls, metrics]
+unknowns:
+  - actual multi-installation Slack listener fan-out and event recovery are not proven by shared Socket Mode credentials
+  - origin-to-publisher mapping and destination receipt behavior require a qualified provider arrangement
+  - deployed installation count, retention, scopes, rate limits, and provider history availability require operator evidence
+deferred_qualification:
+  status: required_before_cross_instance_claims_or_publication
+  candidate: dedicated_multi_installation_qualifying_candidate
+  allowed_before_gate: [local_contracts, fake_provider_tests, fake_owner_tests, compatibility, replay, crash_recovery, deterministic_negative_controls, resource_baseline]
+  prohibited_before_gate: [claiming_provider_fanout, claiming_destination_receipt, publishing_remote_directory_convergence, live_cross_instance_rollout]
+budgets:
+  status: baseline_to_measure_before_behavioral_implementation
+  dimensions: [processes, memory, storage_growth, provider_requests, reconnect_cost, registration_events, directory_bytes, idle_token_use]
+  rule: any regression requires evidence-backed approval; no idle model turns are permitted
+release_boundary:
+  product_work: may_continue_against_recorded_candidate
+  publication: blocked_until_bcf_authority_and_exact_final_truth

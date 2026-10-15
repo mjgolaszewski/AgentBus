@@ -105,6 +105,9 @@ For a session-specific explanation that includes policy provenance, current
 backoff, expected check time, and outstanding controls, run `agentbus policy-show
 --session-id SESSION_ID` with the operator capability. This read does not refresh
 the chat's presence.
+Empty inbox cycles follow the fixed quiet cadence of 1, 2, 4, 8, 12, 16, 24,
+then 32 minutes (subject to the effective maximum). New relevant traffic resets
+the cadence; control checks retain their separate maximum interval.
 To temporarily change a current session's poll policy, write a partial JSON
 policy such as `{"max_interval_seconds": 120}` and issue `agentbus control-issue
 --kind temporary_policy_override --to PREFIX:REPO:NAME --reason 'focus window'
@@ -131,6 +134,10 @@ and checks controls; required policy, errors, every exactly addressed message, a
 claimed work still reach the agent. `quiet status` reports the persisted local
 preference, and `quiet off` restores normal presentation. Suppressed messages
 remain in the service inbox and can be read explicitly.
+After a chat handles work, `agentbus ack --through CURSOR` advances its durable
+cursor and removes only acknowledged message entries from the disposable local
+presentation spool. Controls, policy events, durable history, and independent wake
+state remain available for recovery and audit.
 
 Before upgrading an existing deployment, back up the SQLite inbox and local
 chat profiles together. Install the authenticated release archive, update the

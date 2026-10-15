@@ -1,0 +1,50 @@
+document:
+  kind: execution_phase_workitem_ledger
+  name: Phase 11 Workitems
+  id: agentbus-phase-11-workitems
+  version: 1.0.0
+  generated_at_utc: '2026-10-15T00:00:00Z'
+  status: planned
+  path: plans/phase-11-workitems.yml
+  phase_id: P11
+workitems:
+- id: P11-P0-01
+  priority: P0
+  status: BLOCKED
+  summary: qualify provider fan-out and origin authentication
+  acceptance:
+  - every authorized listener can receive or recover the bounded provider event stream
+  - origin binding, scopes, history, rate limits, and recovery are evidenced on a dedicated candidate
+  acceptance_evidence: [contract-test]
+- id: P11-P1-01
+  priority: P0
+  status: TODO
+  summary: implement durable federation bridge and remote directory primitives
+  acceptance:
+  - local message and outbound obligation commit before provider side effect
+  - destination receipts, directory revisions, and uncertainty are durable and idempotent
+  acceptance_evidence: [test, contract-test, architecture-test]
+- id: P11-P2-01
+  priority: P0
+  status: TODO
+  summary: close federation replay deduplication resync and authority exclusions
+  acceptance:
+  - duplicate, delayed, conflicting, replayed, stale, withdrawn, and gap states fail closed or converge deterministically
+  - remote discovery cannot create sessions, grant privileges, execute code, wake local conversations, or acknowledge work
+  acceptance_evidence: [test, contract-test]
+- id: P11-P3-01
+  priority: P1
+  status: TODO
+  summary: prove deterministic and provider evidence
+  acceptance:
+  - fake-provider tests cover routine replay and crash paths
+  - one separately authorized provider qualification proves fan-out and recovery without a public endpoint
+  acceptance_evidence: [test, contract-test]
+- id: P11-P4-01
+  priority: P0
+  status: TODO
+  summary: publish only after final BCF custody
+  acceptance:
+  - newest authorized BCF candidate or release is installed canonically
+  - exact prospective, protected PR/main, archive, isolated-installation, and rollback evidence are green
+  acceptance_evidence: [governance-validate, architecture-test, test, contract-test, release-check]

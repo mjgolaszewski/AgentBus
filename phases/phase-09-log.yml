@@ -1,0 +1,85 @@
+document:
+  kind: execution_phase_log
+  name: Phase 09 Log
+  id: project-phase-09-log
+  version: 1.0.0
+  generated_at_utc: '2026-10-13T00:00:00Z'
+  status: active
+  path: phases/phase-09-log.yml
+phase:
+  id: P09
+  build_block: lightweight_federation_and_owner_mediated_wake
+workitems:
+  - {id: P09-P0-01, status: DONE, summary: "characterize custody, provider assumptions, wake ownership, BCF authority, and lightweight budgets"}
+  - {id: P09-P0-02, status: DONE, summary: "publish invariant, owner, producer, consumer, evidence, and prohibited-edge mapping"}
+  - {id: P09-P0-03, status: DONE, summary: "enforce typed deferral of provider qualification to P11-P0-01 with explicit authority exclusions"}
+  - {id: P09-P1-01, status: DONE, summary: "define federation, bridge, directory, and owner-mediated wake laws"}
+  - {id: P09-P1-02, status: DONE, summary: "implement deterministic token-efficient idle polling backoff with independent control checks"}
+  - {id: P09-P2-01, status: DONE, summary: "bind primitives to canonical AgentBus and BCF owners"}
+  - {id: P09-P3-01, status: DONE, summary: "implement state transitions and edge controls"}
+  - {id: P09-P4-01, status: DONE, summary: "add durable bridge, directory, and owner-admission operations"}
+  - {id: P09-P5-01, status: DONE, summary: "connect local durable federation obligations and canonical wake producers while deferring provider submission to P11"}
+  - {id: P09-P6-01, status: DONE, summary: "prove deterministic evidence, compatibility, recovery, and budgets"}
+  - {id: P09-P7-01, status: DONE, summary: "transfer live wake canary qualification to P10-P2-01 without claiming live capability in P09"}
+  - {id: P09-P8-01, status: TODO, summary: "upgrade BCF and prove exact final publication subject"}
+summary:
+  outcome: active
+  highlights:
+  - Issue #48 is the P09 construction authority.
+  - P09-P0 baseline and invariant ownership mapping are recorded.
+  - Current BCF candidate custody is non-authoritative and publication remains blocked pending BCF handoff.
+  - Provider fan-out and origin authentication are deferred to a dedicated multi-installation-qualifying candidate; local deterministic construction may proceed.
+  - The existing SQLite store now owns durable bridge obligations and revisioned remote-directory observations; conflicting payloads, revisions, and state regressions fail closed.
+execution_evidence:
+  planned_commands:
+  - make governance-validate
+  - make architecture-test
+  - make lint
+  - make typecheck
+  - make test
+  - make contract-test
+  - make release-check
+  executed_commands:
+  - uv run --locked --extra dev python -m pytest -q tests/test_participation_service.py tests/test_poll_client.py
+  - uv run --locked --extra dev ruff check src/agentbus_participation_service.py src/agentbus_poll_client.py tests/test_participation_service.py tests/test_poll_client.py
+  - uv run --locked --extra dev python scripts/validate_governance_yaml.py
+  notes:
+  - P09-P0 records released BCF 2.1.8 and candidate 2.3.2 custody identities without upgrading generated runtime files.
+  - The BCF developer was notified over AgentBus at phase opening and asked to coordinate the next authorized candidate or release.
+  - Local contracts, fake-provider behavior, compatibility, and deterministic failure controls may proceed; cross-instance claims remain gated.
+  - "P09-P1-02 is complete: empty worker cycles now use the fixed 1/2/4/8/12/16/24/32-minute cadence, while control checks retain their own bound."
+  - "Local product proof is green at 240 tests; provider-backed cross-installation delivery remains an explicitly deferred capability."
+closeout_requirements:
+  claims:
+    workitems_closed:
+      required_evidence:
+      - governance-validate
+    required_suites_green:
+      required_evidence:
+      - test
+      - contract-test
+    architecture_gates_green:
+      required_evidence:
+      - architecture-test
+    health_checks_green:
+      required_evidence:
+      - runtime-smoke
+    findings_resolved:
+      required_evidence:
+      - governance-validate
+    security_review_complete:
+      required_evidence:
+      - governance-validate
+  reconciliation:
+    required_evidence:
+    - governance-validate
+    - governance-exposure-scan
+  finding_registry: governance/findings.yml
+known_constraints:
+  - provider fan-out and origin authentication are not yet qualified for a multi-installation claim
+  - multi-installation qualification is deferred to a dedicated qualifying candidate
+  - BCF candidate custody is non-authoritative until the final P09-P8 upgrade and protected proof
+  - existing notification-only wake remains the safe fallback until owner admission is proven
+next_work:
+  - continue P09-P1 contract work while provider fan-out and origin authentication remain deferred
+  - request the next authorized BCF candidate or release and preserve its exact custody identity

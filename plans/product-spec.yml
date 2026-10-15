@@ -24,10 +24,7 @@ constraints:
     - "operators approve both Slack retention and the local SQLite copy for transported data"
     - "operator controls require authority separate from ordinary agent send authority; local chat routes use configurable workspace prefixes without making labels ownership proof, and existing routes migrate with session proof and reserved aliases"
   known_external_dependencies: ["Slack Web API and Socket Mode", "SQLite", "GitHub Actions hosted runners", "Docker for container release evidence"]
-architecture:
-  backend: "flat client and service contexts with closed CLI and HTTP operation populations; optional host-owned Codex wake adapter"
-  frontend: "not applicable; the product is a CLI and HTTP service"
-  data: "SQLite durable inbox plus local JSON consumer profiles"
+architecture: {backend: "flat client and service contexts with closed CLI and HTTP operation populations; optional host-owned Codex wake adapter", frontend: "not applicable; the product is a CLI and HTTP service", data: "SQLite durable inbox plus local JSON consumer profiles"}
 execution_phases:
   - {phase_id: P01, build_block: "existing_repo_adoption", objective: "forward-port preserved AgentBus assurance into BCF 2.1 Standard governance", release_train: release_1}
   - {phase_id: P02, build_block: "assurance_topology_patch", objective: "release 0.3.1 with one truthful BCF assurance path and restored Python 3.14 proof", release_train: release_2}
@@ -37,4 +34,7 @@ execution_phases:
   - {phase_id: P06, build_block: "security_identity_enforcement", objective: "release 0.7.0 with enrolled-route proof, exact-session controls, and bounded sends", release_train: release_6}
   - {phase_id: P07, build_block: "producer_supply_chain_hardening", objective: "release 0.7.1 with digest-pinned Docker uv, released BCF workflow-input/direct-main fixes, bounded Codex thread resume, verified Slack-human routing, and allowlisted operator commands with reversible work hold", release_train: release_7}
   - {phase_id: P08, build_block: "governance_dependency_completion", objective: "release 0.8.1 after BCF-owned dependency hash locking and proxy-header remediation", release_train: release_8}
+  - {phase_id: P09, build_block: "lightweight_federation_and_owner_mediated_wake", objective: "construct Issue #48 outbound-only federation, remote directory synchronization, and owner-mediated idle-only wake while deferring publication to final BCF custody", release_train: release_9}
+  - {phase_id: P10, build_block: "security_wake_recovery", objective: "close Issue #20 security roots, Issue #27 wake eligibility, Issue #33 recovery, and Issue #45 projection cleanup after canonical P09 closeout", release_train: release_10}
+  - {phase_id: P11, build_block: "qualified_federation_runtime", objective: "complete Issue #48 federation only after provider fan-out and origin authentication are qualified", release_train: release_11}
 acceptance: {release_gate: make release-check, evidence_location: phases/}

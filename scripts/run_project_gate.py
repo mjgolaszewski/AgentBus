@@ -29,7 +29,7 @@ TEST_GATES = {
     "architecture-router-thinness": ["tests/test_architecture.py::test_http_routers_remain_thin_transport_adapters"],
     "architecture-duplication": ["tests/test_architecture.py::test_cross_context_duplication_stays_below_declared_block_size"],
     "test": ["tests/test_launcher.py", "tests/test_poll_client.py", "tests/test_presentation_client.py", "tests/test_operator_client.py", "tests/test_rename_client.py", "tests/test_codex_wake_contract.py", "tests/test_codex_wake_client.py", "tests/test_codex_rpc_client.py", "tests/test_self_service_client.py"],
-    "contract-test": ["tests/test_service.py", "tests/test_slack_commands.py", "tests/test_participation_contract.py", "tests/test_participation_service.py", "tests/test_participation_store.py", "tests/test_control_store.py", "tests/test_rename_store.py", "tests/test_claim_recovery.py", "tests/test_credential_rotation.py"],
+    "contract-test": ["tests/test_service.py", "tests/test_slack_commands.py", "tests/test_participation_contract.py", "tests/test_federation_contract.py", "tests/test_participation_service.py", "tests/test_participation_store.py", "tests/test_control_store.py", "tests/test_rename_store.py", "tests/test_claim_recovery.py", "tests/test_credential_rotation.py"],
     "python314-compatibility": [
         "tests/test_python_compatibility.py",
         "tests/test_launcher.py",
@@ -73,7 +73,15 @@ def require_success(result: subprocess.CompletedProcess[str]) -> None:
             print(result.stdout, end="", file=sys.stdout)
         if result.stderr:
             print(result.stderr, end="", file=sys.stderr)
-        raise SystemExit(result.returncode)
+        # Preserve the child process' exact failure as a subprocess failure.
+        # Raising here is part of the producer contract: callers must never
+        # continue to emit a successful gate result after a failed child.
+        raise subprocess.CalledProcessError(
+            result.returncode,
+            result.args,
+            output=result.stdout,
+            stderr=result.stderr,
+        ) from None
 
 
 def test_gate(gate: str, junit: Path) -> None:
@@ -145,11 +153,27 @@ def verify_declared_environment() -> None:
     print("declared-environment-ok")
 
 
+def _runtime_smoke_image_tag(namespace: str) -> str:
+    namespace = namespace.strip()
+    if not namespace:
+        raise ValueError("runtime-smoke requires BCF_EXECUTION_STATE_NAMESPACE")
+    # The BCF executor owns the namespace.  Keep the Docker tag deterministic
+    # while preventing concurrent baseline/mutant/repository runs from sharing
+    # a mutable name or cleaning up one another's image.
+    namespace_digest = hashlib.sha256(namespace.encode("utf-8")).hexdigest()[:16]
+    return f"agentbus:bcf-runtime-smoke-{namespace_digest}"
+
+
 def runtime_smoke() -> None:
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
+    namespace = os.environ.get("BCF_EXECUTION_STATE_NAMESPACE", "")
+    try:
+        image_tag = _runtime_smoke_image_tag(namespace)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from None
     with tempfile.TemporaryDirectory(prefix="agentbus-runtime-") as directory:
         iid = Path(directory) / "image-id"
-        require_success(run(["docker", "build", "--iidfile", str(iid), "-t", "agentbus:bcf-runtime-smoke", "."]))
+        require_success(run(["docker", "build", "--iidfile", str(iid), "-t", image_tag, "."]))
         image = iid.read_text(encoding="utf-8").strip()
         try:
             require_success(run([
@@ -161,7 +185,7 @@ def runtime_smoke() -> None:
                 ),
             ]))
         finally:
-            run(["docker", "image", "rm", "--force", image], capture=True)
+            run(["docker", "image", "rm", "--force", image_tag, image], capture=True)
     print("runtime-smoke-ok")
 
 

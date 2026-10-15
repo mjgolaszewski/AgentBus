@@ -1,0 +1,68 @@
+document:
+  kind: execution_phase_plan
+  name: Phase 09 Plan
+  id: project-phase-09-plan
+  version: 1.0.0
+  generated_at_utc: '2026-10-13T00:00:00Z'
+  status: active
+  path: plans/phase-09-plan.yml
+phase:
+  id: P09
+  build_block: lightweight_federation_and_owner_mediated_wake
+  planner: codex
+  date: '2026-10-13'
+  scope_source:
+  - AGENTS.yml
+  - plans/product-spec.yml
+  - plans/build-plan.yml
+  - plans/phase-ledger.yml
+  - MEMORY.yml
+  - Issue #48
+delivery_contract:
+  tightly_scoped_deliverables:
+  - characterize provider topology, local custody, wake ownership, and BCF authority
+  - define federation, bridge-obligation, directory, owner-capability, wake-intent, and execution-correlation contracts
+  - preserve protocol 2, historical cursors, Slack threads, claims, sessions, wake cursors, and operator controls
+  - implement outbound-only provider bridging and service-driven remote-directory synchronization without a new broker or registry
+  - implement owner-mediated idle-only wake admission without active-turn steering or implicit acknowledgement
+  - prove deterministic failure, replay, crash recovery, compatibility, and lightweight resource budgets
+  - upgrade to the newest authorized BCF candidate or release at the final custody boundary
+  - publish only after exact-tree BCF, protected-main, archive, and isolated-installation proof
+  parallelizable_workstreams:
+  - id: P09-WS1
+    name: baseline_and_contracts
+  - id: P09-WS2
+    name: provider_bridge_and_directory
+  - id: P09-WS3
+    name: owner_mediated_wake
+  - id: P09-WS4
+    name: evidence_and_compatibility
+  - id: P09-WS5
+    name: bcf_custody_and_release
+  hard_dependencies:
+  - current BCF candidate identity recorded as a non-authoritative golden-master baseline
+  - provider fan-out, origin authentication, and recovery qualification are deferred to a dedicated multi-installation-qualifying candidate
+  - no BCF candidate or release upgrade is applied by hand
+  docker_first_local_runtime: repo_native_validation_and_governance_commands
+  completeness_standard: full_completeness_for_declared_scope
+scope_lock:
+- order: 1
+  statement: preserve local AgentBus custody, Slack human behavior, protocol 2, existing sessions, cursors, claims, wake boundaries, and operator controls
+- order: 2
+  statement: no public AgentBus endpoint, direct inter-site network, bespoke relay, broker, separate registry, per-agent Slack app, or credential replication
+- order: 3
+  statement: remote discovery and transport never create local sessions, grant privileges, authorize execution, or acknowledge agent work
+- order: 4
+  statement: owner-mediated wake may only admit a verified idle owner; queued-after-busy behavior is not equivalent to atomic idle-only admission
+- order: 5
+  statement: BCF candidate qualification may be non-authoritative during construction, but final publication requires the newest authorized BCF custody and exact re-proof
+- order: 6
+  statement: local contracts, fake-provider behavior, compatibility, and failure controls may proceed before multi-installation qualification; cross-instance delivery claims remain gated
+verification_plan:
+- make governance-validate
+- make architecture-test
+- make lint
+- make typecheck
+- make test
+- make contract-test
+- make release-check

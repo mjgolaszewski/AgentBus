@@ -1,0 +1,64 @@
+document:
+  kind: agentbus_federation_contract
+  id: agentbus-federation-v1
+  version: 1.0.0
+  status: active
+  path: contracts/federation/v1/federation.contract.yml
+  source: https://github.com/mjgolaszewski/AgentBus/issues/48
+  authority: normative_for_p09_local_custody_and_outbound_bridge
+
+scope:
+  purpose: outbound_only_inter_instance_transport_and_remote_directory_projection
+  deployment: independent_private_agentbus_installations_using_an_existing_provider
+  provider: slack_first
+  compatibility: [protocol_2_messages, local_cursors, slack_threads, sessions, claims, operator_controls]
+  non_goals: [public_agentbus_endpoint, bespoke_relay, distributed_registry, credential_replication, remote_execution_authority, exactly_once_business_effects]
+
+invariants:
+  - {id: FB-INV-001, rule: "A successful local send means the origin instance durably accepted the message and its outbound bridge obligation in one local transaction; provider availability is not required."}
+  - {id: FB-INV-002, rule: "Origin identity is immutable across transport: origin_instance_id and origin_message_id remain bound to the authenticated publisher and recipient instance/route; the destination may allocate a different local cursor."}
+  - {id: FB-INV-003, rule: "Bridge states remain distinct: origin_accepted, bridge_submitted, bridge_uncertain, destination_accepted, and agent_acknowledged are never inferred from one another."}
+  - {id: FB-INV-004, rule: "Destination persistence deduplicates by authenticated origin instance, origin message, and destination identity; duplicate, delayed, or replayed provider events are idempotent."}
+  - {id: FB-INV-005, rule: "Remote discovery carries only allowlisted identity and freshness metadata. It never creates a local session, grants a privilege, authorizes execution, claims work, or acknowledges an agent message."}
+  - {id: FB-INV-006, rule: "Directory freshness is separate from registration, running state, wakeability, and active-turn state. Unknown, stale, gap, withdrawn, or contradictory observations fail closed."}
+  - {id: FB-INV-007, rule: "Outbound bridge retry is bounded and crash-recoverable. Uncertain provider results remain uncertain until reconciled; the sender never fabricates destination acceptance."}
+  - {id: FB-INV-008, rule: "Local owner-mediated wake may admit only a verified idle owner after an epoch recheck. Remote transport and discovery cannot start a turn, steer an active turn, or acknowledge queued work."}
+  - {id: FB-INV-009, rule: "Directory updates converge by revisioned snapshot and delta. A gap, expired provider history, or missed withdrawal requires bounded resynchronization and cannot silently delete another origin's entry."}
+  - {id: FB-INV-010, rule: "All provider payloads, routes, metadata, credentials, and execution requests are untrusted at the destination and are rejected when unsigned, oversized, conflicting, or outside the configured origin binding."}
+
+primitives:
+  local_message: {identity: origin_instance_id_plus_origin_message_id, owner: local_store}
+  bridge_obligation: {identity: origin_instance_id_plus_origin_message_id_plus_destination_instance, states: [origin_accepted, submitted, uncertain, destination_accepted, acknowledged], owner: local_store}
+  directory_revision: {identity: origin_instance_id_plus_monotonic_revision, states: [absent, snapshotting, current, stale, gap, resync_required, withdrawn], owner: local_store}
+  owner_capability: {identity: session_id_plus_owner_incarnation, states: [unknown, unavailable, active, approval_wait, idle, interrupted, failed, unloaded, stale, contradictory], owner: local_owner_adapter}
+  wake_intent: {identity: wake_intent_id_plus_owner_epoch, states: [pending, eligible, submitting, uncertain, queued, admitted, running, completed, blocked], owner: local_owner_adapter}
+  execution_correlation: {identity: wake_intent_id_plus_turn_id, owner: conversation_host}
+
+contracts:
+  local_acceptance: {commit_order: [message, bridge_obligation], provider_side_effect_after_commit: true, acknowledgement: semantic_agent_ack_only}
+  bridge_submission: {transport: outbound_only, retry: bounded, uncertainty: explicit, dedupe_key: origin_instance_id_plus_origin_message_id_plus_destination_instance}
+  destination_acceptance: {requires: [authenticated_origin, valid_route, schema_valid_payload, deduplicated_persistence], provider_receipt_is_not_acceptance: true}
+  directory: {revisioning: monotonic_per_origin, payload: allowlisted_metadata_only, freshness: explicit, stale_default: unknown, resync: bounded_snapshot_then_deltas}
+  wake: {admission: owner_confirmed_idle_only, epoch_recheck: required, active_owner: defer, queued_work: never_acknowledged, remote_authority: none}
+  prohibited_edges: [remote_message_to_local_execution, remote_directory_to_session_creation, provider_receipt_to_destination_acceptance, queued_wake_to_agent_ack, stale_directory_to_wakeability]
+
+proof_obligations:
+  - {id: FB-PO-001, proves: [FB-INV-001, FB-INV-007], scenario: local_commit_survives_provider_outage_and_crash_before_submission}
+  - {id: FB-PO-002, proves: [FB-INV-002, FB-INV-004, FB-INV-010], scenario: forged_duplicate_delayed_and_conflicting_provider_events_fail_closed_or_deduplicate}
+  - {id: FB-PO-003, proves: [FB-INV-005, FB-INV-006, FB-INV-009], scenario: join_rename_withdrawal_late_join_gap_and_resync_converge_without_authority_promotion}
+  - {id: FB-PO-004, proves: [FB-INV-003, FB-INV-007], scenario: uncertain_submission_reconciles_without_false_destination_receipt}
+  - {id: FB-PO-005, proves: [FB-INV-008], scenario: active_owner_race_defers_and_idle_owner_admits_one_coalesced_wake_without_acknowledgement}
+  - {id: FB-PO-006, proves: [FB-INV-010], scenario: oversized_untrusted_metadata_credentials_routes_and_execution_requests_are_rejected}
+
+implementation_order:
+  - {id: FB-IU-001, unit: local_acceptance_and_bridge_obligation, depends_on: []}
+  - {id: FB-IU-002, unit: authenticated_provider_submission_and_destination_deduplication, depends_on: [FB-IU-001]}
+  - {id: FB-IU-003, unit: bounded_directory_snapshot_and_delta_projection, depends_on: [FB-IU-002]}
+  - {id: FB-IU-004, unit: owner_capability_and_idle_wake_admission, depends_on: []}
+  - {id: FB-IU-005, unit: deterministic_fake_provider_and_fake_owner_evidence, depends_on: [FB-IU-002, FB-IU-003, FB-IU-004]}
+
+acceptance_gates:
+  local_custody: [FB-INV-001, FB-INV-003, FB-INV-007, FB-PO-001, FB-PO-004]
+  identity_and_deduplication: [FB-INV-002, FB-INV-004, FB-INV-010, FB-PO-002]
+  directory: [FB-INV-005, FB-INV-006, FB-INV-009, FB-PO-003]
+  owner_wake: [FB-INV-008, FB-PO-005]

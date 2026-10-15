@@ -172,6 +172,7 @@
         "kind": {"enum": ["session", "lane-input", "terminal", "control", "release", "durable-source", "durable-reference"]},
         "scope": {"const": "run-attempt"},
         "retention_days": {"type": "integer", "minimum": 1, "maximum": 90},
+        "storage_semantics": {"enum": ["compact-run-output", "reusable-input-handoff"]},
         "durable_input": {"$ref": "#/$defs/durableInput"},
         "durable_source": {"$ref": "#/$defs/identifier"},
         "materialization_root": {"$ref": "#/$defs/safePath"}
@@ -237,9 +238,12 @@
             "name": {"type": "string", "minLength": 1},
             "id": {"oneOf": [{"$ref": "#/$defs/identifier"}, {"type": "null"}]},
             "condition": {"oneOf": [{"$ref": "#/$defs/identifier"}, {"type": "null"}]},
+            "minimum_job_timeout_minutes": {"type": "integer", "minimum": 1},
             "action": {"enum": ["checkout", "setup-python", "setup-node", "upload-artifact", "download-artifact", "attest-build-provenance", "create-github-app-token"]},
+            "precedes_exactly_one_of": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/identifier"}},
             "with": {"type": "object", "additionalProperties": {"$ref": "#/$defs/scalar"}},
             "environment": {"type": "object", "propertyNames": {"pattern": "^[A-Z_][A-Z0-9_]*$"}, "additionalProperties": {"type": "string"}},
+            "required_permissions": {"$ref": "#/$defs/permissionMap"},
             "produces": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/identifier"}},
             "consumes": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/identifier"}}
           }
@@ -253,9 +257,11 @@
             "name": {"type": "string", "minLength": 1},
             "id": {"oneOf": [{"$ref": "#/$defs/identifier"}, {"type": "null"}]},
             "condition": {"oneOf": [{"$ref": "#/$defs/identifier"}, {"type": "null"}]},
+            "minimum_job_timeout_minutes": {"type": "integer", "minimum": 1},
             "command": {"$ref": "#/$defs/identifier"},
             "restores_private_artifacts": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/identifier"}},
             "environment": {"type": "object", "propertyNames": {"pattern": "^[A-Z_][A-Z0-9_]*$"}, "additionalProperties": {"type": "string"}},
+            "required_permissions": {"$ref": "#/$defs/permissionMap"},
             "produces": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/identifier"}},
             "consumes": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/identifier"}}
           }
@@ -340,7 +346,7 @@
         {"type": "object", "additionalProperties": false, "required": ["kind", "path"], "properties": {"kind": {"const": "reusable_workflow"}, "path": {"type": "string", "pattern": "^\\.github/workflows/[A-Za-z0-9._-]+\\.ya?ml$"}, "inputs": {"type": "object"}, "artifact_bindings": {"type": "object", "minProperties": 1, "propertyNames": {"$ref": "#/$defs/identifier"}, "additionalProperties": {"$ref": "#/$defs/identifier"}}}},
         {"type": "object", "additionalProperties": false, "required": ["kind", "operation"], "properties": {"kind": {"const": "authority"}, "operation": {"enum": ["admit", "admit-with-prior-evidence", "finalize", "publish", "authorize-release", "collect-release", "publish-release"]}, "evaluation_mode": {"enum": ["pr", "workitem", "closure"]}, "evaluation_target": {"type": "string", "minLength": 1}, "protection_inspection": {"const": true}}},
         {"type": "object", "additionalProperties": false, "required": ["kind", "source", "reference"], "properties": {"kind": {"const": "durable_publish"}, "source": {"$ref": "#/$defs/identifier"}, "reference": {"$ref": "#/$defs/identifier"}}},
-        {"type": "object", "additionalProperties": false, "required": ["kind", "components"], "properties": {"kind": {"const": "component_sequence"}, "components": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/identifier"}}, "evaluation_mode": {"enum": ["pr", "workitem", "closure"]}, "evaluation_target": {"type": "string", "minLength": 1}, "protection_inspection": {"const": true}}},
+        {"type": "object", "additionalProperties": false, "required": ["kind", "components"], "properties": {"kind": {"const": "component_sequence"}, "components": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/identifier"}}, "evaluation_mode": {"enum": ["pr", "workitem", "closure"]}, "evaluation_target": {"type": "string", "minLength": 1}, "protection_inspection": {"const": true}, "evaluator_source": {"enum": ["protected_base", "managed_controller"]}}},
         {"type": "object", "additionalProperties": false, "required": ["kind", "gates", "shard_key", "shard_count", "components"], "properties": {"kind": {"const": "gate_shard"}, "gates": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/identifier"}}, "shard_key": {"$ref": "#/$defs/identifier"}, "shard_count": {"type": "integer", "minimum": 2, "maximum": 256}, "components": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/identifier"}}}},
         {"type": "object", "additionalProperties": false, "required": ["kind", "command", "components"], "properties": {"kind": {"const": "terminal_truth"}, "command": {"$ref": "#/$defs/identifier"}, "components": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/identifier"}}}},
         {"type": "object", "additionalProperties": false, "required": ["kind", "command"], "properties": {"kind": {"const": "truth"}, "command": {"$ref": "#/$defs/identifier"}}}

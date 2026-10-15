@@ -11,7 +11,7 @@ import re
 import shutil
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -20,13 +20,17 @@ if str(_SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_ROOT))
 
 from .governance_install.ci_graph import write_reference_ci_graph  # noqa: E402
+from .governance_install.existing_adoption import compile_existing_adoption_inventory, extend_existing_adoption_paths, migrate_existing_adoption_contract, prepare_existing_adoption_shadow, project_existing_adoption_roots  # noqa: E402,E501
+from .governance_install.transaction_paths import install_transaction_paths  # noqa: E402
 from .governance_install.phase import generate_phase_artifacts  # noqa: E402
 from .governance_install.release_custody import prepare_upgrade_release_custody  # noqa: E402
+from .local_cli_receipt import project_local_cli_receipt, resolve_local_cli  # noqa: E402
 from .governance_install.artifacts import (  # noqa: E402
     ensure_required_artifacts,
     merge_gitignore as _merge_gitignore,
 )
 from .governance_install.transaction import apply_transaction  # noqa: E402
+from .governance_install.validation import require_graph_parity, run_validation  # noqa: E402
 from .governance_install.upgrade import (  # noqa: E402
     copy_selected_template_paths,
     replace_placeholders_in_files,
@@ -40,6 +44,7 @@ from .governance_profiles import (  # noqa: E402
 )
 from .profile_contract_v2 import resolve_install_contract_version  # noqa: E402
 from .semantic_authority_commands import _apply_config, _load_config  # noqa: E402
+from .governance_install.semantic_upgrade import install_transaction_requires_history, reconcile_upgrade_semantic_custody  # noqa: E402,E501
 from .ci_graph_locks import apply_ci_graph_locks  # noqa: E402
 from .ci_graph_post_merge import reconcile_post_merge_scope  # noqa: E402
 from .ci_graph_render import apply_ci_graph  # noqa: E402
@@ -106,6 +111,7 @@ INSTALL_MANAGED_PATHS = tuple(
             "LICENSE",
             "CHANGELOG.md",
             "governance/bcf-runtime-lock.json",
+            "governance/bcf-candidate-qualification.json",
         )
     )
 )
@@ -134,11 +140,7 @@ LITE_DEFERRED_GATES = (
     "runtime-smoke",
 )
 REQUIRED_STANDARD_GATES = ("governance-validate", "governance-exposure-scan", *LITE_DEFERRED_GATES)
-UPGRADE_REFRESH_PATHS = ("schemas",
-    "backend/tests/architecture/test_boundaries_ast.py",
-    "governance/REPO_CLEANUP.md",
-    *RUNTIME_SUPPORT_PATHS,
-)
+UPGRADE_REFRESH_PATHS = ("schemas", "backend/tests/architecture/test_boundaries_ast.py", "governance/REPO_CLEANUP.md", *RUNTIME_SUPPORT_PATHS)
 UPGRADE_PROJECT_OWNED_PATHS = (
     "governance-profile.yml",
     "governance/gate-contracts.yml",
@@ -498,28 +500,6 @@ def _apply_adoption_mode_defaults(
         args.build_block = "existing_repo_adoption"
 
 
-def _run_validation(
-    target_root: Path,
-    *,
-    allow_placeholders: bool,
-    allow_release_gate_placeholders: bool,
-) -> subprocess.CompletedProcess[str]:
-    command = [
-        sys.executable,
-        str(target_root / "scripts" / "validate_governance_yaml.py"),
-        "--repo-root",
-        str(target_root),
-        "--format",
-        "json",
-        "--compact",
-    ]
-    if allow_placeholders:
-        command.append("--allow-placeholders")
-    if allow_release_gate_placeholders:
-        command.append("--allow-release-gate-placeholders")
-    return subprocess.run(command, capture_output=True, text=True)
-
-
 def _upgrade_pack(args: argparse.Namespace, target_root: Path) -> InstallResult:
     if not target_root.exists() or not target_root.is_dir():
         raise NotADirectoryError(f"{target_root} is not an existing directory; use install without --upgrade")
@@ -528,6 +508,7 @@ def _upgrade_pack(args: argparse.Namespace, target_root: Path) -> InstallResult:
 
     template_root = _template_root()
     entries = _pack_manifest_entries(template_root)
+    migrate_existing_adoption_contract(target_root)
     retired_self_authority = retire_self_authority_pack_surfaces(
         target_root=target_root,
         entries=entries,
@@ -579,13 +560,14 @@ def _upgrade_pack(args: argparse.Namespace, target_root: Path) -> InstallResult:
         reconcile_post_merge_scope(target_root, apply=True)
         apply_ci_graph_locks(target_root)
         apply_ci_graph(target_root)
+    reconcile_upgrade_semantic_custody(target_root, skip_validation=args.skip_validation)
 
     strict_validation_passed = False
     bootstrap_validation_passed = False
     strict_output = ""
     bootstrap_output = ""
     if not args.skip_validation:
-        strict_result = _run_validation(
+        strict_result = run_validation(
             target_root,
             allow_placeholders=False,
             allow_release_gate_placeholders=False,
@@ -593,7 +575,7 @@ def _upgrade_pack(args: argparse.Namespace, target_root: Path) -> InstallResult:
         strict_validation_passed = strict_result.returncode == 0
         strict_output = (strict_result.stdout or strict_result.stderr).strip()
         if not strict_validation_passed:
-            bootstrap_result = _run_validation(
+            bootstrap_result = run_validation(
                 target_root,
                 allow_placeholders=True,
                 allow_release_gate_placeholders=True,
@@ -633,6 +615,7 @@ def _install_direct(args: argparse.Namespace, target_root: Path) -> InstallResul
     rescaffold_removed_paths: list[str] = []
     if args.force_rescaffold:
         rescaffold_removed_paths = _force_rescaffold_cleanup(target_root)
+    prepare_existing_adoption_shadow(target_root, inventory=args.existing_adoption_inventory)
 
     copied_files, installed_destinations = _copy_template(
         template_root=template_root,
@@ -645,6 +628,7 @@ def _install_direct(args: argparse.Namespace, target_root: Path) -> InstallResul
     values = _placeholder_values(args, target_root)
     replace_placeholders_in_files(installed_destinations, values)
     _configure_architecture_boundaries(target_root, args.profile)
+    project_existing_adoption_roots(target_root, inventory=args.existing_adoption_inventory)
     contract = args.profile_contract
     contract_version = str(contract.get("profile_contract_version", "1.0"))
     graph_enabled = args.profile == "lite" or contract_version in {"2.0", "3.0"}
@@ -661,7 +645,7 @@ def _install_direct(args: argparse.Namespace, target_root: Path) -> InstallResul
     strict_output = ""
     bootstrap_output = ""
     if not args.skip_validation:
-        strict_result = _run_validation(
+        strict_result = run_validation(
             target_root,
             allow_placeholders=False,
             allow_release_gate_placeholders=False,
@@ -669,7 +653,7 @@ def _install_direct(args: argparse.Namespace, target_root: Path) -> InstallResul
         strict_validation_passed = strict_result.returncode == 0
         strict_output = (strict_result.stdout or strict_result.stderr).strip()
         if not strict_validation_passed:
-            bootstrap_result = _run_validation(
+            bootstrap_result = run_validation(
                 target_root,
                 allow_placeholders=True,
                 allow_release_gate_placeholders=True,
@@ -716,16 +700,24 @@ def install(args: argparse.Namespace) -> InstallResult:
     )
     if git_root.returncode != 0 or Path(git_root.stdout.strip()).resolve() != target_root:
         raise RuntimeError("installation target must be the root of an initialized Git repository")
+    local_cli = resolve_local_cli(sys.executable)
     args.release_custody = prepare_upgrade_release_custody(
         target_root,
         getattr(args, "release_assets", None),
         args.upgrade,
         _template_root(),
         force_rescaffold=getattr(args, "force_rescaffold", False),
+        candidate_qualification_source=getattr(
+            args, "candidate_qualification_source", None
+        ),
     )
     args.profile, contract_version = resolve_install_contract_version(
         target_root, args.profile, args.profile_contract_version, args.upgrade, args.reset_options)
     args.semantic_config_payload = None
+    args.existing_adoption_inventory = (
+        compile_existing_adoption_inventory(target_root, template_root=_template_root())
+        if args.adoption_mode == "existing" and not args.upgrade else None
+    )
     # Ordinary upgrades refresh pack-owned code only. Project-owned profiles,
     # gate contracts, graphs, extensions, workflows, and state change only
     # through their explicit migration, promotion, or reset commands.
@@ -758,18 +750,32 @@ def install(args: argparse.Namespace) -> InstallResult:
     if args.force_rescaffold:
         _confirm_force_rescaffold(target_root, args.yes)
     result_box: list[InstallResult] = []
+    graph_path = target_root / "governance/ci-graph.yml"
+    transaction_paths = install_transaction_paths(
+        args, contract=args.profile_contract, contract_version=contract_version,
+        target_root=target_root, template_root=_template_root(),
+        baseline=INSTALL_MANAGED_PATHS,
+    )
+    transaction_paths = extend_existing_adoption_paths(transaction_paths, args.existing_adoption_inventory)
 
     def mutate(shadow: Path) -> None:
         result_box.append(
             _upgrade_pack(args, shadow) if args.upgrade else _install_direct(args, shadow)
         )
 
+    def validate_final() -> None:
+        if args.skip_validation or not graph_path.is_file():
+            return
+        require_graph_parity(target_root)
+
     apply_transaction(
         target_root,
-        managed_paths=INSTALL_MANAGED_PATHS,
+        managed_paths=transaction_paths,
         mutate_shadow=mutate,
-        preserve_git_history=args.semantic_config_payload is not None,
+        preserve_git_history=install_transaction_requires_history(target_root, args),
+        validate_final=validate_final,
     )
+    project_local_cli_receipt(target_root, local_cli)
     result = result_box[0]
     generated = {
         key: target_root / path.relative_to(path.parents[1])
@@ -777,16 +783,7 @@ def install(args: argparse.Namespace) -> InstallResult:
         else path
         for key, path in result.generated_artifacts.items()
     }
-    return InstallResult(
-        copied_files=result.copied_files,
-        rescaffold_removed_paths=result.rescaffold_removed_paths,
-        removed_template_examples=result.removed_template_examples,
-        generated_artifacts=generated,
-        strict_validation_passed=result.strict_validation_passed,
-        bootstrap_validation_passed=result.bootstrap_validation_passed,
-        strict_validation_output=result.strict_validation_output,
-        bootstrap_validation_output=result.bootstrap_validation_output,
-    )
+    return replace(result, generated_artifacts=generated)
 
 
 def main(argv: list[str] | None = None) -> None:
