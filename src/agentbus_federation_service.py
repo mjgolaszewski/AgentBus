@@ -276,6 +276,23 @@ class FederationStore:
                                      route=route, revision=revision,
                                      state="gap", metadata={})
 
+    def apply_directory_delta(self, *, origin_instance_id: str, route: str,
+                              revision: int, state: str,
+                              metadata: dict[str, Any]) -> dict[str, Any]:
+        """Apply one contiguous delta or record a bounded resync gap."""
+        _check_id(origin_instance_id, INSTANCE_RE, "origin instance")
+        _check_id(route, ROUTE_RE, "route")
+        existing = self._db.execute(
+            "SELECT revision FROM remote_directory WHERE origin_instance_id=? AND route=?",
+            (origin_instance_id, route),
+        ).fetchone()
+        if existing is not None and revision > existing["revision"] + 1:
+            return self.mark_directory_gap(origin_instance_id=origin_instance_id,
+                                           route=route, revision=revision)
+        return self.apply_directory(origin_instance_id=origin_instance_id,
+                                    route=route, revision=revision,
+                                    state=state, metadata=metadata)
+
     def directory(self, *, origin_instance_id: str | None = None) -> list[dict[str, Any]]:
         query = "SELECT * FROM remote_directory"
         args: tuple[str, ...] = ()
