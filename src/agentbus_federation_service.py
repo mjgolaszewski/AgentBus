@@ -17,6 +17,11 @@ from typing import Any
 INSTANCE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 ROUTE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$")
 MAX_METADATA = 4096
+MAX_PAYLOAD = 48_000
+ALLOWED_DIRECTORY_FIELDS = {
+    "agent_id", "display_name", "role", "protocol", "registration_state",
+    "capabilities", "origin_revision", "workspace_label",
+}
 
 
 def _now() -> str:
@@ -32,8 +37,10 @@ def _check_id(value: str, pattern: re.Pattern[str], label: str) -> str:
 class FederationStore:
     """Local federation state, persisted in AgentBus's canonical SQLite store."""
 
-    def __init__(self, db: sqlite3.Connection, lock: RLock):
+    def __init__(self, db: sqlite3.Connection, lock: RLock,
+                 *, trusted_origins: dict[str, str] | None = None):
         self._db, self._lock = db, lock
+        self._trusted_origins = dict(trusted_origins or {})
         with self._lock, self._db:
             self._db.execute("""
                 CREATE TABLE IF NOT EXISTS bridge_obligations (
@@ -51,6 +58,8 @@ class FederationStore:
             columns = {row["name"] for row in self._db.execute("PRAGMA table_info(bridge_obligations)")}
             if "payload" not in columns:
                 self._db.execute("ALTER TABLE bridge_obligations ADD COLUMN payload TEXT NOT NULL DEFAULT ''")
+            if "provider_ref" not in columns:
+                self._db.execute("ALTER TABLE bridge_obligations ADD COLUMN provider_ref TEXT")
             self._db.execute("""
                 CREATE TABLE IF NOT EXISTS remote_directory (
                     origin_instance_id TEXT NOT NULL,
@@ -70,6 +79,12 @@ class FederationStore:
         if not isinstance(origin_message_id, str) or not 1 <= len(origin_message_id) <= 128:
             raise ValueError("invalid federation origin message")
         raw = payload.encode() if isinstance(payload, str) else payload
+        if not isinstance(raw, bytes) or not raw or len(raw) > MAX_PAYLOAD:
+            raise ValueError("federation payload exceeds limit")
+        try:
+            encoded = raw.decode("utf-8", "strict")
+        except UnicodeDecodeError as exc:
+            raise ValueError("federation payload must be UTF-8") from exc
         digest = hashlib.sha256(raw).hexdigest()
         now = _now()
         with self._lock, self._db:
@@ -77,7 +92,7 @@ class FederationStore:
                 INSERT OR IGNORE INTO bridge_obligations
                 (origin_instance_id, origin_message_id, destination_instance_id, state, payload, payload_hash, updated_at)
                 VALUES (?, ?, ?, 'origin_accepted', ?, ?, ?)
-            """, (origin_instance_id, origin_message_id, destination_instance_id, raw.decode("utf-8", "strict"), digest, now))
+            """, (origin_instance_id, origin_message_id, destination_instance_id, encoded, digest, now))
             row = self._db.execute("""
                 SELECT origin_instance_id, origin_message_id, destination_instance_id,
                        state, payload, payload_hash, attempts, updated_at
@@ -113,6 +128,45 @@ class FederationStore:
             self._db.execute(f"UPDATE bridge_obligations SET state=?, updated_at=?{attempts} WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?", (state, _now(), *key))
             return dict(self._db.execute("SELECT * FROM bridge_obligations WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?", key).fetchone())
 
+    def bind_origin(self, *, origin_instance_id: str, publisher_id: str) -> None:
+        """Install an operator-owned publisher binding for one origin namespace."""
+        _check_id(origin_instance_id, INSTANCE_RE, "origin instance")
+        if not isinstance(publisher_id, str) or not publisher_id.strip():
+            raise ValueError("invalid federation publisher")
+        existing = self._trusted_origins.get(origin_instance_id)
+        if existing is not None and existing != publisher_id:
+            raise ValueError("conflicting origin publisher binding")
+        self._trusted_origins[origin_instance_id] = publisher_id
+
+    def verify_origin(self, *, origin_instance_id: str, publisher_id: str) -> bool:
+        """Return whether a provider publisher is authorized for an origin."""
+        return self._trusted_origins.get(origin_instance_id) == publisher_id
+
+    def publish_registration(self, *, origin_instance_id: str, route: str,
+                             revision: int, registration_state: str,
+                             metadata: dict[str, Any], share: bool = True) -> dict[str, Any] | None:
+        """Project committed local participation state into the remote directory.
+
+        Joining and unknown states are deliberately not advertised.  A stopped
+        or withdrawn registration produces an explicit withdrawal so a stale
+        provider copy cannot be mistaken for a live agent.
+        """
+        if not share:
+            return None
+        if registration_state in {"joining", "unknown", "stale"}:
+            return None
+        if registration_state in {"stopped", "withdrawn"}:
+            return self.apply_directory(origin_instance_id=origin_instance_id,
+                                        route=route, revision=revision,
+                                        state="withdrawn", metadata={})
+        if registration_state != "active":
+            raise ValueError("invalid registration state")
+        projected = dict(metadata)
+        projected["registration_state"] = "active"
+        return self.apply_directory(origin_instance_id=origin_instance_id,
+                                    route=route, revision=revision,
+                                    state="current", metadata=projected)
+
     def apply_directory(self, *, origin_instance_id: str, route: str, revision: int,
                         state: str, metadata: dict[str, Any]) -> dict[str, Any]:
         _check_id(origin_instance_id, INSTANCE_RE, "origin instance")
@@ -123,6 +177,8 @@ class FederationStore:
             raise ValueError("invalid directory state")
         if not isinstance(metadata, dict) or len(json.dumps(metadata, separators=(",", ":"))) > MAX_METADATA:
             raise ValueError("directory metadata exceeds limit")
+        if set(metadata) - ALLOWED_DIRECTORY_FIELDS:
+            raise ValueError("directory metadata contains unapproved authority fields")
         forbidden = {"session_secret", "credential", "privilege", "execution", "wake"}
         if forbidden.intersection(metadata):
             raise ValueError("directory metadata contains authority fields")
@@ -146,6 +202,45 @@ class FederationStore:
             row = self._db.execute("SELECT * FROM remote_directory WHERE origin_instance_id=? AND route=?", (origin_instance_id, route)).fetchone()
         result = dict(row)
         result["metadata"] = json.loads(result["metadata"])
+        return result
+
+    def directory_snapshot(self, *, origin_instance_id: str, revision: int,
+                           entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Apply a complete owner snapshot without deleting on malformed input."""
+        if not isinstance(entries, list) or len(entries) > 256:
+            raise ValueError("directory snapshot exceeds limit")
+        validated = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                raise ValueError("invalid directory snapshot entry")
+            validated.append(self.apply_directory(
+                origin_instance_id=origin_instance_id,
+                route=entry["route"], revision=revision,
+                state=entry.get("state", "current"),
+                metadata=entry.get("metadata", {})))
+        return validated
+
+    def mark_directory_gap(self, *, origin_instance_id: str, route: str,
+                           revision: int) -> dict[str, Any]:
+        """Record an explicit gap; never infer withdrawal from missing pages."""
+        return self.apply_directory(origin_instance_id=origin_instance_id,
+                                     route=route, revision=revision,
+                                     state="gap", metadata={})
+
+    def directory(self, *, origin_instance_id: str | None = None) -> list[dict[str, Any]]:
+        query = "SELECT * FROM remote_directory"
+        args: tuple[str, ...] = ()
+        if origin_instance_id is not None:
+            _check_id(origin_instance_id, INSTANCE_RE, "origin instance")
+            query += " WHERE origin_instance_id=?"
+            args = (origin_instance_id,)
+        query += " ORDER BY origin_instance_id, route"
+        rows = self._db.execute(query, args).fetchall()
+        result = []
+        for row in rows:
+            item = dict(row)
+            item["metadata"] = json.loads(item["metadata"])
+            result.append(item)
         return result
 
     def obligation(self, origin_instance_id: str, origin_message_id: str, destination_instance_id: str) -> dict[str, Any] | None:

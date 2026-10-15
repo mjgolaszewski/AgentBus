@@ -34,8 +34,9 @@ because somebody sent them a message.
 Federation construction is documented in
 [docs/federation.md](docs/federation.md). The local foundation records
 outbound obligations and remote-directory observations in the existing store;
-provider fan-out and cross-installation delivery remain separately qualified
-boundaries.
+P11 now adds bounded payload custody, operator-owned origin bindings, and
+service-derived registration projections. Provider fan-out and
+cross-installation delivery remain separately qualified boundaries.
 
 ## See it work
 

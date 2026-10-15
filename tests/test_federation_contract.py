@@ -19,9 +19,9 @@ def test_federation_contract_is_structurally_and_semantically_closed() -> None:
     invariant_ids = {item["id"] for item in contract["invariants"]}
     proof_ids = {item["id"] for item in contract["proof_obligations"]}
     unit_ids = {item["id"] for item in contract["implementation_order"]}
-    assert len(invariant_ids) == len(contract["invariants"]) == 10
-    assert len(proof_ids) == len(contract["proof_obligations"]) == 6
-    assert len(unit_ids) == len(contract["implementation_order"]) == 5
+    assert len(invariant_ids) == len(contract["invariants"]) == 12
+    assert len(proof_ids) == len(contract["proof_obligations"]) == 7
+    assert len(unit_ids) == len(contract["implementation_order"]) == 6
     assert invariant_ids == {ref for proof in contract["proof_obligations"] for ref in proof["proves"]}
     assert "public_agentbus_endpoint" in contract["scope"]["non_goals"]
     assert contract["contracts"]["local_acceptance"]["provider_side_effect_after_commit"] is True

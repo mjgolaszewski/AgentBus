@@ -5,6 +5,13 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### P11 federation foundation
+
+- Add bounded, durable federation obligations, operator-owned origin bindings,
+  service-derived registration projections, revisioned directory snapshots, and
+  explicit authority exclusions for Issue #48. Cross-installation provider
+  delivery remains gated to a separately qualified candidate.
+
 ### P09 custody closure
 
 - Close the lightweight federation and owner-mediated wake phase on protected BCF 2.3.2 exact-tree proof. Multi-installation provider qualification, origin authentication, and live cross-instance delivery remain explicitly owned by P11.

@@ -34,7 +34,7 @@ delivery_contract:
   - id: P11-WS4
     name: evidence_and_custody
   hard_dependencies:
-  - P10 closed on exact main
+  - P09 closed on exact main through BCF canonical lifecycle
   - provider fan-out and origin authentication qualified on a dedicated candidate
   docker_first_local_runtime: repo_native_validation_and_governance_commands
   completeness_standard: full_completeness_for_declared_scope
