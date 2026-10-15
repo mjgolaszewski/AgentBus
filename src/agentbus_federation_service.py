@@ -79,6 +79,8 @@ class FederationStore:
                        state, payload_hash, attempts, updated_at
                 FROM bridge_obligations WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?
             """, (origin_instance_id, origin_message_id, destination_instance_id)).fetchone()
+        if row["payload_hash"] != digest:
+            raise ValueError("conflicting federation payload for obligation")
         return dict(row)
 
     def transition(self, origin_instance_id: str, origin_message_id: str,
@@ -92,10 +94,17 @@ class FederationStore:
             if row is None:
                 raise KeyError("unknown bridge obligation")
             current = row["state"]
+            transitions = {
+                "origin_accepted": {"origin_accepted", "submitted", "uncertain"},
+                "submitted": {"submitted", "uncertain", "destination_accepted"},
+                "uncertain": {"uncertain", "submitted", "destination_accepted"},
+                "destination_accepted": {"destination_accepted", "acknowledged"},
+                "acknowledged": {"acknowledged"},
+            }
+            if state not in transitions[current]:
+                raise ValueError(f"invalid bridge transition {current} -> {state}")
             if state == "acknowledged" and current != "destination_accepted":
                 raise ValueError("destination acceptance is required before acknowledgement")
-            if current == "acknowledged" and state != current:
-                raise ValueError("acknowledged obligation is terminal")
             attempts = ", attempts = attempts + 1" if attempt else ""
             self._db.execute(f"UPDATE bridge_obligations SET state=?, updated_at=?{attempts} WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?", (state, _now(), *key))
             return dict(self._db.execute("SELECT * FROM bridge_obligations WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?", key).fetchone())
@@ -115,8 +124,15 @@ class FederationStore:
             raise ValueError("directory metadata contains authority fields")
         with self._lock, self._db:
             existing = self._db.execute("SELECT revision FROM remote_directory WHERE origin_instance_id=? AND route=?", (origin_instance_id, route)).fetchone()
-            if existing and revision <= existing["revision"]:
+            if existing and revision < existing["revision"]:
                 return dict(self._db.execute("SELECT * FROM remote_directory WHERE origin_instance_id=? AND route=?", (origin_instance_id, route)).fetchone())
+            if existing and revision == existing["revision"]:
+                current = self._db.execute("SELECT state, metadata FROM remote_directory WHERE origin_instance_id=? AND route=?", (origin_instance_id, route)).fetchone()
+                if current["state"] != state or json.loads(current["metadata"]) != metadata:
+                    raise ValueError("conflicting directory revision")
+                result = dict(self._db.execute("SELECT * FROM remote_directory WHERE origin_instance_id=? AND route=?", (origin_instance_id, route)).fetchone())
+                result["metadata"] = json.loads(result["metadata"])
+                return result
             self._db.execute("""
                 INSERT INTO remote_directory(origin_instance_id, route, revision, state, metadata, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?)
