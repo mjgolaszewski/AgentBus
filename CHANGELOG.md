@@ -11,6 +11,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
   service-derived registration projections, revisioned directory snapshots, and
   explicit authority exclusions for Issue #48. Cross-installation provider
   delivery remains gated to a separately qualified candidate.
+- Persist authenticated destination receipts in the existing SQLite owner with
+  exact replay deduplication and conflicting-payload rejection.
 
 ### P09 custody closure
 
