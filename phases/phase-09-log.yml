@@ -4,7 +4,7 @@ document:
   id: project-phase-09-log
   version: 1.0.0
   generated_at_utc: '2026-10-13T00:00:00Z'
-  status: active
+  status: completed
   path: phases/phase-09-log.yml
 phase:
   id: P09
@@ -21,13 +21,14 @@ workitems:
   - {id: P09-P5-01, status: DONE, summary: "connect local durable federation obligations and canonical wake producers while deferring provider submission to P11"}
   - {id: P09-P6-01, status: DONE, summary: "prove deterministic evidence, compatibility, recovery, and budgets"}
   - {id: P09-P7-01, status: DONE, summary: "transfer live wake canary qualification to P10-P2-01 without claiming live capability in P09"}
-  - {id: P09-P8-01, status: TODO, summary: "upgrade BCF and prove exact final publication subject"}
+  - {id: P09-P8-01, status: DONE, summary: "complete BCF 2.3.2 custody with protected-main exact-tree proof; provider qualification remains typed to P11"}
 summary:
-  outcome: active
+  outcome: completed
   highlights:
   - Issue #48 is the P09 construction authority.
   - P09-P0 baseline and invariant ownership mapping are recorded.
-  - Current BCF candidate custody is non-authoritative and publication remains blocked pending BCF handoff.
+  - P09-P8 final custody is complete; P11 owns future provider qualification.
+  - BCF 2.3.2 custody is authoritative for this adopter and protected-main exact-tree truth is green.
   - Provider fan-out and origin authentication are deferred to a dedicated multi-installation-qualifying candidate; local deterministic construction may proceed.
   - The existing SQLite store now owns durable bridge obligations and revisioned remote-directory observations; conflicting payloads, revisions, and state regressions fail closed.
 execution_evidence:
@@ -49,6 +50,7 @@ execution_evidence:
   - Local contracts, fake-provider behavior, compatibility, and deterministic failure controls may proceed; cross-instance claims remain gated.
   - "P09-P1-02 is complete: empty worker cycles now use the fixed 1/2/4/8/12/16/24/32-minute cadence, while control checks retain their own bound."
   - "Local product proof is green at 240 tests; provider-backed cross-installation delivery remains an explicitly deferred capability."
+  - "Protected-main governance run 38784146694 is green for merge 41dcb4f6def678e5fa7cfaa3985f136fdba1e0b2."
 closeout_requirements:
   claims:
     workitems_closed:
@@ -78,8 +80,8 @@ closeout_requirements:
 known_constraints:
   - provider fan-out and origin authentication are not yet qualified for a multi-installation claim
   - multi-installation qualification is deferred to a dedicated qualifying candidate
-  - BCF candidate custody is non-authoritative until the final P09-P8 upgrade and protected proof
+  - BCF 2.3.2 custody is authoritative for the completed P09 adopter boundary
   - existing notification-only wake remains the safe fallback until owner admission is proven
 next_work:
-  - continue P09-P1 contract work while provider fan-out and origin authentication remain deferred
-  - request the next authorized BCF candidate or release and preserve its exact custody identity
+  - activate the governed successor phase through BCF canonical lifecycle machinery
+  - keep multi-installation provider qualification owned by P11-P0-01

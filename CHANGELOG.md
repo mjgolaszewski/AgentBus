@@ -5,6 +5,10 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### P09 custody closure
+
+- Close the lightweight federation and owner-mediated wake phase on protected BCF 2.3.2 exact-tree proof. Multi-installation provider qualification, origin authentication, and live cross-instance delivery remain explicitly owned by P11.
+
 ### Deterministic idle polling
 
 - Empty inbox cycles now use the bounded 1, 2, 4, 8, 12, 16, 24, then
