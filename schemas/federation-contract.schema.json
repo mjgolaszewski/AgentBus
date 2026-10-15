@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentbus.local/schemas/federation-contract.schema.json",
+  "type": "object",
+  "required": ["document", "scope", "invariants", "primitives", "contracts", "proof_obligations", "implementation_order", "acceptance_gates"],
+  "properties": {
+    "document": {"type": "object", "required": ["kind", "id", "version", "status", "path", "source", "authority"]},
+    "scope": {"type": "object", "required": ["purpose", "deployment", "provider", "compatibility", "non_goals"]},
+    "invariants": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["id", "rule"], "properties": {"id": {"pattern": "^FB-INV-[0-9]{3}$"}, "rule": {"type": "string", "minLength": 1}}, "additionalProperties": true}},
+    "primitives": {"type": "object", "minProperties": 1},
+    "contracts": {"type": "object", "required": ["local_acceptance", "bridge_submission", "destination_acceptance", "directory", "wake", "prohibited_edges"]},
+    "proof_obligations": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["id", "proves", "scenario"], "properties": {"id": {"pattern": "^FB-PO-[0-9]{3}$"}, "proves": {"type": "array", "minItems": 1, "items": {"pattern": "^FB-INV-[0-9]{3}$"}}, "scenario": {"type": "string", "minLength": 1}}, "additionalProperties": true}},
+    "implementation_order": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["id", "unit", "depends_on"], "properties": {"id": {"pattern": "^FB-IU-[0-9]{3}$"}, "unit": {"type": "string"}, "depends_on": {"type": "array", "items": {"pattern": "^FB-IU-[0-9]{3}$"}}}, "additionalProperties": true}},
+    "acceptance_gates": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "array", "items": {"pattern": "^(FB-INV|FB-PO)-[0-9]{3}$"}}}
+  },
+  "additionalProperties": true
+}
