@@ -71,6 +71,17 @@ class FederationStore:
                     PRIMARY KEY(origin_instance_id, route)
                 )
             """)
+            self._db.execute("""
+                CREATE TABLE IF NOT EXISTS federated_messages (
+                    origin_instance_id TEXT NOT NULL,
+                    origin_message_id TEXT NOT NULL,
+                    destination_instance_id TEXT NOT NULL,
+                    payload TEXT NOT NULL,
+                    payload_hash TEXT NOT NULL,
+                    received_at TEXT NOT NULL,
+                    PRIMARY KEY(origin_instance_id, origin_message_id, destination_instance_id)
+                )
+            """)
 
     def accept(self, *, origin_instance_id: str, origin_message_id: str,
                destination_instance_id: str, payload: bytes | str) -> dict[str, Any]:
@@ -141,6 +152,44 @@ class FederationStore:
     def verify_origin(self, *, origin_instance_id: str, publisher_id: str) -> bool:
         """Return whether a provider publisher is authorized for an origin."""
         return self._trusted_origins.get(origin_instance_id) == publisher_id
+
+    def accept_destination(self, *, origin_instance_id: str, publisher_id: str,
+                           origin_message_id: str, destination_instance_id: str,
+                           payload: bytes | str) -> dict[str, Any]:
+        """Persist one authenticated destination message exactly once."""
+        if not self.verify_origin(origin_instance_id=origin_instance_id,
+                                  publisher_id=publisher_id):
+            raise ValueError("untrusted federation origin publisher")
+        _check_id(destination_instance_id, INSTANCE_RE, "destination instance")
+        raw = payload.encode() if isinstance(payload, str) else payload
+        if not isinstance(raw, bytes) or not raw or len(raw) > MAX_PAYLOAD:
+            raise ValueError("federation payload exceeds limit")
+        try:
+            encoded = raw.decode("utf-8", "strict")
+        except UnicodeDecodeError as exc:
+            raise ValueError("federation payload must be UTF-8") from exc
+        digest = hashlib.sha256(raw).hexdigest()
+        _check_id(origin_instance_id, INSTANCE_RE, "origin instance")
+        if not isinstance(origin_message_id, str) or not 1 <= len(origin_message_id) <= 128:
+            raise ValueError("invalid federation origin message")
+        with self._lock, self._db:
+            self._db.execute(
+                """INSERT OR IGNORE INTO federated_messages
+                (origin_instance_id, origin_message_id, destination_instance_id,
+                 payload, payload_hash, received_at)
+                VALUES (?, ?, ?, ?, ?, ?)""",
+                (origin_instance_id, origin_message_id, destination_instance_id,
+                 encoded, digest, _now()),
+            )
+            row = self._db.execute(
+                """SELECT * FROM federated_messages
+                WHERE origin_instance_id=? AND origin_message_id=?
+                  AND destination_instance_id=?""",
+                (origin_instance_id, origin_message_id, destination_instance_id),
+            ).fetchone()
+        if row["payload_hash"] != digest:
+            raise ValueError("conflicting destination federation payload")
+        return dict(row)
 
     def publish_registration(self, *, origin_instance_id: str, route: str,
                              revision: int, registration_state: str,

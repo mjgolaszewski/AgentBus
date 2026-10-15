@@ -101,3 +101,27 @@ def test_registration_projection_is_service_owned_and_non_authoritative():
         registration_state="stopped", metadata={},
     )
     assert withdrawn["state"] == "withdrawn"
+
+
+def test_destination_acceptance_requires_bound_origin_and_deduplicates():
+    federation = store()
+    federation.bind_origin(origin_instance_id="remote", publisher_id="slack-app-1")
+    first = federation.accept_destination(
+        origin_instance_id="remote", publisher_id="slack-app-1",
+        origin_message_id="m1", destination_instance_id="home", payload="hello",
+    )
+    again = federation.accept_destination(
+        origin_instance_id="remote", publisher_id="slack-app-1",
+        origin_message_id="m1", destination_instance_id="home", payload="hello",
+    )
+    assert first == again
+    with pytest.raises(ValueError, match="untrusted"):
+        federation.accept_destination(
+            origin_instance_id="remote", publisher_id="forged",
+            origin_message_id="m2", destination_instance_id="home", payload="hello",
+        )
+    with pytest.raises(ValueError, match="conflicting"):
+        federation.accept_destination(
+            origin_instance_id="remote", publisher_id="slack-app-1",
+            origin_message_id="m1", destination_instance_id="home", payload="changed",
+        )
