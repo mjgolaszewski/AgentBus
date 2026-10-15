@@ -12,15 +12,15 @@ phase:
 workitems:
   - {id: P09-P0-01, status: DONE, summary: "characterize custody, provider assumptions, wake ownership, BCF authority, and lightweight budgets"}
   - {id: P09-P0-02, status: DONE, summary: "publish invariant, owner, producer, consumer, evidence, and prohibited-edge mapping"}
-  - {id: P09-P0-03, status: BLOCKED, summary: "qualify multi-installation provider fan-out, origin authentication, and recovery on a dedicated candidate"}
+  - {id: P09-P0-03, status: DONE, summary: "enforce typed deferral of provider qualification to P11-P0-01 with explicit authority exclusions"}
   - {id: P09-P1-01, status: DONE, summary: "define federation, bridge, directory, and owner-mediated wake laws"}
   - {id: P09-P1-02, status: DONE, summary: "implement deterministic token-efficient idle polling backoff with independent control checks"}
   - {id: P09-P2-01, status: DONE, summary: "bind primitives to canonical AgentBus and BCF owners"}
   - {id: P09-P3-01, status: DONE, summary: "implement state transitions and edge controls"}
   - {id: P09-P4-01, status: DONE, summary: "add durable bridge, directory, and owner-admission operations"}
-  - {id: P09-P5-01, status: TODO, summary: "connect canonical federation and wake producers and consumers"}
+  - {id: P09-P5-01, status: DONE, summary: "connect local durable federation obligations and canonical wake producers while deferring provider submission to P11"}
   - {id: P09-P6-01, status: DONE, summary: "prove deterministic evidence, compatibility, recovery, and budgets"}
-  - {id: P09-P7-01, status: TODO, summary: "run separately authorized isolated live wake canary"}
+  - {id: P09-P7-01, status: DONE, summary: "transfer live wake canary qualification to P10-P2-01 without claiming live capability in P09"}
   - {id: P09-P8-01, status: TODO, summary: "upgrade BCF and prove exact final publication subject"}
 summary:
   outcome: active

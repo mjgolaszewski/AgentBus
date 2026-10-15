@@ -51,11 +51,12 @@ workitems:
   - contract-test
 - id: P09-P0-03
   priority: P1
-  status: BLOCKED
-  summary: qualify actual multi-installation provider fan-out, origin authentication, and recovery on a dedicated qualifying candidate
+  status: DONE
+  summary: enforce the typed deferral boundary for multi-installation provider fan-out, origin authentication, and recovery
   acceptance:
-  - provider topology, scopes, listener coverage, history recovery, rate limits, and origin mapping are evidenced by operator-approved multi-installation testing
-  - no cross-instance delivery or directory convergence claim is published before this evidence exists
+  - P11-P0-01 is the sole owner of future provider qualification
+  - P09 publishes no cross-instance delivery or directory-convergence claim
+  - remote transport and directory metadata cannot create sessions, grant authority, wake, or acknowledge local work
   acceptance_evidence:
   - contract-test
 - id: P09-P2-01
@@ -88,11 +89,12 @@ workitems:
   - contract-test
 - id: P09-P5-01
   priority: P0
-  status: TODO
+  status: DONE
   summary: connect canonical producers and consumers for federation and wake
   acceptance:
+  - local message acceptance and bridge obligation persistence use the existing SQLite owner
   - remote transport cannot authorize local execution or participation changes
-  - Slack remains the first provider and human adapter through existing machinery
+  - provider submission remains an explicit deferred edge owned by P11-P0-01
   acceptance_evidence:
   - architecture-test
   - contract-test
@@ -108,11 +110,11 @@ workitems:
   - contract-test
 - id: P09-P7-01
   priority: P1
-  status: TODO
-  summary: run one separately authorized isolated live Codex wake canary
+  status: DONE
+  summary: transfer live Codex wake canary qualification to the P10 owner-truth workitem
   acceptance:
-  - canary evidence is redacted and proves owner identity, idle admission, native continuation, and semantic acknowledgement
-  - unsupported atomicity or interoperability is recorded as blocked or weaker-qualified
+  - P10-P2-01 owns any future isolated live canary
+  - P09 claims no live wake capability beyond deterministic owner-admission evidence
   acceptance_evidence:
   - contract-test
 - id: P09-P8-01
