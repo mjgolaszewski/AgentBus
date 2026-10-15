@@ -21,6 +21,7 @@ def test_bridge_obligation_is_idempotent_and_requires_destination_acceptance():
     again = federation.accept(origin_instance_id="home", origin_message_id="m1",
                               destination_instance_id="remote", payload="hello")
     assert first == again and first["state"] == "origin_accepted"
+    assert first["payload"] == "hello"
     with pytest.raises(ValueError, match="conflicting federation payload"):
         federation.accept(origin_instance_id="home", origin_message_id="m1",
                           destination_instance_id="remote", payload="changed")

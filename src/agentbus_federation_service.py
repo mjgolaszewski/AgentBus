@@ -41,12 +41,16 @@ class FederationStore:
                     origin_message_id TEXT NOT NULL,
                     destination_instance_id TEXT NOT NULL,
                     state TEXT NOT NULL,
+                    payload TEXT NOT NULL,
                     payload_hash TEXT NOT NULL,
                     attempts INTEGER NOT NULL DEFAULT 0,
                     updated_at TEXT NOT NULL,
                     PRIMARY KEY(origin_instance_id, origin_message_id, destination_instance_id)
                 )
             """)
+            columns = {row["name"] for row in self._db.execute("PRAGMA table_info(bridge_obligations)")}
+            if "payload" not in columns:
+                self._db.execute("ALTER TABLE bridge_obligations ADD COLUMN payload TEXT NOT NULL DEFAULT ''")
             self._db.execute("""
                 CREATE TABLE IF NOT EXISTS remote_directory (
                     origin_instance_id TEXT NOT NULL,
@@ -71,12 +75,12 @@ class FederationStore:
         with self._lock, self._db:
             self._db.execute("""
                 INSERT OR IGNORE INTO bridge_obligations
-                (origin_instance_id, origin_message_id, destination_instance_id, state, payload_hash, updated_at)
-                VALUES (?, ?, ?, 'origin_accepted', ?, ?)
-            """, (origin_instance_id, origin_message_id, destination_instance_id, digest, now))
+                (origin_instance_id, origin_message_id, destination_instance_id, state, payload, payload_hash, updated_at)
+                VALUES (?, ?, ?, 'origin_accepted', ?, ?, ?)
+            """, (origin_instance_id, origin_message_id, destination_instance_id, raw.decode("utf-8", "strict"), digest, now))
             row = self._db.execute("""
                 SELECT origin_instance_id, origin_message_id, destination_instance_id,
-                       state, payload_hash, attempts, updated_at
+                       state, payload, payload_hash, attempts, updated_at
                 FROM bridge_obligations WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?
             """, (origin_instance_id, origin_message_id, destination_instance_id)).fetchone()
         if row["payload_hash"] != digest:
