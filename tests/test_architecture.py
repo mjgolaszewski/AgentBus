@@ -24,6 +24,11 @@ MODULES = {
     "src/agentbus_wake_inbox_client.py": ("client", "client"),
     "src/agentbus_claim_recovery_service.py": ("service", "service"),
     "src/agentbus_federation_service.py": ("service", "service"),
+    "src/agentbus_federation_wire_service.py": ("service", "service"),
+    "src/agentbus_federation_bridge_service.py": ("service", "service"),
+    "src/agentbus_federation_slack_service.py": ("service", "service"),
+    "src/agentbus_federation_runtime_service.py": ("service", "service"),
+    "src/agentbus_federation_api_service.py": ("service", "service"),
     "src/agentbus_message_assurance_service.py": ("service", "service"),
     "src/agentbus_message_authorization_service.py": ("service", "service"),
     "src/agentbus_presentation_service.py": ("service", "service"),
@@ -139,6 +144,10 @@ def test_http_routers_remain_thin_transport_adapters() -> None:
                        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("api_")}
     assert set(status_handlers) == {"api_health", "api_status"}
     handlers.update(status_handlers)
+    federation_handlers = {node.name: node for node in tree('src/agentbus_federation_api_service.py').body
+                           if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith('api_')}
+    assert set(federation_handlers) == {'api_federation_enqueue'}
+    handlers.update(federation_handlers)
     for handler in handlers.values():
         branches = sum(isinstance(node, (ast.If, ast.Match, ast.Try)) for node in ast.walk(handler))
         loops = sum(isinstance(node, (ast.For, ast.AsyncFor, ast.While)) for node in ast.walk(handler))

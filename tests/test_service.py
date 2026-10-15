@@ -118,7 +118,7 @@ def test_public_api_operation_inventory_owns_registered_routes(settings):
         for route in app.routes
         for method in getattr(route, "methods", set())
     }
-    assert set(API_OPERATIONS) == {"health", "status", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "rotation_grant", "session_rotate_secret", "session_presence", "session_self_presence", "session_roster", "session_policy_ack", "session_policy_explain", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename"}
+    assert set(API_OPERATIONS) == {"federation_enqueue", "health", "status", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "rotation_grant", "session_rotate_secret", "session_presence", "session_self_presence", "session_roster", "session_policy_ack", "session_policy_explain", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename"}
     assert routes[("GET", "/healthz")] is API_OPERATIONS["health"]
     assert routes[("GET", "/v1/status")] is API_OPERATIONS["status"]
     assert routes[("POST", "/v1/messages")] is API_OPERATIONS["send"]

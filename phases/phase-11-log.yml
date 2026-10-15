@@ -22,6 +22,7 @@ workitems:
   - {id: P11-P2-01, status: DONE, summary: "implement durable local bridge obligations, bounded payload custody, origin binding, and provider uncertainty primitives"}
   - {id: P11-P3-01, status: TODO, summary: "implement service-owned remote directory snapshots, deltas, revisions, gaps, withdrawal, and resynchronization"}
   - {id: P11-P4-01, status: TODO, summary: "integrate federation state machines with the existing Slack human adapter and preserve local authority boundaries"}
+  - {id: P11-P4-02, status: DONE, summary: "bounded signed-origin adapter implemented with deterministic custody, replay, signature, recovery, and existing-listener failure evidence; live qualification remains blocked"}
   - {id: P11-P5-01, status: TODO, summary: "register BCF evidence, compatibility, adversarial controls, and lightweight resource budgets"}
   - {id: P11-P6-01, status: BLOCKED, summary: "qualify one authorized real provider arrangement and isolated multi-installation canary"}
   - {id: P11-P7-01, status: TODO, summary: "upgrade to newest authorized BCF custody and publish only after exact-tree proof and rollback evidence"}
@@ -37,8 +38,17 @@ execution_evidence:
   executed_commands:
   - uv run --locked python scripts/validate_governance_yaml.py
   - uv run --locked pytest -q tests/test_federation_contract.py tests/test_federation_service.py
+  - uv run --locked --extra dev python -m pytest -q tests
+  - uv run --locked --extra dev ruff check src tests scripts/run_project_gate.py
+  - uv run --locked --extra dev mypy
+  - bcf reconcile --repo-root . --apply
   notes:
-  - Provider submission is intentionally outside the local deterministic foundation.
+  - "Signing bootstrap follow-up: one protected installation-private key stays outside source; only its public fingerprint and origin/prefix/app/bot/channel readiness are reported. Signed frames bind the operator-approved public-key generation and reject retired or falsely declared generations. No runtime configuration or live claim is promoted."
+  - "Custodian slice: service context/layer, command-side provider bridge and query-only custody inspection. Targets FederationStore, new signed wire/bridge/Slack adapter modules, opt-in runtime wiring, private enqueue API, deterministic tests, authored contracts/docs and BCF projections. Forbidden: current deployment state/credentials/listener, generated governance hand edits, public remote ingress, sessions/wake/execution authority, directory completion claims."
+  - "Isolated evidence: full Python 3.12 suite passed (269 cases), including 24 bridge/adapter cases; 32 Python 3.14 federation cases passed. Ruff, mypy (38 modules), governance validation, secret/dependency/SBOM/vulnerability producers passed. A failing ambiguous-prefix route test drove exact namespace parsing; legacy-obligation conflicts roll back message backfill. Final exact-tree governed submission remains required."
+  - "Provider boundary: independent installation app transport probes observed; signed adapter not deployed and private-channel, signed-origin, late-join, retention, and directory convergence qualification remain blocked."
+  - "BCF 2.3.2 canonical reconciliation regenerated the push closure-mode projection; generated workflow and semantic/test manifests were not hand-edited. Signature and publisher-binding controls are registered with contract-test."
+  - Provider submission is opt-in through the signed adapter; the deterministic store itself performs no provider calls.
   - Directory metadata is allowlisted and cannot carry credentials, privileges, execution, wake, or session authority.
   - BCF 2.3.3 supersedes the construction baseline only through canonical custody machinery.
 known_constraints:

@@ -1,4 +1,5 @@
 build==1.6.0
+cryptography==50.0.2
 cyclonedx-bom==7.4.0
 fastapi==0.141.1
 httpx==0.28.1

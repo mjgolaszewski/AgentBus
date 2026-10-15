@@ -11,6 +11,7 @@ import json
 import re
 import sqlite3
 from datetime import datetime, timezone
+from decimal import Decimal
 from threading import RLock
 from typing import Any
 
@@ -82,9 +83,19 @@ class FederationStore:
                     PRIMARY KEY(origin_instance_id, origin_message_id, destination_instance_id)
                 )
             """)
+            self._db.execute("""CREATE TABLE IF NOT EXISTS federation_origin_messages (
+                origin_instance_id TEXT NOT NULL, origin_message_id TEXT NOT NULL,
+                payload TEXT NOT NULL, payload_hash TEXT NOT NULL,
+                PRIMARY KEY(origin_instance_id, origin_message_id))""")
+            self._db.execute("""CREATE TABLE IF NOT EXISTS federation_checkpoints (
+                reader TEXT PRIMARY KEY, cursor TEXT NOT NULL)""")
+            columns = {row['name'] for row in self._db.execute('PRAGMA table_info(bridge_obligations)')}
+            if 'next_attempt_at' not in columns:
+                self._db.execute('ALTER TABLE bridge_obligations ADD COLUMN next_attempt_at REAL NOT NULL DEFAULT 0')
 
     def accept(self, *, origin_instance_id: str, origin_message_id: str,
-               destination_instance_id: str, payload: bytes | str) -> dict[str, Any]:
+               destination_instance_id: str, payload: bytes | str,
+               local_payload: str | None = None) -> dict[str, Any]:
         _check_id(origin_instance_id, INSTANCE_RE, "origin instance")
         _check_id(destination_instance_id, INSTANCE_RE, "destination instance")
         if not isinstance(origin_message_id, str) or not 1 <= len(origin_message_id) <= 128:
@@ -99,6 +110,14 @@ class FederationStore:
         digest = hashlib.sha256(raw).hexdigest()
         now = _now()
         with self._lock, self._db:
+            local = encoded if local_payload is None else local_payload
+            local_hash = hashlib.sha256(local.encode()).hexdigest()
+            self._db.execute('INSERT OR IGNORE INTO federation_origin_messages VALUES (?, ?, ?, ?)',
+                             (origin_instance_id, origin_message_id, local, local_hash))
+            existing = self._db.execute('SELECT payload_hash FROM federation_origin_messages WHERE origin_instance_id=? AND origin_message_id=?',
+                                        (origin_instance_id, origin_message_id)).fetchone()
+            if existing['payload_hash'] != local_hash:
+                raise ValueError('conflicting federation payload for origin message')
             self._db.execute("""
                 INSERT OR IGNORE INTO bridge_obligations
                 (origin_instance_id, origin_message_id, destination_instance_id, state, payload, payload_hash, updated_at)
@@ -109,8 +128,8 @@ class FederationStore:
                        state, payload, payload_hash, attempts, updated_at
                 FROM bridge_obligations WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?
             """, (origin_instance_id, origin_message_id, destination_instance_id)).fetchone()
-        if row["payload_hash"] != digest:
-            raise ValueError("conflicting federation payload for obligation")
+            if row["payload_hash"] != digest:
+                raise ValueError("conflicting federation payload for obligation")
         return dict(row)
 
     def transition(self, origin_instance_id: str, origin_message_id: str,
@@ -133,7 +152,7 @@ class FederationStore:
             }
             if state not in transitions[current]:
                 raise ValueError(f"invalid bridge transition {current} -> {state}")
-            if state == "acknowledged" and current != "destination_accepted":
+            if state == "acknowledged" and current not in {"destination_accepted", "acknowledged"}:
                 raise ValueError("destination acceptance is required before acknowledgement")
             attempts = ", attempts = attempts + 1" if attempt else ""
             self._db.execute(f"UPDATE bridge_obligations SET state=?, updated_at=?{attempts} WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?", (state, _now(), *key))
@@ -312,4 +331,49 @@ class FederationStore:
     def obligation(self, origin_instance_id: str, origin_message_id: str, destination_instance_id: str) -> dict[str, Any] | None:
         row = self._db.execute("SELECT * FROM bridge_obligations WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?", (origin_instance_id, origin_message_id, destination_instance_id)).fetchone()
         return dict(row) if row else None
+
+    def pending(self, *, now: float, max_attempts: int, limit: int = 100) -> list[dict[str, Any]]:
+        if not 1 <= limit <= 100:
+            raise ValueError('invalid bridge page limit')
+        with self._lock:
+            rows = self._db.execute("""SELECT * FROM bridge_obligations
+                WHERE state IN ('origin_accepted','submitted','uncertain')
+                AND attempts < ? AND next_attempt_at <= ? ORDER BY updated_at LIMIT ?""",
+                (max_attempts, now, limit)).fetchall()
+        return [dict(row) for row in rows]
+
+    def reserve_submission(self, origin: str, message: str, destination: str, *,
+                           now: float, delay: float, max_attempts: int) -> bool:
+        with self._lock, self._db:
+            result = self._db.execute("""UPDATE bridge_obligations
+                SET state='uncertain', attempts=attempts+1, next_attempt_at=?, updated_at=?
+                WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?
+                AND state IN ('origin_accepted','submitted','uncertain')
+                AND attempts < ? AND next_attempt_at <= ?""",
+                (now + delay, _now(), origin, message, destination, max_attempts, now))
+        return result.rowcount == 1
+
+    def record_submission(self, origin: str, message: str, destination: str, provider_ref: str) -> None:
+        with self._lock, self._db:
+            self._db.execute("""UPDATE bridge_obligations SET state='submitted', provider_ref=?, updated_at=?
+                WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?
+                AND state='uncertain'""", (provider_ref, _now(), origin, message, destination))
+
+    def defer_submission(self, origin: str, message: str, destination: str, *, until: float) -> None:
+        with self._lock, self._db:
+            self._db.execute('UPDATE bridge_obligations SET next_attempt_at=MAX(next_attempt_at, ?) WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?',
+                             (until, origin, message, destination))
+
+    def checkpoint(self, reader: str) -> str:
+        with self._lock:
+            row = self._db.execute('SELECT cursor FROM federation_checkpoints WHERE reader=?', (reader,)).fetchone()
+        return row['cursor'] if row else '0'
+
+    def advance_checkpoint(self, reader: str, cursor: str) -> None:
+        with self._lock, self._db:
+            previous = self.checkpoint(reader)
+            if not Decimal(cursor).is_finite() or Decimal(cursor) < Decimal(previous):
+                raise ValueError('provider checkpoint cannot move backward')
+            self._db.execute('INSERT INTO federation_checkpoints VALUES (?,?) ON CONFLICT(reader) DO UPDATE SET cursor=excluded.cursor',
+                             (reader, cursor))
 

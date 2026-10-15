@@ -22,6 +22,8 @@ from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError,
 
 from src.agentbus_claim_recovery_service import ClaimRecoveryStore
 from src.agentbus_control_store_service import ControlStore
+from src.agentbus_federation_api_service import FederationAcceptance, api_federation_enqueue
+from src.agentbus_federation_runtime_service import federation_runtime
 from src.agentbus_federation_service import FederationStore
 from src.agentbus_message_authorization_service import require_message_route
 from src.agentbus_participation_api_service import (
@@ -666,6 +668,7 @@ API_OPERATIONS: dict[str, Callable[..., object]] = {
     "health": api_health,
     "status": api_status,
     "send": api_send,
+    "federation_enqueue": api_federation_enqueue,
     "read": api_read,
     "info": api_info,
     "inbox": api_inbox,
@@ -703,17 +706,18 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
         try:
             poster = SlackPoster(settings, client)
             trusted_bot_id = await poster.authenticated_bot_id()
-            socket = socket_factory(
-                settings, SlackReceiver(store, settings.slack_channel, trusted_bot_id, settings)
-            )
-            app.state.store = store
-            app.state.poster = poster
-            app.state.socket = socket
-            try:
-                await asyncio.to_thread(socket.connect)
-            except Exception:
-                raise RuntimeError("Slack Socket Mode connection failed; check app configuration and connectivity") from None
-            yield
+            async with federation_runtime(app, store, settings, client, trusted_bot_id) as bridge:
+                socket = socket_factory(
+                    settings, SlackReceiver(store, settings.slack_channel, trusted_bot_id, settings, bridge)
+                )
+                app.state.store = store
+                app.state.poster = poster
+                app.state.socket = socket
+                try:
+                    await asyncio.to_thread(socket.connect)
+                except Exception:
+                    raise RuntimeError("Slack Socket Mode connection failed; check app configuration and connectivity") from None
+                yield
         finally:
             if socket is not None:
                 await asyncio.to_thread(socket.close)
@@ -730,6 +734,8 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
     app.add_api_route("/v1/status", API_OPERATIONS["status"], methods=["GET"], dependencies=auth)
     app.add_api_route("/v1/messages", API_OPERATIONS["send"], methods=["POST"],
                       dependencies=auth, response_model=Message, status_code=201)
+    app.add_api_route('/v1/federation/messages', API_OPERATIONS['federation_enqueue'], methods=['POST'],
+                      dependencies=auth, response_model=FederationAcceptance, status_code=202)
     app.add_api_route("/v1/messages", API_OPERATIONS["read"], methods=["GET"],
                       dependencies=auth, response_model=MessagePage)
     app.add_api_route("/v1/info", API_OPERATIONS["info"], methods=["GET"],

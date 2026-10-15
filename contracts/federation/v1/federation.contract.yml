@@ -43,6 +43,20 @@ contracts:
   directory: {revisioning: monotonic_per_origin, payload: allowlisted_metadata_only, freshness: explicit, stale_default: unknown, resync: bounded_snapshot_then_deltas}
   wake: {admission: owner_confirmed_idle_only, epoch_recheck: required, active_owner: defer, queued_work: never_acknowledged, remote_authority: none}
   prohibited_edges: [remote_message_to_local_execution, remote_directory_to_session_creation, provider_receipt_to_destination_acceptance, queued_wake_to_agent_ack, stale_directory_to_wakeability]
+  signed_provider_adapter:
+    version: 1
+    signature: ed25519_over_canonical_utf8_json_without_signature_field
+    publisher_binding: operator_owned_origin_instance_plus_route_prefix_plus_provider_publisher_plus_public_key
+    frame_fields: [agentbus_federation, kind, origin_instance_id, origin_message_id, destination_instance_id, key_generation, payload, signature]
+    key_generation: sha256_of_operator_approved_raw_ed25519_public_key
+    frame_kinds: [message, receipt]
+    private_keys: local_only_never_transported
+    custody: message_payload_and_bridge_obligation_in_one_existing_sqlite_transaction
+    retry: durable_attempt_reservation_before_provider_call_with_bounded_backoff_and_attempts
+    receipt: signed_destination_origin_message_identity_and_payload_hash_after_destination_commit
+    recovery: bounded_complete_provider_history_before_checkpoint_advance
+    ingress: existing_socket_listener_only_no_new_remote_http_endpoint
+    enqueue: optional_authenticated_local_api_separate_from_existing_protocol_2_send_response
 
 proof_obligations:
   - {id: FB-PO-001, proves: [FB-INV-001, FB-INV-007], scenario: local_commit_survives_provider_outage_and_crash_before_submission}

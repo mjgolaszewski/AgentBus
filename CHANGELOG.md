@@ -7,6 +7,11 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ### P11 federation foundation
 
+- Add an opt-in Ed25519-signed Slack bridge with operator-owned publisher
+  bindings, local atomic message/obligation custody, bounded durable retries,
+  authenticated destination receipts and deduplication, and bounded history
+  recovery through the existing listener. Its private enqueue API preserves
+  ordinary protocol-2 send behavior. Live qualification remains gated.
 - Add bounded, durable federation obligations, operator-owned origin bindings,
   service-derived registration projections, revisioned directory snapshots, and
   explicit authority exclusions for Issue #48. Cross-installation provider
