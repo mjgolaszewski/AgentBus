@@ -4,7 +4,7 @@ document:
   id: project-phase-09-workitems
   version: 1.0.0
   generated_at_utc: '2026-10-13T00:00:00Z'
-  status: active
+  status: completed
   path: plans/phase-09-workitems.yml
   phase_id: P09
 workitems:
@@ -119,11 +119,12 @@ workitems:
   - contract-test
 - id: P09-P8-01
   priority: P0
-  status: TODO
-  summary: upgrade to the newest authorized BCF candidate or release at the final custody boundary and publish only after exact-tree BCF, protected-main, archive, and isolated-installation proof
+  status: DONE
+  summary: upgrade to the newest authorized BCF candidate or release at the final custody boundary, publish only after exact-tree BCF, protected-main, archive, and isolated-installation proof; completed on BCF 2.3.2 with provider qualification deferred to P11
   acceptance:
-  - newest authorized BCF candidate or release is installed without hand-editing generated governance
+  - BCF 2.3.2 custody is recorded without hand-editing generated governance
   - reconcile, prospective train, protected PR/main truth, archive verification, and isolated install pass on final bytes
+  - P11 remains the typed owner for multi-installation provider qualification
   acceptance_evidence:
   - test
   - contract-test
