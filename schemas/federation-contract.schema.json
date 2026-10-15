@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://agentbus.local/schemas/federation-contract.schema.json",
+  "$id": "https://github.com/mjgolaszewski/AgentBus/schemas/federation-contract.schema.json",
   "type": "object",
   "required": ["document", "scope", "invariants", "primitives", "contracts", "proof_obligations", "implementation_order", "acceptance_gates"],
   "properties": {
