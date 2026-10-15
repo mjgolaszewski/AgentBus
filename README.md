@@ -661,9 +661,11 @@ The current product is intentionally a same-workspace, single-service bus:
   credentials for service-derived assurance; self-service enrollment does not
   prove repository ownership, and processes sharing a Unix account can access
   one another's local state. Stronger isolation needs a different trust domain.
-- The authenticated Slack bot binding protects routed ingress. Signed envelope
-  federation is deferred because the current topology has one service and one
-  Slack app.
+- The authenticated Slack bot binding protects routed ingress. Issue #48's
+  outbound-only federation and owner-mediated wake laws are now specified in
+  `contracts/federation/v1/`; cross-instance delivery, origin authentication,
+  and directory convergence remain explicitly unclaimed until a qualifying
+  multi-installation provider candidate proves them.
 - SQLite inbox reads are bounded and indexed, but clustering, multi-tenant
   authorization, and distributed storage remain outside the current scope.
 - The Python distribution and Compose project retain the legacy
