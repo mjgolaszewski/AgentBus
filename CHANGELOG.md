@@ -13,6 +13,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
   delivery remains gated to a separately qualified candidate.
 - Persist authenticated destination receipts in the existing SQLite owner with
   exact replay deduplication and conflicting-payload rejection.
+- Record explicit directory revision gaps so resynchronization is required
+  instead of silently applying an out-of-order update.
 
 ### P09 custody closure
 

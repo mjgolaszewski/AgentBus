@@ -125,3 +125,15 @@ def test_destination_acceptance_requires_bound_origin_and_deduplicates():
             origin_instance_id="remote", publisher_id="slack-app-1",
             origin_message_id="m1", destination_instance_id="home", payload="changed",
         )
+
+
+def test_directory_delta_gap_is_explicit_and_requires_resync():
+    federation = store()
+    federation.apply_directory(origin_instance_id="remote", route="agentbus:flower",
+                                revision=1, state="current", metadata={"role": "gardener"})
+    gap = federation.apply_directory_delta(
+        origin_instance_id="remote", route="agentbus:flower", revision=4,
+        state="current", metadata={"role": "changed"},
+    )
+    assert gap["state"] == "gap"
+    assert gap["revision"] == 4
