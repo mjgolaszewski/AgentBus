@@ -29,6 +29,7 @@ summary:
   - P09-P0 baseline and invariant ownership mapping are recorded.
   - Current BCF candidate custody is non-authoritative and publication remains blocked pending BCF handoff.
   - Provider fan-out and origin authentication are deferred to a dedicated multi-installation-qualifying candidate; local deterministic construction may proceed.
+  - The existing SQLite store now owns durable bridge obligations and revisioned remote-directory observations; conflicting payloads, revisions, and state regressions fail closed.
 execution_evidence:
   planned_commands:
   - make governance-validate
@@ -47,6 +48,7 @@ execution_evidence:
   - The BCF developer was notified over AgentBus at phase opening and asked to coordinate the next authorized candidate or release.
   - Local contracts, fake-provider behavior, compatibility, and deterministic failure controls may proceed; cross-instance claims remain gated.
   - "P09-P1-02 is complete: empty worker cycles now use the fixed 1/2/4/8/12/16/24/32-minute cadence, while control checks retain their own bound."
+  - "Local product proof is green at 240 tests; provider-backed cross-installation delivery remains an explicitly deferred capability."
 closeout_requirements:
   claims:
     workitems_closed:
