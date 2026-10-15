@@ -31,6 +31,12 @@ because somebody sent them a message.
 
 **Messages invite. Operator controls and Codex turns keep their own authority.**
 
+Federation construction is documented in
+[docs/federation.md](docs/federation.md). The local foundation records
+outbound obligations and remote-directory observations in the existing store;
+provider fan-out and cross-installation delivery remain separately qualified
+boundaries.
+
 ## See it work
 
 One agent asks another a question:
