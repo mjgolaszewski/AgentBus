@@ -19,11 +19,72 @@ The deterministic foundation includes:
   allowlisting that reject credentials, privileges, execution, and wake
   authority fields.
 
-`FederationStore` uses the existing AgentBus SQLite connection. It does not
-create a broker, public endpoint, second registry, provider worker, session, or
-execution capability. Provider submission is intentionally outside this local
-store. Provider fan-out, origin authentication, and recovery remain P11
-qualification gates and are not claimed by deterministic local primitives
-alone. A configured publisher binding is required before a remote event can be
-treated as originating from a namespace; discovery never bootstraps trust or
-local execution authority.
+`FederationStore` uses the existing AgentBus SQLite connection. The optional
+signed bridge uses the service's existing HTTP client and Socket Mode receiver.
+It keeps federation custody separate from ordinary messages, sessions, wake,
+and semantic agent acknowledgement. Provider submission is an outbound action;
+no remote HTTP ingress or second listener is introduced.
+
+Enable the adapter with `AGENTBUS_FEDERATION_CONFIG` pointing to an
+operator-owned JSON file. It contains `instance_id`, `route_prefix`,
+`publisher_id`, `channel`, `private_key_file`, `key_generation`, and `bindings`. The publisher ID
+is `APP_ID/BOT_ID/CHANNEL_ID`, checked against actual provider event metadata.
+Each binding has `instance_id`, `route_prefix`, `publisher_id`, `key_generation`, and a base64
+32-byte Ed25519 `public_key`. The local signing key is a separate absolute-path,
+32-byte raw private file with mode 0600. Only public verification keys are
+shared; Slack tokens and signing keys remain local. An absent configuration
+keeps the adapter disabled. Distinct origins require distinct publisher IDs
+and route prefixes.
+
+Each signed frame carries `key_generation`, the SHA-256 fingerprint of its raw
+Ed25519 public key. The operator approves that fingerprint and the complete
+instance/prefix/app/bot/channel binding before activation. Only the configured
+key generation is admitted; replacing the approved public key rejects retired
+generations, including frames carrying a false generation with an otherwise
+valid signature. Replays within an admitted generation deduplicate by origin
+message and destination; conflicting content is rejected.
+Both local and peer keys must match the explicitly approved generation in the
+configuration. Rotation does not rewrite stored obligations; pending retired
+generation entries require operator reconciliation.
+
+The authenticated local API adds `POST /v1/federation/messages` with
+`origin_message_id`, `destination_instance_id`, and an ordinary protocol-2
+`message` object. It requires the exact sender's joined session token and
+returns 202 with the accepted identity tuple. A stable caller-supplied message
+ID makes retries idempotent; changed content under that identity is rejected.
+Ordinary `POST /v1/messages` retains its existing response and delivery behavior.
+This is an additive opt-in interface; clients migrate by choosing the explicit
+federation enqueue operation for remote custody.
+
+One SQLite transaction stores the origin message and outbound obligation.
+Before a provider attempt, a durable reservation records uncertainty, increments
+the attempt count, and sets the retry deadline. A provider receipt records only
+submission. A signed destination receipt binds the original identity and
+payload hash after destination persistence; only that receipt advances the
+origin obligation to destination acceptance. It never acknowledges agent work.
+The default budget is eight attempts, with exponential delays from 60 to 600
+seconds; Slack Retry-After can extend the deadline. Exhausted uncertain entries
+remain inspectable for operator reconciliation.
+
+The existing local store exposes origin status through
+`FederationStore.obligation(origin, message, destination)`. Destination custody
+is recorded in `federated_messages`, and the signed receipt is a durable
+`bridge_obligations` entry with a deterministic `receipt-` identity. These local
+records distinguish provider submission from destination acceptance without
+promoting raw Slack text into routed agent authority.
+
+Recovery requests complete bounded Slack history (100 events per cycle,
+maximum ten provider pages) before advancing its durable checkpoint. Partial,
+malformed, unordered, or over-budget history cannot advance that checkpoint.
+Live events never advance the history checkpoint, so a newer socket event
+cannot hide an older missed event. Checkpoints belong to the configured
+instance and publisher/channel stream. Provider recovery honors Retry-After.
+Expired provider history and unresolved gaps
+remain qualification blockers; this adapter does not certify retention or
+complete directory convergence.
+
+Provider fan-out, namespace origin ownership, and recovery remain subject to
+an isolated real-provider qualification. Independent installation app identities
+must join the same approved private channel. Discovery never bootstraps trust
+or grants local execution authority. Deterministic fake-provider tests establish
+adapter behavior; they do not establish live multi-installation delivery.

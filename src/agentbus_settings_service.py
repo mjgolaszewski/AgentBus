@@ -18,6 +18,7 @@ class Settings:
     db_path: Path
     operator_token: str | None = field(default=None, repr=False)
     slack_operator_user_ids: frozenset[str] = frozenset()
+    federation_config: Path | None = None
 
     def database_bytes(self) -> int:
         """Report current SQLite footprint, including its WAL sidecars."""
@@ -51,5 +52,7 @@ class Settings:
         users = frozenset(item.strip() for item in raw_users.split(",") if item.strip())
         if any(not re.fullmatch(r"[UW][A-Z0-9]{2,59}", item) for item in users):
             raise ValueError("AGENTBUS_SLACK_OPERATOR_USER_IDS must contain Slack user IDs")
+        federation_config = os.environ.get('AGENTBUS_FEDERATION_CONFIG', '').strip()
         return cls(**values, db_path=db_path.expanduser(), operator_token=operator_token,
-                   slack_operator_user_ids=users)
+                   slack_operator_user_ids=users,
+                   federation_config=Path(federation_config).expanduser() if federation_config else None)

@@ -1,0 +1,71 @@
+"""Outbound Slack federation submission and bounded provider-history recovery."""
+
+from __future__ import annotations
+
+from decimal import Decimal, InvalidOperation
+
+import httpx
+
+from src.agentbus_federation_bridge_service import ProviderUnavailable
+
+
+def publisher_id(event: dict, channel: str) -> str:
+    return '/'.join(str(event.get(key, '')) for key in ('app_id', 'bot_id')) + '/' + channel
+
+
+class SlackFederationProvider:
+    def __init__(self, client: httpx.AsyncClient, token: str, channel: str):
+        self._client, self._token, self.channel = client, token, channel
+
+    async def _request(self, method: str, body: dict) -> dict:
+        try:
+            response = await self._client.post('https://slack.com/api/' + method, json=body,
+                headers={'Authorization': 'Bearer ' + self._token})
+            if response.status_code == 429:
+                retry = response.headers.get('Retry-After', '60')
+                raise ProviderUnavailable(min(86400, max(1, int(retry))) if retry.isdigit() else 60)
+            data = response.json()
+            if not response.is_success or not isinstance(data, dict) or data.get('ok') is not True:
+                raise ProviderUnavailable()
+            return data
+        except (httpx.HTTPError, ValueError) as exc:
+            raise ProviderUnavailable() from exc
+
+    async def publish(self, text: str) -> str:
+        data = await self._request('chat.postMessage', {'channel': self.channel, 'text': text,
+            'parse': 'none', 'mrkdwn': False, 'unfurl_links': False, 'unfurl_media': False})
+        if data.get('channel') != self.channel or not isinstance(data.get('ts'), str):
+            raise ProviderUnavailable()
+        return data['ts']
+
+    async def history(self, after: str, limit: int) -> list[dict]:
+        events: list[dict] = []
+        cursor = ''
+        for _ in range(10):
+            body = {'channel': self.channel, 'oldest': after, 'limit': min(100, limit), 'inclusive': False}
+            if cursor:
+                body['cursor'] = cursor
+            data = await self._request('conversations.history', body)
+            messages = data.get('messages')
+            if not isinstance(messages, list) or len(events) + len(messages) > limit:
+                raise ProviderUnavailable()
+            for message in messages:
+                if not isinstance(message, dict) or not isinstance(message.get('ts'), str):
+                    raise ProviderUnavailable()
+                try:
+                    if not Decimal(message['ts']).is_finite() or Decimal(message['ts']) <= Decimal(after):
+                        raise ProviderUnavailable()
+                except InvalidOperation as exc:
+                    raise ProviderUnavailable() from exc
+                events.append({'publisher_id': publisher_id(message, self.channel),
+                               'text': message.get('text', ''), 'ts': message['ts']})
+            metadata = data.get('response_metadata', {})
+            if not isinstance(metadata, dict):
+                raise ProviderUnavailable()
+            next_cursor = metadata.get('next_cursor', '')
+            if not data.get('has_more') and not next_cursor:
+                return sorted(events, key=lambda event: Decimal(event['ts']))
+            if not isinstance(next_cursor, str) or not next_cursor or next_cursor == cursor:
+                raise ProviderUnavailable()
+            cursor = next_cursor
+        raise ProviderUnavailable()

@@ -49,6 +49,16 @@ workitems:
   - bridge, directory, registration, provider, and owner observations remain distinct and idempotent
   - Slack replies, threading, controls, and status remain functional without foreign text becoming authority
   acceptance_evidence: [test, contract-test, architecture-test]
+- id: P11-P4-02
+  priority: P0
+  status: DONE
+  summary: implement the bounded signed-origin provider bridge adapter for isolated P11 qualification
+  acceptance:
+  - local message and obligation commit before outbound provider effects; retries remain bounded and durable
+  - Ed25519 and operator publisher bindings precede destination deduplication and signed custody receipts
+  - the existing listener and SQLite owner support bounded recovery without remote execution or session authority
+  - deterministic fake-provider evidence covers outage crash replay conflicts forgery and receipt races
+  acceptance_evidence: [test, contract-test, architecture-test, governance-validate]
 - id: P11-P5-01
   priority: P1
   status: TODO

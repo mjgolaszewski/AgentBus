@@ -21,9 +21,10 @@ LOGGER = logging.getLogger("agentbus")
 
 class SlackReceiver:
     def __init__(self, store, channel: str, trusted_bot_id: str,
-                 settings: Settings | None = None):
+                 settings: Settings | None = None, federation_bridge=None):
         self.store, self.channel, self.trusted_bot_id = store, channel, trusted_bot_id
         self.settings = settings
+        self.federation_bridge = federation_bridge
         self._commands = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
     def _finish_command(self, client: BaseSocketModeClient, payload: dict) -> None:
@@ -66,6 +67,13 @@ class SlackReceiver:
             from src.agentbus_service import normalize_event
 
             event = request.payload.get("event")
+            try:
+                if isinstance(event, dict) and self.federation_bridge is not None and self.federation_bridge.accept_event(event):
+                    client.send_socket_mode_response(SocketModeResponse(envelope_id=request.envelope_id))
+                    return
+            except (sqlite3.Error, OSError):
+                LOGGER.error('Could not persist federation event; withholding acknowledgement')
+                return
             normalized = (
                 normalize_event(event, self.channel, self.trusted_bot_id)
                 if isinstance(event, dict) else None
