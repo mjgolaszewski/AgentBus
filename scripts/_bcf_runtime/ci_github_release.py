@@ -21,6 +21,7 @@ from .ci_github_artifacts import (
     resolve_role_artifact,
 )
 from .ci_github_authority import (
+    authenticate_active_role_job_inventory,
     authenticate_role_job_inventory,
     load_authority,
     packaged_repo_root,
@@ -31,15 +32,12 @@ from .ci_github_identity import GitHubControllerError, positive_int, resolve_mai
 from .ci_github_membership import select_latest_admission
 from .controller_custody import require_controller_execution, validate_controller_custody
 from .release_asset_inventory import (
-    checksum_declared_assets,
     exact_assets,
-    release_asset_version,
     verify_checksum_inventory,
 )
 from .release_closure import verify_archive, verify_release_lock, verify_wheelhouse
 from .release_receipts import build_trusted_release_receipt, emit_release_receipt
 from .release_runtime_verification import verify_runtime_evidence
-from .ci_github_release_qualification import require_provider_publication_qualification
 from .release_source_bindings import (
     release_source_bindings,
     verify_release_source_bindings,
@@ -596,7 +594,6 @@ def publish_certified_release(
     receipt_artifact_id: object,
     receipt_artifact_name: object,
     receipt_provider_digest: object,
-    qualification_path: Path,
     publisher_run_id: object,
     publisher_run_attempt: object,
 ) -> dict[str, Any]:
@@ -631,7 +628,7 @@ def publish_certified_release(
         )
     require_controller_execution(custody)
     authority = load_authority(api, repository, main, required_version="1.1")
-    authenticate_role_job_inventory(
+    authenticate_active_role_job_inventory(
         api,
         repository=repository,
         main=main,
@@ -639,8 +636,6 @@ def publish_certified_release(
         role="release_publisher",
         run_id=publisher_run_id,
         run_attempt=publisher_run_attempt,
-        require_success=False,
-        require_terminal=False,
     )
     workflow = receipt.get("invocation", {}).get("workflow")
     if not isinstance(workflow, dict):
@@ -660,14 +655,6 @@ def publish_certified_release(
     )
     paths = tuple(release_artifacts)
     expected_assets = exact_assets(paths)
-    require_provider_publication_qualification(
-        api,
-        path=qualification_path,
-        main=main,
-        repository=repository,
-        version=release_asset_version(paths).value,
-        assets=checksum_declared_assets(paths),
-    )
     receipt_assets = receipt.get("observations", {}).get("release_artifacts")
     if not isinstance(receipt_assets, list) or any(
         not isinstance(value, dict) for value in receipt_assets

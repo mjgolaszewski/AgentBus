@@ -55,7 +55,6 @@ from .runtime_capacity import (
 )
 from .release_adopter_qualification import (
     ReleaseQualificationError,
-    dispatch_release_qualification,
     qualify_release,
 )
 from .trusted_controller_compatibility import (
@@ -143,6 +142,11 @@ def _parser() -> argparse.ArgumentParser:
     _adopt_parser(subparsers)
     _automation_parser(subparsers)
     add_graph_parser(subparsers)
+    project_python = subparsers.add_parser(
+        "project-python",
+        help="Derive the authenticated project interpreter for generated local surfaces.",
+    )
+    project_python.add_argument("--repo-root", type=Path, default=Path.cwd())
     local = subparsers.add_parser("local-pr", help="Run exact local PR validation.")
     local.add_argument("--repo-root", type=Path, default=Path.cwd())
     local.add_argument("--remote", default="origin")
@@ -179,12 +183,14 @@ def _parser() -> argparse.ArgumentParser:
         help="qualify exact release assets across the canonical adopter matrix",
     )
     qualify.add_argument("--repo-root", type=Path, default=Path.cwd())
+    qualify.add_argument("--repository", required=True)
     qualify.add_argument("--release-assets", type=Path, required=True)
-    qualify.add_argument("--adopter-root", type=Path, action="append", required=True)
+    qualify.add_argument("--release-build-manifest", type=Path, required=True)
+    qualify.add_argument("--adopter-root", type=Path, action="append", default=[])
     qualify.add_argument(
         "--adopter-python",
         action="append",
-        required=True,
+        default=[],
         metavar="OWNER/REPO=PATH",
         help="environmental interpreter provisioning; repository semantics remain canonical",
     )
@@ -376,6 +382,13 @@ def main(argv: list[str] | None = None) -> None:
             )
             _print(report.as_dict(), args.format)
             return
+        if args.operation == "project-python":
+            print(
+                ensure_local_project_python(
+                    args.repo_root, Path(sys.executable)
+                ).absolute()
+            )
+            return
         if args.operation == "prospective-train":
             project_python = ensure_local_project_python(
                 args.repo_root, Path(sys.executable), requested=args.python
@@ -424,16 +437,20 @@ def main(argv: list[str] | None = None) -> None:
                         "--adopter-python requires unique OWNER/REPO=PATH values"
                     )
                 interpreters[repository] = Path(path)
+            producer = {
+                "kind": "local",
+                "id": "bcf-release-compatibility",
+            }
             result = qualify_release(
                 args.repo_root,
+                repository=args.repository,
                 release_assets=args.release_assets,
+                release_build_manifest=args.release_build_manifest,
                 adopter_roots=tuple(args.adopter_root),
                 adopter_pythons=interpreters,
+                producer=producer,
                 output=args.output,
             )
-            from .ci_github_controller import environment_api
-
-            dispatch_release_qualification(environment_api(), result)
             _print(result, args.format)
             return
         if args.operation == "submit":

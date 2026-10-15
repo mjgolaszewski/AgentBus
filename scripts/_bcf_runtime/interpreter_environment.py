@@ -26,6 +26,15 @@ from .runtime_capacity import (
     allocate_execution_state,
     load_runtime_contract,
 )
+from .python_runtime_selection import (
+    PythonRuntimeSelectionError,
+    interpreter_subprocess_environment as _interpreter_subprocess_environment,
+    select_materialization_base,
+)
+from .interpreter_dependency_sources import (
+    InterpreterDependencySourceError,
+    compile_governed_dependency_source,
+)
 
 
 class InterpreterEnvironmentError(ValueError):
@@ -33,22 +42,6 @@ class InterpreterEnvironmentError(ValueError):
 
 
 PROJECT_ENVIRONMENT_INSTALLER_REQUIREMENT = "pip==26.2.1"
-
-
-def _interpreter_subprocess_environment(python: Path) -> dict[str, str]:
-    """Remove controller-only Python custody from project interpreter work."""
-
-    environment = dict(os.environ)
-    for name in ("PYTHONHOME", "PYTHONPATH", "VIRTUAL_ENV"):
-        environment.pop(name, None)
-    bin_directory = python.absolute().parent
-    environment["PATH"] = str(bin_directory) + (
-        os.pathsep + environment["PATH"] if environment.get("PATH") else ""
-    )
-    prefix = bin_directory.parent
-    if bin_directory.name == "bin" and (prefix / "pyvenv.cfg").is_file():
-        environment["VIRTUAL_ENV"] = str(prefix)
-    return environment
 
 
 def validate_runtime_import_dependencies(repo_root: Path) -> None:
@@ -139,7 +132,7 @@ class InterpreterEnvironmentPlan:
     def pip_arguments(self) -> tuple[str, ...]:
         """Bind installation to the already-derived dependency proposition."""
 
-        if self.source_kind == "legacy_governance_requirements":
+        if self.source_kind in {"legacy_governance_requirements", "governed_requirements_source"}:
             return self.requirements
         if self.projection_path is None:
             raise InterpreterEnvironmentError(
@@ -361,6 +354,25 @@ def derive_interpreter_environment(
     if contract is None:
         return _legacy_interpreter_environment(root, registry)
     contract = _mapping(contract, "interpreter contract is invalid")
+    if "dependency_source" in contract:
+        if set(contract) != {"dependency_source"}:
+            raise InterpreterEnvironmentError("interpreter contract is ambiguous")
+        try:
+            source = compile_governed_dependency_source(
+                root,
+                contract["dependency_source"],
+                installer_requirement=PROJECT_ENVIRONMENT_INSTALLER_REQUIREMENT,
+            )
+        except InterpreterDependencySourceError as exc:
+            raise InterpreterEnvironmentError(str(exc)) from exc
+        return InterpreterEnvironmentPlan(
+            requirements=source.requirements,
+            requires_python=source.requires_python,
+            projection_path=None,
+            source_kind="governed_requirements_source",
+            source_path=source.path,
+            source_sha256=source.sha256,
+        )
     if contract.get("project_dependencies") is not True:
         raise InterpreterEnvironmentError("interpreter contract is invalid")
     try:
@@ -461,7 +473,7 @@ def verify_interpreter_environment_projection(
         ):
             return
         if (
-            plan.source_kind != "legacy_governance_requirements"
+            plan.source_kind not in {"legacy_governance_requirements", "governed_requirements_source"}
             or plan.source_path is None
             or plan.source_sha256 is None
             or plan.source_path.is_symlink()
@@ -470,14 +482,24 @@ def verify_interpreter_environment_projection(
             raise InterpreterEnvironmentError(
                 "interpreter dependency source is missing or unsafe"
             )
-        try:
-            observed_source_sha256 = hashlib.sha256(
-                plan.source_path.read_bytes()
-            ).hexdigest()
-        except OSError as exc:
-            raise InterpreterEnvironmentError(
-                "interpreter dependency source is unreadable"
-            ) from exc
+        if plan.source_kind == "governed_requirements_source":
+            try:
+                observed_source_sha256 = compile_governed_dependency_source(
+                    plan.source_path.parent,
+                    plan.source_path.name,
+                    installer_requirement=PROJECT_ENVIRONMENT_INSTALLER_REQUIREMENT,
+                ).sha256
+            except InterpreterDependencySourceError as exc:
+                raise InterpreterEnvironmentError(str(exc)) from exc
+        else:
+            try:
+                observed_source_sha256 = hashlib.sha256(
+                    plan.source_path.read_bytes()
+                ).hexdigest()
+            except OSError as exc:
+                raise InterpreterEnvironmentError(
+                    "interpreter dependency source is unreadable"
+                ) from exc
         if observed_source_sha256 != plan.source_sha256:
             raise InterpreterEnvironmentError(
                 "interpreter dependency source changed after derivation"
@@ -543,6 +565,10 @@ def materialize_interpreter_environment(
         )
     verify_interpreter_environment_projection(plan)
     try:
+        base_python = select_materialization_base(plan.requires_python, base_python)
+    except PythonRuntimeSelectionError as exc:
+        raise InterpreterEnvironmentError(str(exc)) from exc
+    try:
         plan_identity = plan.identity(base_python)
     except OSError as exc:
         raise InterpreterEnvironmentError(
@@ -596,7 +622,6 @@ def materialize_interpreter_environment(
                     str(base_python.resolve(strict=True)),
                     "-m",
                     "venv",
-                    "--without-pip",
                     str(temporary / "venv"),
                 ],
                 cwd=root,
@@ -612,11 +637,9 @@ def materialize_interpreter_environment(
                 )
             candidate = temporary / "venv/bin/python"
             install_command = [
-                str(base_python.resolve(strict=True)),
+                str(candidate),
                 "-m",
                 "pip",
-                "--python",
-                str(candidate),
                 "install",
                 "--disable-pip-version-check",
                 *plan.pip_arguments(),

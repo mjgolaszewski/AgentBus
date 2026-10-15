@@ -20,10 +20,11 @@ if str(_SCRIPT_ROOT) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_ROOT))
 
 from .governance_install.ci_graph import write_reference_ci_graph  # noqa: E402
-from .governance_install.existing_adoption import compile_existing_adoption_inventory, existing_adoption_requires_history_for_upgrade, extend_existing_adoption_paths, migrate_existing_adoption_contract, prepare_existing_adoption_shadow, project_existing_adoption_roots  # noqa: E402,E501
+from .governance_install.existing_adoption import compile_existing_adoption_inventory, extend_existing_adoption_paths, migrate_existing_adoption_contract, prepare_existing_adoption_shadow, project_existing_adoption_roots  # noqa: E402,E501
 from .governance_install.transaction_paths import install_transaction_paths  # noqa: E402
 from .governance_install.phase import generate_phase_artifacts  # noqa: E402
 from .governance_install.release_custody import prepare_upgrade_release_custody  # noqa: E402
+from .local_cli_receipt import project_local_cli_receipt, resolve_local_cli  # noqa: E402
 from .governance_install.artifacts import (  # noqa: E402
     ensure_required_artifacts,
     merge_gitignore as _merge_gitignore,
@@ -43,6 +44,7 @@ from .governance_profiles import (  # noqa: E402
 )
 from .profile_contract_v2 import resolve_install_contract_version  # noqa: E402
 from .semantic_authority_commands import _apply_config, _load_config  # noqa: E402
+from .governance_install.semantic_upgrade import install_transaction_requires_history, reconcile_upgrade_semantic_custody  # noqa: E402,E501
 from .ci_graph_locks import apply_ci_graph_locks  # noqa: E402
 from .ci_graph_post_merge import reconcile_post_merge_scope  # noqa: E402
 from .ci_graph_render import apply_ci_graph  # noqa: E402
@@ -558,6 +560,7 @@ def _upgrade_pack(args: argparse.Namespace, target_root: Path) -> InstallResult:
         reconcile_post_merge_scope(target_root, apply=True)
         apply_ci_graph_locks(target_root)
         apply_ci_graph(target_root)
+    reconcile_upgrade_semantic_custody(target_root, skip_validation=args.skip_validation)
 
     strict_validation_passed = False
     bootstrap_validation_passed = False
@@ -697,6 +700,7 @@ def install(args: argparse.Namespace) -> InstallResult:
     )
     if git_root.returncode != 0 or Path(git_root.stdout.strip()).resolve() != target_root:
         raise RuntimeError("installation target must be the root of an initialized Git repository")
+    local_cli = resolve_local_cli(sys.executable)
     args.release_custody = prepare_upgrade_release_custody(
         target_root,
         getattr(args, "release_assets", None),
@@ -764,19 +768,14 @@ def install(args: argparse.Namespace) -> InstallResult:
             return
         require_graph_parity(target_root)
 
-    native_history_required = existing_adoption_requires_history_for_upgrade(target_root)
     apply_transaction(
         target_root,
         managed_paths=transaction_paths,
         mutate_shadow=mutate,
-        preserve_git_history=(
-            args.semantic_config_payload is not None
-            or getattr(args.existing_adoption_inventory, "source_commit", None)
-            is not None
-            or native_history_required
-        ),
+        preserve_git_history=install_transaction_requires_history(target_root, args),
         validate_final=validate_final,
     )
+    project_local_cli_receipt(target_root, local_cli)
     result = result_box[0]
     generated = {
         key: target_root / path.relative_to(path.parents[1])

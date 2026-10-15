@@ -42,7 +42,6 @@ from .ci_github_release import (
     record_release_build,
     verify_release_build_provider,
 )
-from .ci_github_release_qualification import authenticate_release_qualification
 from .ci_github_release_inputs import (
     load_release_authorization_inputs,
     release_input_outputs,
@@ -248,11 +247,9 @@ def _release_parser() -> argparse.ArgumentParser:
     resolve.add_argument("--output", type=Path, required=True)
     publication = operations.add_parser("resolve-publication")
     publication.add_argument("--repository", required=True)
+    publication.add_argument("--trigger-run-id", required=True)
+    publication.add_argument("--trigger-run-attempt", required=True)
     publication.add_argument("--output", type=Path, required=True)
-    qualification = operations.add_parser("authenticate-qualification")
-    qualification.add_argument("--repository", required=True)
-    qualification.add_argument("--event", type=Path, required=True)
-    qualification.add_argument("--output", type=Path, required=True)
     authorize = operations.add_parser("authorize")
     authorize.add_argument("--repository", required=True)
     authorize.add_argument("--bundle", type=Path, required=True)
@@ -335,7 +332,6 @@ def _release_parser() -> argparse.ArgumentParser:
     publish.add_argument("--receipt-artifact-id", required=True)
     publish.add_argument("--receipt-artifact-name", required=True)
     publish.add_argument("--receipt-provider-digest", required=True)
-    publish.add_argument("--qualification", type=Path, required=True)
     return parser
 
 
@@ -415,21 +411,15 @@ def _release(argv: list[str]) -> None:
         return
     if args.operation == "resolve-publication":
         result = resolve_release_publication_inputs(
-            environment_api(), repository=args.repository, output_path=args.output
+            environment_api(), repository=args.repository,
+            trigger_run_id=args.trigger_run_id,
+            trigger_run_attempt=args.trigger_run_attempt,
+            output_path=args.output,
         )
         _github_output(release_publication_outputs(result), path=github_output)
         print(json.dumps(result, sort_keys=True))
         return
-    if args.operation == "authenticate-qualification":
-        result = authenticate_release_qualification(
-            environment_api(),
-            repository=args.repository,
-            event_path=args.event,
-            output_path=args.output,
-        )
-        print(json.dumps(result, sort_keys=True))
-        return
-    elif args.operation in {"verify", "runtime"}:
+    if args.operation in {"verify", "runtime"}:
         release_artifacts = _release_artifacts(args)
         wheels = [path for path in release_artifacts if path.suffix == ".whl"]
         sdists = [
@@ -579,7 +569,6 @@ def _release(argv: list[str]) -> None:
                     receipt_artifact_id=args.receipt_artifact_id,
                     receipt_artifact_name=args.receipt_artifact_name,
                     receipt_provider_digest=args.receipt_provider_digest,
-                    qualification_path=args.qualification,
                     publisher_run_id=_required_environment("GITHUB_RUN_ID"),
                     publisher_run_attempt=_required_environment("GITHUB_RUN_ATTEMPT"),
                 )

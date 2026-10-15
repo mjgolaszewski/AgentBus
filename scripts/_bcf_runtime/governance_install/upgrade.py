@@ -16,6 +16,10 @@ from ..profile_surface_generation import reconcile_makefile
 from ..profile_yaml import render_governance_profile
 from ..runtime_capacity import EXECUTION_STATE_POLICY
 from ..repository_comparison_context import comparison_base_input_contract
+from ..test_duration_observations import (
+    OBSERVATIONS_PATH,
+    reconcile_test_duration_observations,
+)
 
 
 def retire_self_authority_pack_surfaces(
@@ -303,6 +307,58 @@ def upgrade_graph_contracts(target_root: Path) -> list[Path]:
         *_upgrade_provider_permission_edges(target_root),
     ]
     return list(dict.fromkeys(changed))
+
+
+def _upgrade_interpreter_contract(target_root: Path) -> list[Path]:
+    """Close the exact v2/v3 Python-gate state before strict validation."""
+
+    path = target_root / "governance/gate-contracts.yml"
+    if not path.is_file() or path.is_symlink():
+        return []
+    payload = _load_yaml_mapping(path)
+    if str(payload.get("profile_contract_version", "1.0")) not in {"2.0", "3.0"}:
+        return []
+    if payload.get("interpreter_contract") is not None:
+        return []
+    gates = payload.get("gates")
+    if not isinstance(gates, dict):
+        raise ValueError("upgrade gate registry is invalid")
+    from ..interpreter_contract_projection import project_interpreter_contract
+
+    projected = project_interpreter_contract(
+        gates, None, default_if_required=True
+    )
+    if projected is None:
+        return []
+    dependency_source = target_root / "requirements-governance.txt"
+    if dependency_source.is_symlink() or not dependency_source.is_file():
+        raise ValueError(
+            "profile-v2/v3 Python gates lack an authenticated interpreter dependency source"
+        )
+    raw = path.read_text(encoding="utf-8")
+    lines = raw.splitlines(keepends=True)
+    anchors = [
+        index
+        for index, line in enumerate(lines)
+        if line.startswith("gates:")
+    ]
+    if len(anchors) != 1:
+        raise ValueError("upgrade interpreter contract insertion point is ambiguous")
+    insertion = yaml.safe_dump(
+        {"interpreter_contract": projected}, sort_keys=False
+    )
+    lines.insert(anchors[0], insertion)
+    path.write_text("".join(lines), encoding="utf-8")
+    from ..interpreter_environment import (
+        derive_interpreter_environment,
+        verify_interpreter_environment_projection,
+    )
+
+    plan = derive_interpreter_environment(target_root)
+    if plan is None:
+        raise ValueError("upgrade interpreter dependency contract was not derivable")
+    verify_interpreter_environment_projection(plan)
+    return [path]
 
 
 
@@ -621,6 +677,11 @@ def _upgrade_state_files(
         )
     )
     _upgrade_makefile_fragment(target_root)
+    interpreter_paths = _upgrade_interpreter_contract(target_root)
+    created.extend(interpreter_paths)
+    if interpreter_paths and (target_root / OBSERVATIONS_PATH).is_file():
+        reconcile_test_duration_observations(target_root, apply=True)
+        created.append(target_root / OBSERVATIONS_PATH)
     created.extend(_upgrade_runtime_contract(target_root))
     created.extend(upgrade_graph_contracts(target_root))
     return created
