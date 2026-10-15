@@ -5,12 +5,12 @@ document:
   status: active
   path: contracts/federation/v1/federation.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/48
-  authority: normative_for_p09_local_custody_and_outbound_bridge
+  authority: normative_for_p11_federated_runtime_and_p09_local_custody_baseline
 
 scope:
   purpose: outbound_only_inter_instance_transport_and_remote_directory_projection
   deployment: independent_private_agentbus_installations_using_an_existing_provider
-  provider: slack_first
+  provider: slack_first_outbound_bridge
   compatibility: [protocol_2_messages, local_cursors, slack_threads, sessions, claims, operator_controls]
   non_goals: [public_agentbus_endpoint, bespoke_relay, distributed_registry, credential_replication, remote_execution_authority, exactly_once_business_effects]
 
@@ -25,6 +25,8 @@ invariants:
   - {id: FB-INV-008, rule: "Local owner-mediated wake may admit only a verified idle owner after an epoch recheck. Remote transport and discovery cannot start a turn, steer an active turn, or acknowledge queued work."}
   - {id: FB-INV-009, rule: "Directory updates converge by revisioned snapshot and delta. A gap, expired provider history, or missed withdrawal requires bounded resynchronization and cannot silently delete another origin's entry."}
   - {id: FB-INV-010, rule: "All provider payloads, routes, metadata, credentials, and execution requests are untrusted at the destination and are rejected when unsigned, oversized, conflicting, or outside the configured origin binding."}
+  - {id: FB-INV-011, rule: "Only an operator-configured publisher binding may speak for an origin namespace; discovery metadata is an approved projection and never a trust bootstrap."}
+  - {id: FB-INV-012, rule: "A complete directory snapshot is bounded and revisioned; malformed or partial input cannot purge entries, and gaps remain explicitly stale until resynchronization."}
 
 primitives:
   local_message: {identity: origin_instance_id_plus_origin_message_id, owner: local_store}
@@ -48,7 +50,8 @@ proof_obligations:
   - {id: FB-PO-003, proves: [FB-INV-005, FB-INV-006, FB-INV-009], scenario: join_rename_withdrawal_late_join_gap_and_resync_converge_without_authority_promotion}
   - {id: FB-PO-004, proves: [FB-INV-003, FB-INV-007], scenario: uncertain_submission_reconciles_without_false_destination_receipt}
   - {id: FB-PO-005, proves: [FB-INV-008], scenario: active_owner_race_defers_and_idle_owner_admits_one_coalesced_wake_without_acknowledgement}
-  - {id: FB-PO-006, proves: [FB-INV-010], scenario: oversized_untrusted_metadata_credentials_routes_and_execution_requests_are_rejected}
+  - {id: FB-PO-006, proves: [FB-INV-010, FB-INV-011], scenario: oversized_untrusted_metadata_credentials_routes_and_execution_requests_are_rejected}
+  - {id: FB-PO-007, proves: [FB-INV-012], scenario: bounded_snapshot_revision_gap_and_partial_input_preserve_directory_custody}
 
 implementation_order:
   - {id: FB-IU-001, unit: local_acceptance_and_bridge_obligation, depends_on: []}
@@ -56,9 +59,10 @@ implementation_order:
   - {id: FB-IU-003, unit: bounded_directory_snapshot_and_delta_projection, depends_on: [FB-IU-002]}
   - {id: FB-IU-004, unit: owner_capability_and_idle_wake_admission, depends_on: []}
   - {id: FB-IU-005, unit: deterministic_fake_provider_and_fake_owner_evidence, depends_on: [FB-IU-002, FB-IU-003, FB-IU-004]}
+  - {id: FB-IU-006, unit: authorized_provider_qualification, depends_on: [FB-IU-005]}
 
 acceptance_gates:
   local_custody: [FB-INV-001, FB-INV-003, FB-INV-007, FB-PO-001, FB-PO-004]
   identity_and_deduplication: [FB-INV-002, FB-INV-004, FB-INV-010, FB-PO-002]
-  directory: [FB-INV-005, FB-INV-006, FB-INV-009, FB-PO-003]
+  directory: [FB-INV-005, FB-INV-006, FB-INV-009, FB-INV-012, FB-PO-003, FB-PO-007]
   owner_wake: [FB-INV-008, FB-PO-005]

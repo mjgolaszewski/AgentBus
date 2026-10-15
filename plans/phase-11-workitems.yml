@@ -11,40 +11,65 @@ workitems:
 - id: P11-P0-01
   priority: P0
   status: BLOCKED
-  summary: qualify provider fan-out and origin authentication
+  summary: baseline P09 custody, map Issue 48 ownership, and qualify provider fan-out and origin authentication
   acceptance:
-  - every authorized listener can receive or recover the bounded provider event stream
-  - origin binding, scopes, history, rate limits, and recovery are evidenced on a dedicated candidate
-  acceptance_evidence: [contract-test]
+  - authenticated BCF baseline, exact P09 closure, provider topology, trust, scopes, history, recovery, and budgets are recorded
+  - unsupported provider assumptions are explicitly classified as qualified, deferred, or blocked
+  - cross-installation claims remain gated until a dedicated provider candidate proves fan-out and origin authentication
+  acceptance_evidence: [governance-validate, contract-test]
 - id: P11-P1-01
   priority: P0
-  status: TODO
-  summary: implement durable federation bridge and remote directory primitives
+  status: DONE
+  summary: define canonical federation, discovery, custody, receipt, revision, and authority-exclusion contracts
   acceptance:
-  - local message and outbound obligation commit before provider side effect
-  - destination receipts, directory revisions, and uncertainty are durable and idempotent
-  acceptance_evidence: [test, contract-test, architecture-test]
+  - origin identity, publisher binding, bridge states, directory revisions, allowlisted metadata, and prohibited edges are normative
+  - protocol 2 messages, cursors, Slack threads, sessions, claims, aliases, and controls remain compatible
+  acceptance_evidence: [contract-test]
 - id: P11-P2-01
   priority: P0
-  status: TODO
-  summary: close federation replay deduplication resync and authority exclusions
+  status: DONE
+  summary: implement durable federation bridge and remote directory primitives with bounded local custody, origin binding, and provider uncertainty
   acceptance:
-  - duplicate, delayed, conflicting, replayed, stale, withdrawn, and gap states fail closed or converge deterministically
-  - remote discovery cannot create sessions, grant privileges, execute code, wake local conversations, or acknowledge work
-  acceptance_evidence: [test, contract-test]
+  - local obligations persist in the existing SQLite owner before provider side effects
+  - duplicate and conflicting payloads fail closed, and provider uncertainty remains explicit and recoverable
+  acceptance_evidence: [test, contract-test, architecture-test]
 - id: P11-P3-01
-  priority: P1
+  priority: P0
   status: TODO
-  summary: prove deterministic and provider evidence
+  summary: implement service-owned remote directory snapshots, deltas, revisions, gaps, withdrawal, and resynchronization
   acceptance:
-  - fake-provider tests cover routine replay and crash paths
-  - one separately authorized provider qualification proves fan-out and recovery without a public endpoint
+  - only approved active registrations are projected; rename and withdrawal preserve stable identity
+  - stale, conflicting, partial, oversized, and out-of-order updates fail closed without purging valid entries
   acceptance_evidence: [test, contract-test]
 - id: P11-P4-01
   priority: P0
   status: TODO
-  summary: publish only after final BCF custody
+  summary: close federation replay deduplication resync and authority exclusions while integrating the existing Slack human adapter
   acceptance:
-  - newest authorized BCF candidate or release is installed canonically
-  - exact prospective, protected PR/main, archive, isolated-installation, and rollback evidence are green
+  - bridge, directory, registration, provider, and owner observations remain distinct and idempotent
+  - Slack replies, threading, controls, and status remain functional without foreign text becoming authority
+  acceptance_evidence: [test, contract-test, architecture-test]
+- id: P11-P5-01
+  priority: P1
+  status: TODO
+  summary: prove deterministic and provider evidence, compatibility, adversarial controls, and lightweight resource budgets
+  acceptance:
+  - deterministic fake-provider tests cover replay, crashes, outage, joins, gaps, and authority exclusions
+  - existing AgentBus compatibility and assurance suites remain green with measured bounded resource use
+  acceptance_evidence: [governance-validate, test, contract-test, architecture-test]
+- id: P11-P6-01
+  priority: P1
+  status: BLOCKED
+  summary: qualify one authorized real provider arrangement and isolated multi-installation canary
+  acceptance:
+  - two isolated installations and a late joiner prove outbound fan-out, authenticated origin, recovery, and directory convergence
+  - no public endpoint, bespoke relay, credential replication, or exactly-once business-effect claim is introduced
+  acceptance_evidence: [test, contract-test]
+- id: P11-P7-01
+  priority: P0
+  status: TODO
+  summary: publish only after final BCF custody, upgrading to the newest authorized release with exact-tree proof and rollback evidence
+  acceptance:
+  - BCF upgrade, reconcile, prospective train, protected PR/main, archive, isolated install, compatibility, and rollback evidence are green
+  - publication preserves notification-only fallback for unsupported or uncertain provider and owner states
   acceptance_evidence: [governance-validate, architecture-test, test, contract-test, release-check]
