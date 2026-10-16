@@ -10,6 +10,7 @@ import hashlib
 import json
 import re
 import sqlite3
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from decimal import Decimal
 from threading import RLock
@@ -195,7 +196,7 @@ class FederationStore:
             raise ValueError("federation payload must be UTF-8") from exc
         digest = hashlib.sha256(raw).hexdigest()
         now = _now()
-        with self._lock, self._db:
+        with self._lock, self._accept_transaction():
             self._custody_writer()
             local = encoded if local_payload is None else local_payload
             if not isinstance(local, str) or len(local.encode()) > MAX_PAYLOAD:
@@ -231,6 +232,24 @@ class FederationStore:
             if row["payload_hash"] != digest:
                 raise ValueError("conflicting federation payload for obligation")
         return dict(row)
+
+    @contextmanager
+    def _accept_transaction(self):
+        """Keep caller-owned message/rate custody atomic with the bridge obligation."""
+        if not self._db.in_transaction:
+            with self._db:
+                self._custody_writer()
+                yield
+            return
+        self._db.execute('SAVEPOINT bridge_accept')
+        try:
+            yield
+        except BaseException:
+            self._db.execute('ROLLBACK TO bridge_accept')
+            self._db.execute('RELEASE bridge_accept')
+            raise
+        else:
+            self._db.execute('RELEASE bridge_accept')
 
     def _custody_writer(self) -> None:
         """Serialize quota inspection and allocation across independent writers."""

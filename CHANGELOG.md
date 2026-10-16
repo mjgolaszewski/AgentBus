@@ -5,6 +5,10 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Add versioned local send custody before Slack submission, exact-request retry
+  identity, atomic signed remote obligations, and explicit offline bootstrap.
+  CLI migration and remote ancestry remain under construction.
+
 - Retain a scoped three-installation fake-provider resource observation.
 - Record exact-main directory acceptance and the stopped late-joiner installation; retain live qualification blockers.
 

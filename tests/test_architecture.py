@@ -11,6 +11,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = yaml.safe_load((ROOT / "architecture-boundaries.yml").read_text())["architecture"]
 MODULES = {
+    "src/agentbus_delivery_client.py": ("client", "client"),
     "src/agentbus_client.py": ("client", "client"),
     "src/agentbus_transport_client.py": ("client", "client"),
     "src/agentbus_poll_client.py": ("client", "client"),
@@ -24,6 +25,10 @@ MODULES = {
     "src/agentbus_codex_wake_events_client.py": ("client", "client"),
     "src/agentbus_codex_wake_intent_client.py": ("client", "client"),
     "src/agentbus_wake_inbox_client.py": ("client", "client"),
+    "src/agentbus_delivery_api_service.py": ("service", "service"),
+    "src/agentbus_delivery_runtime_service.py": ("service", "service"),
+    "src/agentbus_delivery_lifecycle_service.py": ("service", "service"),
+    "src/agentbus_local_delivery_service.py": ("service", "service"),
     "src/agentbus_claim_recovery_service.py": ("service", "service"),
     "src/agentbus_federation_service.py": ("service", "service"),
     "src/agentbus_federation_directory_service.py": ("service", "service"),

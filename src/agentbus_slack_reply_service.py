@@ -20,8 +20,10 @@ def _has_other_agent(store: MessageStore, channel: str, root: Message) -> bool:
     from src.agentbus_service import SendMessage
 
     rows = store._db.execute(
-        "SELECT payload, sender_assurance FROM messages WHERE channel = ? AND thread_ts = ?",
-        (channel, root.slack_ts),
+        "SELECT payload, sender_assurance FROM messages WHERE channel = ? AND "
+        "(thread_ts = ? OR thread_ts IN (SELECT provider_ref FROM local_delivery_observations "
+        "WHERE channel = ? AND local_cursor = ?))",
+        (channel, root.slack_ts, channel, root.cursor),
     )
     for row in rows:
         try:

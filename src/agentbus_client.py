@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlencode
 
+from src.agentbus_delivery_client import send_command
 from src.agentbus_transport_client import ClientError, api, configuration, local_prefix, profile_session_token
 
 NAME_RE = r"^[a-z0-9][a-z0-9-]{0,31}$"
@@ -537,49 +538,8 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
         identity = resolve_identity(ns.identity)
         profile, _ = checked_profile(values, identity)
         result = api(values, f"/v1/messages/{ns.cursor}/claim", {"identity": identity}, session_token=profile_session_token(profile))
-    elif ns.command == "reply":
-        identity = resolve_identity(ns.identity)
-        profile, _ = checked_profile(values, identity)
-        text = sys.stdin.read() if ns.text == "-" else ns.text
-        result = api(values, "/v1/messages", {
-            "sender": identity, "text": text, "repo": profile["repo"], "kind": "reply",
-            "reply_to_cursor": ns.to_cursor,
-        }, session_token=profile_session_token(profile))
-    elif ns.command == "send":
-        if ns.reply_to_cursor is not None:
-            raise ClientError("Use `agentbus reply --to-cursor CURSOR` so the service derives reply routing.")
-        if bool(ns.identity) == bool(ns.sender):
-            raise ClientError("Use exactly one of --identity or --sender.")
-        send_profile: dict | None = None
-        sender = ns.sender
-        if ns.identity:
-            sender = resolve_identity(ns.identity)
-            send_profile, _ = checked_profile(values, sender)
-        if ns.broadcast and ns.recipient:
-            raise ClientError("Use either --to/--recipient or --broadcast.")
-        if ns.broadcast and ns.informational:
-            raise ClientError("Use either --broadcast or --informational.")
-        if not ns.recipient and not ns.broadcast:
-            raise ClientError("Every send requires --to RECIPIENT or --broadcast; message kind does not select a destination.")
-        if ns.informational and not ns.recipient:
-            raise ClientError("Informational messages require --to RECIPIENT.")
-        recipient = ns.recipient or "all"
-        audience = "broadcast" if ns.broadcast else "informational" if ns.informational else \
-                   "direct" if ns.recipient else None
-        payload = {"sender": sender, "recipient": recipient, "text": ns.text, "kind": ns.kind}
-        if audience:
-            payload["audience"] = audience
-        if ns.repo:
-            payload["repo"] = ns.repo
-        elif send_profile is not None:
-            payload["repo"] = send_profile["repo"]
-        if ns.correlation_id:
-            payload["correlation_id"] = ns.correlation_id
-        if ns.thread_ts:
-            payload["thread_ts"] = ns.thread_ts
-        if payload["text"] == "-":
-            payload["text"] = sys.stdin.read()
-        result = api(values, "/v1/messages", payload, session_token=profile_session_token(send_profile or {}))
+    elif ns.command in {"reply", "send"}:
+        result = send_command(ns, values, checked_profile, resolve_identity, api)
     else:  # legacy raw read
         query = {key: value for key, value in vars(ns).items() if key != "command" and value is not None}
         result = api(values, "/v1/messages?" + urlencode(query))
