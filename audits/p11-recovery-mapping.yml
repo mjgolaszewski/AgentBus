@@ -194,7 +194,7 @@ entries:
   consumer: remote directory query only
   evidence: tests.test_federation_directory_recovery::test_gap_preserves_metadata_blocks_deltas_and_same_revision_snapshot_recovers
   gate: contract-test
-  status: optin_signed_directory_exchange_tested_final_subject_proof_pending
+  status: optin_signed_directory_exchange_verified_exact_main_38964163771
 - invariant: AB-MSG-16
   workitem: P11-P4-01
   canonical_claim: service-contract-valid
@@ -216,7 +216,7 @@ entries:
   consumer: remote directory query only
   evidence: tests.test_federation_directory_recovery::test_gap_preserves_metadata_blocks_deltas_and_same_revision_snapshot_recovers
   gate: contract-test
-  status: optin_signed_directory_exchange_tested_final_subject_proof_pending
+  status: optin_signed_directory_exchange_verified_exact_main_38964163771
 - invariant: AB-MSG-18
   workitem: P11-P3-01
   canonical_claim: service-contract-valid
@@ -227,7 +227,7 @@ entries:
   consumer: remote directory query only
   evidence: tests.test_federation_directory_recovery::test_gap_preserves_metadata_blocks_deltas_and_same_revision_snapshot_recovers
   gate: contract-test
-  status: optin_signed_directory_exchange_tested_final_subject_proof_pending
+  status: optin_signed_directory_exchange_verified_exact_main_38964163771
 - invariant: AB-MSG-19
   workitem: P11-P3-01
   canonical_claim: service-contract-valid
@@ -238,4 +238,4 @@ entries:
   consumer: remote directory query only
   evidence: tests.test_federation_directory_recovery::test_gap_preserves_metadata_blocks_deltas_and_same_revision_snapshot_recovers
   gate: contract-test
-  status: optin_signed_directory_exchange_tested_final_subject_proof_pending
+  status: optin_signed_directory_exchange_verified_exact_main_38964163771

@@ -5,6 +5,9 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Retain a scoped three-installation fake-provider resource observation.
+- Record exact-main directory acceptance and the stopped late-joiner installation; retain live qualification blockers.
+
 - Make strict directory model construction explicit for semantic ownership discovery.
 - Record exact-base custody for the federation directory semantic identity extension.
 
