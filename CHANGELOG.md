@@ -7,6 +7,12 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ### P11 federation foundation
 
+- Classify federation receipt frames as a distinct durable obligation kind.
+  Receipt submissions still retry after an uncertain provider result, while a
+  confirmed provider submission is terminal and cannot generate recurring
+  receipt JSON or consume further retry attempts. Existing databases classify
+  legacy signed receipt rows during migration; message obligations and
+  destination-acceptance semantics are unchanged.
 - Complete the bounded two-installation signed-adapter canary against the
   protected `35f0950` tree: both installations used operator-pinned Ed25519
   origins, durable recovery baselines, destination receipts, replay

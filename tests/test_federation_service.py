@@ -4,8 +4,10 @@ import sqlite3
 import threading
 
 import pytest
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from src.agentbus_federation_service import FederationStore
+from src.agentbus_federation_wire_service import Identity, encode_frame
 
 
 def store() -> FederationStore:
@@ -32,6 +34,66 @@ def test_bridge_obligation_is_idempotent_and_requires_destination_acceptance():
         federation.transition("home", "m1", "remote", "origin_accepted")
     federation.transition("home", "m1", "remote", "destination_accepted")
     assert federation.transition("home", "m1", "remote", "acknowledged")["state"] == "acknowledged"
+
+
+def test_legacy_receipt_obligations_are_classified_during_schema_upgrade():
+    db = sqlite3.connect(":memory:", check_same_thread=False)
+    db.row_factory = sqlite3.Row
+    db.execute("""CREATE TABLE bridge_obligations (
+        origin_instance_id TEXT NOT NULL, origin_message_id TEXT NOT NULL,
+        destination_instance_id TEXT NOT NULL, state TEXT NOT NULL,
+        payload TEXT NOT NULL, payload_hash TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0,
+        updated_at TEXT NOT NULL, PRIMARY KEY(origin_instance_id, origin_message_id, destination_instance_id)
+    )""")
+    identity = Identity("remote", "remote", "remote-publisher", Ed25519PrivateKey.generate())
+    signed_receipt = encode_frame(identity, "receipt", "receipt-1", "home", "{}")
+    db.execute("INSERT INTO bridge_obligations VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+               ("remote", "receipt-1", "home", "submitted",
+                signed_receipt, "hash", 1, "now"))
+    db.execute("INSERT INTO bridge_obligations VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+               ("remote", "ordinary-1", "home", "submitted",
+                '{"kind":"receipt","text":"ordinary legacy message payload"}', "hash", 1, "now"))
+    db.execute("INSERT INTO bridge_obligations VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+               ("remote", "opaque-1", "home", "submitted", "[]", "hash", 1, "now"))
+    db.commit()
+    federation = FederationStore(db, threading.RLock())
+    row = federation.obligation("remote", "receipt-1", "home")
+    assert row["kind"] == "receipt"
+    assert federation.obligation("remote", "ordinary-1", "home")["kind"] == "message"
+    assert federation.obligation("remote", "opaque-1", "home")["kind"] == "message"
+    assert {item["origin_message_id"] for item in federation.pending(now=0, max_attempts=8)} == {
+        "ordinary-1", "opaque-1"
+    }
+
+    # A later construction repeats the idempotent scan, covering a process
+    # restart after the additive column was created but before classification.
+    db.execute("UPDATE bridge_obligations SET kind='message' WHERE origin_message_id='receipt-1'")
+    db.commit()
+    FederationStore(db, threading.RLock())
+    assert federation.obligation("remote", "receipt-1", "home")["kind"] == "receipt"
+
+
+def test_legacy_receipt_migration_ignores_deep_or_incomplete_json():
+    db = sqlite3.connect(":memory:", check_same_thread=False)
+    db.row_factory = sqlite3.Row
+    db.execute("""CREATE TABLE bridge_obligations (
+        origin_instance_id TEXT NOT NULL, origin_message_id TEXT NOT NULL,
+        destination_instance_id TEXT NOT NULL, state TEXT NOT NULL,
+        payload TEXT NOT NULL, payload_hash TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0,
+        updated_at TEXT NOT NULL, PRIMARY KEY(origin_instance_id, origin_message_id, destination_instance_id)
+    )""")
+    deep = "[" * 15000 + "0" + "]" * 15000
+    incomplete = '{"agentbus_federation":1,"kind":"receipt","text":"opaque"}'
+    for message_id, payload in (("deep", deep), ("incomplete", incomplete)):
+        db.execute("INSERT INTO bridge_obligations VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                   ("remote", message_id, "home", "submitted", payload, "hash", 1, "now"))
+    db.commit()
+    federation = FederationStore(db, threading.RLock())
+    assert federation.obligation("remote", "deep", "home")["kind"] == "message"
+    assert federation.obligation("remote", "incomplete", "home")["kind"] == "message"
+    assert {item["origin_message_id"] for item in federation.pending(now=0, max_attempts=8)} == {
+        "deep", "incomplete"
+    }
 
 
 def test_directory_revisions_are_monotonic_and_carry_no_authority():

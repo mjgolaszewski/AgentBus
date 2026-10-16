@@ -147,7 +147,7 @@ class FederationBridge:
         receipt_id = 'receipt-' + hashlib.sha256(canonical([origin, message_id, self.identity.instance_id]).encode()).hexdigest()
         signed = encode_frame(self.identity, 'receipt', receipt_id, origin, receipt)
         self.store.accept(origin_instance_id=self.identity.instance_id, origin_message_id=receipt_id,
-                          destination_instance_id=origin, payload=signed)
+                          destination_instance_id=origin, payload=signed, kind='receipt')
 
     async def recover_once(self, limit: int = 100) -> None:
         if not 1 <= limit <= 1000:

@@ -19,6 +19,10 @@ INSTANCE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 ROUTE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$")
 MAX_METADATA = 4096
 MAX_PAYLOAD = 48_000
+SIGNED_FRAME_FIELDS = {
+    "agentbus_federation", "kind", "origin_instance_id", "origin_message_id",
+    "destination_instance_id", "key_generation", "payload", "signature",
+}
 ALLOWED_DIRECTORY_FIELDS = {
     "agent_id", "display_name", "role", "protocol", "registration_state",
     "capabilities", "origin_revision", "workspace_label",
@@ -33,6 +37,29 @@ def _check_id(value: str, pattern: re.Pattern[str], label: str) -> str:
     if not isinstance(value, str) or not pattern.fullmatch(value):
         raise ValueError(f"invalid federation {label}")
     return value
+
+
+def _looks_like_signed_receipt_frame(value: object) -> bool:
+    """Recognize the complete persisted wire envelope without verifying it.
+
+    Migration has no provider binding with which to verify a historical
+    signature. It must nevertheless require the strict envelope shape so an
+    ordinary application payload containing ``kind=receipt`` is never hidden
+    by receipt retry policy.
+    """
+    if not isinstance(value, dict) or set(value) != SIGNED_FRAME_FIELDS:
+        return False
+    return (
+        value.get("agentbus_federation") == 1
+        and value.get("kind") == "receipt"
+        and isinstance(value.get("origin_instance_id"), str)
+        and isinstance(value.get("origin_message_id"), str)
+        and isinstance(value.get("destination_instance_id"), str)
+        and isinstance(value.get("key_generation"), str)
+        and re.fullmatch(r"[0-9a-f]{64}", value["key_generation"]) is not None
+        and isinstance(value.get("payload"), str) and bool(value["payload"])
+        and isinstance(value.get("signature"), str) and bool(value["signature"])
+    )
 
 
 class FederationStore:
@@ -59,6 +86,30 @@ class FederationStore:
             columns = {row["name"] for row in self._db.execute("PRAGMA table_info(bridge_obligations)")}
             if "payload" not in columns:
                 self._db.execute("ALTER TABLE bridge_obligations ADD COLUMN payload TEXT NOT NULL DEFAULT ''")
+            if "kind" not in columns:
+                self._db.execute("ALTER TABLE bridge_obligations ADD COLUMN kind TEXT NOT NULL DEFAULT 'message'")
+            # Older installations persisted receipt frames without a frame-kind
+            # column. Recover that distinction before the worker projects them
+            # into the new retry policy. Repeat this scan on every construction so
+            # a process restart can complete classification after an interrupted
+            # migration; only a signed federation frame shape qualifies as receipt.
+            legacy = self._db.execute(
+                "SELECT origin_instance_id, origin_message_id, destination_instance_id, payload "
+                "FROM bridge_obligations WHERE kind='message'"
+            ).fetchall()
+            for row in legacy:
+                try:
+                    frame = json.loads(row["payload"])
+                    is_receipt = _looks_like_signed_receipt_frame(frame)
+                except (RecursionError, TypeError, ValueError):
+                    is_receipt = False
+                if is_receipt:
+                    self._db.execute(
+                        "UPDATE bridge_obligations SET kind='receipt' WHERE origin_instance_id=? "
+                        "AND origin_message_id=? AND destination_instance_id=?",
+                        (row["origin_instance_id"], row["origin_message_id"],
+                         row["destination_instance_id"]),
+                    )
             if "provider_ref" not in columns:
                 self._db.execute("ALTER TABLE bridge_obligations ADD COLUMN provider_ref TEXT")
             self._db.execute("""
@@ -95,11 +146,14 @@ class FederationStore:
 
     def accept(self, *, origin_instance_id: str, origin_message_id: str,
                destination_instance_id: str, payload: bytes | str,
-               local_payload: str | None = None) -> dict[str, Any]:
+               local_payload: str | None = None,
+               kind: str = "message") -> dict[str, Any]:
         _check_id(origin_instance_id, INSTANCE_RE, "origin instance")
         _check_id(destination_instance_id, INSTANCE_RE, "destination instance")
         if not isinstance(origin_message_id, str) or not 1 <= len(origin_message_id) <= 128:
             raise ValueError("invalid federation origin message")
+        if kind not in {"message", "receipt"}:
+            raise ValueError("invalid federation frame kind")
         raw = payload.encode() if isinstance(payload, str) else payload
         if not isinstance(raw, bytes) or not raw or len(raw) > MAX_PAYLOAD:
             raise ValueError("federation payload exceeds limit")
@@ -120,9 +174,9 @@ class FederationStore:
                 raise ValueError('conflicting federation payload for origin message')
             self._db.execute("""
                 INSERT OR IGNORE INTO bridge_obligations
-                (origin_instance_id, origin_message_id, destination_instance_id, state, payload, payload_hash, updated_at)
-                VALUES (?, ?, ?, 'origin_accepted', ?, ?, ?)
-            """, (origin_instance_id, origin_message_id, destination_instance_id, encoded, digest, now))
+                (origin_instance_id, origin_message_id, destination_instance_id, state, payload, payload_hash, updated_at, kind)
+                VALUES (?, ?, ?, 'origin_accepted', ?, ?, ?, ?)
+            """, (origin_instance_id, origin_message_id, destination_instance_id, encoded, digest, now, kind))
             row = self._db.execute("""
                 SELECT origin_instance_id, origin_message_id, destination_instance_id,
                        state, payload, payload_hash, attempts, updated_at
@@ -338,6 +392,7 @@ class FederationStore:
         with self._lock:
             rows = self._db.execute("""SELECT * FROM bridge_obligations
                 WHERE state IN ('origin_accepted','submitted','uncertain')
+                AND (kind = 'message' OR (kind = 'receipt' AND state IN ('origin_accepted', 'uncertain')))
                 AND attempts < ? AND next_attempt_at <= ? ORDER BY updated_at LIMIT ?""",
                 (max_attempts, now, limit)).fetchall()
         return [dict(row) for row in rows]
