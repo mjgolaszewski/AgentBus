@@ -5,6 +5,9 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Resolve accepted federated cursors only from their exact retained signed carrier;
+  recover lost observations independently of shared history checkpoints.
+
 - Bound Slack response bytes and whole-request time, reconcile lost ordinary
   responses from authenticated provider history, and isolate channel work while
   preserving fresh-work progress and the submission attempt ceiling.

@@ -53,7 +53,7 @@ environment_facts:
     - structural anti-drift gates are scaffolded for module size, layer ownership, bounded-context ownership, CQRS side rules, router thinness, and duplication
     - application behavior is characterized on Python 3.12 with a pinned Python 3.14 compatibility subprocess in the primary BCF evidence lane
     - Released BCF 2.3.4 Standard profile contract v3 governs the repository; P09 closed on exact main 1f306fa0 through authenticated run 38927748749 and P10 on 013ce32e through run 38934988411; uv 0.12.18 remains pinned across development and immutable Docker bootstrap
-    - direct protected-main authority is retained without trusted-controller or BCF release authority; P11 directory and ordinary custody slices are proved on main3441b17/run38972960797, while phase closure and live provider qualification remain open
+    - direct protected-main authority is retained without trusted-controller or BCF release authority; P11 directory and ordinary custody slices are proved on main3e521b8/run38978145589, while phase closure and live provider qualification remain open
     - production implementations live under src while top-level client and service shims preserve public executable and import paths
     - routed Slack envelopes are admitted only from the bot identity authenticated from the configured bot token
     - new consumer profiles use the XDG state directory; existing deployments select their prior profile directory through explicit AgentBus configuration

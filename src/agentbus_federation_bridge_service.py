@@ -6,6 +6,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import re
 import sqlite3
 import time
 from decimal import Decimal
@@ -14,7 +15,14 @@ from typing import Callable, Protocol
 from src.agentbus_federation_directory_service import DirectorySynchronizer, decode_directory
 from src.agentbus_federation_inbox_service import InboxProjectionError
 from src.agentbus_federation_service import CustodyCapacityError, DirectoryCapacityError, FederationStore
-from src.agentbus_federation_wire_service import Binding, Identity, canonical, decode_frame, encode_frame
+from src.agentbus_federation_wire_service import (
+    MAX_FRAME_BYTES,
+    Binding,
+    Identity,
+    canonical,
+    decode_frame,
+    encode_frame,
+)
 from src.agentbus_message_assurance_service import route_parts
 
 LOGGER = logging.getLogger('agentbus')
@@ -87,6 +95,8 @@ class FederationBridge:
         self.store, self.identity, self.bindings, self.provider = store, identity, dict(bindings), provider
         self.now, self.max_attempts = now, max_attempts
         self.directory: DirectorySynchronizer | None = None
+        self.project_submission: Callable[[str, str, str], bool] | None = None
+        self.ordinary_channel: str | None = None
         self.project_message: Callable[[str, str, str, str, str | None], None] | None = None
         publishers = {identity.publisher_id: identity.instance_id}
         prefixes = {identity.route_prefix: identity.instance_id}
@@ -137,6 +147,9 @@ class FederationBridge:
             key = (row['origin_instance_id'], row['origin_message_id'], row['destination_instance_id'])
             if key[0] != self.identity.instance_id:
                 continue
+            digest = hashlib.sha256(row['payload'].encode()).hexdigest()
+            if digest != row['payload_hash']:
+                raise ValueError('retained carrier content does not match its custody hash')
             delay = min(600, 60 * 2 ** row['attempts'])
             if not self.store.reserve_submission(*key, now=self.now(), delay=delay, max_attempts=self.max_attempts):
                 continue
@@ -150,8 +163,45 @@ class FederationBridge:
                 pass
             else:
                 self.store.record_submission(*key, reference)
+                if self.project_submission is not None:
+                    self.project_submission(row['origin_message_id'], digest, reference)
+
+    def _observe_origin(self, event: dict) -> bool:
+        project = self.project_submission
+        if project is None or event.get('publisher_id') != self.identity.publisher_id:
+            return False
+        text, reference = event.get('text'), event.get('ts')
+        if not isinstance(text, str) or len(text.encode()) > MAX_FRAME_BYTES:
+            raise ValueError('invalid own carrier observation')
+        try:
+            frame = json.loads(text)
+        except RecursionError as exc:
+            raise ValueError('own carrier JSON exceeds decoder depth') from exc
+        if (not isinstance(frame, dict) or frame.get('origin_instance_id') != self.identity.instance_id
+                or frame.get('kind') != 'message'):
+            return False
+        message, destination = frame.get('origin_message_id'), frame.get('destination_instance_id')
+        if not isinstance(message, str) or not isinstance(destination, str):
+            raise ValueError('invalid own carrier identity')
+        frame = decode_frame(text, self.identity.publisher_id, destination, {self.identity.instance_id:
+            Binding(self.identity.instance_id, self.identity.route_prefix, self.identity.publisher_id,
+                    self.identity.private_key.public_key())})
+        message, destination = frame['origin_message_id'], frame['destination_instance_id']
+        row = self.store.obligation(self.identity.instance_id, message, destination)
+        digest = hashlib.sha256(text.encode()).hexdigest()
+        if row is None:
+            return False
+        if row['payload'] != text or row['payload_hash'] != digest:
+            raise ValueError('own carrier is not exact retained custody')
+        if not isinstance(reference, str) or not re.fullmatch(r'[1-9][0-9]{0,15}\.[0-9]{1,9}', reference):
+            raise ValueError('own carrier needs an actual provider reference')
+        self.store.observe_submission(self.identity.instance_id, message, destination, reference)
+        project(message, digest, reference)
+        return True
 
     def receive(self, event: dict) -> None:
+        if self.project_submission is not None and self._observe_origin(event):
+            return
         frame = decode_frame(event['text'], event['publisher_id'], self.identity.instance_id, self.bindings)
         origin, message_id = frame['origin_instance_id'], frame['origin_message_id']
         if frame['kind'] == 'receipt':

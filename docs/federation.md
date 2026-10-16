@@ -263,6 +263,15 @@ Legacy servers and unjoined compatibility sends retain their prior behavior.
 For an operator-approved distinct recipient prefix, acceptance commits the signed
 bridge obligation and local cursor together. It never falls back to an unsigned
 ordinary Slack envelope for that remote route. Unknown bindings are rejected.
+New accepted remote obligations retain an atomic signed-frame hash binding. Only
+an exact authenticated own-publisher carrier and actual same-channel provider
+reference can materialize that existing cursor. This observation does not establish
+destination custody or acknowledgement. Read-only bounded history recovery remains
+independent of the shared reader checkpoint and defers unavailable recovery for
+60 seconds without consuming a submission attempt. Legacy rows remain unbound;
+there is no text-based backfill. Duplicate observations retain one cursor and all
+observed provider references without regressing destination acknowledgement.
+
 Remote replies with foreign ancestry are currently rejected on this new path;
 a versioned origin-parent mapping is still required before P4 can be complete.
 

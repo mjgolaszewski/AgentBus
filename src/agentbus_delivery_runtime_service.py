@@ -9,7 +9,7 @@ from datetime import datetime
 
 from fastapi import HTTPException
 
-from src.agentbus_federation_bridge_service import ProviderCarrierRejected, ProviderUnavailable
+from src.agentbus_federation_bridge_service import FederationBridge, ProviderCarrierRejected, ProviderUnavailable
 
 LOGGER = logging.getLogger('agentbus')
 
@@ -19,6 +19,7 @@ class LocalDeliveryWorker:
         self.store, self.poster, self.channel = store, poster, channel
         self.wake = asyncio.Event()
         self.trusted_bot_id: str | None = None
+        self.federation: FederationBridge | None = None
 
     async def recover_once(self, rows: list[dict]) -> set[str]:
         if not self.trusted_bot_id or not callable(getattr(self.poster, 'observed_messages', None)):
@@ -35,13 +36,19 @@ class LocalDeliveryWorker:
                 publisher = event.get('publisher_id')
                 if not isinstance(publisher, str):
                     continue
+                if (self.federation is not None and self.federation.ordinary_channel == self.channel
+                        and publisher == self.federation.identity.publisher_id
+                        and isinstance(event.get('text'), str)
+                        and event['text'].startswith('{"agentbus_federation":')):
+                    if self.federation._observe_origin(event):
+                        continue
                 publisher_parts = publisher.split('/')
                 if len(publisher_parts) != 3 or publisher_parts[1:] != [self.trusted_bot_id, self.channel]:
                     continue
                 self.store.local_delivery.accept_event_echo(self.channel, event['ts'], event.get('text'),
                     event.get('blocks'), event.get('thread_ts'))
             self.store.local_delivery.defer_recovery([row for row in rows
-                if row['state'] == 'blocked' or row['attempts'] >= 8])
+                if row['state'] in {'blocked', 'federated'} or row['attempts'] >= 8])
             return {row['request_id'] for row in rows}
         except (ProviderUnavailable, sqlite3.Error, OSError, ValueError, KeyError, TypeError):
             self.store.local_delivery.defer_recovery(rows)
@@ -53,6 +60,9 @@ class LocalDeliveryWorker:
 
         pending = self.store.local_delivery.pending(channel=self.channel)
         uncertain = self.store.local_delivery.recovery_pending(self.channel)
+        if self.federation is not None and self.federation.ordinary_channel == self.channel:
+            uncertain = (uncertain + self.store.local_delivery.federated_recovery_pending(
+                self.channel, self.federation.identity.instance_id))[:100]
         covered = await self.recover_once(uncertain) if uncertain else set()
         deadline, attempted = time.monotonic() + 30, 0
         for row in pending:
