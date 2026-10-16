@@ -5,6 +5,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Record exact-base custody for the federation directory semantic identity extension.
+
 ### P11 directory recovery
 
 - Record the operator-approved public channel audience and retention assumptions;
