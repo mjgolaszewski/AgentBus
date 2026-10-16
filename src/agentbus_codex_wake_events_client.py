@@ -35,7 +35,7 @@ def _candidate(event: dict, _identity: str) -> tuple[int, str] | None:
 def eligible_events(profile_path: Path, profile: dict,
                     extra_candidates: list[tuple[int, str]] | None = None) -> list[str]:
     """Combine durable service candidates with unconsumed local controls."""
-    events = read_spool_events(profile_path)
+    events = read_spool_events(profile_path, profile=profile)
     eligible = [_candidate(event, profile["identity"]) for event in events]
     priorities: dict[str, int] = {}
     for priority, ref in [item for item in eligible if item is not None] + (extra_candidates or []):

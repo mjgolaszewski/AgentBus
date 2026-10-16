@@ -31,7 +31,30 @@ def _default_spool(profile: dict) -> dict:
     return {"cursor": int(profile.get("ack_cursor", 0)), "events": []}
 
 
-def change_spool(profile_path: Path, profile: dict, change: Callable[[dict], T]) -> T:
+def _ack_cursor(profile_path: Path, profile: dict) -> int:
+    """Observe a newer atomic profile cursor even in an already-running worker."""
+    through = int(profile.get("ack_cursor", 0))
+    try:
+        current = json.loads(profile_path.read_text())
+    except FileNotFoundError:
+        return through
+    except (OSError, ValueError):
+        raise ClientError("AgentBus profile acknowledgement is unreadable") from None
+    if isinstance(current, dict) and current.get("identity") == profile["identity"]:
+        through = max(through, int(current.get("ack_cursor", 0)))
+    return through
+
+
+def _events_after_ack(events: list[dict], through: int) -> list[dict]:
+    return [event for event in events if not (
+        event.get("kind") == "MESSAGE" and isinstance(event.get("message"), dict)
+        and isinstance(event["message"].get("cursor"), int)
+        and event["message"]["cursor"] <= through
+    )]
+
+
+def change_spool(profile_path: Path, profile: dict, change: Callable[[dict], T],
+                 *, reconcile_ack: bool = True) -> T:
     """Serialize worker and foreground changes to one disposable projection."""
     lock_path = _spool_lock(profile_path)
     if lock_path.is_symlink():
@@ -47,13 +70,18 @@ def change_spool(profile_path: Path, profile: dict, change: Callable[[dict], T])
         except FileNotFoundError:
             state = _default_spool(profile)
         before = json.dumps(state, sort_keys=True)
+        through = _ack_cursor(profile_path, profile) if reconcile_ack else None
+        if through is not None:
+            state["events"] = _events_after_ack(state["events"], through)
         result = change(state)
+        if through is not None:
+            state["events"] = _events_after_ack(state["events"], through)
         if json.dumps(state, sort_keys=True) != before:
             atomic_json(path, state)
         return result
 
 
-def read_spool_events(profile_path: Path) -> list[dict]:
+def read_spool_events(profile_path: Path, *, profile: dict | None = None) -> list[dict]:
     """Read the atomically replaced queue without creating locks or state."""
     path = spool_path(profile_path)
     if path.is_symlink():
@@ -66,7 +94,8 @@ def read_spool_events(profile_path: Path) -> list[dict]:
         raise ClientError("AgentBus poll state is unreadable") from None
     if not isinstance(state, dict) or not isinstance(state.get("events"), list):
         raise ClientError("AgentBus poll state has an unsupported schema")
-    return state["events"]
+    return (state["events"] if profile is None else
+            _events_after_ack(state["events"], _ack_cursor(profile_path, profile)))
 
 
 def _routine_message(event: dict, identity: str) -> bool:
@@ -138,18 +167,10 @@ def retire_acknowledged_messages(profile_path: Path, profile: dict, through: int
 
     def retire(state: dict) -> int:
         before = len(state["events"])
-        state["events"] = [
-            event for event in state["events"]
-            if not (
-                event.get("kind") == "MESSAGE"
-                and isinstance(event.get("message"), dict)
-                and isinstance(event["message"].get("cursor"), int)
-                and event["message"]["cursor"] <= through
-            )
-        ]
+        state["events"] = _events_after_ack(state["events"], through)
         return before - len(state["events"])
 
-    return change_spool(profile_path, profile, retire)
+    return change_spool(profile_path, profile, retire, reconcile_ack=False)
 
 
 def policy_values_for_revision(profile_path: Path, profile: dict, revision: str) -> dict | None:
@@ -278,7 +299,7 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
                     next_inbox = time.monotonic() + float(policy["initial_interval_seconds"])
                 else:
                     def cursor_of(state: dict) -> int:
-                        return int(state["cursor"])
+                        return max(int(state["cursor"]), _ack_cursor(profile_path, profile))
                     cursor = change_spool(profile_path, profile, cursor_of)
                     page = api(values, "/v1/inbox?" + urlencode({
                         "identity": profile["identity"], "after": cursor, "limit": 100,
@@ -286,7 +307,10 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
                     service_healthy = True
                     def record_messages(state: dict) -> int:
                         relevant = 0
+                        ack_floor = _ack_cursor(profile_path, profile)
                         for message in page["messages"]:
+                            if message["cursor"] <= ack_floor:
+                                continue
                             event = {"kind": "MESSAGE", "id": str(message["cursor"]),
                                      "message": message}
                             if not profile.get("quiet_mode", False) or not _routine_message(event, profile["identity"]):

@@ -7,6 +7,10 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ### P10 security and wake recovery
 
+- Reconcile older poll queues against the current semantic acknowledgement
+  during read and worker recovery, preserving safety events and newer work.
+  Read-only wake selection also filters stale presentation entries.
+
 - Begin the governed P10 rollover after authenticated P09 exact-main closure,
   preserving deferred provider and live wake qualification boundaries.
 - Reconcile current runtime authority to released BCF 2.3.4 while retaining

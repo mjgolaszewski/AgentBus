@@ -603,11 +603,13 @@ gates:
         min_collected: 1
         min_executed: 1
         max_skipped: 0
-        selectors: [tests/test_wake_intent_lifecycle.py, tests/test_wake_owner_eligibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_self_service_client.py]
+        selectors: [tests/test_poll_projection_recovery.py, tests/test_wake_intent_lifecycle.py, tests/test_wake_owner_eligibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_self_service_client.py]
         expected_node_manifest: governance/test-manifests/test.txt
         expected_nodes_mode: exact
         artifact_binding: *id042
     negative_controls:
+    - {id: acknowledged-queue-is-reconciled-on-read, mutation: {path: src/agentbus_poll_client.py, search: '                 *, reconcile_ack: bool = True) -> T:', replace: '                 *, reconcile_ack: bool = False) -> T:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_poll_projection_recovery::test_old_acknowledged_queue_cannot_replay_after_restart']}}
+    - {id: worker-fetch-respects-semantic-ack-floor, mutation: {path: src/agentbus_poll_client.py, search: '                        return max(int(state["cursor"]), _ack_cursor(profile_path, profile))', replace: '                        return int(state["cursor"])'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_poll_projection_recovery::test_worker_fetch_uses_ack_floor_and_reconciles_inflight_ack']}}
     - {id: unloaded-owner-cannot-launch, mutation: {path: src/agentbus_codex_wake_client.py, search: '                if host_state != "idle":', replace: '                if host_state not in {"idle", "notLoaded"}:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_wake_owner_eligibility::test_unproved_owner_observation_never_resumes_or_starts[observation2]']}}
     - {id: queued-host-acceptance-is-not-running, mutation: {path: src/agentbus_codex_wake_intent_client.py, search: '    phase = {"queued": "queued", "inProgress": "running", "completed": "completed",', replace: '    phase = {"queued": "running", "inProgress": "running", "completed": "completed",'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_wake_intent_lifecycle::test_host_acceptance_records_only_observed_lifecycle[queued-queued]']}}
     - {id: missing-send-destination-is-rejected, mutation: {path: *id043, search: 'if not ns.recipient and not ns.broadcast:', replace: 'if False:'}, oracle: {kind: *id044, node_ids: ['tests.test_launcher::test_cli_rejects_ambiguous_actionable_send_before_api']}}
