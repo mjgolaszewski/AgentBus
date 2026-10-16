@@ -58,6 +58,7 @@ workitems:
   - acknowledgement removes only message events at or below the acknowledged cursor
   - controls, policy events, durable history, cursor semantics, and Codex wake state remain unchanged
   - cleanup is idempotent and safe across retries
+  - preexisting queues reconcile on read and restart against the latest profile acknowledgement without replay or lost safety events
   acceptance_evidence: [test, contract-test]
 - id: P10-P6-01
   priority: P0

@@ -63,6 +63,8 @@ execution_evidence:
   - uv run --locked pytest -q tests/test_poll_client.py tests/test_participation_contract.py
   - uv run --locked pytest -q tests/test_codex_wake_client.py tests/test_codex_wake_contract.py
   notes:
+  - 'Issue 45 full acceptance review found a residual beyond the original ack-time hook: old queues replayed after an already-advanced profile cursor. Three new negative cases reproduced the defect; the same cleanup predicate now reconciles foreground/worker access and filters read-only wake selection, without changing service history, acknowledgement or scan cursors, controls, policy, alarms, or newer messages.'
+  - 'Projection follow-up proof: all 304 tests passed, lint and mypy passed, and governance validation passed. Seven additional cases cover restart, capacity, stale reader state, explicit retirement counts, read-only wake selection, late append, and an in-flight fetch/ack race; two canonical negative controls are registered.'
   - 'Current implementation proof: 297 tests passed; lint and mypy passed; architecture and contract checks passed. New owner-admission controls reproduced 10 failures before repair; resource controls reproduced 3; intent controls reproduced 4. Focused and full suites subsequently passed.'
   - 'Preserve the resume-control negative oracle after moving its mutation to the extracted event owner; new unloaded-owner, queued-not-running, and alias-capacity controls are registered in canonical gate contracts.'
   - 'Release-smoke now includes fresh locked archive installation, isolated CLI help, and service import from that exact source archive; final candidate execution and protected-main truth remain the canonical submit boundary.'
