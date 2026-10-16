@@ -52,9 +52,9 @@ The authenticated local API adds `POST /v1/federation/messages` with
 `message` object. It requires the exact sender's joined session token and
 returns 202 with the accepted identity tuple. A stable caller-supplied message
 ID makes retries idempotent; changed content under that identity is rejected.
-Ordinary `POST /v1/messages` retains its existing response and delivery behavior.
-This is an additive opt-in interface; clients migrate by choosing the explicit
-federation enqueue operation for remote custody.
+Legacy `POST /v1/messages` requests retain their existing HTTP 201 delivery
+behavior. New joined clients can negotiate durable acceptance on that endpoint
+as described below; the explicit federation enqueue interface remains supported.
 
 One SQLite transaction stores the origin message and outbound obligation.
 Before a provider attempt, a durable reservation records uncertainty, increments
@@ -233,7 +233,63 @@ It creates no local session, operator command, semantic acknowledgement, or wake
 eligibility. Text, routes, and opaque correlation are preserved, while foreign
 thread timestamps and reply cursors stay in signed custody and are cleared from
 the local notification. Cross-instance ancestry translation, historical custody
-backfill without retained provider references, and ordinary send migration remain
+backfill without retained provider references, and complete ordinary delivery recovery remain
 separate obligations; existing local reply and human-thread behavior is unchanged.
 Stop the bridge before rolling back this optional projection, retaining its mapping
 and local cursor history; do not reset checkpoints to manufacture backfill.
+
+
+## Negotiated ordinary delivery custody
+
+`GET /v1/info` advertises `X-AgentBus-Delivery-Version: 1` as a response header,
+without changing the protocol-2 info object. A joined client may then send
+`X-AgentBus-Delivery-Version: 1` and a canonical UUID `Idempotency-Key` to the
+existing `POST /v1/messages` endpoint. Exact session authorization precedes each
+new request and retry. One SQLite transaction reserves the existing send-rate
+budget and stores the ordinary message plus transport obligation. HTTP 202 means
+local custody only; it does not mean Slack submission, destination acceptance,
+execution, completion, or semantic acknowledgement. The existing Message response
+has an empty `slack_ts` until an actual ordinary provider reference is known.
+A retry under the same session/key/request returns the original local cursor;
+changed authored content or another session under that key receives 409.
+
+Joined CLI `send` and `reply` negotiate this capability automatically when the
+server advertises it. A failed or uncertain response reports `--message-id UUID`;
+retry the identical command with that UUID. A changed command must use a new
+identity. An explicit retry identity requires both the advertised capability and
+a joined session; it cannot silently downgrade to an older server's delivery path.
+Legacy servers and unjoined compatibility sends retain their prior behavior.
+
+For an operator-approved distinct recipient prefix, acceptance commits the signed
+bridge obligation and local cursor together. It never falls back to an unsigned
+ordinary Slack envelope for that remote route. Unknown bindings are rejected.
+Remote replies with foreign ancestry are currently rejected on this new path;
+a versioned origin-parent mapping is still required before P4 can be complete.
+
+Local provider retries use the unchanged protocol-2 envelope plus a context block
+locator. Only exact content from the authenticated local bot can reconcile that
+locator to the original cursor. Duplicate provider posts can map to the same local
+cursor; human reply routing checks competing agent ancestry across every observed
+provider thread for that cursor. This is not an exactly-once Slack posting guarantee. Missing or changed
+provider echo and truncation warnings retain a blocked obligation instead of
+retrying unchanged content. A subsequent verified exact echo can resolve the race.
+Attempts are reserved durably before effects, capped at eight with 60–600 second
+backoff. Each cycle attempts at most eight entries within a 30-second scheduling
+budget, plus the current bounded provider request. Full lost-response history
+reconciliation is still outstanding.
+
+`AGENTBUS_LOCAL_DELIVERY_VERSION=1` explicitly allows the local API to start during
+Slack identity or Socket Mode bootstrap failure. Bootstrap retries occur no more
+than once per 60 seconds, including when new messages wake the delivery task.
+No unknown bot receives protocol-envelope authority, and the federation bridge is
+unavailable until authenticated bootstrap succeeds. `/v1/status` reports Slack as
+disconnected. The default startup contract remains unchanged.
+
+The existing database owns at most 1,024 retained ordinary delivery obligations,
+48,000 UTF-8 payload bytes per entry, and 8,192 provider observation aliases.
+Exact retries do not allocate another row; new allocations over capacity receive
+503 without an orphan message or rate reservation. These are retained-custody
+bounds, not a global database quota. There is no automatic pruning. Preserve the
+new tables and pending local references during rollback; older transport code
+cannot safely resume their obligations. Runtime activation and complete rollback
+qualification remain gated separately.

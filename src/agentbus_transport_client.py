@@ -10,6 +10,7 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
+from uuid import UUID
 
 
 class ClientError(Exception):
@@ -81,7 +82,7 @@ def configuration(*, include_operator: bool = False) -> tuple[Path, dict[str, st
 
 def api(values: dict[str, str], path: str, payload: dict | None = None, *,
         bearer_token: str | None = None, session_token: str | None = None,
-        timeout_seconds: float | None = None) -> dict:
+        timeout_seconds: float | None = None, delivery_key: str | None = None) -> dict:
     token = bearer_token if bearer_token is not None else values.get("AGENTBUS_API_TOKEN", "")
     if path != "/healthz" and not token:
         raise ClientError("Set AGENTBUS_API_TOKEN in the environment or AgentBus .env file.")
@@ -102,11 +103,29 @@ def api(values: dict[str, str], path: str, payload: dict | None = None, *,
         headers["Authorization"] = f"Bearer {token}"
     if session_token is not None:
         headers["X-AgentBus-Session-Token"] = session_token
+    if delivery_key is not None:
+        try:
+            if str(UUID(delivery_key)) != delivery_key:
+                raise ValueError()
+        except ValueError:
+            raise ClientError('Durable request identity must be a canonical UUID.') from None
+        if path != '/v1/messages' or values.get('_AGENTBUS_DELIVERY_VERSION') != '1' or not session_token:
+            raise ClientError('Durable delivery requires fresh server capability and a joined session.')
+        headers['X-AgentBus-Delivery-Version'] = '1'
+        headers['Idempotency-Key'] = delivery_key
     request = Request(base + path, data=body, headers=headers)
     try:
         with build_opener(NoRedirects).open(
             request, timeout=timeout_seconds or (3 if path == "/healthz" else 35)
         ) as response:
+            if path == '/v1/info':
+                values.pop('_AGENTBUS_DELIVERY_VERSION', None)
+                if response.headers.get('X-AgentBus-Delivery-Version') == '1':
+                    values['_AGENTBUS_DELIVERY_VERSION'] = '1'
+            if delivery_key is not None and (response.status != 202 or
+                    response.headers.get('X-AgentBus-Delivery-Version') != '1' or
+                    response.headers.get('Idempotency-Key') != delivery_key):
+                raise ClientError('Server did not confirm the negotiated durable acceptance; do not resend blindly.')
             return json.load(response)
     except HTTPError as exc:
         retry = exc.headers.get("Retry-After")

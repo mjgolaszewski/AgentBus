@@ -15,6 +15,26 @@ def publisher_id(event: dict, channel: str) -> str:
     return '/'.join(str(event.get(key, '')) for key in ('app_id', 'bot_id')) + '/' + channel
 
 
+def validate_carrier_echo(data: dict, text: str, reference: str, *, locator: str | None = None) -> None:
+    """One guard for exact provider carrier custody, with an optional local locator."""
+    metadata = data.get('response_metadata', {})
+    warnings = metadata.get('warnings', []) if isinstance(metadata, dict) else []
+    if any(isinstance(items, list) and 'message_truncated' in items
+           for items in (warnings, data.get('warnings', []))) or data.get('warning') == 'message_truncated':
+        raise ProviderCarrierRejected('truncation_warning', reference)
+    echoed = data.get('message')
+    if not isinstance(echoed, dict) or not isinstance(echoed.get('text'), str):
+        raise ProviderCarrierRejected('missing_echo', reference)
+    if echoed['text'] != text:
+        raise ProviderCarrierRejected('changed_echo', reference)
+    if locator is not None:
+        blocks = echoed.get('blocks')
+        if (not isinstance(blocks, list) or
+                sum(isinstance(b, dict) and b.get('type') == 'context' and b.get('block_id') == locator
+                    for b in blocks) != 1):
+            raise ProviderCarrierRejected('missing_echo', reference)
+
+
 class SlackFederationProvider:
     def __init__(self, client: httpx.AsyncClient, token: str, channel: str):
         self._client, self._token, self.channel = client, token, channel
@@ -50,16 +70,7 @@ class SlackFederationProvider:
             'parse': 'none', 'mrkdwn': False, 'unfurl_links': False, 'unfurl_media': False})
         if data.get('channel') != self.channel or not isinstance(data.get('ts'), str):
             raise ProviderUnavailable()
-        metadata = data.get('response_metadata', {})
-        warnings = metadata.get('warnings', []) if isinstance(metadata, dict) else []
-        if any(isinstance(items, list) and 'message_truncated' in items
-               for items in (warnings, data.get('warnings', []))) or data.get('warning') == 'message_truncated':
-            raise ProviderCarrierRejected('truncation_warning', data['ts'])
-        echoed = data.get('message')
-        if not isinstance(echoed, dict) or not isinstance(echoed.get('text'), str):
-            raise ProviderCarrierRejected('missing_echo', data['ts'])
-        if echoed['text'] != text:
-            raise ProviderCarrierRejected('changed_echo', data['ts'])
+        validate_carrier_echo(data, text, data['ts'])
         return data['ts']
 
     async def history(self, after: str, limit: int) -> list[dict]:

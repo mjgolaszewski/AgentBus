@@ -209,18 +209,21 @@ class FederationBridge:
         if events:
             self.store.advance_checkpoint(reader, events[-1]['ts'])
 
+    async def cycle(self) -> float:
+        delay = 60.0
+        try:
+            if self.directory is not None:
+                self.directory.reconcile()
+            await self.recover_once()
+            await self.submit_once()
+        except ProviderUnavailable as exc:
+            delay = max(delay, exc.retry_after)
+            LOGGER.warning('Federation provider unavailable; durable custody retained')
+        except (TimeoutError, OSError, ValueError, sqlite3.Error, DirectoryCapacityError, CustodyCapacityError,
+                InboxProjectionError):
+            LOGGER.warning('Federation cycle incomplete; durable custody retained')
+        return delay
+
     async def run(self) -> None:
         while True:
-            delay = 60.0
-            try:
-                if self.directory is not None:
-                    self.directory.reconcile()
-                await self.recover_once()
-                await self.submit_once()
-            except ProviderUnavailable as exc:
-                delay = max(delay, exc.retry_after)
-                LOGGER.warning('Federation provider unavailable; durable custody retained')
-            except (TimeoutError, OSError, ValueError, sqlite3.Error, DirectoryCapacityError, CustodyCapacityError,
-                    InboxProjectionError):
-                LOGGER.warning('Federation cycle incomplete; durable custody retained')
-            await asyncio.sleep(delay)
+            await asyncio.sleep(await self.cycle())

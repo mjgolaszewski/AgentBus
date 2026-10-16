@@ -19,6 +19,11 @@ class Settings:
     operator_token: str | None = field(default=None, repr=False)
     slack_operator_user_ids: frozenset[str] = frozenset()
     federation_config: Path | None = None
+    local_delivery_version: int | None = None
+
+    def __post_init__(self):
+        if self.local_delivery_version is not None and (type(self.local_delivery_version) is not int or self.local_delivery_version != 1):
+            raise ValueError('Unsupported local delivery version')
 
     def database_bytes(self) -> int:
         """Report current SQLite footprint, including its WAL sidecars."""
@@ -53,6 +58,9 @@ class Settings:
         if any(not re.fullmatch(r"[UW][A-Z0-9]{2,59}", item) for item in users):
             raise ValueError("AGENTBUS_SLACK_OPERATOR_USER_IDS must contain Slack user IDs")
         federation_config = os.environ.get('AGENTBUS_FEDERATION_CONFIG', '').strip()
+        delivery_version = os.environ.get('AGENTBUS_LOCAL_DELIVERY_VERSION', '').strip()
+        if delivery_version not in {'', '1'}:
+            raise ValueError('AGENTBUS_LOCAL_DELIVERY_VERSION must be 1 when set')
         return cls(**values, db_path=db_path.expanduser(), operator_token=operator_token,
-                   slack_operator_user_ids=users,
+                   slack_operator_user_ids=users, local_delivery_version=1 if delivery_version else None,
                    federation_config=Path(federation_config).expanduser() if federation_config else None)

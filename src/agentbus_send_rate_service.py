@@ -32,10 +32,15 @@ class SendRateStore:
             db.execute("CREATE INDEX IF NOT EXISTS send_rate_window ON send_rate_buckets(window)")
 
     def reserve(self, principal: str, *, now: float | None = None) -> None:
+        with self._lock, self._db:
+            self._reserve(principal, now=now)
+
+    def _reserve(self, principal: str, *, now: float | None = None) -> None:
+        """Reserve within a caller-owned SQLite transaction when accepting custody."""
         instant = time.time() if now is None else now
         window = int(instant // self.WINDOW_SECONDS)
         retry_after = max(1, math.ceil((window + 1) * self.WINDOW_SECONDS - instant))
-        with self._lock, self._db:
+        with self._lock:
             row = self._db.execute(
                 "SELECT window, used FROM send_rate_buckets WHERE principal = ?", (principal,),
             ).fetchone()

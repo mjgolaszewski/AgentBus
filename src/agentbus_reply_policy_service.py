@@ -13,7 +13,7 @@ def derive_reply_fields(store, channel: str, message) -> None:
     derived = {
         "recipient": parent.sender,
         "audience": "direct",
-        "thread_ts": parent.thread_ts or parent.slack_ts,
+        "thread_ts": parent.thread_ts or parent.slack_ts or None,
         "correlation_id": parent.correlation_id,
     }
     for field, value in derived.items():

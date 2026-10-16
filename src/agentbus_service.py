@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import hmac
 import json
 import logging
@@ -17,14 +16,17 @@ from pathlib import Path
 from typing import Annotated, Callable, Literal
 
 import httpx
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError, model_validator
 
 from src.agentbus_claim_recovery_service import ClaimRecoveryStore
 from src.agentbus_control_store_service import ControlStore
+from src.agentbus_delivery_api_service import send_message
+from src.agentbus_delivery_lifecycle_service import delivery_lifespan
 from src.agentbus_federation_api_service import FederationAcceptance, api_federation_enqueue
-from src.agentbus_federation_runtime_service import federation_runtime
 from src.agentbus_federation_service import FederationStore
+from src.agentbus_federation_slack_service import validate_carrier_echo
+from src.agentbus_local_delivery_service import LOCAL_REFERENCE_PREFIX, LOCATOR_PREFIX, LocalDeliveryStore
 from src.agentbus_message_authorization_service import require_message_route
 from src.agentbus_participation_api_service import (
     UPGRADE_NOTICE,
@@ -49,14 +51,18 @@ from src.agentbus_participation_api_service import (
     authenticate_operator,
     upgrade_notice,
 )
-from src.agentbus_participation_store_service import ParticipationStore, StoppedMessageSession
+from src.agentbus_participation_store_service import ParticipationStore
+from src.agentbus_participation_store_service import StoppedMessageSession as StoppedMessageSession
 from src.agentbus_presentation_service import visible_text
 from src.agentbus_reply_policy_service import validate_reply
 from src.agentbus_request_limits_service import RequestBodyLimit
-from src.agentbus_send_policy_service import SessionAuthorityError, validate_new_send
-from src.agentbus_send_rate_service import SendRateExceeded, SendRateStore
+from src.agentbus_send_policy_service import SessionAuthorityError as SessionAuthorityError
+from src.agentbus_send_policy_service import validate_new_send as validate_new_send
+from src.agentbus_send_rate_service import SendRateExceeded as SendRateExceeded
+from src.agentbus_send_rate_service import SendRateStore
 from src.agentbus_settings_service import Settings
-from src.agentbus_slack_socket_service import SlackReceiver, build_socket
+from src.agentbus_slack_socket_service import SlackReceiver as SlackReceiver
+from src.agentbus_slack_socket_service import build_socket
 from src.agentbus_status_api_service import api_health, api_status
 
 LOGGER = logging.getLogger("agentbus")
@@ -254,6 +260,7 @@ class MessageStore:
         self.controls = ControlStore(self._db, self._lock, self.participation)
         self.claim_recovery = ClaimRecoveryStore(self._db, self._lock)
         self.federation = FederationStore(self._db, self._lock)
+        self.local_delivery = LocalDeliveryStore(self)
 
     def first_legacy_notice(self, channel: str, identity: str) -> bool:
         """Return an onboarding notice once per legacy inbox identity."""
@@ -273,7 +280,7 @@ class MessageStore:
     @staticmethod
     def _message(row: sqlite3.Row) -> Message:
         return Message(**json.loads(row["payload"]), cursor=row["cursor"],
-                       slack_ts=row["slack_ts"], received_at=row["received_at"],
+                       slack_ts=("" if row["slack_ts"].startswith(LOCAL_REFERENCE_PREFIX) else row["slack_ts"]), received_at=row["received_at"],
                        sender_assurance=row["sender_assurance"])
 
     def append(self, channel: str, slack_ts: str, message: SendMessage) -> Message:
@@ -458,6 +465,9 @@ class MessageStore:
         with self._lock:
             row = self._db.execute("SELECT * FROM messages WHERE channel = ? AND slack_ts = ?",
                                    (channel, slack_ts)).fetchone()
+            if row is None:
+                cursor = self.local_delivery.observation_cursor(channel, slack_ts)
+                row = self._db.execute('SELECT * FROM messages WHERE cursor=?', (cursor,)).fetchone() if cursor else None
             return self._message(row) if row else None
 
     def close(self) -> None:
@@ -477,7 +487,7 @@ def normalize_event(event: dict, channel: str, trusted_bot_id: str) -> tuple[str
     if not isinstance(thread_ts, str) or not re.fullmatch(SLACK_TS, thread_ts):
         thread_ts = None
     trusted_envelope = (
-        event.get("bot_id") == trusted_bot_id
+        bool(trusted_bot_id) and event.get("bot_id") == trusted_bot_id
         and event.get("subtype") in ("bot_message", "thread_broadcast")
     )
     if trusted_envelope:
@@ -531,13 +541,15 @@ class SlackPoster:
             raise RuntimeError("Slack bot identity verification failed")
         return bot_id
 
-    async def post(self, message: SendMessage) -> str:
+    async def post(self, message: SendMessage, *, message_id: str | None = None) -> str:
         label = f"{message.sender} → {message.recipient} · {message.kind} · {message.audience}"
         if message.repo:
             label += f" · {message.repo}"
         blocks: list[dict[str, object]] = [
             {"type": "context", "elements": [{"type": "plain_text", "text": label, "emoji": False}]}
         ]
+        if message_id is not None:
+            blocks[0]["block_id"] = LOCATOR_PREFIX + message_id
         display = visible_text(message.text)
         blocks.extend({"type": "section", "text": {"type": "plain_text", "text": display[i:i + 3000], "emoji": False}}
                       for i in range(0, len(display), 3000))
@@ -567,6 +579,8 @@ class SlackPoster:
         ts = data.get("ts")
         if not isinstance(ts, str) or not re.fullmatch(SLACK_TS, ts) or data.get("channel") != self.settings.slack_channel:
             raise HTTPException(502, "Slack returned an unexpected message response; delivery is uncertain")
+        if message_id is not None:
+            validate_carrier_echo(data, encode_envelope(message), ts, locator=LOCATOR_PREFIX + message_id)
         return ts
 
 
@@ -580,34 +594,9 @@ def authenticate(request: Request,
                             headers={"WWW-Authenticate": "Bearer"})
 
 
-async def api_send(request: Request, message: SendMessage,
+async def api_send(request: Request, message: SendMessage, response: Response,
                    x_agentbus_session_token: Annotated[str | None, Header()] = None) -> Message:
-    settings = request.app.state.settings
-    try:
-        rate_key = validate_new_send(request.app.state.store, settings.slack_channel, message,
-                                     x_agentbus_session_token)
-        request.app.state.store.send_rate.reserve(rate_key)
-    except KeyError:
-        raise HTTPException(422, "reply parent does not exist in this inbox") from None
-    except StoppedMessageSession as exc:
-        raise HTTPException(423, str(exc)) from None
-    except SendRateExceeded as exc:
-        raise HTTPException(429, str(exc), headers={"Retry-After": str(exc.retry_after)}) from None
-    except SessionAuthorityError as exc:
-        raise HTTPException(403, str(exc)) from None
-    except PermissionError as exc:
-        raise HTTPException(409, str(exc)) from None
-    except ValueError as exc:
-        raise HTTPException(422, str(exc)) from None
-    ts = await request.app.state.poster.post(message)
-    try:
-        return await asyncio.to_thread(
-            request.app.state.store.append, settings.slack_channel, ts, message
-        )
-    except (sqlite3.Error, OSError):
-        raise HTTPException(
-            503, "Message posted to Slack but local persistence failed; do not resend blindly"
-        ) from None
+    return await send_message(request, message, x_agentbus_session_token, response)
 
 
 def api_read(request: Request, after: Annotated[int, Query(ge=0)] = 0,
@@ -621,7 +610,8 @@ def api_read(request: Request, after: Annotated[int, Query(ge=0)] = 0,
     return page
 
 
-def api_info(request: Request) -> Info:
+def api_info(request: Request, response: Response) -> Info:
+    response.headers['X-AgentBus-Delivery-Version'] = '1'
     settings = request.app.state.settings
     info = request.app.state.store.info(settings.slack_channel)
     info.upgrade_notice = upgrade_notice(request)
@@ -703,30 +693,8 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        store = MessageStore(settings.db_path)
-        client = http_client or httpx.AsyncClient(timeout=15, follow_redirects=False)
-        socket = None
-        try:
-            poster = SlackPoster(settings, client)
-            trusted_bot_id = await poster.authenticated_bot_id()
-            async with federation_runtime(app, store, settings, client, trusted_bot_id) as bridge:
-                socket = socket_factory(
-                    settings, SlackReceiver(store, settings.slack_channel, trusted_bot_id, settings, bridge)
-                )
-                app.state.store = store
-                app.state.poster = poster
-                app.state.socket = socket
-                try:
-                    await asyncio.to_thread(socket.connect)
-                except Exception:
-                    raise RuntimeError("Slack Socket Mode connection failed; check app configuration and connectivity") from None
-                yield
-        finally:
-            if socket is not None:
-                await asyncio.to_thread(socket.close)
-            if http_client is None:
-                await client.aclose()
-            store.close()
+        async with delivery_lifespan(app, settings, http_client, socket_factory):
+            yield
 
     app = FastAPI(title="AgentBus", version="0.8.0", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
