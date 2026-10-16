@@ -5,6 +5,13 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### BCF 2.3.4 base upgrade
+
+- Upgrade the repository-owned BCF runtime and governance support files to the
+  immutable v2.3.4 release through canonical release-assets custody and strict
+  validation. This is the protected base-upgrade boundary for re-resolving the
+  P09 transfer candidate.
+
 ### P11 federation foundation
 
 - Document the post-fix receipt retry custody boundary, strict legacy-row
