@@ -69,7 +69,7 @@ environment_facts:
     active_workitem_ledger: plans/phase-11-workitems.yml
     active_phase_log: phases/phase-11-log.yml
 known_constraints:
-  - P11 real-provider qualification needs an authorized arrangement, two isolated installations and a late joiner; bounded canaries do not establish fan-out or convergence; retained custody caps preserve history and need operator archival, while provider retention remains unqualified
+  - P11 real-provider qualification needs an authorized arrangement, two isolated installations and a late joiner; bounded canaries do not establish fan-out or convergence; retained custody caps preserve history and need operator archival, while provider retention remains unqualified; the operator-approved provider channel is public with no content confidentiality claim
   - preserve the public CLI HTTP protocol SQLite state and deployment behavior during governance adoption
   - use only immutable released BCF artifacts and digests; preserve provider boundaries without persistent trusted-controller capability
   - specialize repo_identity_provider and repo_observability_backend in the observability contracts before production use

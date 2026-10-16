@@ -7,6 +7,9 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ### P11 directory recovery
 
+- Record the operator-approved public channel audience and retention assumptions;
+  signed-origin authentication does not imply content confidentiality or
+  independently verified indefinite provider retention.
 - Add opt-in signed-custody inbox notifications with atomic origin-to-cursor
   mapping, retry/restart deduplication, actual provider references, and no local
   session, foreign ancestry, or wake authority promotion.

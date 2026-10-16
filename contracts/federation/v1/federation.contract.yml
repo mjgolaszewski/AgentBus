@@ -76,6 +76,9 @@ contracts:
     exclusions: no_ordinary_inbox_message_no_semantic_ack_no_local_session_or_wake_authority
   signed_provider_adapter:
     version: 1
+    channel_audience: operator_approved_public_channel
+    confidentiality: no_content_confidentiality_claim
+    retention: operator_reported_retain_all_observed_recovery_window_only_until_independently_qualified
     carrier_fidelity: exact_success_response_message_text_required_without_truncation_warning
     carrier_failure: durable_provider_blocked_with_safe_reason_and_provider_reference_no_automatic_retry
     blocked_resolution: authenticated_destination_receipt_may_establish_custody_operator_recovery_otherwise_required

@@ -85,7 +85,12 @@ complete directory convergence.
 
 Provider fan-out, namespace origin ownership, and recovery remain subject to
 an isolated real-provider qualification. Independent installation app identities
-must join the same approved private channel. Discovery never bootstraps trust
+must join the same operator-approved public channel. The operator explicitly
+requires `agent-bus` to remain public; signatures authenticate origins and do
+not provide content confidentiality. Retention is operator-reported as retaining
+all messages, without an independently verified indefinite-retention guarantee.
+Qualification must prove recovery over its observed history window and record
+unsupported expiry assumptions. Discovery never bootstraps trust
 or grants local execution authority. Deterministic fake-provider tests establish
 adapter behavior; they do not establish live multi-installation delivery.
 
