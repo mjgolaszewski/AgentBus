@@ -13,7 +13,12 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from src.agentbus_message_assurance_service import route_parts
-from src.agentbus_participation_service import EffectivePolicy, resolve_policy
+from src.agentbus_participation_service import (
+    MAX_ALIASES_PER_CHAT,
+    MAX_ENROLLED_CHATS,
+    EffectivePolicy,
+    resolve_policy,
+)
 
 
 class StoppedMessageSession(PermissionError):
@@ -337,6 +342,8 @@ class ParticipationStore:
             raise ValueError("display name is required")
         if len(session_secret) < 32:
             raise ValueError("session secret must contain at least 32 characters")
+        if len(session_secret) > 512:
+            raise ValueError("session credential exceeds maximum length")
         created = _now()
         chat_id = str(uuid.uuid4())
         session_id = str(uuid.uuid4())
@@ -376,6 +383,8 @@ class ParticipationStore:
                 chat_id = handoff["chat_id"]
             if self._db.execute("SELECT 1 FROM routing_aliases WHERE route = ?", (route,)).fetchone():
                 raise ValueError("route is reserved by an existing chat")
+            if self._db.execute("SELECT count(*) FROM chat_identities").fetchone()[0] >= MAX_ENROLLED_CHATS:
+                raise ValueError("enrollment capacity exhausted; existing identities are preserved")
             policy_revision = self.effective_policy(repo, chat_id).revision
             try:
                 self._db.execute(
@@ -569,6 +578,11 @@ class ParticipationStore:
             ).fetchone()
             if current is not None or (alias is not None and alias["chat_id"] != session["chat_id"]):
                 raise ValueError("new route collides with an existing or reserved address")
+            alias_count = self._db.execute(
+                "SELECT count(*) FROM routing_aliases WHERE chat_id = ?", (session["chat_id"],),
+            ).fetchone()[0]
+            if alias is None and alias_count >= MAX_ALIASES_PER_CHAT:
+                raise ValueError("alias capacity exhausted; existing addresses remain reserved")
             if alias is not None:
                 self._db.execute("DELETE FROM routing_aliases WHERE route = ?", (new_route,))
             changed = _now()

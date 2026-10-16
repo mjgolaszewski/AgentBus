@@ -5,6 +5,23 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### P10 security and wake recovery
+
+- Begin the governed P10 rollover after authenticated P09 exact-main closure,
+  preserving deferred provider and live wake qualification boundaries.
+- Reconcile current runtime authority to released BCF 2.3.4 while retaining
+  historical custody evidence and disclosed security limitations.
+- Tighten opt-in live wake admission to an exact saved idle thread and a ready
+  service session. Unloaded threads and missing or contradictory host facts
+  now defer without resume, launch, or acknowledgement; messaging is unchanged.
+- Bound new enrollment to 4,096 identities and alias growth to 64 per chat,
+  preserving retries, reserved history, and existing oversized stores; reject
+  oversized session secrets before enrollment hashing.
+- Persist bounded wake-intent observations in the existing private binding:
+  host acceptance, explicit queued/running facts, terminal status, and semantic
+  acknowledgement stay distinct. Older bindings migrate additively; read-only
+  status exposes observed intent without inventing unsupported host facts.
+
 ### BCF 2.3.4 base upgrade
 
 - Upgrade the repository-owned BCF runtime and governance support files to the

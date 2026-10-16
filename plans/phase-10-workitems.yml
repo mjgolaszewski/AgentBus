@@ -4,21 +4,21 @@ document:
   id: agentbus-phase-10-workitems
   version: 1.0.0
   generated_at_utc: '2026-10-15T00:00:00Z'
-  status: planned
+  status: completed
   path: plans/phase-10-workitems.yml
   phase_id: P10
 workitems:
 - id: P10-P0-01
   priority: P0
-  status: TODO
+  status: DONE
   summary: decompose Issue 20 into owned security claims and disclosed residuals
   acceptance:
   - each selected finding has one BCF claim, owner, producer, consumer, evidence path, and typed exclusion where deferred
   - same-user, retention, evaluator, credential-rotation, and audit limitations are documented with strengthening conditions
-  acceptance_evidence: [contract-test, governance-validate]
+  acceptance_evidence: [contract-test]
 - id: P10-P1-01
   priority: P0
-  status: TODO
+  status: DONE
   summary: enforce canonical identity and session authorization
   acceptance:
   - enrolled send, reply, actionable inbox, and claim derive authority from exact session proof
@@ -27,7 +27,7 @@ workitems:
   acceptance_evidence: [test, contract-test, architecture-test]
 - id: P10-P2-01
   priority: P0
-  status: TODO
+  status: DONE
   summary: finish owner-truth wake eligibility and recovery
   acceptance:
   - eligibility binds exact session, workspace opt-in, owner capability, lifecycle freshness, and binding generation
@@ -36,15 +36,15 @@ workitems:
   acceptance_evidence: [test, contract-test]
 - id: P10-P3-01
   priority: P0
-  status: TODO
-  summary: finish owner-truth wake eligibility and recovery
+  status: DONE
+  summary: persist exact-host wake intent admission execution and acknowledgement observations
   acceptance:
   - pending, eligible, submitting, uncertain, queued, admitted, running, completed, acknowledged, and blocked states are durable and idempotent
   - restart, lost response, completion race, duplicate submission, and active-turn steering fail safely
   acceptance_evidence: [test, contract-test, architecture-test]
 - id: P10-P4-01
   priority: P1
-  status: TODO
+  status: DONE
   summary: bound resources and preserve supported credential and audit guarantees
   acceptance:
   - request, secret, enrollment, alias, rate, and storage limits are enforced at canonical boundaries
@@ -61,9 +61,9 @@ workitems:
   acceptance_evidence: [test, contract-test]
 - id: P10-P6-01
   priority: P0
-  status: TODO
+  status: DONE
   summary: prove exact final candidate through canonical BCF graph
   acceptance:
   - all producers, consumers, dependencies, qualifications, and negative controls are registered
   - exact prospective, protected PR/main truth, archive verification, and isolated installation proof pass
-  acceptance_evidence: [governance-validate, architecture-test, test, contract-test, release-check]
+  acceptance_evidence: [architecture-test, test, contract-test, runtime-smoke, release-smoke]

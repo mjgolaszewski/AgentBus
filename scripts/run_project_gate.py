@@ -11,6 +11,7 @@ import os
 import re
 import subprocess
 import sys
+import tarfile
 import tempfile
 import tomllib
 from pathlib import Path
@@ -28,8 +29,8 @@ TEST_GATES = {
     "architecture-cqrs-side": ["tests/test_architecture.py::test_command_and_query_populations_are_closed"],
     "architecture-router-thinness": ["tests/test_architecture.py::test_http_routers_remain_thin_transport_adapters"],
     "architecture-duplication": ["tests/test_architecture.py::test_cross_context_duplication_stays_below_declared_block_size"],
-    "test": ["tests/test_launcher.py", "tests/test_poll_client.py", "tests/test_presentation_client.py", "tests/test_operator_client.py", "tests/test_rename_client.py", "tests/test_codex_wake_contract.py", "tests/test_codex_wake_client.py", "tests/test_codex_rpc_client.py", "tests/test_self_service_client.py"],
-    "contract-test": ["tests/test_federation_bridge.py", "tests/test_federation_adapter.py", "tests/test_federation_service.py", "tests/test_service.py", "tests/test_slack_commands.py", "tests/test_participation_contract.py", "tests/test_federation_contract.py", "tests/test_participation_service.py", "tests/test_participation_store.py", "tests/test_control_store.py", "tests/test_rename_store.py", "tests/test_claim_recovery.py", "tests/test_credential_rotation.py"],
+    "test": ["tests/test_wake_intent_lifecycle.py", "tests/test_wake_owner_eligibility.py", "tests/test_launcher.py", "tests/test_poll_client.py", "tests/test_presentation_client.py", "tests/test_operator_client.py", "tests/test_rename_client.py", "tests/test_codex_wake_contract.py", "tests/test_codex_wake_client.py", "tests/test_codex_rpc_client.py", "tests/test_self_service_client.py"],
+    "contract-test": ["tests/test_participation_limits.py", "tests/test_security_claim_mapping.py", "tests/test_federation_bridge.py", "tests/test_federation_adapter.py", "tests/test_federation_service.py", "tests/test_service.py", "tests/test_slack_commands.py", "tests/test_participation_contract.py", "tests/test_federation_contract.py", "tests/test_participation_service.py", "tests/test_participation_store.py", "tests/test_control_store.py", "tests/test_rename_store.py", "tests/test_claim_recovery.py", "tests/test_credential_rotation.py"],
     "python314-compatibility": [
         "tests/test_federation_bridge.py",
         "tests/test_federation_adapter.py",
@@ -231,6 +232,24 @@ def release_build() -> None:
             raise SystemExit("release manifest size mismatch")
         if (outputs[0] / "SHA256SUMS").read_bytes() != (outputs[1] / "SHA256SUMS").read_bytes():
             raise SystemExit("release checksum files are not reproducible")
+        installation = root / "installation"
+        with tarfile.open(outputs[0] / archive_name, mode="r:gz") as bundle:
+            bundle.extractall(installation, filter="data")
+        installed_root = installation / f"AgentBus-{version}"
+        require_success(run([
+            sys.executable, "-m", "uv", "sync", "--project", str(installed_root),
+            "--frozen", "--no-dev", "--python", sys.executable,
+        ], environment={"UV_PROJECT_ENVIRONMENT": str(installed_root / ".venv")}))
+        installed_python = installed_root / ".venv/bin/python"
+        require_success(run([str(installed_python), str(installed_root / "agentbus"), "--help"]))
+        require_success(run([
+            str(installed_python), "-I", "-c",
+            "import sys; from pathlib import Path; root=Path(sys.argv[1]); "
+            "sys.path.insert(0,str(root)); import agentbus_service; "
+            "assert Path(agentbus_service.__file__).resolve().parent==root; "
+            "assert Path(sys.prefix)==root/'.venv'; assert agentbus_service.create_app",
+            str(installed_root),
+        ]))
     print("release-build-ok")
 
 
