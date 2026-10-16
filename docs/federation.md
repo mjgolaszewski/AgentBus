@@ -105,3 +105,28 @@ This is a bounded custody canary. It does not assert late-join convergence,
 directory synchronization, provider-wide fan-out, or exactly-once business
 effects. Those claims remain behind the separately governed provider
 qualification boundary.
+
+## Receipt retry repair
+
+Receipt frames are durable obligations with `kind: receipt`, separate from
+ordinary message obligations. A receipt retries while its provider submission
+is origin-accepted or uncertain. Once the provider confirms submission, the
+receipt is terminal and is not selected for another publish attempt; there is
+no receipt-of-receipt exchange. This prevents recurring receipt JSON in the
+shared Slack channel while retaining crash recovery for an uncertain publish.
+
+The additive SQLite migration classifies legacy rows only when their payload
+has the complete signed federation envelope. Ordinary payloads that merely
+contain `kind: receipt`, malformed or incomplete envelopes, and deeply nested
+opaque JSON remain ordinary message obligations and remain eligible for retry.
+Classification is repeated on store construction so an interrupted migration
+can recover on restart.
+
+The repair was merged in PR #57. Protected main is
+`47f61aaea618b83cb5b127a1999c47b0cc40722e` with tree
+`8e3c5b11dd7ae77fa18e4ec29bd9a5205dba18f5`; both the local and remote
+installations run the identical tree. The bounded post-fix observation found
+zero new federation frames or receipt reposts over 180.8 seconds, preserved
+all obligation states, hashes, attempts, and checkpoints, and confirmed that
+the repaired pending selector excludes submitted receipts while retaining
+uncertain and unsent receipts.
