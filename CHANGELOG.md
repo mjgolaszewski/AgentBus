@@ -7,6 +7,15 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ### P11 directory recovery
 
+- Exchange opt-in signed version-2 directory snapshots, deltas, and recovery
+  requests from approved committed registrations; preserve version-1 messages
+  and receipts and coalesce recovery requests across service restarts.
+- Reject directory revision overflow before persistence and keep remote
+  discovery separate from local sessions, wake, and semantic acknowledgement.
+- Present compact Slack transport blocks while preserving signed carrier bytes.
+  Block unchanged retries durably when the provider response omits or rewrites
+  those bytes or reports truncation; independently signed custody receipts
+  remain authoritative even during response races. Live rollout remains pending.
 - Keep gaps unresolved for non-current owner snapshots and reject explicit
   non-active registrations advertised as current; preserve compact metadata bounds.
 - Bound retained directory allocation without deleting withdrawal history or
