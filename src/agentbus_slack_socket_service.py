@@ -84,7 +84,8 @@ class SlackReceiver:
                 ts, message = normalized
                 try:
                     if (self.trusted_bot_id and isinstance(event, dict) and event.get('bot_id') == self.trusted_bot_id and
-                            self.store.local_delivery.accept_echo(self.channel, ts, message, event.get('blocks'))):
+                            self.store.local_delivery.accept_event_echo(self.channel, ts, event.get('text'),
+                                event.get('blocks'), event.get('thread_ts'))):
                         client.send_socket_mode_response(SocketModeResponse(envelope_id=request.envelope_id))
                         return
                     append_slack(self.store, self.channel, ts, message)

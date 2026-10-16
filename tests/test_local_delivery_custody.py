@@ -31,7 +31,7 @@ def test_local_acceptance_survives_slack_outage_and_deduplicates_request(tmp_pat
     try:
         with TestClient(app) as client:
             secret = 'qualification-local-session-secret'
-            enroll_for_thread(app.state.store, 'agentbus:flower', secret)
+            session = enroll_for_thread(app.state.store, 'agentbus:flower', secret)
             headers = {**AUTH, 'X-AgentBus-Session-Token': secret,
                        'X-AgentBus-Delivery-Version': '1', 'Idempotency-Key': str(uuid4())}
             body = {'sender': 'agentbus:flower', 'recipient': 'agentbus:other', 'text': 'durable'}
@@ -49,6 +49,12 @@ def test_local_acceptance_survives_slack_outage_and_deduplicates_request(tmp_pat
             denied = client.post('/v1/messages', headers={**headers, 'X-AgentBus-Session-Token': 'wrong'},
                                  json=body)
             assert denied.status_code == 403
+            stop_id, _ = app.state.store.controls.issue_stop(
+                routes=['agentbus:flower'], reason='stop qualification', actor='operator')
+            app.state.store.controls.deliver(session, secret)
+            app.state.store.controls.acknowledge_stop(stop_id, session, secret)
+            assert client.post('/v1/messages', headers=headers, json=body).status_code == 423
+            assert len(app.state.store.read(CHANNEL).messages) == 1
     finally:
         asyncio.run(http.aclose())
 
@@ -172,7 +178,7 @@ def test_blocked_carrier_survives_restart_but_verified_echo_can_resolve_it(tmp_p
         assert not store.local_delivery.pending(now=1000)
         assert store.message(CHANNEL, original.cursor).slack_ts == ''
         assert store.local_delivery.accept_echo(CHANNEL, '100.000001', message,
-                                                [{'block_id': LOCATOR_PREFIX + key}])
+                                                [{'type': 'context', 'block_id': LOCATOR_PREFIX + key}])
         store.local_delivery.blocked(CHANNEL, key, 'missing_echo', '100.000001')
         assert store.message(CHANNEL, original.cursor).slack_ts == '100.000001'
         assert store._db.execute('SELECT state FROM local_delivery_obligations').fetchone()[0] == 'submitted'
@@ -349,5 +355,233 @@ def test_duplicate_provider_thread_checks_all_observed_ancestry(tmp_path):
                      thread_ts='101.000001', text='another agent'))
         assert route_human_reply(store, CHANNEL, duplicate).audience == 'unrouted'
         assert route_human_reply(store, CHANNEL, original).audience == 'unrouted'
+    finally:
+        store.close()
+
+
+def test_lost_response_history_recovers_original_cursor_without_second_provider_post(tmp_path, monkeypatch):
+    import time
+
+    from fastapi import HTTPException
+
+    from src import agentbus_local_delivery_service as local
+
+    clock = [1000.0]
+    monkeypatch.setattr(local.time, 'time', lambda: clock[0])
+    store = MessageStore(tmp_path / 'history.sqlite3')
+    key, message, original = accepted(store)
+    reference = str(int(time.monotonic()) + 2_000_000_000) + '.000001'
+    class Poster:
+        posts = 0
+        async def post(self, message, *, message_id):
+            self.posts += 1
+            raise HTTPException(502, 'response lost after provider commit')
+        async def observed_messages(self, after, limit):
+            assert limit == 100
+            return [{'publisher_id': 'A123/B123/' + CHANNEL, 'ts': reference,
+                     'text': encode_envelope(message), 'blocks': [
+                         {'type': 'context', 'block_id': LOCATOR_PREFIX + key}]}]
+    poster = Poster()
+    worker = LocalDeliveryWorker(store, poster, CHANNEL)
+    worker.trusted_bot_id = 'B123'
+    try:
+        asyncio.run(worker.submit_once())
+        assert poster.posts == 1 and store.message(CHANNEL, original.cursor).slack_ts == ''
+        store.close()
+        store = MessageStore(tmp_path / 'history.sqlite3')
+        worker = LocalDeliveryWorker(store, poster, CHANNEL)
+        worker.trusted_bot_id = 'B123'
+        clock[0] += 61
+        asyncio.run(worker.submit_once())
+        assert poster.posts == 1
+        assert store.message(CHANNEL, original.cursor).slack_ts == reference
+        assert len(store.read(CHANNEL).messages) == 1
+        assert not store.local_delivery.pending()
+    finally:
+        store.close()
+
+
+def test_unavailable_history_defers_uncertain_retry_without_consuming_attempt(tmp_path, monkeypatch):
+    from fastapi import HTTPException
+
+    from src import agentbus_local_delivery_service as local
+    from src.agentbus_federation_bridge_service import ProviderUnavailable
+
+    clock = [1000.0]
+    monkeypatch.setattr(local.time, 'time', lambda: clock[0])
+    store = MessageStore(tmp_path / 'history-failure.sqlite3')
+    key, _, _ = accepted(store)
+    class Poster:
+        posts = 0
+        reads = 0
+        async def post(self, message, *, message_id):
+            self.posts += 1
+            raise HTTPException(502, 'response lost')
+        async def observed_messages(self, after, limit):
+            self.reads += 1
+            raise ProviderUnavailable()
+    poster = Poster()
+    worker = LocalDeliveryWorker(store, poster, CHANNEL)
+    worker.trusted_bot_id = 'B123'
+    try:
+        asyncio.run(worker.submit_once())
+        clock[0] += 61
+        asyncio.run(worker.submit_once())
+        assert poster.posts == 1
+        row = store._db.execute('SELECT * FROM local_delivery_obligations WHERE request_id=?', (key,)).fetchone()
+        assert row['state'] == 'uncertain' and row['attempts'] == 1
+        assert row['next_attempt'] >= clock[0] + 60
+        assert len(store.read(CHANNEL).messages) == 1
+        store.close()
+        store = MessageStore(tmp_path / 'history-failure.sqlite3')
+        worker = LocalDeliveryWorker(store, poster, CHANNEL)
+        worker.trusted_bot_id = 'B123'
+        asyncio.run(worker.submit_once())
+        assert poster.posts == 1 and poster.reads == 1
+    finally:
+        store.close()
+
+
+def test_transport_never_uses_another_channels_payload_under_same_request_key(tmp_path):
+    store = MessageStore(tmp_path / 'channels.sqlite3')
+    key = str(uuid4())
+    other = SendMessage(sender='agentbus:flower', text='other channel')
+    current = SendMessage(sender='agentbus:flower', text='current channel')
+    store.local_delivery.accept('COTHER', key, fingerprint(other.model_dump()), other, 'principal')
+    accepted_here = store.local_delivery.accept(CHANNEL, key, fingerprint(current.model_dump()), current, 'principal')
+    class Poster:
+        texts = []
+        async def post(self, message, *, message_id):
+            self.texts.append(message.text)
+            return '100.000001'
+    poster = Poster()
+    try:
+        asyncio.run(LocalDeliveryWorker(store, poster, CHANNEL).submit_once())
+        assert poster.texts == ['current channel']
+        assert store.message(CHANNEL, accepted_here.cursor).slack_ts == '100.000001'
+        assert store.read('COTHER').messages[0].slack_ts == ''
+    finally:
+        store.close()
+
+
+def test_history_failure_does_not_starve_fresh_eligible_provider_work(tmp_path, monkeypatch):
+    from fastapi import HTTPException
+
+    from src import agentbus_local_delivery_service as local
+    from src.agentbus_federation_bridge_service import ProviderUnavailable
+
+    clock = [1000.0]
+    monkeypatch.setattr(local.time, 'time', lambda: clock[0])
+    store = MessageStore(tmp_path / 'fairness.sqlite3')
+    for _ in range(8):
+        accepted(store)
+    class Poster:
+        posts = 0
+        async def post(self, message, *, message_id):
+            self.posts += 1
+            if self.posts <= 8:
+                raise HTTPException(502, 'response lost')
+            return '100.000009'
+        async def observed_messages(self, after, limit):
+            raise ProviderUnavailable()
+    poster = Poster()
+    worker = LocalDeliveryWorker(store, poster, CHANNEL)
+    worker.trusted_bot_id = 'B123'
+    try:
+        asyncio.run(worker.submit_once())
+        assert poster.posts == 8
+        _, _, fresh = accepted(store)
+        clock[0] += 61
+        asyncio.run(worker.submit_once())
+        assert poster.posts == 9
+        assert store.message(CHANNEL, fresh.cursor).slack_ts == '100.000009'
+    finally:
+        store.close()
+
+
+@pytest.mark.parametrize('terminal_state', ['exhausted', 'blocked'])
+def test_read_only_history_can_resolve_exhausted_or_blocked_custody(tmp_path, terminal_state):
+    store = MessageStore(tmp_path / 'exhausted.sqlite3')
+    key, message, original = accepted(store)
+    for attempt in range(8):
+        assert store.local_delivery.reserve(CHANNEL, key, now=1000 + attempt * 601)
+        store.local_delivery.uncertain(CHANNEL, key)
+    if terminal_state == 'blocked':
+        store.local_delivery.blocked(CHANNEL, key, 'missing_echo', '100.000001')
+    class Poster:
+        async def post(self, message, *, message_id):
+            raise AssertionError('read-only recovery must not submit again')
+        async def observed_messages(self, after, limit):
+            return [{'publisher_id': 'A123/B123/' + CHANNEL, 'ts': '100.000001',
+                     'text': encode_envelope(message),
+                     'blocks': [{'type': 'context', 'block_id': LOCATOR_PREFIX + key}]}]
+    worker = LocalDeliveryWorker(store, Poster(), CHANNEL)
+    worker.trusted_bot_id = 'B123'
+    try:
+        asyncio.run(worker.submit_once())
+        assert store.message(CHANNEL, original.cursor).slack_ts == '100.000001'
+        row = store._db.execute('SELECT state,attempts FROM local_delivery_obligations').fetchone()
+        assert row['state'] == 'submitted' and row['attempts'] == 8
+    finally:
+        store.close()
+
+
+@pytest.mark.parametrize('forgery', ['publisher', 'channel', 'content', 'thread'])
+def test_history_cannot_resolve_local_custody_from_forged_observation(tmp_path, monkeypatch, forgery):
+    from fastapi import HTTPException
+
+    from src import agentbus_local_delivery_service as local
+
+    clock = [1000.0]
+    monkeypatch.setattr(local.time, 'time', lambda: clock[0])
+    store = MessageStore(tmp_path / 'forged-history.sqlite3')
+    key, message, original = accepted(store)
+    class Poster:
+        posts = 0
+        async def post(self, message, *, message_id):
+            self.posts += 1
+            raise HTTPException(502, 'response unavailable')
+        async def observed_messages(self, after, limit):
+            return [{'publisher_id': 'A123/' + ('BOTHER' if forgery == 'publisher' else 'B123') + '/' + ('COTHER' if forgery == 'channel' else CHANNEL),
+                'ts': '100.000001', 'text': 'changed' if forgery == 'content' else encode_envelope(message),
+                'thread_ts': '999.000001' if forgery == 'thread' else None,
+                'blocks': [{'type': 'context', 'block_id': LOCATOR_PREFIX + key}]}]
+    poster = Poster()
+    worker = LocalDeliveryWorker(store, poster, CHANNEL)
+    worker.trusted_bot_id = 'B123'
+    try:
+        asyncio.run(worker.submit_once())
+        clock[0] += 61
+        asyncio.run(worker.submit_once())
+        assert store.message(CHANNEL, original.cursor).slack_ts == ''
+        assert store.message_by_ts(CHANNEL, '100.000001') is None
+        assert poster.posts == (2 if forgery in {'publisher', 'channel'} else 1)
+    finally:
+        store.close()
+
+
+def test_provider_root_self_thread_is_valid_but_other_thread_is_not(tmp_path):
+    store = MessageStore(tmp_path / 'root-thread.sqlite3')
+    key, message, original = accepted(store)
+    blocks = [{'type': 'context', 'block_id': LOCATOR_PREFIX + key}]
+    try:
+        with pytest.raises(ValueError):
+            store.local_delivery.accept_event_echo(CHANNEL, '100.000001', encode_envelope(message),
+                                                    blocks, '999.000001')
+        assert store.local_delivery.accept_event_echo(CHANNEL, '100.000001', encode_envelope(message),
+                                                       blocks, '100.000001')
+        assert store.message(CHANNEL, original.cursor).slack_ts == '100.000001'
+    finally:
+        store.close()
+
+
+def test_history_locator_must_retain_context_block_type(tmp_path):
+    store = MessageStore(tmp_path / 'locator-type.sqlite3')
+    key, message, original = accepted(store)
+    try:
+        with pytest.raises(ValueError):
+            store.local_delivery.accept_event_echo(CHANNEL, '100.000001', encode_envelope(message),
+                [{'type': 'section', 'block_id': LOCATOR_PREFIX + key}])
+        assert store.message(CHANNEL, original.cursor).slack_ts == ''
     finally:
         store.close()

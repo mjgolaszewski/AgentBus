@@ -43,6 +43,7 @@ class DeliveryTransport:
         except Exception:
             await self.close()
             raise RuntimeError('Slack Socket Mode connection failed; check app configuration and connectivity') from None
+        self.app.state.delivery.trusted_bot_id = bot_id
         self.connected, self.bridge = True, bridge
         self.app.state.socket, self.app.state.federation_bridge = self.socket, bridge
         return bridge

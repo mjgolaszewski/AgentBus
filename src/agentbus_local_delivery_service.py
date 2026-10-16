@@ -39,6 +39,21 @@ def fingerprint(payload: dict) -> str:
                                      separators=(',', ':')).encode()).hexdigest()
 
 
+def _locator_key(blocks: object) -> str | None:
+    if not isinstance(blocks, list):
+        return None
+    marked = [b for b in blocks if isinstance(b, dict)
+              and isinstance(b.get('block_id'), str) and b['block_id'].startswith(LOCATOR_PREFIX)]
+    if any(b.get('type') != 'context' for b in marked):
+        raise ValueError('local locator must retain its context block type')
+    locators = [b['block_id'] for b in marked]
+    if not locators:
+        return None
+    if len(locators) != 1:
+        raise ValueError('ambiguous local delivery locator')
+    return request_identity(locators[0][len(LOCATOR_PREFIX):])
+
+
 class LocalDeliveryStore:
     def __init__(self, owner: MessageStore):
         self.owner = owner
@@ -102,14 +117,34 @@ class LocalDeliveryStore:
                 WHERE channel=? AND provider_ref=?''', (channel, provider_ref)).fetchone()
         return row[0] if row else None
 
-    def pending(self, *, now: float | None = None) -> list[dict]:
+    def pending(self, *, channel: str | None = None, now: float | None = None) -> list[dict]:
         instant = time.time() if now is None else now
         with self.owner._lock:
             return [dict(row) for row in self.owner._db.execute('''
-                SELECT o.*, m.payload FROM local_delivery_obligations o
+                SELECT o.*, m.payload, m.received_at FROM local_delivery_obligations o
                 JOIN messages m ON m.cursor=o.local_cursor
                 WHERE o.state IN ('pending','uncertain','submitting') AND o.attempts<8
-                    AND o.next_attempt<=? ORDER BY o.local_cursor LIMIT 100''', (instant,))]
+                    AND o.next_attempt<=? AND (? IS NULL OR o.channel=?)
+                ORDER BY CASE WHEN o.attempts=0 THEN 0 ELSE 1 END,o.local_cursor LIMIT 100''',
+                (instant, channel, channel))]
+
+    def recovery_pending(self, channel: str, *, now: float | None = None) -> list[dict]:
+        instant = time.time() if now is None else now
+        with self.owner._lock:
+            return [dict(row) for row in self.owner._db.execute("""
+                SELECT o.*,m.payload,m.received_at FROM local_delivery_obligations o
+                JOIN messages m ON m.cursor=o.local_cursor
+                WHERE o.channel=? AND o.state IN ('uncertain','submitting','blocked') AND o.next_attempt<=?
+                ORDER BY CASE WHEN o.state='blocked' OR o.attempts>=8 THEN 1 ELSE 0 END,o.local_cursor LIMIT 100""",
+                (channel, instant))]
+
+    def defer_recovery(self, rows: list[dict], *, now: float | None = None) -> None:
+        instant = time.time() if now is None else now
+        with self.owner._lock, self.owner._db:
+            self.owner._db.executemany("""UPDATE local_delivery_obligations
+                SET next_attempt=MAX(next_attempt,?) WHERE channel=? AND request_id=?
+                AND state IN ('uncertain','submitting','blocked')""",
+                [(instant + 60, row['channel'], row['request_id']) for row in rows])
 
     def reserve(self, channel: str, key: str, *, now: float | None = None) -> bool:
         instant = time.time() if now is None else now
@@ -168,15 +203,9 @@ class LocalDeliveryStore:
                 (provider_ref, channel, key))
 
     def accept_echo(self, channel: str, provider_ref: str, message: SendMessage, blocks: object) -> bool:
-        if not isinstance(blocks, list):
+        key = _locator_key(blocks)
+        if key is None:
             return False
-        locators = [b['block_id'] for b in blocks if isinstance(b, dict)
-                    and isinstance(b.get('block_id'), str) and b['block_id'].startswith(LOCATOR_PREFIX)]
-        if not locators:
-            return False
-        if len(locators) != 1:
-            raise ValueError('ambiguous local delivery locator')
-        key = request_identity(locators[0][len(LOCATOR_PREFIX):])
         with self.owner._lock:
             row = self.owner._db.execute('''SELECT m.payload FROM local_delivery_obligations o
                 JOIN messages m ON m.cursor=o.local_cursor WHERE o.channel=? AND o.request_id=?''',
@@ -187,3 +216,28 @@ class LocalDeliveryStore:
                 raise ValueError('provider echo conflicts with accepted local content')
             self.complete(channel, key, provider_ref)
             return True
+
+
+    def accept_event_echo(self, channel: str, provider_ref: str, text: object,
+                          blocks: object, thread_ts: object = None) -> bool:
+        """Caller proves the bot; exact stored wire content proves the local obligation."""
+        from src.agentbus_service import SendMessage, encode_envelope
+
+        key = _locator_key(blocks)
+        if key is None:
+            return False
+        with self.owner._lock:
+            row = self.owner._db.execute("""SELECT m.payload FROM local_delivery_obligations o
+                JOIN messages m ON m.cursor=o.local_cursor WHERE o.channel=? AND o.request_id=?""",
+                (channel, key)).fetchone()
+            if row is None:
+                return False
+            expected = SendMessage.model_validate_json(row['payload'])
+            if text != encode_envelope(expected):
+                raise ValueError('provider wire echo conflicts with accepted local content')
+            if thread_ts is not None and not isinstance(thread_ts, str):
+                raise ValueError('invalid provider thread reference')
+            allowed = {expected.thread_ts} if expected.thread_ts else {None, provider_ref}
+            if thread_ts not in allowed:
+                raise ValueError('provider thread conflicts with accepted local ancestry')
+            return self.accept_echo(channel, provider_ref, expected, blocks)

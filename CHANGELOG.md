@@ -5,6 +5,10 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Bound Slack response bytes and whole-request time, reconcile lost ordinary
+  responses from authenticated provider history, and isolate channel work while
+  preserving fresh-work progress and the submission attempt ceiling.
+
 - Add versioned local send custody before Slack submission, exact-request retry
   identity, atomic signed remote obligations, and explicit offline bootstrap.
   CLI migration and remote ancestry remain under construction.
