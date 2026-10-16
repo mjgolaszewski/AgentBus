@@ -56,7 +56,7 @@ def decode_directory(text: str, prefix: str) -> DirectoryPayload:
         raw = json.loads(text)
         if not isinstance(raw, dict) or type(raw.get('directory')) is not int:
             raise ValueError('invalid directory version')
-        payload = DirectoryPayload.model_validate(raw)
+        payload = DirectoryPayload(**raw)
         if canonical(raw) != text:
             raise ValueError('directory payload is not canonical')
         routes = [entry.get('route') for entry in payload.entries or []]

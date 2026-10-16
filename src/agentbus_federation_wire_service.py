@@ -99,7 +99,10 @@ def encode_frame(identity: Identity, kind: str, message_id: str,
 
 
 def _validate(frame: dict) -> None:
-    (DirectoryFrame if frame.get("agentbus_federation") == 2 else SignedFrame)(**frame)
+    if frame.get("agentbus_federation") == 2:
+        DirectoryFrame(**frame)
+    else:
+        SignedFrame(**frame)
     if set(frame) != FIELDS or type(frame['agentbus_federation']) is not int or frame['agentbus_federation'] not in {1, 2}:
         raise ValueError('unsupported federation frame')
     if frame['kind'] not in {'message', 'receipt', 'directory'}:
