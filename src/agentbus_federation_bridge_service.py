@@ -12,6 +12,7 @@ from decimal import Decimal
 from typing import Callable, Protocol
 
 from src.agentbus_federation_directory_service import DirectorySynchronizer, decode_directory
+from src.agentbus_federation_inbox_service import InboxProjectionError
 from src.agentbus_federation_service import CustodyCapacityError, DirectoryCapacityError, FederationStore
 from src.agentbus_federation_wire_service import Binding, Identity, canonical, decode_frame, encode_frame
 from src.agentbus_message_assurance_service import route_parts
@@ -86,6 +87,7 @@ class FederationBridge:
         self.store, self.identity, self.bindings, self.provider = store, identity, dict(bindings), provider
         self.now, self.max_attempts = now, max_attempts
         self.directory: DirectorySynchronizer | None = None
+        self.project_message: Callable[[str, str, str, str, str | None], None] | None = None
         publishers = {identity.publisher_id: identity.instance_id}
         prefixes = {identity.route_prefix: identity.instance_id}
         for origin, binding in self.bindings.items():
@@ -176,6 +178,8 @@ class FederationBridge:
             payload = self._message(frame['payload'], origin, self.identity.instance_id)
             self.store.accept_destination(origin_instance_id=origin, publisher_id=event['publisher_id'],
                 origin_message_id=message_id, destination_instance_id=self.identity.instance_id, payload=payload)
+            if self.project_message is not None:
+                self.project_message(origin, message_id, self.identity.instance_id, payload, event.get('ts'))
         receipt = canonical({'origin': origin, 'message': message_id,
             'destination': self.identity.instance_id, 'payload_hash': hashlib.sha256(payload.encode()).hexdigest()})
         receipt_id = 'receipt-' + hashlib.sha256(canonical([origin, message_id, self.identity.instance_id]).encode()).hexdigest()
@@ -216,6 +220,7 @@ class FederationBridge:
             except ProviderUnavailable as exc:
                 delay = max(delay, exc.retry_after)
                 LOGGER.warning('Federation provider unavailable; durable custody retained')
-            except (TimeoutError, OSError, ValueError, sqlite3.Error, DirectoryCapacityError, CustodyCapacityError):
+            except (TimeoutError, OSError, ValueError, sqlite3.Error, DirectoryCapacityError, CustodyCapacityError,
+                    InboxProjectionError):
                 LOGGER.warning('Federation cycle incomplete; durable custody retained')
             await asyncio.sleep(delay)

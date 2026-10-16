@@ -320,3 +320,26 @@ def test_slack_preserves_long_signed_carrier_with_exact_response_echo():
             assert await SlackFederationProvider(client, 'xoxb-test-secret', 'C123').publish(frame) == '1.000001'
         assert len(calls) == 1 and calls[0]['text'] == frame
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize('version', [None, 1, True, '1', 2])
+def test_inbox_projection_requires_exact_operator_opt_in(tmp_path, version):
+    configured = settings(tmp_path, enabled=True)
+    config = configured.federation_config
+    assert config is not None
+    data = json.loads(config.read_text())
+    if version is not None:
+        data['inbox_projection'] = version
+    config.write_text(json.dumps(data))
+    store = MessageStore(configured.db_path)
+    client = httpx.AsyncClient()
+    try:
+        if version is None or type(version) is int and version == 1:
+            bridge = load_bridge(config, store, client, 'xoxb-test-secret', 'B123')
+            assert (bridge.project_message is not None) == (version == 1)
+        else:
+            with pytest.raises(ValueError, match='projection version'):
+                load_bridge(config, store, client, 'xoxb-test-secret', 'B123')
+    finally:
+        store.close()
+        asyncio.run(client.aclose())

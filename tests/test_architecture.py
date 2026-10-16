@@ -27,6 +27,7 @@ MODULES = {
     "src/agentbus_claim_recovery_service.py": ("service", "service"),
     "src/agentbus_federation_service.py": ("service", "service"),
     "src/agentbus_federation_directory_service.py": ("service", "service"),
+    "src/agentbus_federation_inbox_service.py": ("service", "service"),
     "src/agentbus_federation_wire_service.py": ("service", "service"),
     "src/agentbus_federation_bridge_service.py": ("service", "service"),
     "src/agentbus_federation_slack_service.py": ("service", "service"),

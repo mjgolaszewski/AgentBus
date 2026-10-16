@@ -73,7 +73,7 @@ known_constraints:
   - preserve the public CLI HTTP protocol SQLite state and deployment behavior during governance adoption
   - use only immutable released BCF artifacts and digests; preserve provider boundaries without persistent trusted-controller capability
   - specialize repo_identity_provider and repo_observability_backend in the observability contracts before production use
-  - per-agent credentials, clustering, and multi-tenant authorization remain outside the same-workspace scope; P11 directory exchange requires per-peer version2 and an explicit chat allowlist and grants no local session, wake, or semantic acknowledgement authority
+  - per-agent credentials, clustering, and multi-tenant authorization remain outside the same-workspace scope; P11 directory exchange requires per-peer version2 and an explicit chat allowlist and grants no local session, wake, or semantic acknowledgement authority; opt-in inbox notifications retain legacy local assurance
   - Issue 6 operator control and participation behavior must derive from the versioned participation contract; no operator authority from sender labels or ordinary bearer tokens
   - legacy protocol-2 clients receive one upgrade notice per inbox identity, with repeatable instructions on explicit info reads; ordinary message pages stay unchanged
   - Issue 8 Codex wake is optional host-owned adapter behavior from contracts/codex-wake/v1/codex-wake.contract.yml; AgentBus core never owns threads, credentials, or turn lifecycle

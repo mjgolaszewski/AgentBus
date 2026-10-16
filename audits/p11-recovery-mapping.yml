@@ -95,7 +95,7 @@ entries:
   consumer: existing message store
   evidence: tests.test_service::test_verified_human_reply_to_proved_agent_root_is_direct_and_wake_eligible
   gate: contract-test
-  status: existing_local_behavior_directory_integration_pending
+  status: local_human_threads_preserved_foreign_ancestry_translation_deferred
 - invariant: AB-MSG-07
   workitem: P11-P4-01
   canonical_claim: service-contract-valid
@@ -139,7 +139,7 @@ entries:
   consumer: existing message store
   evidence: tests.test_service::test_verified_human_reply_to_proved_agent_root_is_direct_and_wake_eligible
   gate: contract-test
-  status: existing_local_behavior_directory_integration_pending
+  status: local_human_threads_preserved_foreign_ancestry_translation_deferred
 - invariant: AB-MSG-11
   workitem: P11-P4-01
   canonical_claim: service-contract-valid
@@ -150,7 +150,7 @@ entries:
   consumer: operator and inbox projections
   evidence: tests.test_federation_bridge::test_submission_never_fabricates_destination_acceptance
   gate: contract-test
-  status: partial_visibility_and_same_instance_outage_semantics_pending
+  status: optin_inbox_notifications_tested_ordinary_send_migration_and_final_proof_pending
 - invariant: AB-MSG-12
   workitem: P11-P4-01
   canonical_claim: service-contract-valid
@@ -161,7 +161,7 @@ entries:
   consumer: operator and inbox projections
   evidence: tests.test_federation_bridge::test_submission_never_fabricates_destination_acceptance
   gate: contract-test
-  status: partial_visibility_and_same_instance_outage_semantics_pending
+  status: optin_inbox_notifications_tested_ordinary_send_migration_and_final_proof_pending
 - invariant: AB-MSG-13
   workitem: P11-P0-01
   canonical_claim: service-contract-valid

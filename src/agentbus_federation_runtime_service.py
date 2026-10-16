@@ -6,12 +6,14 @@ import asyncio
 import base64
 import json
 from contextlib import asynccontextmanager, suppress
+from functools import partial
 from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
 from src.agentbus_federation_bridge_service import FederationBridge
 from src.agentbus_federation_directory_service import DirectorySynchronizer
+from src.agentbus_federation_inbox_service import project_message
 from src.agentbus_federation_slack_service import SlackFederationProvider, publisher_id
 from src.agentbus_federation_wire_service import Binding, Identity, key_generation
 
@@ -38,7 +40,7 @@ def load_bridge(path: Path, store, client, token: str, bot_id: str) -> SlackFede
         raise ValueError('federation configuration exceeds limit')
     data = json.loads(path.read_text())
     required = {'instance_id', 'route_prefix', 'publisher_id', 'private_key_file', 'key_generation', 'channel', 'bindings'}
-    if not isinstance(data, dict) or not required <= set(data) or set(data) - required - {'directory'} or not isinstance(data['bindings'], list) or len(data['bindings']) > 64:
+    if not isinstance(data, dict) or not required <= set(data) or set(data) - required - {'directory', 'inbox_projection'} or not isinstance(data['bindings'], list) or len(data['bindings']) > 64:
         raise ValueError('invalid operator federation configuration')
     local_publisher = data['publisher_id']
     if (not isinstance(local_publisher, str) or len(local_publisher.split('/')) != 3
@@ -65,6 +67,10 @@ def load_bridge(path: Path, store, client, token: str, bot_id: str) -> SlackFede
     bridge = SlackFederationBridge(store.federation, identity, bindings,
                                   SlackFederationProvider(client, token, data['channel']))
     bridge.channel = data['channel']
+    if 'inbox_projection' in data:
+        if type(data['inbox_projection']) is not int or data['inbox_projection'] != 1:
+            raise ValueError('unsupported operator inbox projection version')
+        bridge.project_message = partial(project_message, store, data['channel'])
     if 'directory' in data:
         policy = data['directory']
         if (not isinstance(policy, dict) or set(policy) != {'share_chat_ids', 'peers'}

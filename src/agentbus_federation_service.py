@@ -155,6 +155,12 @@ class FederationStore:
                 origin_instance_id TEXT NOT NULL, origin_message_id TEXT NOT NULL,
                 payload TEXT NOT NULL, payload_hash TEXT NOT NULL,
                 PRIMARY KEY(origin_instance_id, origin_message_id))""")
+            self._db.execute('''CREATE TABLE IF NOT EXISTS federation_inbox_projection (
+                origin_instance_id TEXT NOT NULL, origin_message_id TEXT NOT NULL,
+                destination_instance_id TEXT NOT NULL, cursor INTEGER NOT NULL UNIQUE,
+                payload_hash TEXT NOT NULL,
+                PRIMARY KEY(origin_instance_id, origin_message_id, destination_instance_id),
+                FOREIGN KEY(cursor) REFERENCES messages(cursor))''')
             self._db.execute("""CREATE TABLE IF NOT EXISTS federation_directory_local (
                 origin_instance_id TEXT PRIMARY KEY, revision INTEGER NOT NULL,
                 entries TEXT NOT NULL)""")
@@ -232,7 +238,7 @@ class FederationStore:
             self._db.execute('BEGIN IMMEDIATE')
 
     def _custody_capacity(self, table: str) -> None:
-        if table not in {'bridge_obligations', 'federation_origin_messages', 'federated_messages'}:
+        if table not in {'bridge_obligations', 'federation_origin_messages', 'federated_messages', 'federation_inbox_projection'}:
             raise ValueError('invalid custody table')
         if self._db.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0] >= MAX_CUSTODY_ROWS:
             raise CustodyCapacityError('federation custody capacity requires operator archival')

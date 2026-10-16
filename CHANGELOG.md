@@ -7,6 +7,9 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ### P11 directory recovery
 
+- Add opt-in signed-custody inbox notifications with atomic origin-to-cursor
+  mapping, retry/restart deduplication, actual provider references, and no local
+  session, foreign ancestry, or wake authority promotion.
 - Bound retained federation custody allocations, preserve exact retries and
   receipt progress, and return local backpressure without pruning history or
   acknowledging unretained provider events. Independent SQLite writers share

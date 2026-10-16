@@ -12,6 +12,7 @@ from slack_sdk.socket_mode.client import BaseSocketModeClient
 from slack_sdk.socket_mode.request import SocketModeRequest
 from slack_sdk.socket_mode.response import SocketModeResponse
 
+from src.agentbus_federation_inbox_service import InboxProjectionError
 from src.agentbus_federation_service import CustodyCapacityError, DirectoryCapacityError
 from src.agentbus_settings_service import Settings
 from src.agentbus_slack_command_service import execute_command
@@ -72,7 +73,7 @@ class SlackReceiver:
                 if isinstance(event, dict) and self.federation_bridge is not None and self.federation_bridge.accept_event(event):
                     client.send_socket_mode_response(SocketModeResponse(envelope_id=request.envelope_id))
                     return
-            except (sqlite3.Error, OSError, CustodyCapacityError, DirectoryCapacityError):
+            except (sqlite3.Error, OSError, CustodyCapacityError, DirectoryCapacityError, InboxProjectionError):
                 LOGGER.error('Could not persist federation event; withholding acknowledgement')
                 return
             normalized = (

@@ -211,3 +211,24 @@ New local enqueue receives 503 with Retry-After instead of false acceptance.
 Failed inbound allocation creates no custody receipt and advances no recovery
 checkpoint. No automatic pruning is provided: sustained operation needs an
 operator-approved archive/retention procedure before capacity is exhausted.
+
+An installation may opt into normal inbox notification projection with
+`inbox_projection: 1` in its existing federation configuration. Only a verified
+message already retained in destination custody can be projected. Its authenticated
+origin/message/destination tuple maps to one local cursor, using the actual
+provider event timestamp. Repeated provider posts, concurrent readers, and service
+restart reuse that first cursor. The ordinary message and mapping commit together
+before a new custody receipt is queued; mapping storage failure or a collision
+with an existing local timestamp withholds the receipt and recovery checkpoint.
+The additive mapping is capped at 1,024 rows and is never automatically pruned.
+
+Protocol 2 response shapes remain unchanged. A foreign sender retains `legacy`
+local assurance, even though its separate custody record proves the remote origin.
+It creates no local session, operator command, semantic acknowledgement, or wake
+eligibility. Text, routes, and opaque correlation are preserved, while foreign
+thread timestamps and reply cursors stay in signed custody and are cleared from
+the local notification. Cross-instance ancestry translation, historical custody
+backfill without retained provider references, and ordinary send migration remain
+separate obligations; existing local reply and human-thread behavior is unchanged.
+Stop the bridge before rolling back this optional projection, retaining its mapping
+and local cursor history; do not reset checkpoints to manufacture backfill.

@@ -278,23 +278,26 @@ class MessageStore:
 
     def append(self, channel: str, slack_ts: str, message: SendMessage) -> Message:
         with self._lock, self._db:
-            self._db.execute("""
-                INSERT OR IGNORE INTO messages
-                    (channel, slack_ts, thread_ts, recipient, audience, received_at, payload, sender_assurance)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (channel, slack_ts, message.thread_ts, message.recipient,
-                  message.audience, datetime.now(timezone.utc).isoformat(),
-                  message.model_dump_json(), message._sender_assurance))
-            if message._sender_assurance in {"session", "slack-human"}:
-                self._db.execute(
-                    "UPDATE messages SET sender_assurance = ?, payload = ?, recipient = ?, audience = ?, thread_ts = ? "
-                    "WHERE channel = ? AND slack_ts = ? AND sender_assurance = 'legacy'",
-                    (message._sender_assurance, message.model_dump_json(), message.recipient,
-                     message.audience, message.thread_ts, channel, slack_ts),
-                )
-            row = self._db.execute("SELECT * FROM messages WHERE channel = ? AND slack_ts = ?",
-                                   (channel, slack_ts)).fetchone()
-            return self._message(row)
+            return self._append(channel, slack_ts, message)
+
+    def _append(self, channel: str, slack_ts: str, message: SendMessage) -> Message:
+        self._db.execute("""
+            INSERT OR IGNORE INTO messages
+                (channel, slack_ts, thread_ts, recipient, audience, received_at, payload, sender_assurance)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (channel, slack_ts, message.thread_ts, message.recipient,
+              message.audience, datetime.now(timezone.utc).isoformat(),
+              message.model_dump_json(), message._sender_assurance))
+        if message._sender_assurance in {"session", "slack-human"}:
+            self._db.execute(
+                "UPDATE messages SET sender_assurance = ?, payload = ?, recipient = ?, audience = ?, thread_ts = ? "
+                "WHERE channel = ? AND slack_ts = ? AND sender_assurance = 'legacy'",
+                (message._sender_assurance, message.model_dump_json(), message.recipient,
+                 message.audience, message.thread_ts, channel, slack_ts),
+            )
+        row = self._db.execute("SELECT * FROM messages WHERE channel = ? AND slack_ts = ?",
+                               (channel, slack_ts)).fetchone()
+        return self._message(row)
 
     def claim_slash_command(self, command_id: str) -> bool:
         """Admit one Slack invocation before its external side effects."""
