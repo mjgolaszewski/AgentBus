@@ -6,11 +6,14 @@ import asyncio
 import base64
 import json
 from contextlib import asynccontextmanager, suppress
+from functools import partial
 from pathlib import Path
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey, Ed25519PublicKey
 
 from src.agentbus_federation_bridge_service import FederationBridge
+from src.agentbus_federation_directory_service import DirectorySynchronizer
+from src.agentbus_federation_inbox_service import project_message
 from src.agentbus_federation_slack_service import SlackFederationProvider, publisher_id
 from src.agentbus_federation_wire_service import Binding, Identity, key_generation
 
@@ -37,7 +40,7 @@ def load_bridge(path: Path, store, client, token: str, bot_id: str) -> SlackFede
         raise ValueError('federation configuration exceeds limit')
     data = json.loads(path.read_text())
     required = {'instance_id', 'route_prefix', 'publisher_id', 'private_key_file', 'key_generation', 'channel', 'bindings'}
-    if not isinstance(data, dict) or set(data) != required or not isinstance(data['bindings'], list) or len(data['bindings']) > 64:
+    if not isinstance(data, dict) or not required <= set(data) or set(data) - required - {'directory', 'inbox_projection'} or not isinstance(data['bindings'], list) or len(data['bindings']) > 64:
         raise ValueError('invalid operator federation configuration')
     local_publisher = data['publisher_id']
     if (not isinstance(local_publisher, str) or len(local_publisher.split('/')) != 3
@@ -52,15 +55,29 @@ def load_bridge(path: Path, store, client, token: str, bot_id: str) -> SlackFede
     identity = Identity(data['instance_id'], data['route_prefix'], data['publisher_id'], private)
     bindings = {}
     for item in data['bindings']:
-        if set(item) != {'instance_id', 'route_prefix', 'publisher_id', 'public_key', 'key_generation'} or item['instance_id'] in bindings:
+        if (not {'instance_id', 'route_prefix', 'publisher_id', 'public_key', 'key_generation'} <= set(item)
+                or set(item) - {'instance_id', 'route_prefix', 'publisher_id', 'public_key', 'key_generation', 'directory_version'}
+                or item['instance_id'] in bindings):
             raise ValueError('duplicate or invalid operator origin binding')
         public = Ed25519PublicKey.from_public_bytes(base64.b64decode(item['public_key'], validate=True))
         if item['key_generation'] != key_generation(public):
             raise ValueError('peer verification key differs from the approved generation')
-        bindings[item['instance_id']] = Binding(item['instance_id'], item['route_prefix'], item['publisher_id'], public)
+        bindings[item['instance_id']] = Binding(item['instance_id'], item['route_prefix'], item['publisher_id'], public,
+                                                   directory_version=item.get('directory_version'))
     bridge = SlackFederationBridge(store.federation, identity, bindings,
                                   SlackFederationProvider(client, token, data['channel']))
     bridge.channel = data['channel']
+    if 'inbox_projection' in data:
+        if type(data['inbox_projection']) is not int or data['inbox_projection'] != 1:
+            raise ValueError('unsupported operator inbox projection version')
+        bridge.project_message = partial(project_message, store, data['channel'])
+    if 'directory' in data:
+        policy = data['directory']
+        if (not isinstance(policy, dict) or set(policy) != {'share_chat_ids', 'peers'}
+                or not isinstance(policy['share_chat_ids'], list) or not isinstance(policy['peers'], list)):
+            raise ValueError('invalid operator directory sharing policy')
+        bridge.directory = DirectorySynchronizer(bridge, store.participation,
+            share_chat_ids=policy['share_chat_ids'], peers=policy['peers'])
     return bridge
 
 

@@ -79,6 +79,134 @@ def test_submission_never_fabricates_destination_acceptance(pair):
     assert stores['home'].federation.obligation('home', 'm1', 'remote')['state'] == 'submitted'
 
 
+@pytest.mark.parametrize('receipt_race', [False, True])
+def test_carrier_failure_blocks_unchanged_retries_and_survives_restart(pair, receipt_race):
+    from src.agentbus_federation_bridge_service import ProviderCarrierRejected
+    from src.agentbus_federation_service import FederationStore
+
+    bridges, stores, providers, _ = pair
+    bridge = bridges['home']
+    bridge.enqueue('carrier-1', 'remote', payload())
+    calls = []
+
+    async def rejected(text):
+        calls.append(text)
+        if receipt_race:
+            bridges['remote'].receive({'publisher_id': 'home-publisher', 'text': text})
+            await bridges['remote'].submit_once()
+            bridge.receive(providers['remote'].events[0])
+        raise ProviderCarrierRejected('changed_echo', '1.000001')
+
+    providers['home'].publish = rejected
+    asyncio.run(bridge.submit_once())
+    row = stores['home'].federation.obligation('home', 'carrier-1', 'remote')
+    assert row['state'] == ('destination_accepted' if receipt_race else 'provider_blocked')
+    assert row['attempts'] == 1
+    if not receipt_race:
+        assert row['provider_failure'] == 'changed_echo' and row['provider_ref'] == '1.000001'
+    reopened = FederationStore(stores['home']._db, stores['home']._lock)
+    assert reopened.pending(now=100000, max_attempts=8) == []
+    bridge.store, bridge.now = reopened, lambda: 100000.0
+    asyncio.run(bridge.submit_once())
+    assert len(calls) == 1
+    if not receipt_race:
+        # A later independently verified destination receipt can resolve uncertainty.
+        bridges['remote'].receive({'publisher_id': 'home-publisher', 'text': calls[0]})
+        asyncio.run(bridges['remote'].submit_once())
+        bridge.receive(providers['remote'].events[0])
+        assert reopened.obligation('home', 'carrier-1', 'remote')['state'] == 'destination_accepted'
+
+
+def test_outbound_capacity_preserves_replay_and_rejects_without_orphan_origin(pair, monkeypatch):
+    from src import agentbus_federation_service as persistence
+
+    monkeypatch.setattr(persistence, 'MAX_CUSTODY_ROWS', 1)
+    bridges, stores, _, _ = pair
+    bridge, db = bridges['home'], stores['home']._db
+    bridge.enqueue('m1', 'remote', payload())
+    before = db.total_changes
+    bridge.enqueue('m1', 'remote', payload())
+    assert db.total_changes == before
+    with pytest.raises(persistence.CustodyCapacityError):
+        bridge.enqueue('m2', 'remote', payload())
+    assert db.execute('SELECT COUNT(*) FROM federation_origin_messages').fetchone()[0] == 1
+    assert db.execute('SELECT COUNT(*) FROM bridge_obligations').fetchone()[0] == 1
+    monkeypatch.setattr(persistence, 'MAX_CUSTODY_ROWS', 2)
+    row = stores['home'].federation.obligation('home', 'm1', 'remote')
+    local = db.execute('SELECT payload FROM federation_origin_messages').fetchone()[0]
+    stores['home'].federation.accept(origin_instance_id='home', origin_message_id='m1',
+        destination_instance_id='third', payload=row['payload'], local_payload=local)
+    with pytest.raises(persistence.CustodyCapacityError):
+        bridge.enqueue('m2', 'remote', payload())
+    assert db.execute('SELECT COUNT(*) FROM federation_origin_messages').fetchone()[0] == 1
+    monkeypatch.setattr(persistence, 'MAX_CUSTODY_ROWS', 1)
+    bridge.enqueue('m1', 'remote', payload())
+    asyncio.run(bridge.submit_once())
+    assert stores['home'].federation.obligation('home', 'm1', 'remote')['state'] == 'submitted'
+
+
+def test_inbound_capacity_withholds_receipt_and_recovery_checkpoint(pair, monkeypatch):
+    from src import agentbus_federation_service as persistence
+
+    bridges, stores, providers, _ = pair
+    origin, destination = bridges['home'], bridges['remote']
+    origin.enqueue('m1', 'remote', payload())
+    origin.enqueue('m2', 'remote', payload())
+    asyncio.run(origin.submit_once())
+    providers['remote'].events = providers['home'].events
+    monkeypatch.setattr(persistence, 'MAX_CUSTODY_ROWS', 1)
+    with pytest.raises(persistence.CustodyCapacityError):
+        asyncio.run(destination.recover_once())
+    assert stores['remote'].federation.checkpoint('remote/remote-publisher') == '0'
+    assert stores['remote']._db.execute('SELECT COUNT(*) FROM federated_messages').fetchone()[0] == 1
+    assert stores['remote']._db.execute('SELECT COUNT(*) FROM bridge_obligations').fetchone()[0] == 1
+    # Existing admitted custody can be replayed at capacity without another receipt.
+    destination.receive(providers['home'].events[0])
+    assert stores['remote']._db.execute('SELECT COUNT(*) FROM bridge_obligations').fetchone()[0] == 1
+
+
+def test_custody_capacity_serializes_independent_sqlite_writers(tmp_path, monkeypatch):
+    import threading
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+
+    from src import agentbus_federation_service as persistence
+
+    monkeypatch.setattr(persistence, 'MAX_CUSTODY_ROWS', 1)
+    capacity = persistence.FederationStore._custody_capacity
+    def slow_capacity(self, table):
+        capacity(self, table)
+        time.sleep(0.02)  # Expose the count/insert race without the SQLite writer reservation.
+    monkeypatch.setattr(persistence.FederationStore, '_custody_capacity', slow_capacity)
+    stores = [MessageStore(tmp_path / 'shared.sqlite3') for _ in range(2)]
+    barrier = threading.Barrier(2)
+    def allocate(index):
+        barrier.wait(timeout=5)
+        try:
+            stores[index].federation.accept(origin_instance_id='home', origin_message_id=f'm{index}',
+                destination_instance_id='remote', payload='message')
+        except persistence.CustodyCapacityError:
+            return 'capacity'
+        return 'accepted'
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            assert sorted(pool.map(allocate, range(2))) == ['accepted', 'capacity']
+        assert stores[0]._db.execute('SELECT COUNT(*) FROM bridge_obligations').fetchone()[0] == 1
+        assert stores[0]._db.execute('SELECT COUNT(*) FROM federation_origin_messages').fetchone()[0] == 1
+    finally:
+        for store in stores:
+            store.close()
+
+
+def test_local_custody_payload_bound_cannot_bypass_frame_limit(pair):
+    _, stores, _, _ = pair
+    with pytest.raises(ValueError, match='local payload exceeds'):
+        stores['home'].federation.accept(origin_instance_id='home', origin_message_id='oversized',
+            destination_instance_id='remote', payload='frame', local_payload='x' * 48001)
+    assert stores['home']._db.execute('SELECT COUNT(*) FROM federation_origin_messages').fetchone()[0] == 0
+    assert stores['home']._db.execute('SELECT COUNT(*) FROM bridge_obligations').fetchone()[0] == 0
+
+
 def test_authenticated_destination_dedup_and_signed_receipt(pair):
     bridges, stores, providers, _ = pair
     bridges['home'].enqueue('m1', 'remote', payload())

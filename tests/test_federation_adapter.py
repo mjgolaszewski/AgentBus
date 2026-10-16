@@ -68,7 +68,7 @@ def test_enqueue_is_disabled_without_explicit_configuration(tmp_path):
     asyncio.run(scenario())
 
 
-def test_enqueue_requires_exact_session_and_is_durable_idempotent_and_local_only(tmp_path):
+def test_enqueue_requires_exact_session_and_is_durable_idempotent_and_local_only(tmp_path, monkeypatch):
     posts = []
     async def respond(request):
         if request.url.path.endswith('auth.test'):
@@ -105,6 +105,14 @@ def test_enqueue_requires_exact_session_and_is_durable_idempotent_and_local_only
         assert api.post('/v1/federation/messages', headers=joined, json=body).status_code == 422
         body['message']['sender'] = 'home:agentbus:unjoined'
         assert api.post('/v1/federation/messages', headers=AUTH, json=body).status_code == 403
+        from src import agentbus_federation_service as persistence
+        monkeypatch.setattr(persistence, 'MAX_CUSTODY_ROWS', 1)
+        body['origin_message_id'] = 'm2'
+        body['message']['sender'] = 'home:agentbus:sender'
+        rejected = api.post('/v1/federation/messages', headers=joined, json=body)
+        assert rejected.status_code == 503 and rejected.headers['Retry-After'] == '60'
+        assert app.state.store.federation.obligation('home', 'm2', 'remote') is None
+        assert posts == []
     asyncio.run(client.aclose())
 
 
@@ -155,8 +163,8 @@ def test_slack_incomplete_or_oversized_recovery_fails_without_returning_partial_
     asyncio.run(scenario())
 
 
-@pytest.mark.parametrize('storage_failure', [False, True])
-def test_existing_socket_acknowledges_signed_frames_only_after_durable_custody(tmp_path, storage_failure):
+@pytest.mark.parametrize('storage_failure', [False, True, 'capacity'])
+def test_existing_socket_acknowledges_signed_frames_only_after_durable_custody(tmp_path, storage_failure, monkeypatch):
     configured = settings(tmp_path, enabled=True)
     peer_key = Ed25519PrivateKey.generate()
     config = configured.federation_config
@@ -179,7 +187,13 @@ def test_existing_socket_acknowledges_signed_frames_only_after_durable_custody(t
     request = SocketModeRequest(type='events_api', envelope_id='signed-event', payload={'event': {
         'type': 'message', 'app_id': 'A456', 'bot_id': 'B456', 'channel': 'C123456',
         'text': frame, 'ts': '1.000001'}})
-    if storage_failure:
+    if storage_failure == 'capacity':
+        from src import agentbus_federation_service as persistence
+        monkeypatch.setattr(persistence, 'MAX_CUSTODY_ROWS', 0)
+        receiver(ProviderSocket(), request)
+        assert acknowledgements == []
+        monkeypatch.setattr(persistence, 'MAX_CUSTODY_ROWS', 1024)
+    elif storage_failure:
         store._db.execute("""CREATE TRIGGER reject_receipt BEFORE INSERT ON bridge_obligations
             BEGIN SELECT RAISE(ABORT, 'injected receipt failure'); END""")
         receiver(ProviderSocket(), request)
@@ -216,3 +230,116 @@ def test_key_changes_require_the_matching_operator_approved_generation(tmp_path,
         load_bridge(config, store, client, 'xoxb-test-secret', 'B123')
     store.close()
     asyncio.run(client.aclose())
+
+
+def test_slack_machine_carrier_has_compact_human_blocks_without_rewriting_bytes():
+    async def scenario():
+        key = Ed25519PrivateKey.generate()
+        frame = encode_frame(Identity("home", "home", "publisher", key),
+            "message", "operator-status-1", "remote", '{"text":"structured status"}')
+        bodies = []
+
+        def respond(request):
+            body = json.loads(request.content)
+            bodies.append(body)
+            return httpx.Response(200, json={"ok": True, "channel": "C123",
+                                           "ts": "1.000001", "message": {"text": body["text"]}})
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            provider = SlackFederationProvider(client, "xoxb-test-secret", "C123")
+            assert await provider.publish(frame) == "1.000001"
+        body = bodies[0]
+        assert body["text"] == frame
+        rendered = json.dumps(body["blocks"], ensure_ascii=False)
+        assert "home → remote" in rendered
+        assert "operator-status-1" in rendered
+        assert "agentbus_federation" not in rendered
+        assert "structured status" not in rendered
+        assert body["parse"] == "none" and body["mrkdwn"] is False
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize('approved', [False, True])
+def test_directory_runtime_requires_per_peer_version_and_explicit_chat_allowlist(tmp_path, approved):
+    configured = settings(tmp_path, enabled=True)
+    config = configured.federation_config
+    assert config is not None
+    data = json.loads(config.read_text())
+    data['directory'] = {'share_chat_ids': [], 'peers': ['remote']}
+    if approved:
+        data['bindings'][0]['directory_version'] = 2
+    config.write_text(json.dumps(data))
+    store = MessageStore(configured.db_path)
+    client = httpx.AsyncClient()
+    try:
+        if not approved:
+            with pytest.raises(ValueError, match='operator-approved'):
+                load_bridge(config, store, client, 'xoxb-test-secret', 'B123')
+        else:
+            bridge = load_bridge(config, store, client, 'xoxb-test-secret', 'B123')
+            assert bridge.directory is not None and bridge.directory.shared == set()
+            assert bridge.directory.peers == ('remote',)
+            assert store._db.execute('SELECT COUNT(*) FROM bridge_obligations').fetchone()[0] == 0
+    finally:
+        store.close()
+        asyncio.run(client.aclose())
+
+
+@pytest.mark.parametrize('echo,warnings', [
+    (None, []), ('rewritten', []), ('signed frame', ['message_truncated']),
+])
+def test_slack_rejects_missing_rewritten_or_truncated_carrier(echo, warnings):
+    from src.agentbus_federation_bridge_service import ProviderCarrierRejected
+
+    async def scenario():
+        body = {'ok': True, 'channel': 'C123', 'ts': '1.000001',
+                'response_metadata': {'warnings': warnings, 'private_detail': 'SECRET'}}
+        if echo is not None:
+            body['message'] = {'text': echo}
+        async with httpx.AsyncClient(transport=httpx.MockTransport(lambda request:
+                httpx.Response(200, json=body))) as client:
+            with pytest.raises(ProviderCarrierRejected) as caught:
+                await SlackFederationProvider(client, 'xoxb-test-secret', 'C123').publish('signed frame')
+        assert caught.value.provider_ref == '1.000001'
+        assert caught.value.reason in {'missing_echo', 'changed_echo', 'truncation_warning'}
+        assert 'SECRET' not in str(caught.value) and 'rewritten' not in str(caught.value)
+    asyncio.run(scenario())
+
+
+def test_slack_preserves_long_signed_carrier_with_exact_response_echo():
+    async def scenario():
+        frame = 'signed-' + 'x' * 5000
+        calls = []
+        def respond(request):
+            body = json.loads(request.content)
+            calls.append(body)
+            return httpx.Response(200, json={'ok': True, 'channel': 'C123',
+                'ts': '1.000001', 'message': {'text': body['text']},
+                'response_metadata': {'warnings': ['missing_charset']}})
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            assert await SlackFederationProvider(client, 'xoxb-test-secret', 'C123').publish(frame) == '1.000001'
+        assert len(calls) == 1 and calls[0]['text'] == frame
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize('version', [None, 1, True, '1', 2])
+def test_inbox_projection_requires_exact_operator_opt_in(tmp_path, version):
+    configured = settings(tmp_path, enabled=True)
+    config = configured.federation_config
+    assert config is not None
+    data = json.loads(config.read_text())
+    if version is not None:
+        data['inbox_projection'] = version
+    config.write_text(json.dumps(data))
+    store = MessageStore(configured.db_path)
+    client = httpx.AsyncClient()
+    try:
+        if version is None or type(version) is int and version == 1:
+            bridge = load_bridge(config, store, client, 'xoxb-test-secret', 'B123')
+            assert (bridge.project_message is not None) == (version == 1)
+        else:
+            with pytest.raises(ValueError, match='projection version'):
+                load_bridge(config, store, client, 'xoxb-test-secret', 'B123')
+    finally:
+        store.close()
+        asyncio.run(client.aclose())

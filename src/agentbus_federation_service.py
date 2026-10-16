@@ -21,6 +21,8 @@ MAX_METADATA = 4096
 MAX_PAYLOAD = 48_000
 MAX_DIRECTORY_ROUTES_PER_ORIGIN = 1024
 MAX_DIRECTORY_ORIGINS = 65
+MAX_DIRECTORY_REVISION = 2 ** 63 - 1
+MAX_CUSTODY_ROWS = 1024
 SIGNED_FRAME_FIELDS = {
     "agentbus_federation", "kind", "origin_instance_id", "origin_message_id",
     "destination_instance_id", "key_generation", "payload", "signature",
@@ -66,6 +68,10 @@ def _looks_like_signed_receipt_frame(value: object) -> bool:
 
 class DirectoryCapacityError(RuntimeError):
     """Directory allocation needs operator archival; existing rows are retained."""
+
+
+class CustodyCapacityError(RuntimeError):
+    """New federation custody needs operator archival; existing rows survive."""
 
 
 class FederationStore:
@@ -118,6 +124,8 @@ class FederationStore:
                     )
             if "provider_ref" not in columns:
                 self._db.execute("ALTER TABLE bridge_obligations ADD COLUMN provider_ref TEXT")
+            if "provider_failure" not in columns:
+                self._db.execute("ALTER TABLE bridge_obligations ADD COLUMN provider_failure TEXT")
             self._db.execute("""
                 CREATE TABLE IF NOT EXISTS remote_directory (
                     origin_instance_id TEXT NOT NULL,
@@ -147,6 +155,21 @@ class FederationStore:
                 origin_instance_id TEXT NOT NULL, origin_message_id TEXT NOT NULL,
                 payload TEXT NOT NULL, payload_hash TEXT NOT NULL,
                 PRIMARY KEY(origin_instance_id, origin_message_id))""")
+            self._db.execute('''CREATE TABLE IF NOT EXISTS federation_inbox_projection (
+                origin_instance_id TEXT NOT NULL, origin_message_id TEXT NOT NULL,
+                destination_instance_id TEXT NOT NULL, cursor INTEGER NOT NULL UNIQUE,
+                payload_hash TEXT NOT NULL,
+                PRIMARY KEY(origin_instance_id, origin_message_id, destination_instance_id),
+                FOREIGN KEY(cursor) REFERENCES messages(cursor))''')
+            self._db.execute("""CREATE TABLE IF NOT EXISTS federation_directory_local (
+                origin_instance_id TEXT PRIMARY KEY, revision INTEGER NOT NULL,
+                entries TEXT NOT NULL)""")
+            self._db.execute("""CREATE TABLE IF NOT EXISTS federation_directory_requests (
+                origin_instance_id TEXT PRIMARY KEY, request_id TEXT NOT NULL,
+                next_response_at REAL NOT NULL)""")
+            self._db.execute("""CREATE TABLE IF NOT EXISTS federation_directory_outgoing_requests (
+                origin_instance_id TEXT PRIMARY KEY, revision INTEGER NOT NULL,
+                gap_revision INTEGER NOT NULL, request_id TEXT NOT NULL)""")
             self._db.execute("""CREATE TABLE IF NOT EXISTS federation_checkpoints (
                 reader TEXT PRIMARY KEY, cursor TEXT NOT NULL)""")
             columns = {row['name'] for row in self._db.execute('PRAGMA table_info(bridge_obligations)')}
@@ -161,7 +184,7 @@ class FederationStore:
         _check_id(destination_instance_id, INSTANCE_RE, "destination instance")
         if not isinstance(origin_message_id, str) or not 1 <= len(origin_message_id) <= 128:
             raise ValueError("invalid federation origin message")
-        if kind not in {"message", "receipt"}:
+        if kind not in {"message", "receipt", "directory"}:
             raise ValueError("invalid federation frame kind")
         raw = payload.encode() if isinstance(payload, str) else payload
         if not isinstance(raw, bytes) or not raw or len(raw) > MAX_PAYLOAD:
@@ -173,8 +196,22 @@ class FederationStore:
         digest = hashlib.sha256(raw).hexdigest()
         now = _now()
         with self._lock, self._db:
+            self._custody_writer()
             local = encoded if local_payload is None else local_payload
+            if not isinstance(local, str) or len(local.encode()) > MAX_PAYLOAD:
+                raise ValueError('federation local payload exceeds limit')
             local_hash = hashlib.sha256(local.encode()).hexdigest()
+            origin = self._db.execute('SELECT payload_hash FROM federation_origin_messages WHERE origin_instance_id=? AND origin_message_id=?',
+                                      (origin_instance_id, origin_message_id)).fetchone()
+            obligation = self.obligation(origin_instance_id, origin_message_id, destination_instance_id)
+            if origin and origin['payload_hash'] != local_hash:
+                raise ValueError('conflicting federation payload for origin message')
+            if obligation and obligation['payload_hash'] != digest:
+                raise ValueError('conflicting federation payload for obligation')
+            if origin is None:
+                self._custody_capacity('federation_origin_messages')
+            if obligation is None:
+                self._custody_capacity('bridge_obligations')
             self._db.execute('INSERT OR IGNORE INTO federation_origin_messages VALUES (?, ?, ?, ?)',
                              (origin_instance_id, origin_message_id, local, local_hash))
             existing = self._db.execute('SELECT payload_hash FROM federation_origin_messages WHERE origin_instance_id=? AND origin_message_id=?',
@@ -195,9 +232,20 @@ class FederationStore:
                 raise ValueError("conflicting federation payload for obligation")
         return dict(row)
 
+    def _custody_writer(self) -> None:
+        """Serialize quota inspection and allocation across independent writers."""
+        if not self._db.in_transaction:
+            self._db.execute('BEGIN IMMEDIATE')
+
+    def _custody_capacity(self, table: str) -> None:
+        if table not in {'bridge_obligations', 'federation_origin_messages', 'federated_messages', 'federation_inbox_projection'}:
+            raise ValueError('invalid custody table')
+        if self._db.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0] >= MAX_CUSTODY_ROWS:
+            raise CustodyCapacityError('federation custody capacity requires operator archival')
+
     def transition(self, origin_instance_id: str, origin_message_id: str,
                    destination_instance_id: str, state: str, *, attempt: bool = False) -> dict[str, Any]:
-        allowed = {"origin_accepted", "submitted", "uncertain", "destination_accepted", "acknowledged"}
+        allowed = {"origin_accepted", "submitted", "uncertain", "provider_blocked", "destination_accepted", "acknowledged"}
         if state not in allowed:
             raise ValueError("invalid bridge state")
         key = (origin_instance_id, origin_message_id, destination_instance_id)
@@ -210,6 +258,7 @@ class FederationStore:
                 "origin_accepted": {"origin_accepted", "submitted", "uncertain"},
                 "submitted": {"submitted", "uncertain", "destination_accepted"},
                 "uncertain": {"uncertain", "submitted", "destination_accepted"},
+                "provider_blocked": {"provider_blocked", "destination_accepted"},
                 "destination_accepted": {"destination_accepted", "acknowledged"},
                 "acknowledged": {"acknowledged"},
             }
@@ -255,6 +304,12 @@ class FederationStore:
         if not isinstance(origin_message_id, str) or not 1 <= len(origin_message_id) <= 128:
             raise ValueError("invalid federation origin message")
         with self._lock, self._db:
+            self._custody_writer()
+            existing = self._db.execute('''SELECT payload_hash FROM federated_messages
+                WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?''',
+                (origin_instance_id, origin_message_id, destination_instance_id)).fetchone()
+            if existing is None:
+                self._custody_capacity('federated_messages')
             self._db.execute(
                 """INSERT OR IGNORE INTO federated_messages
                 (origin_instance_id, origin_message_id, destination_instance_id,
@@ -302,7 +357,7 @@ class FederationStore:
                          state: str, metadata: dict[str, Any]) -> None:
         _check_id(origin, INSTANCE_RE, "origin instance")
         _check_id(route, ROUTE_RE, "route")
-        if type(revision) is not int or revision < 1:
+        if type(revision) is not int or not 1 <= revision <= MAX_DIRECTORY_REVISION:
             raise ValueError("directory revision must be positive")
         if not isinstance(state, str) or state not in {"current", "stale", "withdrawn", "gap", "resync_required"}:
             raise ValueError("invalid directory state")
@@ -392,7 +447,7 @@ class FederationStore:
                            entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Validate a complete snapshot before one atomic projection transaction."""
         _check_id(origin_instance_id, INSTANCE_RE, "origin instance")
-        if type(revision) is not int or revision < 1:
+        if type(revision) is not int or not 1 <= revision <= MAX_DIRECTORY_REVISION:
             raise ValueError("directory revision must be positive")
         if not isinstance(entries, list) or len(entries) > 256:
             raise ValueError("directory snapshot exceeds limit")
@@ -470,6 +525,54 @@ class FederationStore:
             self._save_directory_revision(origin_instance_id, revision, 0)
             return result
 
+    def local_directory_snapshot(self, origin: str, entries: list[dict[str, Any]]) -> tuple[int, list[dict[str, Any]]]:
+        """Coalesce approved committed registrations before provider publication."""
+        _check_id(origin, INSTANCE_RE, "origin instance")
+        if len(entries) > 256:
+            raise ValueError("directory snapshot exceeds limit")
+        for entry in entries:
+            self._directory_entry(origin, entry["route"], 1, "current", entry["metadata"])
+        encoded = json.dumps(sorted(entries, key=lambda entry: entry["route"]), sort_keys=True)
+        with self._lock, self._db:
+            row = self._db.execute("SELECT revision, entries FROM federation_directory_local WHERE origin_instance_id=?", (origin,)).fetchone()
+            revision = int(row["revision"]) if row else 0
+            if row is None or row["entries"] != encoded:
+                revision += 1
+                self._db.execute("""INSERT INTO federation_directory_local VALUES (?, ?, ?)
+                    ON CONFLICT(origin_instance_id) DO UPDATE SET revision=excluded.revision,
+                    entries=excluded.entries""", (origin, revision, encoded))
+        return revision, json.loads(encoded)
+
+    def directory_revision(self, origin: str) -> dict[str, Any]:
+        with self._lock:
+            return self._directory_revision(origin)
+
+    def reserve_directory_response(self, origin: str, request: str, now: float) -> bool:
+        """One fresh snapshot response per peer/minute; identical retries coalesce."""
+        with self._lock, self._db:
+            row = self._db.execute("SELECT * FROM federation_directory_requests WHERE origin_instance_id=?", (origin,)).fetchone()
+            if row and row["request_id"] == request:
+                return True
+            if row and now < row["next_response_at"]:
+                return False
+            self._db.execute("""INSERT INTO federation_directory_requests VALUES (?, ?, ?)
+                ON CONFLICT(origin_instance_id) DO UPDATE SET request_id=excluded.request_id,
+                next_response_at=excluded.next_response_at""", (origin, request, now + 60))
+            return True
+
+    def directory_request(self, origin: str, revision: int, gap: int, candidate: str) -> str:
+        """Retain one outgoing request identity per observed peer position."""
+        with self._lock, self._db:
+            row = self._db.execute('SELECT * FROM federation_directory_outgoing_requests WHERE origin_instance_id=?',
+                                   (origin,)).fetchone()
+            if row and (row['revision'], row['gap_revision']) == (revision, gap):
+                return row['request_id']
+            self._db.execute('''INSERT INTO federation_directory_outgoing_requests VALUES (?, ?, ?, ?)
+                ON CONFLICT(origin_instance_id) DO UPDATE SET revision=excluded.revision,
+                gap_revision=excluded.gap_revision, request_id=excluded.request_id''',
+                (origin, revision, gap, candidate))
+        return candidate
+
     def directory(self, *, origin_instance_id: str | None = None) -> list[dict[str, Any]]:
         query = "SELECT * FROM remote_directory"
         args: tuple[str, ...] = ()
@@ -496,7 +599,7 @@ class FederationStore:
         with self._lock:
             rows = self._db.execute("""SELECT * FROM bridge_obligations
                 WHERE state IN ('origin_accepted','submitted','uncertain')
-                AND (kind = 'message' OR (kind = 'receipt' AND state IN ('origin_accepted', 'uncertain')))
+                AND (kind IN ('message', 'directory') OR (kind = 'receipt' AND state IN ('origin_accepted', 'uncertain')))
                 AND attempts < ? AND next_attempt_at <= ? ORDER BY updated_at LIMIT ?""",
                 (max_attempts, now, limit)).fetchall()
         return [dict(row) for row in rows]
@@ -522,6 +625,17 @@ class FederationStore:
         with self._lock, self._db:
             self._db.execute('UPDATE bridge_obligations SET next_attempt_at=MAX(next_attempt_at, ?) WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?',
                              (until, origin, message, destination))
+
+    def block_submission(self, origin: str, message: str, destination: str, *,
+                         reason: str, provider_ref: str) -> None:
+        """Retain failed carrier custody without retry or overwriting a receipt race."""
+        if reason not in {'missing_echo', 'changed_echo', 'truncation_warning'}:
+            raise ValueError('invalid provider carrier failure')
+        with self._lock, self._db:
+            self._db.execute("""UPDATE bridge_obligations SET state='provider_blocked',
+                provider_failure=?, provider_ref=?, updated_at=?
+                WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?
+                AND state='uncertain'""", (reason, provider_ref, _now(), origin, message, destination))
 
     def checkpoint(self, reader: str) -> str:
         with self._lock:

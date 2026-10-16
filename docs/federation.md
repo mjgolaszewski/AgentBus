@@ -85,7 +85,12 @@ complete directory convergence.
 
 Provider fan-out, namespace origin ownership, and recovery remain subject to
 an isolated real-provider qualification. Independent installation app identities
-must join the same approved private channel. Discovery never bootstraps trust
+must join the same operator-approved public channel. The operator explicitly
+requires `agent-bus` to remain public; signatures authenticate origins and do
+not provide content confidentiality. Retention is operator-reported as retaining
+all messages, without an independently verified indefinite-retention guarantee.
+Qualification must prove recovery over its observed history window and record
+unsupported expiry assumptions. Discovery never bootstraps trust
 or grants local execution authority. Deterministic fake-provider tests establish
 adapter behavior; they do not establish live multi-installation delivery.
 
@@ -153,3 +158,82 @@ transaction rolls back. Existing stores above a cap retain their rows and may
 update them. No retention policy or automatic deletion is implied; freeing
 capacity requires an approved archival/reconciliation procedure. This bound
 covers directory projection only, not a qualified global bridge-retention policy.
+
+Directory exchange is separately opt-in. Each participating binding must declare
+`directory_version: 2`; the configuration must also contain a `directory` object
+with `peers` and `share_chat_ids` lists. An empty chat allowlist discloses no
+registrations. Version 1 message and receipt envelopes retain their existing
+format. Version 2 directory controls use signed, content-addressed canonical
+snapshot, delta, and resynchronization-request payloads. They create no ordinary
+inbox message, local participation session, wake authority, or semantic ack.
+
+The service projects only the approved stable chat UUID, exact route, protocol,
+and active registration from committed participation records. Joining and stopped
+records are absent; a complete newer snapshot withdraws missing routes. Overdue
+contact remains registration information and is never evidence that an owner is
+running, fresh, idle, or eligible to wake. Local snapshots coalesce until their
+approved contents change. Unknown or gapped streams request a complete snapshot;
+fresh request responses are limited to one per peer per minute, with durable
+duplicate-request coalescing. Outgoing request IDs are also durable per peer and
+observed revision/gap, so an unchanged service restart creates no new obligation.
+Periodic freshness expiry, global custody retention,
+and normal inbox projection remain incomplete P11 obligations.
+
+Slack submissions include a compact plain-text block identifying the transport
+kind, origin, destination, and message ID. The exact signed JSON remains the
+machine carrier in the provider's `text` field, which some notification or
+accessibility surfaces may still display. These blocks do not repair a provider
+that splits or rewrites the carrier. A retained real-provider observation contains
+a 4,764-byte signed frame as separate 4,000-byte and 764-byte events; neither
+fragment is accepted as signed custody. The unpublished local display change is
+not a live transport repair or a multi-installation qualification result.
+
+The carrier-fidelity guard requires the provider's successful response to echo
+the exact signed `message.text`, with no `message_truncated` warning. Missing or
+changed text and truncation warnings retain the original obligation and move it
+to `provider_blocked`, recording a fixed failure code and provider reference.
+The worker stops automatic retries of that unchanged carrier across restarts;
+it does not infer delivery or acknowledgement. A separately verified signed
+destination receipt can still establish custody, including during a race with
+the provider response. Ordinary timeouts and outages retain bounded uncertain
+retry behavior. A matching response is submission evidence only: later provider
+history corruption still cannot satisfy destination custody.
+
+The failure column is additive, and the blocked state is explicit. Stop the
+bridge before rolling back to older code, which cannot interpret the new state
+in its transition machinery. Preserve the original obligation, failure record,
+provider events, and signing identity for owner-led recovery. This change adds
+no live mutation, manual repair API, automatic reassembly, or automatic unblock.
+
+Federation custody admits at most 1,024 retained rows in each of the existing
+outbound-obligation, origin-message, and inbound-message tables, with at most
+48,000 UTF-8 payload bytes per row. This bounds those three payload columns to
+147,456,000 bytes; indexes, SQLite/WAL overhead, ordinary inbox storage, and
+provider history are separate. Existing over-capacity rows remain intact, and
+exact retries and state progress remain possible. Capacity checks and allocation
+reserve the SQLite writer together, including across independent processes.
+New local enqueue receives 503 with Retry-After instead of false acceptance.
+Failed inbound allocation creates no custody receipt and advances no recovery
+checkpoint. No automatic pruning is provided: sustained operation needs an
+operator-approved archive/retention procedure before capacity is exhausted.
+
+An installation may opt into normal inbox notification projection with
+`inbox_projection: 1` in its existing federation configuration. Only a verified
+message already retained in destination custody can be projected. Its authenticated
+origin/message/destination tuple maps to one local cursor, using the actual
+provider event timestamp. Repeated provider posts, concurrent readers, and service
+restart reuse that first cursor. The ordinary message and mapping commit together
+before a new custody receipt is queued; mapping storage failure or a collision
+with an existing local timestamp withholds the receipt and recovery checkpoint.
+The additive mapping is capped at 1,024 rows and is never automatically pruned.
+
+Protocol 2 response shapes remain unchanged. A foreign sender retains `legacy`
+local assurance, even though its separate custody record proves the remote origin.
+It creates no local session, operator command, semantic acknowledgement, or wake
+eligibility. Text, routes, and opaque correlation are preserved, while foreign
+thread timestamps and reply cursors stay in signed custody and are cleared from
+the local notification. Cross-instance ancestry translation, historical custody
+backfill without retained provider references, and ordinary send migration remain
+separate obligations; existing local reply and human-thread behavior is unchanged.
+Stop the bridge before rolling back this optional projection, retaining its mapping
+and local cursor history; do not reset checkpoints to manufacture backfill.

@@ -11,7 +11,9 @@ import time
 from decimal import Decimal
 from typing import Callable, Protocol
 
-from src.agentbus_federation_service import FederationStore
+from src.agentbus_federation_directory_service import DirectorySynchronizer, decode_directory
+from src.agentbus_federation_inbox_service import InboxProjectionError
+from src.agentbus_federation_service import CustodyCapacityError, DirectoryCapacityError, FederationStore
 from src.agentbus_federation_wire_service import Binding, Identity, canonical, decode_frame, encode_frame
 from src.agentbus_message_assurance_service import route_parts
 
@@ -32,6 +34,16 @@ class ProviderUnavailable(Exception):
     def __init__(self, retry_after: float = 0):
         self.retry_after = retry_after
         super().__init__('federation provider unavailable; submission remains uncertain')
+
+
+class ProviderCarrierRejected(Exception):
+    """A reported provider success did not preserve the signed carrier."""
+
+    def __init__(self, reason: str, provider_ref: str):
+        if reason not in {'missing_echo', 'changed_echo', 'truncation_warning'}:
+            raise ValueError('invalid provider carrier failure')
+        self.reason, self.provider_ref = reason, provider_ref
+        super().__init__('federation provider carrier rejected: ' + reason)
 
 
 class EnqueueRejected(Exception):
@@ -60,6 +72,8 @@ def enqueue_authenticated(bridge, store, channel, message_id, destination, paylo
         raise EnqueueRejected(403, 'Federation enqueue requires the matching joined session') from None
     except SendRateExceeded as exc:
         raise EnqueueRejected(429, 'Federation send rate exceeded', {'Retry-After': str(exc.retry_after)}) from None
+    except CustodyCapacityError:
+        raise EnqueueRejected(503, 'Federation custody capacity requires operator archival', {'Retry-After': '60'}) from None
     except (ValueError, KeyError):
         raise EnqueueRejected(422, 'Federation message or route is invalid') from None
 
@@ -72,6 +86,8 @@ class FederationBridge:
             raise ValueError('invalid federation attempt budget')
         self.store, self.identity, self.bindings, self.provider = store, identity, dict(bindings), provider
         self.now, self.max_attempts = now, max_attempts
+        self.directory: DirectorySynchronizer | None = None
+        self.project_message: Callable[[str, str, str, str, str | None], None] | None = None
         publishers = {identity.publisher_id: identity.instance_id}
         prefixes = {identity.route_prefix: identity.instance_id}
         for origin, binding in self.bindings.items():
@@ -104,6 +120,18 @@ class FederationBridge:
         self.store.accept(origin_instance_id=self.identity.instance_id, origin_message_id=message_id,
                           destination_instance_id=destination, payload=frame, local_payload=local)
 
+    def directory_now(self) -> float:
+        return self.now()
+
+    def enqueue_directory(self, destination: str, payload: str) -> None:
+        if destination not in self.bindings or self.bindings[destination].directory_version != 2:
+            raise ValueError('directory peer version is not operator-approved')
+        decode_directory(payload, self.identity.route_prefix)
+        message = 'directory-' + hashlib.sha256(payload.encode()).hexdigest()
+        frame = encode_frame(self.identity, 'directory', message, destination, payload)
+        self.store.accept(origin_instance_id=self.identity.instance_id, origin_message_id=message,
+                          destination_instance_id=destination, payload=frame, local_payload=payload, kind='directory')
+
     async def submit_once(self) -> None:
         for row in self.store.pending(now=self.now(), max_attempts=self.max_attempts):
             key = (row['origin_instance_id'], row['origin_message_id'], row['destination_instance_id'])
@@ -114,6 +142,8 @@ class FederationBridge:
                 continue
             try:
                 reference = await self.provider.publish(row['payload'])
+            except ProviderCarrierRejected as exc:
+                self.store.block_submission(*key, reason=exc.reason, provider_ref=exc.provider_ref)
             except ProviderUnavailable as exc:
                 self.store.defer_submission(*key, until=self.now() + max(delay, exc.retry_after))
             except (TimeoutError, OSError):
@@ -139,9 +169,17 @@ class FederationBridge:
             if row['state'] not in {'destination_accepted', 'acknowledged'}:
                 self.store.transition(receipt['origin'], receipt['message'], origin, 'destination_accepted')
             return
-        payload = self._message(frame['payload'], origin, self.identity.instance_id)
-        self.store.accept_destination(origin_instance_id=origin, publisher_id=event['publisher_id'],
-            origin_message_id=message_id, destination_instance_id=self.identity.instance_id, payload=payload)
+        if frame['kind'] == 'directory':
+            if self.directory is None:
+                raise ValueError('directory synchronization is not configured')
+            self.directory.receive(frame)
+            payload = frame['payload']
+        else:
+            payload = self._message(frame['payload'], origin, self.identity.instance_id)
+            self.store.accept_destination(origin_instance_id=origin, publisher_id=event['publisher_id'],
+                origin_message_id=message_id, destination_instance_id=self.identity.instance_id, payload=payload)
+            if self.project_message is not None:
+                self.project_message(origin, message_id, self.identity.instance_id, payload, event.get('ts'))
         receipt = canonical({'origin': origin, 'message': message_id,
             'destination': self.identity.instance_id, 'payload_hash': hashlib.sha256(payload.encode()).hexdigest()})
         receipt_id = 'receipt-' + hashlib.sha256(canonical([origin, message_id, self.identity.instance_id]).encode()).hexdigest()
@@ -175,11 +213,14 @@ class FederationBridge:
         while True:
             delay = 60.0
             try:
+                if self.directory is not None:
+                    self.directory.reconcile()
                 await self.recover_once()
                 await self.submit_once()
             except ProviderUnavailable as exc:
                 delay = max(delay, exc.retry_after)
                 LOGGER.warning('Federation provider unavailable; durable custody retained')
-            except (TimeoutError, OSError, ValueError, sqlite3.Error):
+            except (TimeoutError, OSError, ValueError, sqlite3.Error, DirectoryCapacityError, CustodyCapacityError,
+                    InboxProjectionError):
                 LOGGER.warning('Federation cycle incomplete; durable custody retained')
             await asyncio.sleep(delay)

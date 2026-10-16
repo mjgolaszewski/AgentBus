@@ -30,7 +30,7 @@ invariants:
 
 primitives:
   local_message: {identity: origin_instance_id_plus_origin_message_id, owner: local_store}
-  bridge_obligation: {identity: origin_instance_id_plus_origin_message_id_plus_destination_instance, states: [origin_accepted, submitted, uncertain, destination_accepted, acknowledged], owner: local_store}
+  bridge_obligation: {identity: origin_instance_id_plus_origin_message_id_plus_destination_instance, states: [origin_accepted, submitted, uncertain, provider_blocked, destination_accepted, acknowledged], owner: local_store}
   directory_revision: {identity: origin_instance_id_plus_monotonic_revision, states: [absent, snapshotting, current, stale, gap, resync_required, withdrawn], owner: local_store}
   owner_capability: {identity: session_id_plus_owner_incarnation, states: [unknown, unavailable, active, approval_wait, idle, interrupted, failed, unloaded, stale, contradictory], owner: local_owner_adapter}
   wake_intent: {identity: wake_intent_id_plus_owner_epoch, states: [pending, eligible, submitting, uncertain, queued, admitted, running, completed, blocked], owner: local_owner_adapter}
@@ -39,12 +39,49 @@ primitives:
 contracts:
   local_acceptance: {commit_order: [message, bridge_obligation], provider_side_effect_after_commit: true, acknowledgement: semantic_agent_ack_only}
   bridge_submission: {transport: outbound_only, retry: bounded, uncertainty: explicit, dedupe_key: origin_instance_id_plus_origin_message_id_plus_destination_instance}
+  custody_capacity:
+    retained_rows_per_table: 1024
+    tables: [bridge_obligations, federation_origin_messages, federated_messages]
+    payload_bytes_per_row: 48000
+    exhaustion: reject_new_allocation_without_deletion_or_false_acceptance
+    existing_rows: preserve_exact_retry_receipts_and_state_recovery_even_if_legacy_over_capacity
+    archive: operator_owned_no_automatic_pruning
+    exclusions: not_a_global_sqlite_disk_quota_or_provider_retention_guarantee
   destination_acceptance: {requires: [authenticated_origin, valid_route, schema_valid_payload, deduplicated_persistence], provider_receipt_is_not_acceptance: true}
+  inbox_projection:
+    version: 1
+    retained_mapping_rows: 1024
+    activation: explicit_operator_inbox_projection_1
+    identity: authenticated_origin_message_destination_to_unique_local_cursor
+    provider_reference: actual_verified_event_timestamp_never_fabricated
+    transaction: ordinary_message_and_projection_mapping_commit_together_before_receipt
+    assurance: protocol_2_legacy_local_assurance_never_session_or_wake_authority
+    foreign_ancestry: thread_and_reply_cursor_retained_in_custody_but_not_projected_as_local_references
+    recovery: duplicate_and_restart_reuse_first_projection_without_changing_its_cursor
+    conflicts: fail_closed_without_overwriting_existing_local_message_or_mapping
   directory: {revisioning: monotonic_per_origin, payload: allowlisted_metadata_only, freshness: explicit, stale_default: unknown, resync: bounded_snapshot_then_deltas}
   wake: {admission: owner_confirmed_idle_only, epoch_recheck: required, active_owner: defer, queued_work: never_acknowledged, remote_authority: none}
   prohibited_edges: [remote_message_to_local_execution, remote_directory_to_session_creation, provider_receipt_to_destination_acceptance, queued_wake_to_agent_ack, stale_directory_to_wakeability]
+  directory_wire:
+    envelope_version: 2
+    payload_version: 1
+    operations: [snapshot, delta, request]
+    revision_range: positive_signed_64_bit_integer
+    activation: explicit_per_peer_directory_version_2_and_operator_chat_allowlist
+    source: committed_participation_roster_only
+    disclosure: stable_chat_id_route_protocol_and_active_registration_only
+    requests: bounded_coalesced_and_deduplicated_with_signed_custody_receipts
+    request_recovery: durable_peer_revision_gap_nonce_reused_across_restart
+    compatibility: legacy_message_and_receipt_frames_remain_version_1
+    exclusions: no_ordinary_inbox_message_no_semantic_ack_no_local_session_or_wake_authority
   signed_provider_adapter:
     version: 1
+    channel_audience: operator_approved_public_channel
+    confidentiality: no_content_confidentiality_claim
+    retention: operator_reported_retain_all_observed_recovery_window_only_until_independently_qualified
+    carrier_fidelity: exact_success_response_message_text_required_without_truncation_warning
+    carrier_failure: durable_provider_blocked_with_safe_reason_and_provider_reference_no_automatic_retry
+    blocked_resolution: authenticated_destination_receipt_may_establish_custody_operator_recovery_otherwise_required
     signature: ed25519_over_canonical_utf8_json_without_signature_field
     publisher_binding: operator_owned_origin_instance_plus_route_prefix_plus_provider_publisher_plus_public_key
     frame_fields: [agentbus_federation, kind, origin_instance_id, origin_message_id, destination_instance_id, key_generation, payload, signature]
