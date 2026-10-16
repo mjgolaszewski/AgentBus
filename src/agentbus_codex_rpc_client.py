@@ -7,7 +7,7 @@ import os
 import select
 import subprocess
 import time
-from typing import Any
+from typing import Any, Callable
 
 
 class CodexHostError(Exception):
@@ -39,6 +39,11 @@ class CodexAppServer:
         self.terminal_turns: dict[str, str] = {}
         self.rejected_turn_requests: set[tuple[str, str]] = set()
         self.interrupt_requested: set[tuple[str, str]] = set()
+        self.last_turn_status = "unknown"
+        self.turn_observer: Callable[[str, str, str], None] | None = None
+
+    def set_turn_observer(self, observer: Callable[[str, str, str], None]) -> None:
+        self.turn_observer = observer
 
     def __enter__(self) -> CodexAppServer:
         try:
@@ -147,10 +152,16 @@ class CodexAppServer:
             pass
 
     def _observe_terminal(self, frame: dict[str, Any]) -> None:
-        if frame.get("method") != "turn/completed":
+        if frame.get("method") not in {"turn/started", "turn/completed"}:
             return
         params = frame.get("params")
         turn = params.get("turn") if isinstance(params, dict) else None
+        if (self.turn_observer is not None and isinstance(params, dict)
+                and isinstance(params.get("threadId"), str) and isinstance(turn, dict)
+                and isinstance(turn.get("id"), str) and isinstance(turn.get("status"), str)):
+            self.turn_observer(params["threadId"], turn["id"], turn["status"])
+        if frame.get("method") != "turn/completed":
+            return
         if (isinstance(turn, dict) and isinstance(turn.get("id"), str) and
                 turn.get("status") in {"completed", "interrupted", "failed"}):
             self.terminal_turns[turn["id"]] = turn["status"]
@@ -213,6 +224,7 @@ class CodexAppServer:
         turn = result.get("turn")
         if not isinstance(turn, dict) or not isinstance(turn.get("id"), str):
             raise TurnStartUncertain("Codex turn-start response omitted a turn ID")
+        self.last_turn_status = str(turn.get("status", "unknown"))
         return turn["id"]
 
     def find_attempt(self, thread_id: str, attempt_id: str) -> tuple[str, str] | None:

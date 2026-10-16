@@ -22,6 +22,14 @@ From v0.7.0, enrolled routes require session proof for sending and actionable
 operations, and acknowledged stopped sessions cannot write. Treat the local
 inbox, session secrets, and API token as sensitive.
 
+New enrollment is bounded to 4,096 durable chat identities, and each chat may
+reserve at most 64 aliases. At capacity, the service rejects new allocations
+without deleting history or addresses; existing enrollment retries and reuse
+of a chat's own alias remain available. Older stores above a bound retain
+their records and reject further growth. Session secrets exceeding 512
+characters are rejected before enrollment hashing. These bounds do not imply
+message retention, independent principals, or an operator-protected filesystem.
+
 ### Chosen boundaries and residual risk
 
 | Finding | Boundary and reason | Remaining risk and stronger condition |

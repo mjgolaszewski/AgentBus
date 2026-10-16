@@ -494,11 +494,12 @@ gates:
         min_collected: 1
         min_executed: 1
         max_skipped: 0
-        selectors: [tests/test_federation_bridge.py, tests/test_federation_adapter.py, tests/test_federation_service.py, *id055, tests/test_slack_commands.py, tests/test_participation_contract.py, tests/test_federation_contract.py, tests/test_participation_service.py, tests/test_participation_store.py, tests/test_control_store.py, tests/test_rename_store.py, tests/test_claim_recovery.py, tests/test_credential_rotation.py]
+        selectors: [tests/test_participation_limits.py, tests/test_security_claim_mapping.py, tests/test_federation_bridge.py, tests/test_federation_adapter.py, tests/test_federation_service.py, *id055, tests/test_slack_commands.py, tests/test_participation_contract.py, tests/test_federation_contract.py, tests/test_participation_service.py, tests/test_participation_store.py, tests/test_control_store.py, tests/test_rename_store.py, tests/test_claim_recovery.py, tests/test_credential_rotation.py]
         expected_node_manifest: governance/test-manifests/contract-test.txt
         expected_nodes_mode: exact
         artifact_binding: *id042
     negative_controls:
+    - {id: alias-capacity-is-enforced-before-growth, mutation: {path: src/agentbus_participation_store_service.py, search: '            if alias is None and alias_count >= MAX_ALIASES_PER_CHAT:', replace: '            if False:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_participation_limits::test_alias_capacity_keeps_existing_addresses_and_allows_alias_reuse']}}
     - {"id": "federation-local-generation-approval-is-required", "mutation": {"path": "src/agentbus_federation_runtime_service.py", "search": "    if data['key_generation'] != key_generation(private.public_key()):", "replace": "    if False:"}, "oracle": {"kind": "test_node_failure", "node_ids": ["tests.test_federation_adapter::test_key_changes_require_the_matching_operator_approved_generation[local]"]}}
     - {"id": "federation-peer-generation-approval-is-required", "mutation": {"path": "src/agentbus_federation_runtime_service.py", "search": "        if item['key_generation'] != key_generation(public):", "replace": "        if False:"}, "oracle": {"kind": "test_node_failure", "node_ids": ["tests.test_federation_adapter::test_key_changes_require_the_matching_operator_approved_generation[peer]"]}}
     - {id: federation-signature-is-required, mutation: {path: src/agentbus_federation_wire_service.py, search: "        binding.public_key.verify(signature, canonical(unsigned).encode())", replace: "        pass"}, oracle: {kind: *id044, node_ids: ['tests.test_federation_bridge::test_forged_publisher_signature_destination_and_conflicting_replay_fail_closed']}}
@@ -602,14 +603,16 @@ gates:
         min_collected: 1
         min_executed: 1
         max_skipped: 0
-        selectors: [*id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_self_service_client.py]
+        selectors: [tests/test_wake_intent_lifecycle.py, tests/test_wake_owner_eligibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_self_service_client.py]
         expected_node_manifest: governance/test-manifests/test.txt
         expected_nodes_mode: exact
         artifact_binding: *id042
     negative_controls:
+    - {id: unloaded-owner-cannot-launch, mutation: {path: src/agentbus_codex_wake_client.py, search: '                if host_state != "idle":', replace: '                if host_state not in {"idle", "notLoaded"}:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_wake_owner_eligibility::test_unproved_owner_observation_never_resumes_or_starts[observation2]']}}
+    - {id: queued-host-acceptance-is-not-running, mutation: {path: src/agentbus_codex_wake_intent_client.py, search: '    phase = {"queued": "queued", "inProgress": "running", "completed": "completed",', replace: '    phase = {"queued": "running", "inProgress": "running", "completed": "completed",'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_wake_intent_lifecycle::test_host_acceptance_records_only_observed_lifecycle[queued-queued]']}}
     - {id: missing-send-destination-is-rejected, mutation: {path: *id043, search: 'if not ns.recipient and not ns.broadcast:', replace: 'if False:'}, oracle: {kind: *id044, node_ids: ['tests.test_launcher::test_cli_rejects_ambiguous_actionable_send_before_api']}}
     - {id: self-status-route-mismatch-is-ineligible, mutation: {path: src/agentbus_codex_wake_client.py, search: '                               service_presence["route"] != identity or', replace: '                               False or'}, oracle: {kind: *id044, node_ids: ['tests.test_codex_wake_client::test_self_status_combines_proved_service_and_local_facts_without_side_effects']}}
-    - {id: resume-control-remains-wakable, mutation: {path: src/agentbus_codex_wake_client.py, search: '    if kind == "CONTROL":', replace: '    if False:'}, oracle: {kind: *id044, node_ids: ['tests.test_codex_wake_client::test_resume_control_wakes_held_conversation']}}
+    - {id: resume-control-remains-wakable, mutation: {path: src/agentbus_codex_wake_events_client.py, search: '    if kind == "CONTROL":', replace: '    if False:'}, oracle: {kind: *id044, node_ids: ['tests.test_codex_wake_client::test_resume_control_wakes_held_conversation']}}
     - {id: saturated-spool-cannot-hide-addressed-wake, mutation: {path: src/agentbus_codex_wake_client.py, search: 'if (live and state["enabled"] and workspace_status(values)["enabled"] and token and', replace: 'if (False and state["enabled"] and workspace_status(values)["enabled"] and token and'}, oracle: {kind: *id044, node_ids: ['tests.test_codex_wake_client::test_saturated_spool_cannot_block_service_backed_direct_wake']}}
   typecheck:
     invocation: {argv: [python3, *id037, *id015], cwd: ., env: {}, required_env: []}

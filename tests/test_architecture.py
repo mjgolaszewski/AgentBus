@@ -21,6 +21,8 @@ MODULES = {
     "src/agentbus_rename_client.py": ("client", "client"),
     "src/agentbus_codex_rpc_client.py": ("client", "client"),
     "src/agentbus_codex_wake_client.py": ("client", "client"),
+    "src/agentbus_codex_wake_events_client.py": ("client", "client"),
+    "src/agentbus_codex_wake_intent_client.py": ("client", "client"),
     "src/agentbus_wake_inbox_client.py": ("client", "client"),
     "src/agentbus_claim_recovery_service.py": ("service", "service"),
     "src/agentbus_federation_service.py": ("service", "service"),

@@ -11,11 +11,11 @@ build_plan_mandate:
   required_fields: [tightly_scoped_deliverables, parallelizable_workstreams, hard_dependencies, docker_first_local_runtime, completeness_standard]
   completeness_standard: full_completeness_for_declared_scope
 active_phase:
-  id: P09
-  build_block: "lightweight_federation_and_owner_mediated_wake"
-  plan: plans/phase-09-plan.yml
-  workitems: plans/phase-09-workitems.yml
-  log: phases/phase-09-log.yml
+  id: P10
+  build_block: "security_wake_recovery"
+  plan: plans/phase-10-plan.yml
+  workitems: plans/phase-10-workitems.yml
+  log: phases/phase-10-log.yml
   memory: MEMORY.yml
   spec: plans/product-spec.yml
   build_plan: plans/build-plan.yml

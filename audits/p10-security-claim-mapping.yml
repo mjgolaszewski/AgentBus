@@ -1,0 +1,181 @@
+document:
+  kind: security_claim_mapping
+  id: p10-security-claims
+  version: 1.0.0
+  path: audits/p10-security-claim-mapping.yml
+phase: P10
+source: https://github.com/mjgolaszewski/AgentBus/issues/20
+baseline:
+  commit: 1f306fa0ab55f0520c56109939c70c7b2ed3c308
+  tree: ba16b635f6b5a12e860da67a85d336ea57a9dc97
+  predecessor_truth: github-actions://mjgolaszewski/AgentBus/runs/38927748749/attempts/1/bcf-governance-truth
+  effective_state: closed
+  runtime: released_bcf_2.3.4
+rules:
+  - entries map source-review findings to existing owners; they do not certify remediation
+  - declared residuals are not accepted-risk dispositions or new security guarantees
+  - BCF security_review_complete consumes governance and behavioral evidence; runtime claims require executable negative controls
+  - no same-user isolation, independent evaluator, retention, global legacy quota, or tamper-evident audit claim is made
+entries:
+  - finding: F1
+    workitem: P10-P1-01
+    claim: security_review_complete
+    contract: contracts/participation/v1/participation.contract.yml#INV-027
+    owner: src/agentbus_participation_store_service.py::ParticipationStore.message_principal
+    producer: exact session credential resolution
+    consumer: enrolled send reply inbox and claim routes
+    evidence: tests.test_service::test_enrolled_message_route_requires_its_own_session_for_send_inbox_and_claim
+    gate: contract-test
+    disposition: implementation_present_local_tests_pass_canonical_custody_pending
+  - finding: F2
+    workitem: P10-P1-01
+    claim: security_review_complete
+    contract: contracts/participation/v1/participation.contract.yml#INV-022
+    owner: src/agentbus_message_assurance_service.py
+    producer: canonical route and sender validation
+    consumer: message ingress
+    evidence: tests.test_service::test_sender_assurance_is_service_derived_and_legacy_remains_readable
+    gate: contract-test
+    disposition: implementation_present_local_tests_pass_canonical_custody_pending
+  - finding: F3
+    workitem: P10-P1-01
+    claim: security_review_complete
+    contract: contracts/participation/v1/participation.contract.yml#INV-028
+    owner: src/agentbus_participation_store_service.py::ParticipationStore.message_principal
+    producer: durable stopped session state
+    consumer: message-plane authorization
+    evidence: tests.test_service::test_operator_stop_is_snapshotted_prioritized_and_target_acknowledged
+    gate: contract-test
+    disposition: implementation_present_local_tests_pass_canonical_custody_pending
+    residual: same-user credential access remains outside the isolation guarantee
+  - finding: F4
+    workitem: P10-P1-01
+    claim: security_review_complete
+    contract: contracts/participation/v1/participation.contract.yml#INV-029
+    owner: src/agentbus_participation_store_service.py
+    producer: service UUID enrollment and reserved aliases
+    consumer: operator exact-session recovery
+    evidence: tests.test_service::test_self_service_join_and_operator_roster_are_separate_authorities
+    gate: contract-test
+    disposition: bounded_contract_with_disclosed_residual
+    residual: self-service enrollment does not prove repository ownership; stronger issuer or OS isolation is excluded
+  - finding: F5
+    workitem: P10-P4-01
+    claim: security_review_complete
+    contract: SECURITY.md
+    owner: src/agentbus_client.py
+    producer: separate operator capability
+    consumer: operator commands
+    evidence: tests.test_service::test_operator_policy_write_is_separate_from_message_bearer
+    gate: contract-test
+    disposition: bounded_contract_with_disclosed_residual
+    residual: separate OS principal and protected operator endpoint are not implemented
+  - finding: F6
+    workitem: P10-P4-01
+    claim: security_review_complete
+    contract: contracts/participation/v1/participation.contract.yml#INV-025
+    owner: src/agentbus_presentation_service.py
+    producer: untrusted text escaping
+    consumer: displayed messages
+    evidence: tests.test_service::test_slack_display_escapes_invisible_controls_but_history_is_raw
+    gate: contract-test
+    disposition: implementation_present_local_tests_pass_canonical_custody_pending
+    residual: escaped text remains untrusted instruction data
+  - finding: F7
+    workitem: P10-P2-01
+    claim: security_review_complete
+    contract: contracts/codex-wake/v1/codex-wake.contract.yml
+    owner: src/agentbus_codex_wake_client.py
+    producer: service-assured candidates and exact owner observations
+    consumer: opt-in host wake adapter
+    evidence: tests.test_codex_wake_client::test_unshared_stdio_defaults_to_notification_only_before_host_launch
+    gate: test
+    disposition: implementation_present_local_tests_pass_canonical_custody_pending
+    residual: no shared owning-host endpoint or live canary capability inferred from deterministic evidence
+  - finding: F8
+    workitem: P10-P4-01
+    claim: security_review_complete
+    contract: SECURITY.md
+    owner: installed BCF protected evaluator
+    producer: protected governance workflow
+    consumer: terminal governance truth
+    evidence: governance/evidence-policy.yml
+    gate: governance-validate
+    disposition: upstream_boundary_with_disclosed_residual
+    residual: no independently held evaluator guarantee; follow released BCF custody only
+  - finding: F9
+    workitem: P10-P4-01
+    claim: security_review_complete
+    contract: contracts/participation/v1/participation.contract.yml#INV-030
+    owner: src/agentbus_request_limits_service.py and src/agentbus_send_rate_service.py
+    producer: bounded request and rate validation
+    consumer: API ingress before Slack effects
+    evidence: tests.test_service::test_request_limit_rejects_before_slack_and_private_database
+    gate: contract-test
+    disposition: bounded_contract_with_disclosed_residual
+    residual: legacy-route quota bypass and unbounded history retention need separate principal and archive contracts
+  - finding: F10
+    workitem: P10-P1-01
+    claim: security_review_complete
+    contract: contracts/participation/v1/participation.contract.yml#INV-040
+    owner: src/agentbus_message_assurance_service.py
+    producer: canonical route validation
+    consumer: enrollment rename and message authorization
+    evidence: tests.test_service::test_sender_assurance_is_service_derived_and_legacy_remains_readable
+    gate: contract-test
+    disposition: implementation_present_local_tests_pass_canonical_custody_pending
+  - finding: F11
+    workitem: P10-P4-01
+    claim: security_review_complete
+    contract: SECURITY.md
+    owner: src/agentbus_participation_store_service.py
+    producer: exact-session operator rotation grant
+    consumer: session credential replacement
+    evidence: tests.test_service::test_operator_grant_rotates_only_the_exact_enrolled_session
+    gate: contract-test
+    disposition: bounded_contract_with_disclosed_residual
+    residual: shared bearer revocation and same-user copies are outside session rotation
+  - finding: F12
+    workitem: P10-P4-01
+    claim: security_review_complete
+    contract: SECURITY.md
+    owner: src/agentbus_participation_store_service.py
+    producer: durable policy and control audit
+    consumer: operator observation
+    evidence: tests.test_service::test_operator_stop_is_snapshotted_prioritized_and_target_acknowledged
+    gate: contract-test
+    disposition: bounded_contract_with_disclosed_residual
+    residual: tamper evidence requires an independent append-only witness or signing custodian
+  - finding: F13
+    workitem: P10-P4-01
+    claim: security_review_complete
+    contract: governance/ci-graph.yml
+    owner: installed BCF workflow renderer
+    producer: env-bound generated workflow arguments
+    consumer: protected workflow shell steps
+    evidence: .github/workflows/governance.yml
+    gate: governance-validate
+    disposition: installed_projection_revalidation_required
+  - finding: F14
+    workitem: P10-P4-01
+    claim: security_review_complete
+    contract: SECURITY.md
+    owner: installed BCF interpreter dependency projection
+    producer: canonical version-pinned governance requirements and digest-pinned uv image
+    consumer: governance bootstrap and Docker build
+    evidence: requirements-governance.txt and Dockerfile
+    gate: governance-validate
+    disposition: upstream_boundary_with_disclosed_residual
+    residual: full governance distribution hash locking is not provided by version-only requirements
+  - finding: F15
+    workitem: P10-P4-01
+    claim: security_review_complete
+    contract: contracts/participation/v1/participation.contract.yml#INV-026
+    owner: src/agentbus_service.py and installed BCF download transport
+    producer: private database creation known-thread validation and liveness-only health
+    consumer: API and provider transport
+    evidence: tests.test_service::test_thread_parent_must_exist_before_slack_post
+    gate: contract-test
+    disposition: bounded_contract_with_disclosed_residual
+    residual: inspect released BCF Proxy-Authorization removal before claiming upstream remediation
+next_action: authenticate exact final P10 candidate through canonical BCF graph; local implementation tests do not imply protected custody

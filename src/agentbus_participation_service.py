@@ -12,6 +12,9 @@ import math
 from dataclasses import dataclass
 from typing import Mapping
 
+MAX_ENROLLED_CHATS = 4096
+MAX_ALIASES_PER_CHAT = 64
+
 POLICY_FIELDS = frozenset({
     "initial_interval_seconds",
     "backoff_factor",
