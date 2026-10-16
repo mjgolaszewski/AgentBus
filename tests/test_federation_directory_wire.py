@@ -183,6 +183,36 @@ def test_directory_request_retry_restart_and_rate_do_not_create_storms(tmp_path)
         store.close()
 
 
+def test_outgoing_resync_request_is_coalesced_across_service_restart(tmp_path):
+    bridge, store, _ = receiver(tmp_path)
+    try:
+        bridge.directory.reconcile()
+        before = store._db.total_changes
+        obligations = store._db.execute('SELECT COUNT(*) FROM bridge_obligations').fetchone()[0]
+        for _ in range(3):
+            bridge.directory = DirectorySynchronizer(bridge, Roster('home:agentbus:flower',
+                '00000000-0000-4000-8000-000000000001'), share_chat_ids=[], peers=['remote'])
+            bridge.directory.reconcile()
+        assert store._db.total_changes == before
+        assert store._db.execute('SELECT COUNT(*) FROM bridge_obligations').fetchone()[0] == obligations == 2
+    finally:
+        store.close()
+
+
+def test_signed_directory_revision_overflow_is_rejected_before_persistence(tmp_path):
+    bridge, store, peer = receiver(tmp_path)
+    try:
+        event = directory_event(peer, {"directory": 1, "operation": "snapshot",
+            "revision": 2 ** 100, "entries": []})
+        before = store._db.total_changes
+        with pytest.raises(ValueError):
+            bridge.receive(event)
+        assert store._db.total_changes == before
+        assert store.federation.directory_revision('remote')['revision'] == 0
+    finally:
+        store.close()
+
+
 def test_signed_gap_requests_resync_and_conflicting_revision_has_no_receipt(tmp_path):
     bridge, store, peer = receiver(tmp_path)
     try:

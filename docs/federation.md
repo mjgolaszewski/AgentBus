@@ -169,7 +169,9 @@ contact remains registration information and is never evidence that an owner is
 running, fresh, idle, or eligible to wake. Local snapshots coalesce until their
 approved contents change. Unknown or gapped streams request a complete snapshot;
 fresh request responses are limited to one per peer per minute, with durable
-duplicate-request coalescing. Periodic freshness expiry, global custody retention,
+duplicate-request coalescing. Outgoing request IDs are also durable per peer and
+observed revision/gap, so an unchanged service restart creates no new obligation.
+Periodic freshness expiry, global custody retention,
 and normal inbox projection remain incomplete P11 obligations.
 
 Slack submissions include a compact plain-text block identifying the transport

@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, StrictInt, model_validator
 
-from src.agentbus_federation_service import FederationStore
+from src.agentbus_federation_service import MAX_DIRECTORY_REVISION, FederationStore
 from src.agentbus_federation_wire_service import Binding, Identity, canonical
 from src.agentbus_message_assurance_service import route_parts
 
@@ -37,10 +37,11 @@ class DirectoryPayload(BaseModel):
         if self.model_fields_set != required | optional:
             raise ValueError('directory operation fields are not canonical')
         if self.operation == 'request':
-            if self.after_revision is None or self.after_revision < 0 or self.request_id is None:
+            if (self.after_revision is None or not 0 <= self.after_revision <= MAX_DIRECTORY_REVISION
+                    or self.request_id is None):
                 raise ValueError('invalid directory request')
             UUID(self.request_id)
-        elif self.revision is None or self.revision < 1:
+        elif self.revision is None or not 1 <= self.revision <= MAX_DIRECTORY_REVISION:
             raise ValueError('invalid directory revision')
         if self.operation == 'snapshot' and (self.entries is None or len(self.entries) > 256):
             raise ValueError('directory snapshot exceeds limit')
@@ -97,7 +98,6 @@ class DirectorySynchronizer:
             raise ValueError('directory peer version is not operator-approved')
         self.bridge, self.participation = bridge, participation
         self.shared, self.peers = set(share_chat_ids), tuple(peers)
-        self.requests: dict[str, tuple[int, int, str]] = {}
 
     def _snapshot(self, response_to: str | None = None) -> dict:
         selected: dict[str, dict] = {}
@@ -135,10 +135,8 @@ class DirectorySynchronizer:
             stream = self.bridge.store.directory_revision(peer)
             if stream['revision'] and not stream['gap_revision']:
                 continue
-            position = (stream['revision'], stream['gap_revision'])
-            previous = self.requests.get(peer)
-            request = previous[2] if previous and previous[:2] == position else str(uuid4())
-            self.requests[peer] = (*position, request)
+            request = self.bridge.store.directory_request(peer, stream['revision'],
+                                                           stream['gap_revision'], str(uuid4()))
             self._send(peer, {'directory': 1, 'operation': 'request',
                               'after_revision': stream['revision'], 'request_id': request})
 

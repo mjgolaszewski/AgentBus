@@ -47,10 +47,12 @@ contracts:
     envelope_version: 2
     payload_version: 1
     operations: [snapshot, delta, request]
+    revision_range: positive_signed_64_bit_integer
     activation: explicit_per_peer_directory_version_2_and_operator_chat_allowlist
     source: committed_participation_roster_only
     disclosure: stable_chat_id_route_protocol_and_active_registration_only
     requests: bounded_coalesced_and_deduplicated_with_signed_custody_receipts
+    request_recovery: durable_peer_revision_gap_nonce_reused_across_restart
     compatibility: legacy_message_and_receipt_frames_remain_version_1
     exclusions: no_ordinary_inbox_message_no_semantic_ack_no_local_session_or_wake_authority
   signed_provider_adapter:

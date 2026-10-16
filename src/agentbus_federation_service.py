@@ -21,6 +21,7 @@ MAX_METADATA = 4096
 MAX_PAYLOAD = 48_000
 MAX_DIRECTORY_ROUTES_PER_ORIGIN = 1024
 MAX_DIRECTORY_ORIGINS = 65
+MAX_DIRECTORY_REVISION = 2 ** 63 - 1
 SIGNED_FRAME_FIELDS = {
     "agentbus_federation", "kind", "origin_instance_id", "origin_message_id",
     "destination_instance_id", "key_generation", "payload", "signature",
@@ -155,6 +156,9 @@ class FederationStore:
             self._db.execute("""CREATE TABLE IF NOT EXISTS federation_directory_requests (
                 origin_instance_id TEXT PRIMARY KEY, request_id TEXT NOT NULL,
                 next_response_at REAL NOT NULL)""")
+            self._db.execute("""CREATE TABLE IF NOT EXISTS federation_directory_outgoing_requests (
+                origin_instance_id TEXT PRIMARY KEY, revision INTEGER NOT NULL,
+                gap_revision INTEGER NOT NULL, request_id TEXT NOT NULL)""")
             self._db.execute("""CREATE TABLE IF NOT EXISTS federation_checkpoints (
                 reader TEXT PRIMARY KEY, cursor TEXT NOT NULL)""")
             columns = {row['name'] for row in self._db.execute('PRAGMA table_info(bridge_obligations)')}
@@ -311,7 +315,7 @@ class FederationStore:
                          state: str, metadata: dict[str, Any]) -> None:
         _check_id(origin, INSTANCE_RE, "origin instance")
         _check_id(route, ROUTE_RE, "route")
-        if type(revision) is not int or revision < 1:
+        if type(revision) is not int or not 1 <= revision <= MAX_DIRECTORY_REVISION:
             raise ValueError("directory revision must be positive")
         if not isinstance(state, str) or state not in {"current", "stale", "withdrawn", "gap", "resync_required"}:
             raise ValueError("invalid directory state")
@@ -401,7 +405,7 @@ class FederationStore:
                            entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Validate a complete snapshot before one atomic projection transaction."""
         _check_id(origin_instance_id, INSTANCE_RE, "origin instance")
-        if type(revision) is not int or revision < 1:
+        if type(revision) is not int or not 1 <= revision <= MAX_DIRECTORY_REVISION:
             raise ValueError("directory revision must be positive")
         if not isinstance(entries, list) or len(entries) > 256:
             raise ValueError("directory snapshot exceeds limit")
@@ -513,6 +517,19 @@ class FederationStore:
                 ON CONFLICT(origin_instance_id) DO UPDATE SET request_id=excluded.request_id,
                 next_response_at=excluded.next_response_at""", (origin, request, now + 60))
             return True
+
+    def directory_request(self, origin: str, revision: int, gap: int, candidate: str) -> str:
+        """Retain one outgoing request identity per observed peer position."""
+        with self._lock, self._db:
+            row = self._db.execute('SELECT * FROM federation_directory_outgoing_requests WHERE origin_instance_id=?',
+                                   (origin,)).fetchone()
+            if row and (row['revision'], row['gap_revision']) == (revision, gap):
+                return row['request_id']
+            self._db.execute('''INSERT INTO federation_directory_outgoing_requests VALUES (?, ?, ?, ?)
+                ON CONFLICT(origin_instance_id) DO UPDATE SET revision=excluded.revision,
+                gap_revision=excluded.gap_revision, request_id=excluded.request_id''',
+                (origin, revision, gap, candidate))
+        return candidate
 
     def directory(self, *, origin_instance_id: str | None = None) -> list[dict[str, Any]]:
         query = "SELECT * FROM remote_directory"
