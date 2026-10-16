@@ -95,6 +95,41 @@ def test_authenticated_destination_dedup_and_signed_receipt(pair):
     assert row['state'] == 'destination_accepted'
 
 
+def test_receipt_obligation_is_not_republished_after_success(pair):
+    bridges, stores, providers, _ = pair
+    bridges['home'].enqueue('m1', 'remote', payload())
+    asyncio.run(bridges['home'].submit_once())
+    bridges['remote'].receive(providers['home'].events[0])
+    receipt = stores['remote'].federation.obligation(
+        'remote', next(row['origin_message_id'] for row in stores['remote']._db.execute(
+            "SELECT origin_message_id FROM bridge_obligations WHERE kind='receipt'")), 'home')
+    assert receipt['kind'] == 'receipt'
+    asyncio.run(bridges['remote'].submit_once())
+    assert len(providers['remote'].events) == 1
+    assert stores['remote'].federation.obligation(
+        'remote', receipt['origin_message_id'], 'home')['state'] == 'submitted'
+    asyncio.run(bridges['remote'].submit_once())
+    assert len(providers['remote'].events) == 1
+
+
+def test_uncertain_receipt_retries_once_provider_recovers(pair):
+    bridges, stores, providers, _ = pair
+    bridges['home'].enqueue('m1', 'remote', payload())
+    asyncio.run(bridges['home'].submit_once())
+    bridges['remote'].receive(providers['home'].events[0])
+    receipt_id = next(row['origin_message_id'] for row in stores['remote']._db.execute(
+        "SELECT origin_message_id FROM bridge_obligations WHERE kind='receipt'"))
+    providers['remote'].fail = True
+    asyncio.run(bridges['remote'].submit_once())
+    row = stores['remote'].federation.obligation('remote', receipt_id, 'home')
+    assert row['state'] == 'uncertain' and row['attempts'] == 1
+    providers['remote'].fail = False
+    bridges['remote'].now = lambda: 1000.0
+    asyncio.run(bridges['remote'].submit_once())
+    assert stores['remote'].federation.obligation('remote', receipt_id, 'home')['state'] == 'submitted'
+    assert len(providers['remote'].events) == 1
+
+
 def test_forged_publisher_signature_destination_and_conflicting_replay_fail_closed(pair):
     bridges, stores, providers, bindings = pair
     bridges['home'].enqueue('m1', 'remote', payload())
