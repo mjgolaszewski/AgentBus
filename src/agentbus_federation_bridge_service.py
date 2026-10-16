@@ -35,6 +35,16 @@ class ProviderUnavailable(Exception):
         super().__init__('federation provider unavailable; submission remains uncertain')
 
 
+class ProviderCarrierRejected(Exception):
+    """A reported provider success did not preserve the signed carrier."""
+
+    def __init__(self, reason: str, provider_ref: str):
+        if reason not in {'missing_echo', 'changed_echo', 'truncation_warning'}:
+            raise ValueError('invalid provider carrier failure')
+        self.reason, self.provider_ref = reason, provider_ref
+        super().__init__('federation provider carrier rejected: ' + reason)
+
+
 class EnqueueRejected(Exception):
     def __init__(self, status: int, reason: str, headers: dict | None = None):
         self.status, self.headers = status, headers
@@ -128,6 +138,8 @@ class FederationBridge:
                 continue
             try:
                 reference = await self.provider.publish(row['payload'])
+            except ProviderCarrierRejected as exc:
+                self.store.block_submission(*key, reason=exc.reason, provider_ref=exc.provider_ref)
             except ProviderUnavailable as exc:
                 self.store.defer_submission(*key, until=self.now() + max(delay, exc.retry_after))
             except (TimeoutError, OSError):

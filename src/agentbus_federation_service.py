@@ -118,6 +118,8 @@ class FederationStore:
                     )
             if "provider_ref" not in columns:
                 self._db.execute("ALTER TABLE bridge_obligations ADD COLUMN provider_ref TEXT")
+            if "provider_failure" not in columns:
+                self._db.execute("ALTER TABLE bridge_obligations ADD COLUMN provider_failure TEXT")
             self._db.execute("""
                 CREATE TABLE IF NOT EXISTS remote_directory (
                     origin_instance_id TEXT NOT NULL,
@@ -203,7 +205,7 @@ class FederationStore:
 
     def transition(self, origin_instance_id: str, origin_message_id: str,
                    destination_instance_id: str, state: str, *, attempt: bool = False) -> dict[str, Any]:
-        allowed = {"origin_accepted", "submitted", "uncertain", "destination_accepted", "acknowledged"}
+        allowed = {"origin_accepted", "submitted", "uncertain", "provider_blocked", "destination_accepted", "acknowledged"}
         if state not in allowed:
             raise ValueError("invalid bridge state")
         key = (origin_instance_id, origin_message_id, destination_instance_id)
@@ -216,6 +218,7 @@ class FederationStore:
                 "origin_accepted": {"origin_accepted", "submitted", "uncertain"},
                 "submitted": {"submitted", "uncertain", "destination_accepted"},
                 "uncertain": {"uncertain", "submitted", "destination_accepted"},
+                "provider_blocked": {"provider_blocked", "destination_accepted"},
                 "destination_accepted": {"destination_accepted", "acknowledged"},
                 "acknowledged": {"acknowledged"},
             }
@@ -563,6 +566,17 @@ class FederationStore:
         with self._lock, self._db:
             self._db.execute('UPDATE bridge_obligations SET next_attempt_at=MAX(next_attempt_at, ?) WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?',
                              (until, origin, message, destination))
+
+    def block_submission(self, origin: str, message: str, destination: str, *,
+                         reason: str, provider_ref: str) -> None:
+        """Retain failed carrier custody without retry or overwriting a receipt race."""
+        if reason not in {'missing_echo', 'changed_echo', 'truncation_warning'}:
+            raise ValueError('invalid provider carrier failure')
+        with self._lock, self._db:
+            self._db.execute("""UPDATE bridge_obligations SET state='provider_blocked',
+                provider_failure=?, provider_ref=?, updated_at=?
+                WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?
+                AND state='uncertain'""", (reason, provider_ref, _now(), origin, message, destination))
 
     def checkpoint(self, reader: str) -> str:
         with self._lock:

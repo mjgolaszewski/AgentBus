@@ -180,3 +180,20 @@ that splits or rewrites the carrier. A retained real-provider observation contai
 a 4,764-byte signed frame as separate 4,000-byte and 764-byte events; neither
 fragment is accepted as signed custody. The unpublished local display change is
 not a live transport repair or a multi-installation qualification result.
+
+The carrier-fidelity guard requires the provider's successful response to echo
+the exact signed `message.text`, with no `message_truncated` warning. Missing or
+changed text and truncation warnings retain the original obligation and move it
+to `provider_blocked`, recording a fixed failure code and provider reference.
+The worker stops automatic retries of that unchanged carrier across restarts;
+it does not infer delivery or acknowledgement. A separately verified signed
+destination receipt can still establish custody, including during a race with
+the provider response. Ordinary timeouts and outages retain bounded uncertain
+retry behavior. A matching response is submission evidence only: later provider
+history corruption still cannot satisfy destination custody.
+
+The failure column is additive, and the blocked state is explicit. Stop the
+bridge before rolling back to older code, which cannot interpret the new state
+in its transition machinery. Preserve the original obligation, failure record,
+provider events, and signing identity for owner-led recovery. This change adds
+no live mutation, manual repair API, automatic reassembly, or automatic unblock.

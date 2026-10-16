@@ -79,6 +79,44 @@ def test_submission_never_fabricates_destination_acceptance(pair):
     assert stores['home'].federation.obligation('home', 'm1', 'remote')['state'] == 'submitted'
 
 
+@pytest.mark.parametrize('receipt_race', [False, True])
+def test_carrier_failure_blocks_unchanged_retries_and_survives_restart(pair, receipt_race):
+    from src.agentbus_federation_bridge_service import ProviderCarrierRejected
+    from src.agentbus_federation_service import FederationStore
+
+    bridges, stores, providers, _ = pair
+    bridge = bridges['home']
+    bridge.enqueue('carrier-1', 'remote', payload())
+    calls = []
+
+    async def rejected(text):
+        calls.append(text)
+        if receipt_race:
+            bridges['remote'].receive({'publisher_id': 'home-publisher', 'text': text})
+            await bridges['remote'].submit_once()
+            bridge.receive(providers['remote'].events[0])
+        raise ProviderCarrierRejected('changed_echo', '1.000001')
+
+    providers['home'].publish = rejected
+    asyncio.run(bridge.submit_once())
+    row = stores['home'].federation.obligation('home', 'carrier-1', 'remote')
+    assert row['state'] == ('destination_accepted' if receipt_race else 'provider_blocked')
+    assert row['attempts'] == 1
+    if not receipt_race:
+        assert row['provider_failure'] == 'changed_echo' and row['provider_ref'] == '1.000001'
+    reopened = FederationStore(stores['home']._db, stores['home']._lock)
+    assert reopened.pending(now=100000, max_attempts=8) == []
+    bridge.store, bridge.now = reopened, lambda: 100000.0
+    asyncio.run(bridge.submit_once())
+    assert len(calls) == 1
+    if not receipt_race:
+        # A later independently verified destination receipt can resolve uncertainty.
+        bridges['remote'].receive({'publisher_id': 'home-publisher', 'text': calls[0]})
+        asyncio.run(bridges['remote'].submit_once())
+        bridge.receive(providers['remote'].events[0])
+        assert reopened.obligation('home', 'carrier-1', 'remote')['state'] == 'destination_accepted'
+
+
 def test_authenticated_destination_dedup_and_signed_receipt(pair):
     bridges, stores, providers, _ = pair
     bridges['home'].enqueue('m1', 'remote', payload())

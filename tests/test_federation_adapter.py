@@ -229,7 +229,7 @@ def test_slack_machine_carrier_has_compact_human_blocks_without_rewriting_bytes(
             body = json.loads(request.content)
             bodies.append(body)
             return httpx.Response(200, json={"ok": True, "channel": "C123",
-                                           "ts": "1.000001"})
+                                           "ts": "1.000001", "message": {"text": body["text"]}})
 
         async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
             provider = SlackFederationProvider(client, "xoxb-test-secret", "C123")
@@ -269,3 +269,40 @@ def test_directory_runtime_requires_per_peer_version_and_explicit_chat_allowlist
     finally:
         store.close()
         asyncio.run(client.aclose())
+
+
+@pytest.mark.parametrize('echo,warnings', [
+    (None, []), ('rewritten', []), ('signed frame', ['message_truncated']),
+])
+def test_slack_rejects_missing_rewritten_or_truncated_carrier(echo, warnings):
+    from src.agentbus_federation_bridge_service import ProviderCarrierRejected
+
+    async def scenario():
+        body = {'ok': True, 'channel': 'C123', 'ts': '1.000001',
+                'response_metadata': {'warnings': warnings, 'private_detail': 'SECRET'}}
+        if echo is not None:
+            body['message'] = {'text': echo}
+        async with httpx.AsyncClient(transport=httpx.MockTransport(lambda request:
+                httpx.Response(200, json=body))) as client:
+            with pytest.raises(ProviderCarrierRejected) as caught:
+                await SlackFederationProvider(client, 'xoxb-test-secret', 'C123').publish('signed frame')
+        assert caught.value.provider_ref == '1.000001'
+        assert caught.value.reason in {'missing_echo', 'changed_echo', 'truncation_warning'}
+        assert 'SECRET' not in str(caught.value) and 'rewritten' not in str(caught.value)
+    asyncio.run(scenario())
+
+
+def test_slack_preserves_long_signed_carrier_with_exact_response_echo():
+    async def scenario():
+        frame = 'signed-' + 'x' * 5000
+        calls = []
+        def respond(request):
+            body = json.loads(request.content)
+            calls.append(body)
+            return httpx.Response(200, json={'ok': True, 'channel': 'C123',
+                'ts': '1.000001', 'message': {'text': body['text']},
+                'response_metadata': {'warnings': ['missing_charset']}})
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            assert await SlackFederationProvider(client, 'xoxb-test-secret', 'C123').publish(frame) == '1.000001'
+        assert len(calls) == 1 and calls[0]['text'] == frame
+    asyncio.run(scenario())

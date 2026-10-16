@@ -30,7 +30,7 @@ invariants:
 
 primitives:
   local_message: {identity: origin_instance_id_plus_origin_message_id, owner: local_store}
-  bridge_obligation: {identity: origin_instance_id_plus_origin_message_id_plus_destination_instance, states: [origin_accepted, submitted, uncertain, destination_accepted, acknowledged], owner: local_store}
+  bridge_obligation: {identity: origin_instance_id_plus_origin_message_id_plus_destination_instance, states: [origin_accepted, submitted, uncertain, provider_blocked, destination_accepted, acknowledged], owner: local_store}
   directory_revision: {identity: origin_instance_id_plus_monotonic_revision, states: [absent, snapshotting, current, stale, gap, resync_required, withdrawn], owner: local_store}
   owner_capability: {identity: session_id_plus_owner_incarnation, states: [unknown, unavailable, active, approval_wait, idle, interrupted, failed, unloaded, stale, contradictory], owner: local_owner_adapter}
   wake_intent: {identity: wake_intent_id_plus_owner_epoch, states: [pending, eligible, submitting, uncertain, queued, admitted, running, completed, blocked], owner: local_owner_adapter}
@@ -55,6 +55,9 @@ contracts:
     exclusions: no_ordinary_inbox_message_no_semantic_ack_no_local_session_or_wake_authority
   signed_provider_adapter:
     version: 1
+    carrier_fidelity: exact_success_response_message_text_required_without_truncation_warning
+    carrier_failure: durable_provider_blocked_with_safe_reason_and_provider_reference_no_automatic_retry
+    blocked_resolution: authenticated_destination_receipt_may_establish_custody_operator_recovery_otherwise_required
     signature: ed25519_over_canonical_utf8_json_without_signature_field
     publisher_binding: operator_owned_origin_instance_plus_route_prefix_plus_provider_publisher_plus_public_key
     frame_fields: [agentbus_federation, kind, origin_instance_id, origin_message_id, destination_instance_id, key_generation, payload, signature]
