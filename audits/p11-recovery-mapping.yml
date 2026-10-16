@@ -1,0 +1,241 @@
+document:
+  kind: federation_recovery_mapping
+  id: p11-recovery-mapping
+  version: 1.0.0
+  path: audits/p11-recovery-mapping.yml
+phase: P11
+source: https://github.com/mjgolaszewski/AgentBus/issues/48
+baseline:
+  commit: 013ce32e43b8696abb436933eca06cc3290c3ab7
+  tree: 8031cb66a3d43ebdd26761b3c5a5dc66cb3d25e5
+  truth: github-actions://mjgolaszewski/AgentBus/runs/38934988411/attempts/1/bcf-governance-truth
+  predecessor: P10
+  effective_state: closed
+  runtime: released BCF 2.3.4
+canonical_vocabulary:
+  claim_registry: governance/gate-contracts.yml
+  semantic_owners: governance/semantic-families.yml
+  phase_claims: phases/phase-11-log.yml
+  rule: rows are recovery inventory, not new BCF claims or certified closure; test
+    references cover bounded existing behavior only
+entries:
+- invariant: AB-MSG-00
+  workitem: P11-P0-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_federation_service.py
+  primitive: bounded persistence and retry budgets
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: provider and local resource observations
+  consumer: installation/operator diagnostics
+  evidence: tests.test_federation_bridge::test_retry_budget_survives_restart_without_unbounded_submission
+  gate: contract-test
+  status: BLOCKED_provider_and_baseline_budgets
+- invariant: AB-MSG-01
+  workitem: P11-P2-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_federation_service.py
+  primitive: atomic origin message plus bridge obligation
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: authenticated federation enqueue
+  consumer: provider bridge worker
+  evidence: tests.test_federation_bridge::test_origin_message_and_obligation_rollback_together_on_storage_failure
+  gate: contract-test
+  status: local_primitive_present_ordinary_send_migration_pending
+- invariant: AB-MSG-02
+  workitem: P11-P2-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_federation_bridge_service.py
+  primitive: scoped origin tuple and durable receipt
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: signed destination custody receipt
+  consumer: origin obligation transition
+  evidence: tests.test_federation_bridge::test_receipt_race_cannot_be_regressed_by_late_provider_response
+  gate: contract-test
+  status: local_primitive_present_live_qualification_blocked
+- invariant: AB-MSG-03
+  workitem: P11-P4-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_federation_wire_service.py
+  primitive: operator publisher/prefix/public-key binding
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: signature and generation validation
+  consumer: destination admission
+  evidence: tests.test_federation_bridge::test_forged_publisher_signature_destination_and_conflicting_replay_fail_closed
+  gate: contract-test
+  status: message_primitive_present_directory_dispatch_pending
+- invariant: AB-MSG-04
+  workitem: P11-P0-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_federation_bridge_service.py
+  primitive: FederationProvider publish/history port
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: existing outbound provider
+  consumer: isolated installation listener/recovery
+  evidence: tests.test_federation_bridge::test_recovery_replays_without_skipping_or_semantic_ack
+  gate: contract-test
+  status: BLOCKED_real_provider_fanout_and_recovery
+- invariant: AB-MSG-05
+  workitem: P11-P0-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_federation_bridge_service.py
+  primitive: FederationProvider publish/history port
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: existing outbound provider
+  consumer: isolated installation listener/recovery
+  evidence: tests.test_federation_bridge::test_recovery_replays_without_skipping_or_semantic_ack
+  gate: contract-test
+  status: BLOCKED_real_provider_fanout_and_recovery
+- invariant: AB-MSG-06
+  workitem: P11-P4-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_service.py
+  primitive: verified Slack human thread projection
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: authenticated human reply
+  consumer: existing message store
+  evidence: tests.test_service::test_verified_human_reply_to_proved_agent_root_is_direct_and_wake_eligible
+  gate: contract-test
+  status: existing_local_behavior_directory_integration_pending
+- invariant: AB-MSG-07
+  workitem: P11-P4-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_federation_wire_service.py
+  primitive: operator publisher/prefix/public-key binding
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: signature and generation validation
+  consumer: destination admission
+  evidence: tests.test_federation_bridge::test_forged_publisher_signature_destination_and_conflicting_replay_fail_closed
+  gate: contract-test
+  status: message_primitive_present_directory_dispatch_pending
+- invariant: AB-MSG-08
+  workitem: P11-P2-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_federation_bridge_service.py
+  primitive: scoped origin tuple and durable receipt
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: signed destination custody receipt
+  consumer: origin obligation transition
+  evidence: tests.test_federation_bridge::test_receipt_race_cannot_be_regressed_by_late_provider_response
+  gate: contract-test
+  status: local_primitive_present_live_qualification_blocked
+- invariant: AB-MSG-09
+  workitem: P11-P2-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_federation_service.py
+  primitive: atomic origin message plus bridge obligation
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: authenticated federation enqueue
+  consumer: provider bridge worker
+  evidence: tests.test_federation_bridge::test_origin_message_and_obligation_rollback_together_on_storage_failure
+  gate: contract-test
+  status: local_primitive_present_ordinary_send_migration_pending
+- invariant: AB-MSG-10
+  workitem: P11-P4-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_service.py
+  primitive: verified Slack human thread projection
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: authenticated human reply
+  consumer: existing message store
+  evidence: tests.test_service::test_verified_human_reply_to_proved_agent_root_is_direct_and_wake_eligible
+  gate: contract-test
+  status: existing_local_behavior_directory_integration_pending
+- invariant: AB-MSG-11
+  workitem: P11-P4-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_federation_bridge_service.py
+  primitive: separate receipt and semantic acknowledgement
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: provider recovery and custody observations
+  consumer: operator and inbox projections
+  evidence: tests.test_federation_bridge::test_submission_never_fabricates_destination_acceptance
+  gate: contract-test
+  status: partial_visibility_and_same_instance_outage_semantics_pending
+- invariant: AB-MSG-12
+  workitem: P11-P4-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_federation_bridge_service.py
+  primitive: separate receipt and semantic acknowledgement
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: provider recovery and custody observations
+  consumer: operator and inbox projections
+  evidence: tests.test_federation_bridge::test_submission_never_fabricates_destination_acceptance
+  gate: contract-test
+  status: partial_visibility_and_same_instance_outage_semantics_pending
+- invariant: AB-MSG-13
+  workitem: P11-P0-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_federation_service.py
+  primitive: bounded persistence and retry budgets
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: provider and local resource observations
+  consumer: installation/operator diagnostics
+  evidence: tests.test_federation_bridge::test_retry_budget_survives_restart_without_unbounded_submission
+  gate: contract-test
+  status: BLOCKED_provider_and_baseline_budgets
+- invariant: AB-MSG-14
+  workitem: P11-P7-01
+  canonical_claim: service-contract-valid
+  owner: governance/gate-contracts.yml
+  primitive: canonical claims and evidence receipts
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: installed BCF graph
+  consumer: protected PR/main truth
+  evidence: tests.test_federation_contract::test_federation_contract_is_structurally_and_semantically_closed
+  gate: contract-test
+  status: final_subject_graph_custody_pending
+- invariant: AB-MSG-15
+  workitem: P11-P3-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_federation_service.py
+  primitive: per-origin directory revision and atomic snapshot
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: approved registration projection and directory update
+  consumer: remote directory query only
+  evidence: tests.test_federation_directory_recovery::test_gap_preserves_metadata_blocks_deltas_and_same_revision_snapshot_recovers
+  gate: contract-test
+  status: local_recovery_repaired_automatic_publication_and_wire_integration_pending
+- invariant: AB-MSG-16
+  workitem: P11-P4-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_federation_wire_service.py
+  primitive: operator publisher/prefix/public-key binding
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: signature and generation validation
+  consumer: destination admission
+  evidence: tests.test_federation_bridge::test_forged_publisher_signature_destination_and_conflicting_replay_fail_closed
+  gate: contract-test
+  status: message_primitive_present_directory_dispatch_pending
+- invariant: AB-MSG-17
+  workitem: P11-P3-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_federation_service.py
+  primitive: per-origin directory revision and atomic snapshot
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: approved registration projection and directory update
+  consumer: remote directory query only
+  evidence: tests.test_federation_directory_recovery::test_gap_preserves_metadata_blocks_deltas_and_same_revision_snapshot_recovers
+  gate: contract-test
+  status: local_recovery_repaired_automatic_publication_and_wire_integration_pending
+- invariant: AB-MSG-18
+  workitem: P11-P3-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_federation_service.py
+  primitive: per-origin directory revision and atomic snapshot
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: approved registration projection and directory update
+  consumer: remote directory query only
+  evidence: tests.test_federation_directory_recovery::test_gap_preserves_metadata_blocks_deltas_and_same_revision_snapshot_recovers
+  gate: contract-test
+  status: local_recovery_repaired_automatic_publication_and_wire_integration_pending
+- invariant: AB-MSG-19
+  workitem: P11-P3-01
+  canonical_claim: service-contract-valid
+  owner: src/agentbus_federation_service.py
+  primitive: per-origin directory revision and atomic snapshot
+  contract: contracts/federation/v1/federation.contract.yml
+  producer: approved registration projection and directory update
+  consumer: remote directory query only
+  evidence: tests.test_federation_directory_recovery::test_gap_preserves_metadata_blocks_deltas_and_same_revision_snapshot_recovers
+  gate: contract-test
+  status: local_recovery_repaired_automatic_publication_and_wire_integration_pending

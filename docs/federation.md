@@ -130,3 +130,17 @@ zero new federation frames or receipt reposts over 180.8 seconds, preserved
 all obligation states, hashes, attempts, and checkpoints, and confirmed that
 the repaired pending selector excludes submitted receipts while retaining
 uncertain and unsent receipts.
+
+Directory recovery uses additive revision bookkeeping in the existing SQLite
+store. Complete snapshots validate every entry before one transaction; a failed
+entry or revision conflict rolls back all writes. A newer complete snapshot
+withdraws omitted routes for that origin. Deltas advance one per-origin revision
+across routes; a gap keeps last valid metadata visible as non-current and blocks
+promotion until a complete snapshot covers the observed gap. Replaying stale
+snapshots cannot remove newer entries.
+
+For rollback, stop the isolated candidate before restoring its pre-upgrade SQLite
+backup and previous source archive. The new revision table is additive and older
+code ignores it, but older directory code lacks these recovery guarantees; do not
+resume federation on that older implementation or drop revision state to conceal
+a gap. No shared runtime migration or restart is performed by these tests.

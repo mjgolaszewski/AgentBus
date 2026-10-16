@@ -26,7 +26,7 @@ invariants:
   - {id: FB-INV-009, rule: "Directory updates converge by revisioned snapshot and delta. A gap, expired provider history, or missed withdrawal requires bounded resynchronization and cannot silently delete another origin's entry."}
   - {id: FB-INV-010, rule: "All provider payloads, routes, metadata, credentials, and execution requests are untrusted at the destination and are rejected when unsigned, oversized, conflicting, or outside the configured origin binding."}
   - {id: FB-INV-011, rule: "Only an operator-configured publisher binding may speak for an origin namespace; discovery metadata is an approved projection and never a trust bootstrap."}
-  - {id: FB-INV-012, rule: "A complete directory snapshot is bounded and revisioned; malformed or partial input cannot purge entries, and gaps remain explicitly stale until resynchronization."}
+  - {id: FB-INV-012, rule: "A complete directory snapshot is bounded, validated before atomic commit, and revisioned monotonically per origin across routes; malformed input, duplicate routes, conflicting revisions, and stale snapshots cannot purge valid entries. Missing routes withdraw only on a complete newer snapshot. Gaps retain last valid metadata, block delta promotion, and clear only through a complete snapshot at or beyond the observed gap revision. Stale results retain the decoded directory schema."}
 
 primitives:
   local_message: {identity: origin_instance_id_plus_origin_message_id, owner: local_store}

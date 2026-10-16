@@ -4,7 +4,7 @@ document:
   id: agentbus-phase-11-plan
   version: 1.0.0
   generated_at_utc: '2026-10-15T00:00:00Z'
-  status: planned
+  status: active
   path: plans/phase-11-plan.yml
 phase:
   id: P11
@@ -34,8 +34,8 @@ delivery_contract:
   - id: P11-WS4
     name: evidence_and_custody
   hard_dependencies:
-  - P09 closed on exact main through BCF canonical lifecycle
-  - provider fan-out and origin authentication qualified on a dedicated candidate
+  - P10 closed on exact main through authenticated BCF 2.3.4 truth
+  - real-provider and cross-instance claims require qualified fan-out and origin authentication on a dedicated candidate; independent deterministic construction may proceed with that qualification blocked
   docker_first_local_runtime: repo_native_validation_and_governance_commands
   completeness_standard: full_completeness_for_declared_scope
 scope_lock:

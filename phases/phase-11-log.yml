@@ -4,7 +4,7 @@ document:
   id: agentbus-phase-11-log
   version: 1.0.0
   generated_at_utc: '2026-10-15T00:00:00Z'
-  status: planned
+  status: active
   path: phases/phase-11-log.yml
 phase:
   id: P11
@@ -12,8 +12,8 @@ phase:
 summary:
   outcome: construction_in_progress
   highlights:
-  - P09 is closed on protected main; P11 remains pending canonical lifecycle activation.
-  - BCF 2.3.2 is the construction baseline while 2.3.3 custody is pending.
+  - P09 and P10 have authenticated exact-main closure; P11 is active for independent deterministic construction.
+  - Released BCF 2.3.4 is the current installed authority; older release statements below are historical evidence.
   - Deterministic federation contracts and local custody primitives are implemented in the existing SQLite owner.
   - Provider fan-out, origin qualification, and cross-installation claims remain explicitly blocked pending a dedicated candidate.
 workitems:
@@ -43,6 +43,12 @@ execution_evidence:
   - uv run --locked --extra dev mypy
   - bcf reconcile --repo-root . --apply
   notes:
+  - "Recovery inventory audits/p11-recovery-mapping.yml maps all 20 Issue48 AB-MSG invariants to existing canonical service-contract-valid claim, owners, primitives, producers/consumers and bounded evidence references. Reference validation passed; unsatisfied ordinary-send migration, visibility, automatic discovery and provider obligations remain explicit rather than copied from historical future-path mappings."
+  - "Directory recovery slice: seven new tests failed before repair; ten new controls now pass for atomic malformed/conflicting snapshots, duplicate routes, withdrawal, per-origin revision ordering, metadata-preserving gap/resync, restart and replay. Full suite 314 passed; ruff, mypy (40 source files), architecture and governance validation passed. Two exact-candidate negative controls are registered; canonical construction evidence remains pending."
+  - "Revalidated existing DONE bridge and signed-origin primitives with current full suite, including outage, crash, replay, forgery, key generation, rollback and receipt-race tests. This authenticates no live provider topology. Ordinary protocol-2 send still follows its preserved Slack response contract; the opt-in durable federation enqueue is distinct. Automatic registration-to-provider directory publication and end-to-end directory convergence remain P11-P3/P4 TODO, not inferred from the repaired local store."
+  - "P11 activation baseline: P10 closed on protected main 013ce32e43b8696abb436933eca06cc3290c3ab7/tree8031cb66a3d43ebdd26761b3c5a5dc66cb3d25e5, authenticated run 38934988411/1 SUCCESS, truth status pass/effective_state closed/issues empty; durable github-actions://mjgolaszewski/AgentBus/runs/38934988411/attempts/1/bcf-governance-truth. P09 prior closure remains run38927748749/1. Ledger and MEMORY move together; inherited hotfix records remain intact."
+  - "Provider P0/P6 remain BLOCKED: dedicated arrangement, scoped publisher/origin/trust assignments, two isolated installations plus late joiner, retention/expiry/recovery, fan-out/resource assumptions await custodian response to bus7745. Existing bounded home/moranwm canary is not multi-installation qualification."
+  - "Pre-edit slice: service context, command-side directory projection in existing FederationStore/SQLite owner. Targets federation contract, directory store methods, deterministic tests, canonical test registrations and authored evidence. Forbidden: live deployment/configuration/credentials, new endpoint/database/broker, session/wake/execution authority, generated BCF manual edits and real-provider qualification claims. Tests precede implementation for atomic snapshots, per-origin revisions, stale/conflicting deltas, gap/resync, withdrawal and safe metadata."
   - "Canonical prospective contract positives passed (132 cases), but the publisher-binding negative control survived because the store independently rejected the forged publisher. Added a direct hostile-decoder rejection assertion so the control proves the wire boundary itself; production checks remain intact."
   - "Signing bootstrap follow-up: one protected installation-private key stays outside source; only its public fingerprint and origin/prefix/app/bot/channel readiness are reported. Signed frames bind the operator-approved public-key generation and reject retired or falsely declared generations. No runtime configuration or live claim is promoted."
   - "Custodian slice: service context/layer, command-side provider bridge and query-only custody inspection. Targets FederationStore, new signed wire/bridge/Slack adapter modules, opt-in runtime wiring, private enqueue API, deterministic tests, authored contracts/docs and BCF projections. Forbidden: current deployment state/credentials/listener, generated governance hand edits, public remote ingress, sessions/wake/execution authority, directory completion claims."
@@ -51,14 +57,14 @@ execution_evidence:
   - "BCF 2.3.2 canonical reconciliation regenerated the push closure-mode projection; generated workflow and semantic/test manifests were not hand-edited. Signature and publisher-binding controls are registered with contract-test."
   - Provider submission is opt-in through the signed adapter; the deterministic store itself performs no provider calls.
   - Directory metadata is allowlisted and cannot carry credentials, privileges, execution, wake, or session authority.
-  - BCF 2.3.3 supersedes the construction baseline only through canonical custody machinery.
+  - Historical BCF 2.3.3 custody intent is superseded by the installed released 2.3.4 baseline.
 known_constraints:
   - provider fan-out and origin authentication are not qualified for a multi-installation claim
-  - P11 activation and successor lifecycle remain BCF-owned; no phase ledger activation is hand-edited
+  - P11 rollover updates phase-ledger and MEMORY together after authenticated P10 closure; closed remains computed only by canonical BCF truth
   - notification-only behavior remains the safe fallback for unsupported or uncertain provider and owner states
 next_work:
   - implement directory projection and Slack adapter integration after deterministic contract review
-  - coordinate provider qualification and BCF 2.3.3 custody over AgentBus
+  - coordinate provider prerequisites with the runtime custodian and BCF 2.3.4 issues with closure-engine over AgentBus
 closeout_requirements:
   claims:
     workitems_closed:
