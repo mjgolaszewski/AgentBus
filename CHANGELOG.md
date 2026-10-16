@@ -7,6 +7,10 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ### P11 directory recovery
 
+- Bound retained federation custody allocations, preserve exact retries and
+  receipt progress, and return local backpressure without pruning history or
+  acknowledging unretained provider events. Independent SQLite writers share
+  the same atomic capacity reservation.
 - Exchange opt-in signed version-2 directory snapshots, deltas, and recovery
   requests from approved committed registrations; preserve version-1 messages
   and receipts and coalesce recovery requests across service restarts.

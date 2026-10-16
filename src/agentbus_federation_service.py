@@ -22,6 +22,7 @@ MAX_PAYLOAD = 48_000
 MAX_DIRECTORY_ROUTES_PER_ORIGIN = 1024
 MAX_DIRECTORY_ORIGINS = 65
 MAX_DIRECTORY_REVISION = 2 ** 63 - 1
+MAX_CUSTODY_ROWS = 1024
 SIGNED_FRAME_FIELDS = {
     "agentbus_federation", "kind", "origin_instance_id", "origin_message_id",
     "destination_instance_id", "key_generation", "payload", "signature",
@@ -67,6 +68,10 @@ def _looks_like_signed_receipt_frame(value: object) -> bool:
 
 class DirectoryCapacityError(RuntimeError):
     """Directory allocation needs operator archival; existing rows are retained."""
+
+
+class CustodyCapacityError(RuntimeError):
+    """New federation custody needs operator archival; existing rows survive."""
 
 
 class FederationStore:
@@ -185,8 +190,22 @@ class FederationStore:
         digest = hashlib.sha256(raw).hexdigest()
         now = _now()
         with self._lock, self._db:
+            self._custody_writer()
             local = encoded if local_payload is None else local_payload
+            if not isinstance(local, str) or len(local.encode()) > MAX_PAYLOAD:
+                raise ValueError('federation local payload exceeds limit')
             local_hash = hashlib.sha256(local.encode()).hexdigest()
+            origin = self._db.execute('SELECT payload_hash FROM federation_origin_messages WHERE origin_instance_id=? AND origin_message_id=?',
+                                      (origin_instance_id, origin_message_id)).fetchone()
+            obligation = self.obligation(origin_instance_id, origin_message_id, destination_instance_id)
+            if origin and origin['payload_hash'] != local_hash:
+                raise ValueError('conflicting federation payload for origin message')
+            if obligation and obligation['payload_hash'] != digest:
+                raise ValueError('conflicting federation payload for obligation')
+            if origin is None:
+                self._custody_capacity('federation_origin_messages')
+            if obligation is None:
+                self._custody_capacity('bridge_obligations')
             self._db.execute('INSERT OR IGNORE INTO federation_origin_messages VALUES (?, ?, ?, ?)',
                              (origin_instance_id, origin_message_id, local, local_hash))
             existing = self._db.execute('SELECT payload_hash FROM federation_origin_messages WHERE origin_instance_id=? AND origin_message_id=?',
@@ -206,6 +225,17 @@ class FederationStore:
             if row["payload_hash"] != digest:
                 raise ValueError("conflicting federation payload for obligation")
         return dict(row)
+
+    def _custody_writer(self) -> None:
+        """Serialize quota inspection and allocation across independent writers."""
+        if not self._db.in_transaction:
+            self._db.execute('BEGIN IMMEDIATE')
+
+    def _custody_capacity(self, table: str) -> None:
+        if table not in {'bridge_obligations', 'federation_origin_messages', 'federated_messages'}:
+            raise ValueError('invalid custody table')
+        if self._db.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0] >= MAX_CUSTODY_ROWS:
+            raise CustodyCapacityError('federation custody capacity requires operator archival')
 
     def transition(self, origin_instance_id: str, origin_message_id: str,
                    destination_instance_id: str, state: str, *, attempt: bool = False) -> dict[str, Any]:
@@ -268,6 +298,12 @@ class FederationStore:
         if not isinstance(origin_message_id, str) or not 1 <= len(origin_message_id) <= 128:
             raise ValueError("invalid federation origin message")
         with self._lock, self._db:
+            self._custody_writer()
+            existing = self._db.execute('''SELECT payload_hash FROM federated_messages
+                WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?''',
+                (origin_instance_id, origin_message_id, destination_instance_id)).fetchone()
+            if existing is None:
+                self._custody_capacity('federated_messages')
             self._db.execute(
                 """INSERT OR IGNORE INTO federated_messages
                 (origin_instance_id, origin_message_id, destination_instance_id,

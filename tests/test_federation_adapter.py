@@ -68,7 +68,7 @@ def test_enqueue_is_disabled_without_explicit_configuration(tmp_path):
     asyncio.run(scenario())
 
 
-def test_enqueue_requires_exact_session_and_is_durable_idempotent_and_local_only(tmp_path):
+def test_enqueue_requires_exact_session_and_is_durable_idempotent_and_local_only(tmp_path, monkeypatch):
     posts = []
     async def respond(request):
         if request.url.path.endswith('auth.test'):
@@ -105,6 +105,14 @@ def test_enqueue_requires_exact_session_and_is_durable_idempotent_and_local_only
         assert api.post('/v1/federation/messages', headers=joined, json=body).status_code == 422
         body['message']['sender'] = 'home:agentbus:unjoined'
         assert api.post('/v1/federation/messages', headers=AUTH, json=body).status_code == 403
+        from src import agentbus_federation_service as persistence
+        monkeypatch.setattr(persistence, 'MAX_CUSTODY_ROWS', 1)
+        body['origin_message_id'] = 'm2'
+        body['message']['sender'] = 'home:agentbus:sender'
+        rejected = api.post('/v1/federation/messages', headers=joined, json=body)
+        assert rejected.status_code == 503 and rejected.headers['Retry-After'] == '60'
+        assert app.state.store.federation.obligation('home', 'm2', 'remote') is None
+        assert posts == []
     asyncio.run(client.aclose())
 
 
@@ -155,8 +163,8 @@ def test_slack_incomplete_or_oversized_recovery_fails_without_returning_partial_
     asyncio.run(scenario())
 
 
-@pytest.mark.parametrize('storage_failure', [False, True])
-def test_existing_socket_acknowledges_signed_frames_only_after_durable_custody(tmp_path, storage_failure):
+@pytest.mark.parametrize('storage_failure', [False, True, 'capacity'])
+def test_existing_socket_acknowledges_signed_frames_only_after_durable_custody(tmp_path, storage_failure, monkeypatch):
     configured = settings(tmp_path, enabled=True)
     peer_key = Ed25519PrivateKey.generate()
     config = configured.federation_config
@@ -179,7 +187,13 @@ def test_existing_socket_acknowledges_signed_frames_only_after_durable_custody(t
     request = SocketModeRequest(type='events_api', envelope_id='signed-event', payload={'event': {
         'type': 'message', 'app_id': 'A456', 'bot_id': 'B456', 'channel': 'C123456',
         'text': frame, 'ts': '1.000001'}})
-    if storage_failure:
+    if storage_failure == 'capacity':
+        from src import agentbus_federation_service as persistence
+        monkeypatch.setattr(persistence, 'MAX_CUSTODY_ROWS', 0)
+        receiver(ProviderSocket(), request)
+        assert acknowledgements == []
+        monkeypatch.setattr(persistence, 'MAX_CUSTODY_ROWS', 1024)
+    elif storage_failure:
         store._db.execute("""CREATE TRIGGER reject_receipt BEFORE INSERT ON bridge_obligations
             BEGIN SELECT RAISE(ABORT, 'injected receipt failure'); END""")
         receiver(ProviderSocket(), request)

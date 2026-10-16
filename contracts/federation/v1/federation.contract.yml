@@ -39,6 +39,14 @@ primitives:
 contracts:
   local_acceptance: {commit_order: [message, bridge_obligation], provider_side_effect_after_commit: true, acknowledgement: semantic_agent_ack_only}
   bridge_submission: {transport: outbound_only, retry: bounded, uncertainty: explicit, dedupe_key: origin_instance_id_plus_origin_message_id_plus_destination_instance}
+  custody_capacity:
+    retained_rows_per_table: 1024
+    tables: [bridge_obligations, federation_origin_messages, federated_messages]
+    payload_bytes_per_row: 48000
+    exhaustion: reject_new_allocation_without_deletion_or_false_acceptance
+    existing_rows: preserve_exact_retry_receipts_and_state_recovery_even_if_legacy_over_capacity
+    archive: operator_owned_no_automatic_pruning
+    exclusions: not_a_global_sqlite_disk_quota_or_provider_retention_guarantee
   destination_acceptance: {requires: [authenticated_origin, valid_route, schema_valid_payload, deduplicated_persistence], provider_receipt_is_not_acceptance: true}
   directory: {revisioning: monotonic_per_origin, payload: allowlisted_metadata_only, freshness: explicit, stale_default: unknown, resync: bounded_snapshot_then_deltas}
   wake: {admission: owner_confirmed_idle_only, epoch_recheck: required, active_owner: defer, queued_work: never_acknowledged, remote_authority: none}

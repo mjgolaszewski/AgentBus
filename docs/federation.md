@@ -199,3 +199,15 @@ bridge before rolling back to older code, which cannot interpret the new state
 in its transition machinery. Preserve the original obligation, failure record,
 provider events, and signing identity for owner-led recovery. This change adds
 no live mutation, manual repair API, automatic reassembly, or automatic unblock.
+
+Federation custody admits at most 1,024 retained rows in each of the existing
+outbound-obligation, origin-message, and inbound-message tables, with at most
+48,000 UTF-8 payload bytes per row. This bounds those three payload columns to
+147,456,000 bytes; indexes, SQLite/WAL overhead, ordinary inbox storage, and
+provider history are separate. Existing over-capacity rows remain intact, and
+exact retries and state progress remain possible. Capacity checks and allocation
+reserve the SQLite writer together, including across independent processes.
+New local enqueue receives 503 with Retry-After instead of false acceptance.
+Failed inbound allocation creates no custody receipt and advances no recovery
+checkpoint. No automatic pruning is provided: sustained operation needs an
+operator-approved archive/retention procedure before capacity is exhausted.

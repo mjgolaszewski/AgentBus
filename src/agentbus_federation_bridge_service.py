@@ -12,7 +12,7 @@ from decimal import Decimal
 from typing import Callable, Protocol
 
 from src.agentbus_federation_directory_service import DirectorySynchronizer, decode_directory
-from src.agentbus_federation_service import DirectoryCapacityError, FederationStore
+from src.agentbus_federation_service import CustodyCapacityError, DirectoryCapacityError, FederationStore
 from src.agentbus_federation_wire_service import Binding, Identity, canonical, decode_frame, encode_frame
 from src.agentbus_message_assurance_service import route_parts
 
@@ -71,6 +71,8 @@ def enqueue_authenticated(bridge, store, channel, message_id, destination, paylo
         raise EnqueueRejected(403, 'Federation enqueue requires the matching joined session') from None
     except SendRateExceeded as exc:
         raise EnqueueRejected(429, 'Federation send rate exceeded', {'Retry-After': str(exc.retry_after)}) from None
+    except CustodyCapacityError:
+        raise EnqueueRejected(503, 'Federation custody capacity requires operator archival', {'Retry-After': '60'}) from None
     except (ValueError, KeyError):
         raise EnqueueRejected(422, 'Federation message or route is invalid') from None
 
@@ -214,6 +216,6 @@ class FederationBridge:
             except ProviderUnavailable as exc:
                 delay = max(delay, exc.retry_after)
                 LOGGER.warning('Federation provider unavailable; durable custody retained')
-            except (TimeoutError, OSError, ValueError, sqlite3.Error, DirectoryCapacityError):
+            except (TimeoutError, OSError, ValueError, sqlite3.Error, DirectoryCapacityError, CustodyCapacityError):
                 LOGGER.warning('Federation cycle incomplete; durable custody retained')
             await asyncio.sleep(delay)
