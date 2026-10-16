@@ -88,3 +88,20 @@ an isolated real-provider qualification. Independent installation app identities
 must join the same approved private channel. Discovery never bootstraps trust
 or grants local execution authority. Deterministic fake-provider tests establish
 adapter behavior; they do not establish live multi-installation delivery.
+
+## Bounded signed-adapter canary
+
+The protected `35f0950ec01f34e49caeb2c13b4806e249989f82` tree was exercised
+between the `home` and `moranwm` installations with operator-pinned Ed25519
+origins and a shared recovery baseline at Slack timestamp
+`1792106938.528509`. Each direction produced one durable obligation, one
+destination row, and a signed receipt. Identical origin/message replays stayed
+deduplicated; a conflicting payload with the same ID was rejected; altered
+signed content failed before persistence; and the isolated ACK-withholding
+controls passed. The full normalized reverse payload hash was
+`005243f20b80b9173011d452d97bf4e88685cef57abf4bb098c27364115473f8`.
+
+This is a bounded custody canary. It does not assert late-join convergence,
+directory synchronization, provider-wide fan-out, or exactly-once business
+effects. Those claims remain behind the separately governed provider
+qualification boundary.
