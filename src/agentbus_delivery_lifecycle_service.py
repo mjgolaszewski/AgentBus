@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager, suppress
 import httpx
 
 from src.agentbus_delivery_runtime_service import LocalDeliveryWorker
+from src.agentbus_federation_inbox_service import bind_ordinary_delivery
 from src.agentbus_federation_runtime_service import load_bridge
 from src.agentbus_slack_socket_service import SlackReceiver
 
@@ -36,6 +37,8 @@ class DeliveryTransport:
         bridge = (load_bridge(settings.federation_config, self.store, self.client,
                               settings.slack_bot_token, bot_id)
                   if settings.federation_config is not None else None)
+        if bridge is not None:
+            bind_ordinary_delivery(bridge, self.store, settings.slack_channel)
         self.receiver = SlackReceiver(self.store, settings.slack_channel, bot_id, settings, bridge)
         self.socket = self.socket_factory(settings, self.receiver)
         try:
@@ -44,6 +47,7 @@ class DeliveryTransport:
             await self.close()
             raise RuntimeError('Slack Socket Mode connection failed; check app configuration and connectivity') from None
         self.app.state.delivery.trusted_bot_id = bot_id
+        self.app.state.delivery.federation = bridge
         self.connected, self.bridge = True, bridge
         self.app.state.socket, self.app.state.federation_bridge = self.socket, bridge
         return bridge

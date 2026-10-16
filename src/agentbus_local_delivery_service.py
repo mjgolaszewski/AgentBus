@@ -58,13 +58,18 @@ class LocalDeliveryStore:
     def __init__(self, owner: MessageStore):
         self.owner = owner
         with owner._lock, owner._db:
+            if not owner._db.in_transaction:
+                owner._db.execute('BEGIN IMMEDIATE')
             owner._db.execute('''CREATE TABLE IF NOT EXISTS local_delivery_obligations (
                 channel TEXT NOT NULL, request_id TEXT NOT NULL, request_hash TEXT NOT NULL,
                 local_cursor INTEGER NOT NULL UNIQUE REFERENCES messages(cursor),
                 state TEXT NOT NULL, attempts INTEGER NOT NULL DEFAULT 0,
                 next_attempt REAL NOT NULL DEFAULT 0, provider_ref TEXT,
-                provider_failure TEXT, failure_ref TEXT,
+                provider_failure TEXT, failure_ref TEXT, federation_frame_hash TEXT,
                 PRIMARY KEY(channel, request_id))''')
+            columns = {row['name'] for row in owner._db.execute('PRAGMA table_info(local_delivery_obligations)')}
+            if 'federation_frame_hash' not in columns:
+                owner._db.execute('ALTER TABLE local_delivery_obligations ADD COLUMN federation_frame_hash TEXT')
             owner._db.execute('''CREATE TABLE IF NOT EXISTS local_delivery_observations (
                 channel TEXT NOT NULL, provider_ref TEXT NOT NULL,
                 local_cursor INTEGER NOT NULL REFERENCES messages(cursor),
@@ -109,6 +114,11 @@ class LocalDeliveryStore:
                 (channel, key, request_hash, accepted.cursor, 'federated' if destination else 'pending'))
             if destination is not None:
                 bridge.enqueue(key, destination, message.model_dump_json())
+                obligation = store.federation.obligation(bridge.identity.instance_id, key, destination)
+                if obligation is None:
+                    raise ValueError('ordinary federation enqueue did not retain custody')
+                store._db.execute('UPDATE local_delivery_obligations SET federation_frame_hash=? WHERE channel=? AND request_id=?',
+                                  (obligation['payload_hash'], channel, key))
             return accepted
 
     def observation_cursor(self, channel: str, provider_ref: str) -> int | None:
@@ -138,12 +148,23 @@ class LocalDeliveryStore:
                 ORDER BY CASE WHEN o.state='blocked' OR o.attempts>=8 THEN 1 ELSE 0 END,o.local_cursor LIMIT 100""",
                 (channel, instant))]
 
+    def federated_recovery_pending(self, channel: str, origin: str, *, now: float | None = None) -> list[dict]:
+        instant = time.time() if now is None else now
+        with self.owner._lock:
+            return [dict(row) for row in self.owner._db.execute("""
+                SELECT o.*,m.payload,m.received_at FROM local_delivery_obligations o
+                JOIN messages m ON m.cursor=o.local_cursor
+                JOIN bridge_obligations b ON b.origin_instance_id=? AND b.origin_message_id=o.request_id
+                    AND b.payload_hash=o.federation_frame_hash
+                WHERE o.channel=? AND o.state='federated' AND b.attempts>0 AND o.next_attempt<=?
+                ORDER BY o.local_cursor LIMIT 100""", (origin, channel, instant))]
+
     def defer_recovery(self, rows: list[dict], *, now: float | None = None) -> None:
         instant = time.time() if now is None else now
         with self.owner._lock, self.owner._db:
             self.owner._db.executemany("""UPDATE local_delivery_obligations
                 SET next_attempt=MAX(next_attempt,?) WHERE channel=? AND request_id=?
-                AND state IN ('uncertain','submitting','blocked')""",
+                AND state IN ('uncertain','submitting','blocked','federated')""",
                 [(instant + 60, row['channel'], row['request_id']) for row in rows])
 
     def reserve(self, channel: str, key: str, *, now: float | None = None) -> bool:
@@ -241,3 +262,16 @@ class LocalDeliveryStore:
             if thread_ts not in allowed:
                 raise ValueError('provider thread conflicts with accepted local ancestry')
             return self.accept_echo(channel, provider_ref, expected, blocks)
+
+
+    def observe_federated(self, channel: str, key: str, frame_hash: str, provider_ref: str) -> bool:
+        """An exact accepted signed carrier may resolve only its existing cursor."""
+        with self.owner._lock:
+            row = self.owner._db.execute('''SELECT federation_frame_hash FROM local_delivery_obligations
+                WHERE channel=? AND request_id=?''', (channel, key)).fetchone()
+            if row is None or row['federation_frame_hash'] is None:
+                return False
+            if row['federation_frame_hash'] != frame_hash:
+                raise ValueError('observed carrier does not match the accepted frame binding')
+            self.complete(channel, key, provider_ref)
+            return True

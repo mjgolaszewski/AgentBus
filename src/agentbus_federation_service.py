@@ -640,6 +640,15 @@ class FederationStore:
                 WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?
                 AND state='uncertain'""", (provider_ref, _now(), origin, message, destination))
 
+    def observe_submission(self, origin: str, message: str, destination: str, provider_ref: str) -> None:
+        """Record an exact own carrier without regressing custody or clearing failures."""
+        with self._lock, self._db:
+            self._db.execute("""UPDATE bridge_obligations SET state='submitted',
+                provider_ref=COALESCE(provider_ref,?),updated_at=?
+                WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?
+                AND state IN ('origin_accepted','uncertain')""",
+                (provider_ref, _now(), origin, message, destination))
+
     def defer_submission(self, origin: str, message: str, destination: str, *, until: float) -> None:
         with self._lock, self._db:
             self._db.execute('UPDATE bridge_obligations SET next_attempt_at=MAX(next_attempt_at, ?) WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?',

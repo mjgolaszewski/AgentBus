@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+from functools import partial
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -44,3 +45,13 @@ def project_message(store: MessageStore, channel: str, origin: str, message_id: 
         store._db.execute('''INSERT INTO federation_inbox_projection
             (origin_instance_id, origin_message_id, destination_instance_id, cursor, payload_hash)
             VALUES (?, ?, ?, ?, ?)''', (*key, projected.cursor, digest))
+
+
+def bind_ordinary_delivery(bridge, store: MessageStore, channel: str) -> bool:
+    """Keep provider references in their actual channel; legacy bindings stay absent."""
+    bridge.project_submission, bridge.ordinary_channel = None, None
+    if getattr(bridge, 'channel', channel) != channel:
+        return False
+    bridge.project_submission = partial(store.local_delivery.observe_federated, channel)
+    bridge.ordinary_channel = channel
+    return True
