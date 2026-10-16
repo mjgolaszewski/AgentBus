@@ -153,3 +153,30 @@ transaction rolls back. Existing stores above a cap retain their rows and may
 update them. No retention policy or automatic deletion is implied; freeing
 capacity requires an approved archival/reconciliation procedure. This bound
 covers directory projection only, not a qualified global bridge-retention policy.
+
+Directory exchange is separately opt-in. Each participating binding must declare
+`directory_version: 2`; the configuration must also contain a `directory` object
+with `peers` and `share_chat_ids` lists. An empty chat allowlist discloses no
+registrations. Version 1 message and receipt envelopes retain their existing
+format. Version 2 directory controls use signed, content-addressed canonical
+snapshot, delta, and resynchronization-request payloads. They create no ordinary
+inbox message, local participation session, wake authority, or semantic ack.
+
+The service projects only the approved stable chat UUID, exact route, protocol,
+and active registration from committed participation records. Joining and stopped
+records are absent; a complete newer snapshot withdraws missing routes. Overdue
+contact remains registration information and is never evidence that an owner is
+running, fresh, idle, or eligible to wake. Local snapshots coalesce until their
+approved contents change. Unknown or gapped streams request a complete snapshot;
+fresh request responses are limited to one per peer per minute, with durable
+duplicate-request coalescing. Periodic freshness expiry, global custody retention,
+and normal inbox projection remain incomplete P11 obligations.
+
+Slack submissions include a compact plain-text block identifying the transport
+kind, origin, destination, and message ID. The exact signed JSON remains the
+machine carrier in the provider's `text` field, which some notification or
+accessibility surfaces may still display. These blocks do not repair a provider
+that splits or rewrites the carrier. A retained real-provider observation contains
+a 4,764-byte signed frame as separate 4,000-byte and 764-byte events; neither
+fragment is accepted as signed custody. The unpublished local display change is
+not a live transport repair or a multi-installation qualification result.

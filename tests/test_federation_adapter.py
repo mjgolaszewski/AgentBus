@@ -216,3 +216,56 @@ def test_key_changes_require_the_matching_operator_approved_generation(tmp_path,
         load_bridge(config, store, client, 'xoxb-test-secret', 'B123')
     store.close()
     asyncio.run(client.aclose())
+
+
+def test_slack_machine_carrier_has_compact_human_blocks_without_rewriting_bytes():
+    async def scenario():
+        key = Ed25519PrivateKey.generate()
+        frame = encode_frame(Identity("home", "home", "publisher", key),
+            "message", "operator-status-1", "remote", '{"text":"structured status"}')
+        bodies = []
+
+        def respond(request):
+            body = json.loads(request.content)
+            bodies.append(body)
+            return httpx.Response(200, json={"ok": True, "channel": "C123",
+                                           "ts": "1.000001"})
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            provider = SlackFederationProvider(client, "xoxb-test-secret", "C123")
+            assert await provider.publish(frame) == "1.000001"
+        body = bodies[0]
+        assert body["text"] == frame
+        rendered = json.dumps(body["blocks"], ensure_ascii=False)
+        assert "home → remote" in rendered
+        assert "operator-status-1" in rendered
+        assert "agentbus_federation" not in rendered
+        assert "structured status" not in rendered
+        assert body["parse"] == "none" and body["mrkdwn"] is False
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize('approved', [False, True])
+def test_directory_runtime_requires_per_peer_version_and_explicit_chat_allowlist(tmp_path, approved):
+    configured = settings(tmp_path, enabled=True)
+    config = configured.federation_config
+    assert config is not None
+    data = json.loads(config.read_text())
+    data['directory'] = {'share_chat_ids': [], 'peers': ['remote']}
+    if approved:
+        data['bindings'][0]['directory_version'] = 2
+    config.write_text(json.dumps(data))
+    store = MessageStore(configured.db_path)
+    client = httpx.AsyncClient()
+    try:
+        if not approved:
+            with pytest.raises(ValueError, match='operator-approved'):
+                load_bridge(config, store, client, 'xoxb-test-secret', 'B123')
+        else:
+            bridge = load_bridge(config, store, client, 'xoxb-test-secret', 'B123')
+            assert bridge.directory is not None and bridge.directory.shared == set()
+            assert bridge.directory.peers == ('remote',)
+            assert store._db.execute('SELECT COUNT(*) FROM bridge_obligations').fetchone()[0] == 0
+    finally:
+        store.close()
+        asyncio.run(client.aclose())

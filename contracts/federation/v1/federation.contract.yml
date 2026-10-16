@@ -43,6 +43,16 @@ contracts:
   directory: {revisioning: monotonic_per_origin, payload: allowlisted_metadata_only, freshness: explicit, stale_default: unknown, resync: bounded_snapshot_then_deltas}
   wake: {admission: owner_confirmed_idle_only, epoch_recheck: required, active_owner: defer, queued_work: never_acknowledged, remote_authority: none}
   prohibited_edges: [remote_message_to_local_execution, remote_directory_to_session_creation, provider_receipt_to_destination_acceptance, queued_wake_to_agent_ack, stale_directory_to_wakeability]
+  directory_wire:
+    envelope_version: 2
+    payload_version: 1
+    operations: [snapshot, delta, request]
+    activation: explicit_per_peer_directory_version_2_and_operator_chat_allowlist
+    source: committed_participation_roster_only
+    disclosure: stable_chat_id_route_protocol_and_active_registration_only
+    requests: bounded_coalesced_and_deduplicated_with_signed_custody_receipts
+    compatibility: legacy_message_and_receipt_frames_remain_version_1
+    exclusions: no_ordinary_inbox_message_no_semantic_ack_no_local_session_or_wake_authority
   signed_provider_adapter:
     version: 1
     signature: ed25519_over_canonical_utf8_json_without_signature_field

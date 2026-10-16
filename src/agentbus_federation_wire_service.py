@@ -31,15 +31,30 @@ class SignedFrame(BaseModel):
     signature: str
 
 
+class DirectoryFrame(BaseModel):
+    model_config = ConfigDict(extra='forbid', strict=True)
+    agentbus_federation: Literal[2]
+    kind: Literal['directory']
+    origin_instance_id: str
+    origin_message_id: str
+    destination_instance_id: str
+    key_generation: str = Field(pattern=r'^[0-9a-f]{64}$')
+    payload: str
+    signature: str
+
+
 @dataclass(frozen=True)
 class Binding:
     instance_id: str
     route_prefix: str
     publisher_id: str
     public_key: Ed25519PublicKey = field(repr=False)
+    directory_version: int | None = None
 
     def __post_init__(self):
         _validate_identity(self.instance_id, self.route_prefix, self.publisher_id)
+        if self.directory_version is not None and (type(self.directory_version) is not int or self.directory_version != 2):
+            raise ValueError("unsupported directory peer version")
 
 
 @dataclass(frozen=True)
@@ -70,7 +85,7 @@ def key_generation(public_key: Ed25519PublicKey) -> str:
 
 def encode_frame(identity: Identity, kind: str, message_id: str,
                  destination: str, payload: str) -> str:
-    frame = {'agentbus_federation': 1, 'kind': kind, 'origin_instance_id': identity.instance_id,
+    frame = {'agentbus_federation': 2 if kind == 'directory' else 1, 'kind': kind, 'origin_instance_id': identity.instance_id,
              'origin_message_id': message_id, 'destination_instance_id': destination,
              'key_generation': key_generation(identity.private_key.public_key()), 'payload': payload}
     _validate(dict(frame, signature='pending'))
@@ -84,10 +99,10 @@ def encode_frame(identity: Identity, kind: str, message_id: str,
 
 
 def _validate(frame: dict) -> None:
-    SignedFrame(**frame)
-    if set(frame) != FIELDS or type(frame['agentbus_federation']) is not int or frame['agentbus_federation'] != 1:
+    (DirectoryFrame if frame.get("agentbus_federation") == 2 else SignedFrame)(**frame)
+    if set(frame) != FIELDS or type(frame['agentbus_federation']) is not int or frame['agentbus_federation'] not in {1, 2}:
         raise ValueError('unsupported federation frame')
-    if frame['kind'] not in {'message', 'receipt'}:
+    if frame['kind'] not in {'message', 'receipt', 'directory'}:
         raise ValueError('unsupported federation frame kind')
     for key in ('origin_instance_id', 'destination_instance_id'):
         if not isinstance(frame[key], str) or not INSTANCE.fullmatch(frame[key]):
@@ -111,6 +126,8 @@ def decode_frame(text: str, publisher: str, destination: str, bindings: dict[str
         binding = bindings.get(frame['origin_instance_id'])
         if binding is None or binding.publisher_id != publisher or frame['destination_instance_id'] != destination:
             raise ValueError('untrusted federation publisher or destination')
+        if frame['agentbus_federation'] == 2 and binding.directory_version != 2:
+            raise ValueError('directory peer version is not operator-approved')
         if frame['key_generation'] != key_generation(binding.public_key):
             raise ValueError('untrusted federation key generation')
         signature = base64.b64decode(frame['signature'], validate=True)

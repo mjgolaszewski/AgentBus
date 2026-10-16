@@ -147,6 +147,12 @@ class FederationStore:
                 origin_instance_id TEXT NOT NULL, origin_message_id TEXT NOT NULL,
                 payload TEXT NOT NULL, payload_hash TEXT NOT NULL,
                 PRIMARY KEY(origin_instance_id, origin_message_id))""")
+            self._db.execute("""CREATE TABLE IF NOT EXISTS federation_directory_local (
+                origin_instance_id TEXT PRIMARY KEY, revision INTEGER NOT NULL,
+                entries TEXT NOT NULL)""")
+            self._db.execute("""CREATE TABLE IF NOT EXISTS federation_directory_requests (
+                origin_instance_id TEXT PRIMARY KEY, request_id TEXT NOT NULL,
+                next_response_at REAL NOT NULL)""")
             self._db.execute("""CREATE TABLE IF NOT EXISTS federation_checkpoints (
                 reader TEXT PRIMARY KEY, cursor TEXT NOT NULL)""")
             columns = {row['name'] for row in self._db.execute('PRAGMA table_info(bridge_obligations)')}
@@ -161,7 +167,7 @@ class FederationStore:
         _check_id(destination_instance_id, INSTANCE_RE, "destination instance")
         if not isinstance(origin_message_id, str) or not 1 <= len(origin_message_id) <= 128:
             raise ValueError("invalid federation origin message")
-        if kind not in {"message", "receipt"}:
+        if kind not in {"message", "receipt", "directory"}:
             raise ValueError("invalid federation frame kind")
         raw = payload.encode() if isinstance(payload, str) else payload
         if not isinstance(raw, bytes) or not raw or len(raw) > MAX_PAYLOAD:
@@ -470,6 +476,41 @@ class FederationStore:
             self._save_directory_revision(origin_instance_id, revision, 0)
             return result
 
+    def local_directory_snapshot(self, origin: str, entries: list[dict[str, Any]]) -> tuple[int, list[dict[str, Any]]]:
+        """Coalesce approved committed registrations before provider publication."""
+        _check_id(origin, INSTANCE_RE, "origin instance")
+        if len(entries) > 256:
+            raise ValueError("directory snapshot exceeds limit")
+        for entry in entries:
+            self._directory_entry(origin, entry["route"], 1, "current", entry["metadata"])
+        encoded = json.dumps(sorted(entries, key=lambda entry: entry["route"]), sort_keys=True)
+        with self._lock, self._db:
+            row = self._db.execute("SELECT revision, entries FROM federation_directory_local WHERE origin_instance_id=?", (origin,)).fetchone()
+            revision = int(row["revision"]) if row else 0
+            if row is None or row["entries"] != encoded:
+                revision += 1
+                self._db.execute("""INSERT INTO federation_directory_local VALUES (?, ?, ?)
+                    ON CONFLICT(origin_instance_id) DO UPDATE SET revision=excluded.revision,
+                    entries=excluded.entries""", (origin, revision, encoded))
+        return revision, json.loads(encoded)
+
+    def directory_revision(self, origin: str) -> dict[str, Any]:
+        with self._lock:
+            return self._directory_revision(origin)
+
+    def reserve_directory_response(self, origin: str, request: str, now: float) -> bool:
+        """One fresh snapshot response per peer/minute; identical retries coalesce."""
+        with self._lock, self._db:
+            row = self._db.execute("SELECT * FROM federation_directory_requests WHERE origin_instance_id=?", (origin,)).fetchone()
+            if row and row["request_id"] == request:
+                return True
+            if row and now < row["next_response_at"]:
+                return False
+            self._db.execute("""INSERT INTO federation_directory_requests VALUES (?, ?, ?)
+                ON CONFLICT(origin_instance_id) DO UPDATE SET request_id=excluded.request_id,
+                next_response_at=excluded.next_response_at""", (origin, request, now + 60))
+            return True
+
     def directory(self, *, origin_instance_id: str | None = None) -> list[dict[str, Any]]:
         query = "SELECT * FROM remote_directory"
         args: tuple[str, ...] = ()
@@ -496,7 +537,7 @@ class FederationStore:
         with self._lock:
             rows = self._db.execute("""SELECT * FROM bridge_obligations
                 WHERE state IN ('origin_accepted','submitted','uncertain')
-                AND (kind = 'message' OR (kind = 'receipt' AND state IN ('origin_accepted', 'uncertain')))
+                AND (kind IN ('message', 'directory') OR (kind = 'receipt' AND state IN ('origin_accepted', 'uncertain')))
                 AND attempts < ? AND next_attempt_at <= ? ORDER BY updated_at LIMIT ?""",
                 (max_attempts, now, limit)).fetchall()
         return [dict(row) for row in rows]

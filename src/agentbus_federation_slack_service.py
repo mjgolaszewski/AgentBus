@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from decimal import Decimal, InvalidOperation
 
 import httpx
 
 from src.agentbus_federation_bridge_service import ProviderUnavailable
+from src.agentbus_presentation_service import visible_text
 
 
 def publisher_id(event: dict, channel: str) -> str:
@@ -32,7 +34,19 @@ class SlackFederationProvider:
             raise ProviderUnavailable() from exc
 
     async def publish(self, text: str) -> str:
-        data = await self._request('chat.postMessage', {'channel': self.channel, 'text': text,
+        summary = 'AgentBus federation transport'
+        try:
+            frame = json.loads(text)
+        except ValueError:
+            frame = None
+        if isinstance(frame, dict):
+            kind = visible_text(str(frame.get('kind', 'frame')))[:32]
+            origin = visible_text(str(frame.get('origin_instance_id', 'unknown')))[:80]
+            destination = visible_text(str(frame.get('destination_instance_id', 'unknown')))[:80]
+            message = visible_text(str(frame.get('origin_message_id', 'unknown')))[:128]
+            summary = f'AgentBus {kind}: {origin} → {destination}\nID {message}'
+        blocks = [{'type': 'section', 'text': {'type': 'plain_text', 'text': summary, 'emoji': False}}]
+        data = await self._request('chat.postMessage', {'channel': self.channel, 'text': text, 'blocks': blocks,
             'parse': 'none', 'mrkdwn': False, 'unfurl_links': False, 'unfurl_media': False})
         if data.get('channel') != self.channel or not isinstance(data.get('ts'), str):
             raise ProviderUnavailable()
