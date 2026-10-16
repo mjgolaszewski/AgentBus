@@ -126,3 +126,74 @@ def test_snapshot_replay_is_idempotent_and_invalid_revision_cannot_withdraw():
         with pytest.raises(ValueError):
             snapshot(f, invalid, [])
     assert f.directory() == before
+
+
+@pytest.mark.parametrize("state", ["stale", "gap", "resync_required"])
+def test_noncurrent_owner_snapshot_cannot_clear_a_gap(state):
+    f = store()
+    snapshot(f, 1, [entry()])
+    delta(f, 3)
+    before = f.directory()
+    with pytest.raises(ValueError):
+        snapshot(f, 3, [{"route": "remote:a", "state": state}])
+    assert f.directory() == before
+    assert delta(f, 4)["state"] == "gap"
+
+
+@pytest.mark.parametrize("registration", ["joining", "stopped", "unknown"])
+def test_nonactive_registration_cannot_be_published_as_current(registration):
+    f = store()
+    snapshot(f, 1, [entry()])
+    before = f.directory()
+    with pytest.raises(ValueError):
+        snapshot(f, 2, [{"route": "remote:a", "metadata": {
+            "registration_state": registration}}])
+    assert f.directory() == before
+
+
+def test_existing_compact_metadata_capacity_remains_compatible():
+    import json
+
+    from src.agentbus_federation_service import MAX_METADATA
+
+    f = store()
+    overhead = len(json.dumps({"display_name": ""}, separators=(",", ":")))
+    metadata = {"display_name": "x" * (MAX_METADATA - overhead)}
+    accepted = f.apply_directory(origin_instance_id="remote", route="remote:a",
+        revision=1, state="current", metadata=metadata)
+    assert accepted["metadata"] == metadata
+
+
+def test_directory_capacity_preserves_existing_updates_and_atomic_snapshot(monkeypatch):
+    from src import agentbus_federation_service as module
+
+    monkeypatch.setattr(module, "MAX_DIRECTORY_ROUTES_PER_ORIGIN", 2, raising=False)
+    f = store()
+    snapshot(f, 1, [entry(), entry("remote:b")])
+    before = f.directory()
+    with pytest.raises(RuntimeError, match="capacity"):
+        snapshot(f, 2, [entry(role="changed"), entry("remote:c")])
+    assert f.directory() == before
+    snapshot(f, 2, [entry(role="updated"), entry("remote:b")])
+    assert f.directory()[0]["metadata"] == {"role": "updated"}
+    snapshot(f, 3, [])
+    assert len(f.directory()) == 2
+    with pytest.raises(RuntimeError, match="capacity"):
+        delta(f, 4, "remote:c")
+    assert all(row["state"] == "withdrawn" for row in f.directory())
+
+
+def test_directory_origin_capacity_and_duplicate_replay_do_not_grow_storage(monkeypatch):
+    from src import agentbus_federation_service as module
+
+    monkeypatch.setattr(module, "MAX_DIRECTORY_ORIGINS", 1, raising=False)
+    f = store()
+    snapshot(f, 1, [entry()])
+    changes = f._db.total_changes
+    for _ in range(10):
+        snapshot(f, 1, [entry()])
+    assert f._db.total_changes == changes
+    with pytest.raises(RuntimeError, match="capacity"):
+        f.directory_snapshot(origin_instance_id="other", revision=1,
+            entries=[entry("other:a")])
+    assert len(f.directory()) == 1
