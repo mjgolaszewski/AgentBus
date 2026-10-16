@@ -12,6 +12,12 @@ All notable changes to AgentBus are documented here. AgentBus follows
   validation. This is the protected base-upgrade boundary for re-resolving the
   P09 transfer candidate.
 
+### P09 scope transfer
+
+- Record the canonical transfer of multi-installation qualification to P11-P0-01
+  and live wake-canary qualification to P10-P2-01; P09 makes no cross-instance
+  delivery or directory-convergence claim.
+
 ### P11 federation foundation
 
 - Document the post-fix receipt retry custody boundary, strict legacy-row
