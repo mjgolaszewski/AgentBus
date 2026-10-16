@@ -19,6 +19,8 @@ INSTANCE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")
 ROUTE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$")
 MAX_METADATA = 4096
 MAX_PAYLOAD = 48_000
+MAX_DIRECTORY_ROUTES_PER_ORIGIN = 1024
+MAX_DIRECTORY_ORIGINS = 65
 SIGNED_FRAME_FIELDS = {
     "agentbus_federation", "kind", "origin_instance_id", "origin_message_id",
     "destination_instance_id", "key_generation", "payload", "signature",
@@ -60,6 +62,10 @@ def _looks_like_signed_receipt_frame(value: object) -> bool:
         and isinstance(value.get("payload"), str) and bool(value["payload"])
         and isinstance(value.get("signature"), str) and bool(value["signature"])
     )
+
+
+class DirectoryCapacityError(RuntimeError):
+    """Directory allocation needs operator archival; existing rows are retained."""
 
 
 class FederationStore:
@@ -300,10 +306,12 @@ class FederationStore:
             raise ValueError("directory revision must be positive")
         if not isinstance(state, str) or state not in {"current", "stale", "withdrawn", "gap", "resync_required"}:
             raise ValueError("invalid directory state")
-        if not isinstance(metadata, dict) or len(json.dumps(metadata, allow_nan=False)) > MAX_METADATA:
+        if not isinstance(metadata, dict) or len(json.dumps(metadata, separators=(",", ":"), allow_nan=False)) > MAX_METADATA:
             raise ValueError("directory metadata exceeds limit")
         if set(metadata) - ALLOWED_DIRECTORY_FIELDS:
             raise ValueError("directory metadata contains unapproved authority fields")
+        if state == "current" and metadata.get("registration_state", "active") != "active":
+            raise ValueError("non-active registration cannot be current")
 
     def _directory_row(self, origin: str, route: str) -> dict[str, Any] | None:
         row = self._db.execute("SELECT * FROM remote_directory WHERE origin_instance_id=? AND route=?",
@@ -314,9 +322,30 @@ class FederationStore:
         result["metadata"] = json.loads(result["metadata"])
         return result
 
+    def _directory_origin_capacity(self, origin: str) -> None:
+        known = self._db.execute("""SELECT 1 FROM remote_directory WHERE origin_instance_id=?
+            UNION SELECT 1 FROM remote_directory_revisions WHERE origin_instance_id=? LIMIT 1""",
+            (origin, origin)).fetchone()
+        if known:
+            return
+        origins = self._db.execute("""SELECT COUNT(*) FROM (
+            SELECT origin_instance_id FROM remote_directory UNION
+            SELECT origin_instance_id FROM remote_directory_revisions)""").fetchone()[0]
+        if origins >= MAX_DIRECTORY_ORIGINS:
+            raise DirectoryCapacityError("directory origin capacity reached; archival requires operator reconciliation")
+
+    def _directory_capacity(self, origin: str) -> None:
+        routes = self._db.execute("SELECT COUNT(*) FROM remote_directory WHERE origin_instance_id=?",
+                                  (origin,)).fetchone()[0]
+        if routes >= MAX_DIRECTORY_ROUTES_PER_ORIGIN:
+            raise DirectoryCapacityError("directory route capacity reached; archival requires operator reconciliation")
+        self._directory_origin_capacity(origin)
+
     def _write_directory(self, origin: str, route: str, revision: int, state: str,
                          metadata: dict[str, Any], *, resync: bool = False) -> dict[str, Any]:
         existing = self._directory_row(origin, route)
+        if existing is None:
+            self._directory_capacity(origin)
         if existing and revision < existing["revision"]:
             return existing
         if existing and revision == existing["revision"]:
@@ -346,6 +375,8 @@ class FederationStore:
 
     def _save_directory_revision(self, origin: str, revision: int, gap: int,
                                  snapshot_hash: str = "") -> None:
+        if self._db.execute("SELECT 1 FROM remote_directory_revisions WHERE origin_instance_id=?", (origin,)).fetchone() is None:
+            self._directory_origin_capacity(origin)
         self._db.execute("""INSERT INTO remote_directory_revisions VALUES (?, ?, ?, ?)
             ON CONFLICT(origin_instance_id) DO UPDATE SET revision=excluded.revision,
                 gap_revision=excluded.gap_revision, snapshot_hash=excluded.snapshot_hash""",
@@ -372,6 +403,8 @@ class FederationStore:
             route, state, metadata = entry.get("route"), entry.get("state", "current"), entry.get("metadata", {})
             if not isinstance(route, str):
                 raise ValueError("invalid directory snapshot route")
+            if not isinstance(state, str) or state not in {"current", "withdrawn"}:
+                raise ValueError("directory snapshot requires current or withdrawn entries")
             self._directory_entry(origin_instance_id, route, revision, state, metadata)
             if route in validated:
                 raise ValueError("duplicate directory snapshot route")

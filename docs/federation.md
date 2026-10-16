@@ -144,3 +144,12 @@ backup and previous source archive. The new revision table is additive and older
 code ignores it, but older directory code lacks these recovery guarantees; do not
 resume federation on that older implementation or drop revision state to conceal
 a gap. No shared runtime migration or restart is performed by these tests.
+
+Directory admission retains at most 1,024 routes per origin, including withdrawn
+tombstones, and 65 origin records (64 peers plus the local installation). A full
+snapshot remains limited to 256 entries. At capacity, existing rows and exact
+replays remain usable; new allocation raises explicit backpressure and the
+transaction rolls back. Existing stores above a cap retain their rows and may
+update them. No retention policy or automatic deletion is implied; freeing
+capacity requires an approved archival/reconciliation procedure. This bound
+covers directory projection only, not a qualified global bridge-retention policy.

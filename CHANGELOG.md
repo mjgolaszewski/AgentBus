@@ -7,6 +7,11 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ### P11 directory recovery
 
+- Keep gaps unresolved for non-current owner snapshots and reject explicit
+  non-active registrations advertised as current; preserve compact metadata bounds.
+- Bound retained directory allocation without deleting withdrawal history or
+  preventing existing updates and exact replay.
+
 - Federation directory recovery validates complete snapshots atomically, tracks
   per-origin delta revisions, preserves metadata during gaps, withdraws omitted
   routes, and supports bounded snapshot resynchronization. Real-provider fan-out
