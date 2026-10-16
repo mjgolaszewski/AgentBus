@@ -275,8 +275,29 @@ provider echo and truncation warnings retain a blocked obligation instead of
 retrying unchanged content. A subsequent verified exact echo can resolve the race.
 Attempts are reserved durably before effects, capped at eight with 60–600 second
 backoff. Each cycle attempts at most eight entries within a 30-second scheduling
-budget, plus the current bounded provider request. Full lost-response history
-reconciliation is still outstanding.
+budget, plus the current bounded provider request. Before retrying an uncertain ordinary submission, the worker requests complete
+bounded history since the oldest due acceptance. Only the authenticated local
+bot, exact stored wire text, context locator and matching thread can reconcile an
+observation to its original cursor. This uses no shared federation checkpoint.
+A provider root may reference itself as its thread root. Forged or contradictory
+observations do not establish submission. When history is unavailable, truncated
+or over the 100-event budget, uncertainty is retained with a durable 60-second
+recovery delay and no submission attempt is consumed. Fresh eligible messages
+can still proceed. Historical absence is not an exactly-once proof: retention,
+clock skew or provider behavior may still lead to duplicate physical posts.
+
+Read-only reconciliation and verified echoes may resolve blocked or exhausted
+obligations after the eight-submission ceiling; they cannot authorize another
+post. All work and history selection are scoped to the configured channel.
+Changing channels leaves older obligations intact for their owning configuration,
+even when the same UUID exists in both channels.
+
+Authentication, ordinary posting and federation HTTP responses share an 8 MiB
+raw body ceiling and a 15-second absolute request deadline. Clients request
+identity encoding and reject compressed responses before decompression. Overflow,
+timeout, excessive JSON nesting and malformed responses fail without claiming
+provider success. These bounds are per response, not a global process-memory or
+provider-retention guarantee.
 
 `AGENTBUS_LOCAL_DELIVERY_VERSION=1` explicitly allows the local API to start during
 Slack identity or Socket Mode bootstrap failure. Bootstrap retries occur no more

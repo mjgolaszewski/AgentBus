@@ -25,7 +25,7 @@ from src.agentbus_delivery_api_service import send_message
 from src.agentbus_delivery_lifecycle_service import delivery_lifespan
 from src.agentbus_federation_api_service import FederationAcceptance, api_federation_enqueue
 from src.agentbus_federation_service import FederationStore
-from src.agentbus_federation_slack_service import validate_carrier_echo
+from src.agentbus_federation_slack_service import SlackFederationProvider, bounded_response, validate_carrier_echo
 from src.agentbus_local_delivery_service import LOCAL_REFERENCE_PREFIX, LOCATOR_PREFIX, LocalDeliveryStore
 from src.agentbus_message_authorization_service import require_message_route
 from src.agentbus_participation_api_service import (
@@ -526,12 +526,9 @@ class SlackPoster:
 
     async def authenticated_bot_id(self) -> str:
         try:
-            response = await self.client.post(
-                "https://slack.com/api/auth.test",
-                headers={"Authorization": f"Bearer {self.settings.slack_bot_token}"},
-            )
+            response = await bounded_response(self.client, self.settings.slack_bot_token, 'auth.test')
             data = response.json()
-        except (httpx.HTTPError, ValueError):
+        except (httpx.HTTPError, ValueError, TimeoutError, RecursionError):
             raise RuntimeError("Slack bot identity verification failed") from None
         bot_id = data.get("bot_id") if response.is_success and isinstance(data, dict) else None
         if (
@@ -540,6 +537,10 @@ class SlackPoster:
         ):
             raise RuntimeError("Slack bot identity verification failed")
         return bot_id
+
+    async def observed_messages(self, after: str, limit: int) -> list[dict]:
+        return await SlackFederationProvider(self.client, self.settings.slack_bot_token,
+                                              self.settings.slack_channel).history(after, limit)
 
     async def post(self, message: SendMessage, *, message_id: str | None = None) -> str:
         label = f"{message.sender} → {message.recipient} · {message.kind} · {message.audience}"
@@ -558,11 +559,10 @@ class SlackPoster:
         if message.thread_ts:
             payload["thread_ts"] = message.thread_ts
         try:
-            response = await self.client.post("https://slack.com/api/chat.postMessage", json=payload,
-                                              headers={"Authorization": f"Bearer {self.settings.slack_bot_token}"})
-        except httpx.TimeoutException:
+            response = await bounded_response(self.client, self.settings.slack_bot_token, 'chat.postMessage', payload)
+        except (httpx.TimeoutException, TimeoutError):
             raise HTTPException(504, "Slack timed out; delivery is uncertain. Check the channel before retrying.") from None
-        except httpx.RequestError:
+        except (httpx.RequestError, ValueError):
             raise HTTPException(502, "Slack request failed; delivery may be uncertain. Check the channel before retrying.") from None
         if response.status_code == 429:
             retry = response.headers.get("Retry-After", "1")
@@ -572,7 +572,7 @@ class SlackPoster:
             raise HTTPException(502, "Slack request failed; delivery may be uncertain. Check the channel before retrying.")
         try:
             data = response.json()
-        except ValueError:
+        except (ValueError, RecursionError):
             raise HTTPException(502, "Slack returned an invalid response; delivery is uncertain") from None
         if not isinstance(data, dict) or data.get("ok") is not True:
             raise HTTPException(502, "Slack rejected the message; check app permissions and channel membership")

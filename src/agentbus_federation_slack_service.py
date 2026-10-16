@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from decimal import Decimal, InvalidOperation
 
@@ -9,6 +10,33 @@ import httpx
 
 from src.agentbus_federation_bridge_service import ProviderCarrierRejected, ProviderUnavailable
 from src.agentbus_presentation_service import visible_text
+
+MAX_PROVIDER_RESPONSE_BYTES = 8_388_608
+
+
+async def bounded_response(client: httpx.AsyncClient, token: str, method: str,
+                           body: dict | None = None, *, max_bytes: int | None = None,
+                           timeout_seconds: float = 15) -> httpx.Response:
+    """Bound raw provider input before JSON parsing and before trusting success."""
+    limit = MAX_PROVIDER_RESPONSE_BYTES if max_bytes is None else max_bytes
+    async with asyncio.timeout(timeout_seconds):
+        async with client.stream('POST', 'https://slack.com/api/' + method, json=body,
+                headers={'Authorization': 'Bearer ' + token, 'Accept-Encoding': 'identity'}) as response:
+            if response.headers.get('Content-Encoding', '').lower() not in {'', 'identity'}:
+                raise ValueError('unsupported provider response encoding')
+            if response.is_stream_consumed:
+                # Mock transports may supply an already-buffered response.
+                raw = response.content
+                if len(raw) > limit:
+                    raise ValueError('provider response exceeds byte limit')
+            else:
+                received = bytearray()
+                async for chunk in response.aiter_raw():
+                    if len(received) + len(chunk) > limit:
+                        raise ValueError('provider response exceeds byte limit')
+                    received.extend(chunk)
+                raw = bytes(received)
+            return httpx.Response(response.status_code, headers=response.headers, content=raw)
 
 
 def publisher_id(event: dict, channel: str) -> str:
@@ -41,8 +69,7 @@ class SlackFederationProvider:
 
     async def _request(self, method: str, body: dict) -> dict:
         try:
-            response = await self._client.post('https://slack.com/api/' + method, json=body,
-                headers={'Authorization': 'Bearer ' + self._token})
+            response = await bounded_response(self._client, self._token, method, body)
             if response.status_code == 429:
                 retry = response.headers.get('Retry-After', '60')
                 raise ProviderUnavailable(min(86400, max(1, int(retry))) if retry.isdigit() else 60)
@@ -50,7 +77,7 @@ class SlackFederationProvider:
             if not response.is_success or not isinstance(data, dict) or data.get('ok') is not True:
                 raise ProviderUnavailable()
             return data
-        except (httpx.HTTPError, ValueError) as exc:
+        except (httpx.HTTPError, ValueError, TimeoutError, RecursionError) as exc:
             raise ProviderUnavailable() from exc
 
     async def publish(self, text: str) -> str:
@@ -87,13 +114,17 @@ class SlackFederationProvider:
             for message in messages:
                 if not isinstance(message, dict) or not isinstance(message.get('ts'), str):
                     raise ProviderUnavailable()
+                if message.get('channel', self.channel) != self.channel:
+                    raise ProviderUnavailable()
                 try:
                     if not Decimal(message['ts']).is_finite() or Decimal(message['ts']) <= Decimal(after):
                         raise ProviderUnavailable()
                 except InvalidOperation as exc:
                     raise ProviderUnavailable() from exc
                 events.append({'publisher_id': publisher_id(message, self.channel),
-                               'text': message.get('text', ''), 'ts': message['ts']})
+                               'text': message.get('text', ''), 'ts': message['ts'],
+                               **{key: message[key] for key in ('blocks', 'thread_ts', 'subtype', 'hidden')
+                                  if key in message}})
             metadata = data.get('response_metadata', {})
             if not isinstance(metadata, dict):
                 raise ProviderUnavailable()
