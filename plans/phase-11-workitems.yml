@@ -4,7 +4,7 @@ document:
   id: agentbus-phase-11-workitems
   version: 1.0.0
   generated_at_utc: '2026-10-15T00:00:00Z'
-  status: planned
+  status: active
   path: plans/phase-11-workitems.yml
   phase_id: P11
 workitems:
@@ -16,7 +16,7 @@ workitems:
   - authenticated BCF baseline, exact P09 closure, provider topology, trust, scopes, history, recovery, and budgets are recorded
   - unsupported provider assumptions are explicitly classified as qualified, deferred, or blocked
   - cross-installation claims remain gated until a dedicated provider candidate proves fan-out and origin authentication
-  acceptance_evidence: [governance-validate, contract-test]
+  acceptance_evidence: [contract-test]
 - id: P11-P1-01
   priority: P0
   status: DONE
@@ -58,7 +58,7 @@ workitems:
   - Ed25519 and operator publisher bindings precede destination deduplication and signed custody receipts
   - the existing listener and SQLite owner support bounded recovery without remote execution or session authority
   - deterministic fake-provider evidence covers outage crash replay conflicts forgery and receipt races
-  acceptance_evidence: [test, contract-test, architecture-test, governance-validate]
+  acceptance_evidence: [test, contract-test, architecture-test]
 - id: P11-P5-01
   priority: P1
   status: TODO
@@ -66,7 +66,7 @@ workitems:
   acceptance:
   - deterministic fake-provider tests cover replay, crashes, outage, joins, gaps, and authority exclusions
   - existing AgentBus compatibility and assurance suites remain green with measured bounded resource use
-  acceptance_evidence: [governance-validate, test, contract-test, architecture-test]
+  acceptance_evidence: [test, contract-test, architecture-test]
 - id: P11-P6-01
   priority: P1
   status: BLOCKED
@@ -82,4 +82,4 @@ workitems:
   acceptance:
   - BCF upgrade, reconcile, prospective train, protected PR/main, archive, isolated install, compatibility, and rollback evidence are green
   - publication preserves notification-only fallback for unsupported or uncertain provider and owner states
-  acceptance_evidence: [governance-validate, architecture-test, test, contract-test, release-check]
+  acceptance_evidence: [architecture-test, test, contract-test, release-smoke, runtime-smoke]

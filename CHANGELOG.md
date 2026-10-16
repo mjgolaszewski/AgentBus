@@ -5,6 +5,13 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+### P11 directory recovery
+
+- Federation directory recovery validates complete snapshots atomically, tracks
+  per-origin delta revisions, preserves metadata during gaps, withdraws omitted
+  routes, and supports bounded snapshot resynchronization. Real-provider fan-out
+  and late-join qualification remain blocked on deployment prerequisites.
+
 ### P10 security and wake recovery
 
 - Reconcile older poll queues against the current semantic acknowledgement

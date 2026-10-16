@@ -123,6 +123,9 @@ class FederationStore:
                     PRIMARY KEY(origin_instance_id, route)
                 )
             """)
+            self._db.execute("""CREATE TABLE IF NOT EXISTS remote_directory_revisions (
+                origin_instance_id TEXT PRIMARY KEY, revision INTEGER NOT NULL,
+                gap_revision INTEGER NOT NULL, snapshot_hash TEXT NOT NULL)""")
             self._db.execute("""
                 CREATE TABLE IF NOT EXISTS federated_messages (
                     origin_instance_id TEXT NOT NULL,
@@ -289,82 +292,150 @@ class FederationStore:
                                     route=route, revision=revision,
                                     state="current", metadata=projected)
 
-    def apply_directory(self, *, origin_instance_id: str, route: str, revision: int,
-                        state: str, metadata: dict[str, Any]) -> dict[str, Any]:
-        _check_id(origin_instance_id, INSTANCE_RE, "origin instance")
+    def _directory_entry(self, origin: str, route: str, revision: int,
+                         state: str, metadata: dict[str, Any]) -> None:
+        _check_id(origin, INSTANCE_RE, "origin instance")
         _check_id(route, ROUTE_RE, "route")
-        if not isinstance(revision, int) or revision < 1:
+        if type(revision) is not int or revision < 1:
             raise ValueError("directory revision must be positive")
-        if state not in {"current", "stale", "withdrawn", "gap", "resync_required"}:
+        if not isinstance(state, str) or state not in {"current", "stale", "withdrawn", "gap", "resync_required"}:
             raise ValueError("invalid directory state")
-        if not isinstance(metadata, dict) or len(json.dumps(metadata, separators=(",", ":"))) > MAX_METADATA:
+        if not isinstance(metadata, dict) or len(json.dumps(metadata, allow_nan=False)) > MAX_METADATA:
             raise ValueError("directory metadata exceeds limit")
         if set(metadata) - ALLOWED_DIRECTORY_FIELDS:
             raise ValueError("directory metadata contains unapproved authority fields")
-        forbidden = {"session_secret", "credential", "privilege", "execution", "wake"}
-        if forbidden.intersection(metadata):
-            raise ValueError("directory metadata contains authority fields")
-        with self._lock, self._db:
-            existing = self._db.execute("SELECT revision FROM remote_directory WHERE origin_instance_id=? AND route=?", (origin_instance_id, route)).fetchone()
-            if existing and revision < existing["revision"]:
-                return dict(self._db.execute("SELECT * FROM remote_directory WHERE origin_instance_id=? AND route=?", (origin_instance_id, route)).fetchone())
-            if existing and revision == existing["revision"]:
-                current = self._db.execute("SELECT state, metadata FROM remote_directory WHERE origin_instance_id=? AND route=?", (origin_instance_id, route)).fetchone()
-                if current["state"] != state or json.loads(current["metadata"]) != metadata:
-                    raise ValueError("conflicting directory revision")
-                result = dict(self._db.execute("SELECT * FROM remote_directory WHERE origin_instance_id=? AND route=?", (origin_instance_id, route)).fetchone())
-                result["metadata"] = json.loads(result["metadata"])
-                return result
-            self._db.execute("""
-                INSERT INTO remote_directory(origin_instance_id, route, revision, state, metadata, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(origin_instance_id, route) DO UPDATE SET revision=excluded.revision,
-                    state=excluded.state, metadata=excluded.metadata, updated_at=excluded.updated_at
-            """, (origin_instance_id, route, revision, state, json.dumps(metadata, sort_keys=True), _now()))
-            row = self._db.execute("SELECT * FROM remote_directory WHERE origin_instance_id=? AND route=?", (origin_instance_id, route)).fetchone()
+
+    def _directory_row(self, origin: str, route: str) -> dict[str, Any] | None:
+        row = self._db.execute("SELECT * FROM remote_directory WHERE origin_instance_id=? AND route=?",
+                               (origin, route)).fetchone()
+        if row is None:
+            return None
         result = dict(row)
         result["metadata"] = json.loads(result["metadata"])
         return result
 
+    def _write_directory(self, origin: str, route: str, revision: int, state: str,
+                         metadata: dict[str, Any], *, resync: bool = False) -> dict[str, Any]:
+        existing = self._directory_row(origin, route)
+        if existing and revision < existing["revision"]:
+            return existing
+        if existing and revision == existing["revision"]:
+            if existing["state"] == state and existing["metadata"] == metadata:
+                return existing
+            if not (resync and existing["state"] in {"gap", "resync_required"}):
+                raise ValueError("conflicting directory revision")
+        self._db.execute("""INSERT INTO remote_directory VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(origin_instance_id, route) DO UPDATE SET revision=excluded.revision,
+                state=excluded.state, metadata=excluded.metadata, updated_at=excluded.updated_at""",
+            (origin, route, revision, state, json.dumps(metadata, sort_keys=True), _now()))
+        result = self._directory_row(origin, route)
+        assert result is not None
+        return result
+
+    def _directory_revision(self, origin: str) -> dict[str, Any]:
+        row = self._db.execute("SELECT * FROM remote_directory_revisions WHERE origin_instance_id=?",
+                               (origin,)).fetchone()
+        if row:
+            return dict(row)
+        # Existing projection rows are retained on upgrade. An inherited gap is
+        # never promoted to a contiguous accepted stream by reconstruction.
+        rows = self.directory(origin_instance_id=origin)
+        revision = max((r["revision"] for r in rows if r["state"] not in {"gap", "resync_required"}), default=0)
+        gap = max((r["revision"] for r in rows if r["state"] in {"gap", "resync_required"}), default=0)
+        return {"revision": revision, "gap_revision": gap, "snapshot_hash": ""}
+
+    def _save_directory_revision(self, origin: str, revision: int, gap: int,
+                                 snapshot_hash: str = "") -> None:
+        self._db.execute("""INSERT INTO remote_directory_revisions VALUES (?, ?, ?, ?)
+            ON CONFLICT(origin_instance_id) DO UPDATE SET revision=excluded.revision,
+                gap_revision=excluded.gap_revision, snapshot_hash=excluded.snapshot_hash""",
+            (origin, revision, gap, snapshot_hash))
+
+    def apply_directory(self, *, origin_instance_id: str, route: str, revision: int,
+                        state: str, metadata: dict[str, Any]) -> dict[str, Any]:
+        self._directory_entry(origin_instance_id, route, revision, state, metadata)
+        with self._lock, self._db:
+            return self._write_directory(origin_instance_id, route, revision, state, metadata)
+
     def directory_snapshot(self, *, origin_instance_id: str, revision: int,
                            entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Apply a complete owner snapshot without deleting on malformed input."""
+        """Validate a complete snapshot before one atomic projection transaction."""
+        _check_id(origin_instance_id, INSTANCE_RE, "origin instance")
+        if type(revision) is not int or revision < 1:
+            raise ValueError("directory revision must be positive")
         if not isinstance(entries, list) or len(entries) > 256:
             raise ValueError("directory snapshot exceeds limit")
-        validated = []
+        validated: dict[str, tuple[str, dict]] = {}
         for entry in entries:
-            if not isinstance(entry, dict):
+            if not isinstance(entry, dict) or set(entry) - {"route", "state", "metadata"}:
                 raise ValueError("invalid directory snapshot entry")
-            validated.append(self.apply_directory(
-                origin_instance_id=origin_instance_id,
-                route=entry["route"], revision=revision,
-                state=entry.get("state", "current"),
-                metadata=entry.get("metadata", {})))
-        return validated
+            route, state, metadata = entry.get("route"), entry.get("state", "current"), entry.get("metadata", {})
+            if not isinstance(route, str):
+                raise ValueError("invalid directory snapshot route")
+            self._directory_entry(origin_instance_id, route, revision, state, metadata)
+            if route in validated:
+                raise ValueError("duplicate directory snapshot route")
+            validated[route] = (state, metadata)
+        digest = hashlib.sha256(json.dumps(validated, sort_keys=True, allow_nan=False).encode()).hexdigest()
+        with self._lock, self._db:
+            stream = self._directory_revision(origin_instance_id)
+            if revision < max(stream["revision"], stream["gap_revision"]):
+                return self.directory(origin_instance_id=origin_instance_id)
+            if revision == stream["revision"] and stream["snapshot_hash"]:
+                if digest != stream["snapshot_hash"]:
+                    raise ValueError("conflicting directory snapshot revision")
+                return self.directory(origin_instance_id=origin_instance_id)
+            for route, (state, metadata) in validated.items():
+                self._write_directory(origin_instance_id, route, revision, state, metadata, resync=True)
+            for row in self.directory(origin_instance_id=origin_instance_id):
+                if row["route"] not in validated:
+                    self._write_directory(origin_instance_id, row["route"], revision, "withdrawn", {}, resync=True)
+            self._save_directory_revision(origin_instance_id, revision, 0, digest)
+            return self.directory(origin_instance_id=origin_instance_id)
+
+    def _mark_directory_gap(self, origin: str, route: str, revision: int,
+                            stream: dict[str, Any]) -> dict[str, Any]:
+        self._db.execute("UPDATE remote_directory SET state='gap' WHERE origin_instance_id=? AND state!='withdrawn'",
+                         (origin,))
+        existing = self._directory_row(origin, route)
+        result = self._write_directory(origin, route, max(revision, existing["revision"] if existing else 0),
+                                       "gap", existing["metadata"] if existing else {}, resync=True)
+        self._save_directory_revision(origin, stream["revision"], max(revision, stream["gap_revision"]))
+        return result
 
     def mark_directory_gap(self, *, origin_instance_id: str, route: str,
                            revision: int) -> dict[str, Any]:
-        """Record an explicit gap; never infer withdrawal from missing pages."""
-        return self.apply_directory(origin_instance_id=origin_instance_id,
-                                     route=route, revision=revision,
-                                     state="gap", metadata={})
+        """Keep last valid metadata while marking the entire origin non-current."""
+        self._directory_entry(origin_instance_id, route, revision, "gap", {})
+        with self._lock, self._db:
+            stream = self._directory_revision(origin_instance_id)
+            if revision <= stream["revision"]:
+                row = self._directory_row(origin_instance_id, route)
+                if row is not None:
+                    return row
+                raise ValueError("stale directory gap for unknown route")
+            return self._mark_directory_gap(origin_instance_id, route, revision, stream)
 
     def apply_directory_delta(self, *, origin_instance_id: str, route: str,
                               revision: int, state: str,
                               metadata: dict[str, Any]) -> dict[str, Any]:
-        """Apply one contiguous delta or record a bounded resync gap."""
-        _check_id(origin_instance_id, INSTANCE_RE, "origin instance")
-        _check_id(route, ROUTE_RE, "route")
-        existing = self._db.execute(
-            "SELECT revision FROM remote_directory WHERE origin_instance_id=? AND route=?",
-            (origin_instance_id, route),
-        ).fetchone()
-        if existing is not None and revision > existing["revision"] + 1:
-            return self.mark_directory_gap(origin_instance_id=origin_instance_id,
-                                           route=route, revision=revision)
-        return self.apply_directory(origin_instance_id=origin_instance_id,
-                                    route=route, revision=revision,
-                                    state=state, metadata=metadata)
+        """Only a contiguous per-origin delta can advance a current stream."""
+        self._directory_entry(origin_instance_id, route, revision, state, metadata)
+        with self._lock, self._db:
+            stream = self._directory_revision(origin_instance_id)
+            if stream["gap_revision"] or revision > stream["revision"] + 1:
+                return self._mark_directory_gap(origin_instance_id, route, revision, stream)
+            if revision <= stream["revision"]:
+                existing = self._directory_row(origin_instance_id, route)
+                if revision == stream["revision"] and (existing is None or existing["revision"] != revision
+                        or existing["state"] != state or existing["metadata"] != metadata):
+                    raise ValueError("conflicting directory revision")
+                if existing is None:
+                    raise ValueError("stale directory delta for unknown route")
+                return existing
+            result = self._write_directory(origin_instance_id, route, revision, state, metadata)
+            self._save_directory_revision(origin_instance_id, revision, 0)
+            return result
 
     def directory(self, *, origin_instance_id: str | None = None) -> list[dict[str, Any]]:
         query = "SELECT * FROM remote_directory"
