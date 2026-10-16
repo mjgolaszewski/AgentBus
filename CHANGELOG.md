@@ -7,6 +7,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ### P11 federation foundation
 
+- Document the post-fix receipt retry custody boundary, strict legacy-row
+  migration, exact protected-main identity, and bounded no-republish evidence.
 - Classify federation receipt frames as a distinct durable obligation kind.
   Receipt submissions still retry after an uncertain provider result, while a
   confirmed provider submission is terminal and cannot generate recurring
