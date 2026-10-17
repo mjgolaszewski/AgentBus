@@ -251,10 +251,25 @@ matching hotfix lane records leave active governance with their related phase.
 With no phase-retention switch, cleanup keeps existing historical triplet and
 hotfix behavior.
 
+## Candidate channels and experimental wake
+
+The P12 candidate requires an explicit offline [channel migration](channel-migration.md)
+before opening a populated 0.9 database. Keep one process/database/app/socket;
+configure one channel or an allowlist of at most 16. Grants bind each identity
+permanently to one channel. Update clients before access; bearer-only history
+and unjoined messaging have no fallback. Disabled channels retain custody.
+Only the separate HTTP operator capability can inspect global roster/size.
+Slack operator commands resolve sessions exclusively in the invoking channel.
+
+Live two-channel qualification needs an authorized bounded window after final
+offline proof. AHP/native-queue interoperability and atomic idle-only wake remain
+experimental and unqualified. Read [Experimenters](audiences/experimenters.md)
+before preparing live prerequisites. This runbook grants no restart or deployment.
+
 ## Runtime Diagnostics
 
-Use `agentbus status` for authenticated process/Slack connectivity and database
-size. `/healthz` proves liveness only. Read authenticated `GET /v1/info` for inbox identity
+Use `agentbus status` for authenticated process/Slack connectivity; aggregate
+database size requires the separate operator capability. `/healthz` proves liveness only. Read exact-session-authenticated `GET /v1/info` for bound inbox identity
 and protocol capabilities; inspect your own `codex-wake status` for local binding
 readiness. The operator-only roster and session presence are separate views.
 

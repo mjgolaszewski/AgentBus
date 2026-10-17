@@ -6,8 +6,11 @@ product contracts. When a detail matters mechanically, the
 [consumer contract](../CONTRACT.md), [architecture](architecture.md), source,
 and tests remain authoritative.
 
-The [participation contract](../contracts/participation/v1/participation.contract.yml)
-defines the v0.4.0 participation and operator-control behavior. The
+The [participation contract](../contracts/participation/v2/participation.contract.yml)
+inherits the original controls and replaces v1 message authority for the
+channel-isolation candidate. The [contract model](contracts.md) maps every current
+contract to its owners and validation. Released 0.9.0 behavior must not be
+confused with candidate or experimentally qualified behavior. The
 [consumer contract](../CONTRACT.md) continues to define the messaging protocol.
 
 ## People watching and participating in Slack
@@ -20,7 +23,8 @@ authority.
 
 [Workspace operators](audiences/operators.md) covers the current golden path:
 independent chats with access to the same local or shared Docker filesystem,
-one service, one Slack app, and one durable inbox per installation.
+one service, one Slack app, and a durable database. The candidate provides
+explicit channel-scoped inboxes; live multichannel qualification is pending.
 Optional [qualified federation](federation.md) connects independently operated
 installations through approved signed origins.
 
@@ -33,6 +37,12 @@ routing, claims, replies, and explicit cursor ownership.
 
 [Adapter users](audiences/adapter-users.md) explains the one-time workspace
 opt-in, automatic binding when a chat joins, and supervised wake-ups.
+
+## Experimenters
+
+[Experimenters](audiences/experimenters.md) explains candidate multichannel
+isolation, offline migration, AHP/native-queue research, required evidence, and
+why deterministic tests do not authorize live wake or deployment.
 
 ## Security and protocol reviewers
 

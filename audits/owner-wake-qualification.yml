@@ -77,6 +77,8 @@ proposed_admission_requirements:
   - workspace opt-in
   - binding generation
   - owner incarnation
+  - exact backend and transport identity
+  - connection generation
   - policy revision
   - stable durable attempt and event references
   decision: owner checks eligibility and reserves idle turn in the same serialized operation; reject stale or busy without leaving a deferred
@@ -160,3 +162,46 @@ offline_schema_evidence:
   host_acceptance_qualified: false
   identity_boundary: Wire schema also accepts an empty ID and a non-user origin; client-only user origin, nonempty stable identity and exact owner
     authorization require separate adapter/host checks; no host acceptance or protocol defect inferred
+
+october_17_upstream_review:
+  reviewed_at_utc: '2026-10-17'
+  evidence_class: primary_upstream_metadata_and_independent_developer_reports
+  external_thread_issue:
+    url: https://github.com/openai/codex/issues/54683
+    state_at_review: open
+    correction: The supplied watch attachment also called this issue closed as duplicate; current upstream metadata says open
+    report: Same-server multi-client turns and loaded-session queue delivery are independent reports, not supported interoperability guarantees
+    loaded_queue_report: https://github.com/openai/codex/issues/54683#issuecomment-6231683263
+    unloaded_path: Private Desktop app-tools through an authenticated MCP child; excluded from production qualification
+  backend_selection:
+    url: https://github.com/openai/codex/pull/54681
+    merged_at_utc: '2026-10-16T19:13:56Z'
+    merge_commit: 440312f11396a58b312dd31798ec3393810d8ff8
+    guarantee_scope: Process-local backend selection identity and rejection of cross-backend selection or inappropriate fallback
+    limitation: A process-local BackendId is not a durable identity across process restarts or an externally authenticated owner credential
+  storage_outcomes:
+    url: https://github.com/openai/codex/pull/54664
+    merged_at_utc: '2026-10-16T17:32:20Z'
+    merge_commit: 96eb400d1231f0199e96f640c740096087cf3e9b
+    guarantee_scope: Internal thread storage distinguishes retryable failures from uncertain write outcomes; neither classification automatically retries
+    limitation: No supported idempotent wake submission API or transport-level retry authorization follows from these internal error types
+  release_inventory:
+    stable_observed: rust-v0.163.0
+    prerelease_observed: rust-v0.164.0-alpha.3
+    merged_changes_stable_qualification: not_established
+    installed_runtime_upgraded: false
+  qualification_requirements:
+  - Reject the same thread UUID on a different backend before submission; thread identity alone never establishes owner identity
+  - Invalidate connection observations after reconnect or owner restart; reauthenticate backend, owner incarnation, binding and permissions
+  - Do not redirect an unavailable selected owner to another server or transport, including after an unknown submission outcome
+  - Only operation-owner evidence can establish a submission did not commit and is safe to retry; storage error names alone cannot authorize resend
+  - Preserve original durable attempt after unknown outcome; query the same authenticated owner without creating another turn
+  - Qualify native queue separately as a weaker deferred-turn candidate; do not equate queue acceptance with conditional idle-only admission
+  - Test busy-owner races and intervening user turns for unwanted steering and unwanted later turns independently
+  next_offline_cases:
+  - matching_thread_foreign_backend_rejected
+  - reconnect_generation_invalidates_observation
+  - unavailable_owner_never_falls_back
+  - unknown_submission_preserves_attempt_without_retry
+  case_status: required_not_yet_executed_against_real_owner
+  decision: Continue offline AHP-first research with native queue as a separate fallback candidate; notification-only remains the runtime policy

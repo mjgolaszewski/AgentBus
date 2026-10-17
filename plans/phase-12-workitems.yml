@@ -35,3 +35,78 @@ workitems:
   acceptance_evidence:
   - test
   - contract-test
+- id: P12-P1-01
+  priority: P1
+  status: IN_PROGRESS
+  summary: deliver Contracts lifecycle and characterization
+  acceptance:
+  - Contracts lifecycle and characterization is implemented with the negative controls in the channel-isolation contract
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P12-P1-02
+  priority: P1
+  status: IN_PROGRESS
+  summary: deliver Channel registry and additive offline migration
+  acceptance:
+  - Channel registry and additive offline migration is implemented with the negative controls in the channel-isolation contract
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P12-P1-03
+  priority: P1
+  status: IN_PROGRESS
+  summary: deliver Operator-granted enrollment and strict session authorization
+  acceptance:
+  - Operator-granted enrollment and strict session authorization is implemented with the negative controls in the channel-isolation contract
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P12-P1-04
+  priority: P1
+  status: IN_PROGRESS
+  summary: deliver Scoped messaging and durable delivery
+  acceptance:
+  - Scoped messaging and durable delivery is implemented with the negative controls in the channel-isolation contract
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P12-P1-05
+  priority: P1
+  status: IN_PROGRESS
+  summary: deliver Client control and wake isolation
+  acceptance:
+  - Client control and wake isolation is implemented with the negative controls in the channel-isolation contract
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P12-P1-06
+  priority: P1
+  status: IN_PROGRESS
+  summary: deliver Single-channel federation containment
+  acceptance:
+  - Single-channel federation containment is implemented with the negative controls in the channel-isolation contract
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P12-P1-07
+  priority: P1
+  status: TODO
+  summary: deliver Canonical proof archive isolated install and bounded canary prerequisites
+  acceptance:
+  - Canonical proof archive isolated install and bounded canary prerequisites is implemented with the negative controls in the channel-isolation
+    contract
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P12-P1-08
+  priority: P1
+  status: IN_PROGRESS
+  summary: deliver Complete product editorial audit with line coverage dispositions current contract model and Experimenters seat
+  acceptance:
+  - Every included document has exact reviewed line coverage content hash findings and disposition; no pending document remains at editorial completion
+  - Current authority references models and examples match participation v2 and channel isolation without rewriting historical evidence
+  - Experimental capability references disclose qualification limits and link Experimenters guidance
+  - BCF machinery and changelog remain outside editorial scope
+  acceptance_evidence:
+  - contract-test

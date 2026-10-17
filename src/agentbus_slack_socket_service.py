@@ -16,7 +16,6 @@ from src.agentbus_federation_inbox_service import InboxProjectionError
 from src.agentbus_federation_service import CustodyCapacityError, DirectoryCapacityError
 from src.agentbus_settings_service import Settings
 from src.agentbus_slack_command_service import execute_command
-from src.agentbus_slack_reply_service import append_slack
 
 LOGGER = logging.getLogger("agentbus")
 
@@ -24,7 +23,9 @@ LOGGER = logging.getLogger("agentbus")
 class SlackReceiver:
     def __init__(self, store, channel: str, trusted_bot_id: str,
                  settings: Settings | None = None, federation_bridge=None):
-        self.store, self.channel, self.trusted_bot_id = store, channel, trusted_bot_id
+        self.store, self.trusted_bot_id = store, trusted_bot_id
+        self.channels = (channel,) if isinstance(channel, str) else tuple(channel)
+        self.channel = self.channels[0]
         self.settings = settings
         self.federation_bridge = federation_bridge
         self._commands = concurrent.futures.ThreadPoolExecutor(max_workers=2)
@@ -48,6 +49,9 @@ class SlackReceiver:
     def __call__(self, client: BaseSocketModeClient, request: SocketModeRequest) -> None:
         if request.type == "slash_commands":
             payload = request.payload if isinstance(request.payload, dict) else {}
+            if payload.get('channel_id') not in self.channels:
+                client.send_socket_mode_response(SocketModeResponse(envelope_id=request.envelope_id))
+                return
             command_id = str(payload.get("trigger_id") or request.envelope_id)
             if len(command_id) > 200:
                 command_id = request.envelope_id
@@ -69,6 +73,10 @@ class SlackReceiver:
             from src.agentbus_service import normalize_event
 
             event = request.payload.get("event")
+            channel = event.get('channel') if isinstance(event, dict) else None
+            if channel not in self.channels:
+                client.send_socket_mode_response(SocketModeResponse(envelope_id=request.envelope_id))
+                return
             try:
                 if isinstance(event, dict) and self.federation_bridge is not None and self.federation_bridge.accept_event(event):
                     client.send_socket_mode_response(SocketModeResponse(envelope_id=request.envelope_id))
@@ -77,18 +85,19 @@ class SlackReceiver:
                 LOGGER.error('Could not persist federation event; withholding acknowledgement')
                 return
             normalized = (
-                normalize_event(event, self.channel, self.trusted_bot_id)
+                normalize_event(event, channel, self.trusted_bot_id)
                 if isinstance(event, dict) else None
             )
             if normalized is not None:
                 ts, message = normalized
                 try:
                     if (self.trusted_bot_id and isinstance(event, dict) and event.get('bot_id') == self.trusted_bot_id and
-                            self.store.local_delivery.accept_event_echo(self.channel, ts, event.get('text'),
+                            self.store.local_delivery.accept_event_echo(channel, ts, event.get('text'),
                                 event.get('blocks'), event.get('thread_ts'))):
                         client.send_socket_mode_response(SocketModeResponse(envelope_id=request.envelope_id))
                         return
-                    append_slack(self.store, self.channel, ts, message)
+                    from src.agentbus_channel_ingress_service import append_scoped
+                    append_scoped(self.store, channel, ts, message, self.federation_bridge)
                 except (sqlite3.Error, OSError, ValueError):
                     LOGGER.error("Could not durably store Slack event; withholding acknowledgement")
                     return

@@ -24,9 +24,8 @@ def send_command(ns, values, checked_profile, resolve_identity, api):
         if bool(ns.identity) == bool(ns.sender):
             raise ClientError("Use exactly one of --identity or --sender.")
         sender = ns.sender
-        if ns.identity:
-            sender = resolve_identity(ns.identity)
-            send_profile, _ = checked_profile(values, sender)
+        sender = resolve_identity(ns.identity or ns.sender)
+        send_profile, _ = checked_profile(values, sender)
         if ns.broadcast and ns.recipient:
             raise ClientError("Use either --to/--recipient or --broadcast.")
         if ns.broadcast and ns.informational:
@@ -52,7 +51,9 @@ def send_command(ns, values, checked_profile, resolve_identity, api):
         if payload["text"] == "-":
             payload["text"] = sys.stdin.read()
 
-    session = profile_session_token(send_profile or {})
+    if send_profile is None:
+        raise ClientError("A joined sender profile is required")
+    session = profile_session_token(send_profile)
     explicit = getattr(ns, 'message_id', None)
     capable = values.get('_AGENTBUS_DELIVERY_VERSION') == '1' and session is not None
     if explicit is not None:
@@ -64,9 +65,9 @@ def send_command(ns, values, checked_profile, resolve_identity, api):
         if not capable:
             raise ClientError('Server must advertise durable delivery and the sender must have a joined session.')
     if not capable:
-        return api(values, '/v1/messages', payload, session_token=session)
+        return api(values, '/v1/messages', payload, session_token=session, inbox_id=send_profile["inbox_id"])
     key = explicit or str(uuid4())
     try:
-        return api(values, '/v1/messages', payload, session_token=session, delivery_key=key)
+        return api(values, '/v1/messages', payload, session_token=session, delivery_key=key, inbox_id=send_profile["inbox_id"])
     except ClientError as exc:
         raise ClientError(f'{exc} Retry the identical request with --message-id {key}; acceptance may be uncertain.') from None

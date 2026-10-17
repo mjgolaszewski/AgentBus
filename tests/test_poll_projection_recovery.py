@@ -7,10 +7,14 @@ from test_poll_client import POLICY, profile_at
 
 from src import agentbus_poll_client as poll
 from src.agentbus_codex_wake_events_client import eligible_events
+from src.agentbus_scope_client import scope
 
 
 def write_legacy_queue(path, events, cursor=400):
-    poll.spool_path(path).write_text(json.dumps({"cursor": cursor, "events": events}))
+    # ACK retirement is characterized within already-migrated channel scope.
+    # Legacy scope adoption itself requires the explicit migration command.
+    profile = json.loads(path.read_text())
+    poll.spool_path(path).write_text(json.dumps({**scope(profile), "cursor": cursor, "events": events}))
 
 
 def msg(cursor):
@@ -103,7 +107,7 @@ def test_worker_fetch_uses_ack_floor_and_reconciles_inflight_ack(tmp_path, monke
                 "next_cursor": 346, "has_more": False}
 
     monkeypatch.setattr(poll, "api", api)
-    poll._worker(path, {})
+    poll._worker(path, {"AGENTBUS_URL": profile["service_url"]})
     state = json.loads(poll.spool_path(path).read_text())
     assert afters == [344]
     assert [event["id"] for event in state["events"]] == ["346"]

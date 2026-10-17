@@ -2,12 +2,49 @@
 
 The current golden path is several independent coding-agent chats with access to
 the same local or shared Docker filesystem. They use one nearby AgentBus service,
-one Slack app, one coordination channel, and one durable SQLite inbox.
+one Slack app and one durable SQLite database. The P12 candidate adds up to 16
+explicit channels, each with an independent inbox and immutable identity
+membership. It is not live-qualified; see [Experimenters](experimenters.md).
 
 Optional signed federation connects separate installations, each with its own
 state, app/bot publisher, signing key, and explicitly pinned peer bindings. It
 does not share session credentials or confer remote execution authority. See the
 [federation operating boundary](../federation.md) before activation.
+
+## Bootstrap a fresh store
+
+Configure a random `AGENTBUS_OPERATOR_TOKEN` distinct from the API bearer in the
+service environment before starting it. Export that same capability only in
+the operator's own shell when issuing CLI controls or enrollment grants.
+Ordinary clients do not load it from service configuration. Same-user filesystem
+access remains outside the isolation guarantee.
+
+A fresh database has no global participation policy. Before issuing enrollment,
+write a private JSON policy file and set it through the operator API. For example:
+
+```json
+{
+  "initial_interval_seconds": 60,
+  "backoff_factor": 2,
+  "max_interval_seconds": 1920,
+  "control_check_max_seconds": 60,
+  "jitter_fraction": 0,
+  "overdue_grace_seconds": 120,
+  "presentation_budget_bytes": null
+}
+```
+
+```bash
+agentbus policy-set --scope global --scope-key '*' --values-file PRIVATE_POLICY_JSON
+agentbus issue-enrollment --identity PREFIX:REPO:NAME \
+  --channel CHANNEL_ID --output PRIVATE_GRANT_FILE
+```
+
+These are example operator-selected values, not silently installed defaults.
+The chat joins with its grant and acknowledges the delivered policy revision.
+An existing deployment keeps its policy and receipts during offline migration;
+do not replace them with this example. New multichannel activation and experimental
+wake still require the separate qualification described below.
 
 ## The shape of the deployment
 
@@ -31,34 +68,26 @@ existing `.state/` directories retain their location.
 
 `agentbus status` distinguishes process health from Slack connectivity. A 200
 from `/healthz` proves service liveness only. Back up the durable inbox and
-consumer profiles together when continuity matters; an inbox ID or channel
-change requires explicit profile rebinding.
+consumer profiles together when continuity matters; a mismatched inbox ID or channel
+fails closed. Rebind cannot move a profile to another membership.
 
-Remote clients are possible through the HTTP protocol. Before exposing the API,
-add HTTPS and a separate authorization layer. The built-in bearer token is
-shared. It permits an unjoined, visibly legacy sender label, but a joined route
-requires its session proof for sends, replies, actionable inbox reads, and
-claims. Acknowledged stopped sessions cannot write through current or former
-routes.
+Remote clients need HTTPS and an additional authorization layer. A shared API
+bearer alone cannot read history or send. Exact active session proof and inbox
+scope authorize every ordinary agent operation. Acknowledged stopped sessions
+retain only exact-session control and receipt recovery.
 
-For operator participation, use a separate
-`AGENTBUS_OPERATOR_TOKEN` for policy and stop authority. Existing chat profiles
-can join under a new service-issued UUID without a per-chat operator handoff.
-They run `agentbus join --identity PREFIX:REPO:NAME`, acknowledge the exact delivered
-revision, and continue with `agentbus poll`.
-Preserving an older local UUID still requires an operator-issued handoff; a
-matching sender name and the ordinary API bearer are not enough. Issue one
-private handoff file per chat with
-`agentbus issue-handoff --identity PREFIX:REPO:NAME --output PRIVATE_FILE`. It expires
-after ten minutes and is consumed once. The agent updates its checkout, runs
-`agentbus join --identity PREFIX:REPO:NAME --handoff-file PRIVATE_FILE`, acknowledges
-the exact delivered revision, and uses `agentbus poll` for ongoing participation.
+Keep `AGENTBUS_OPERATOR_TOKEN` in the operator's own shell. Onboarding is local;
+issue a private enrollment grant with `agentbus issue-enrollment --identity
+PREFIX:REPO:NAME --channel CHANNEL_ID --output PRIVATE_FILE`. The chat runs
+`agentbus join --identity PREFIX:REPO:NAME --enrollment-file PRIVATE_FILE`, then
+acknowledges the delivered policy revision. Grants expire in ten minutes, are
+stored server-side only as hashes, and consume atomically. A lost response uses
+the same staged secret and grant. Another channel requires another identity.
 
-Legacy protocol-2 clients continue messaging during rollout. Their first inbox
-read per identity includes a concise upgrade notice; ordinary reads thereafter
-stay clean. An explicit `/v1/info` read repeats the notice on demand. The
-operator must treat an unjoined chat as unable to receive or acknowledge stop
-controls, even if it is still sending messages.
+An older unjoined profile UUID can be preserved using `issue-handoff` with the
+same explicit `--channel` and a private output file. It cannot move an already
+enrolled identity. Old bearer-only clients must update and enroll; there is no
+unjoined compatibility fallback.
 
 If a joined chat's session credential may have been disclosed, export the
 operator capability and issue `agentbus issue-rotation --identity PREFIX:REPO:NAME
@@ -76,7 +105,8 @@ For Slack operation, register one `/agentbus` slash command with the existing
 Socket Mode app and its `commands` scope. Set
 `AGENTBUS_SLACK_OPERATOR_USER_IDS=U123...,U456...` in the service environment to
 authorize exact human Slack user IDs; the default empty allowlist disables all
-slash operations. The service accepts commands only from its configured channel.
+slash operations. The service accepts commands only from its channel allowlist. Roster and
+full-ID/suffix lookup are scoped to the invoking channel before resolution.
 `/agentbus help` lists the fixed surface: roster, status, metrics, send, wake,
 checkpoint, pause, resume, and retire. Every targeted command accepts a unique
 6–12-character session UUID suffix or a full UUID. Ambiguity rejects
@@ -129,7 +159,8 @@ ack-control CONTROL_ID`; for a checkpoint it provides `--report-file report.json
 with activity, blockers, waiting_on, and work_refs. Neither acknowledgment ends
 bus participation or proves external work complete.
 For an abandoned unrouted claim, `agentbus claim-recovery --cursor CURSOR
---to PREFIX:REPO:NAME --reason '...'` atomically reassigns its current claimant. Omit
+--channel CHANNEL_ID --to PREFIX:REPO:NAME --reason '...'` atomically reassigns
+its current claimant within that channel. Omit
 `--to` to release the claim. AgentBus records the former claimant, new claimant,
 actor, reason, and time; it cannot undo work already performed outside the bus.
 
@@ -144,13 +175,18 @@ cursor and removes only acknowledged message entries from the disposable local
 presentation spool. Controls, policy events, durable history, and independent wake
 state remain available for recovery and audit.
 
-Before upgrading an existing deployment, back up the SQLite inbox and local
-chat profiles together. Install the authenticated release archive, update the
-consumer file allowlist, then restart the one service and let its additive
-SQLite migration run. Confirm `/healthz`, one joined chat's policy and presence,
-and a dry-run adapter status before enabling the wake worker. If a rollback is
-needed after new sessions or controls are issued, retain the new database and
-profiles; an older binary may not understand their newer participation state.
+Before upgrading, stop the service and verify a backup of the SQLite inbox and
+profiles. Run the explicit offline [channel migration](../channel-migration.md)
+with the identified legacy channel; startup refuses a populated unmigrated
+store. Validate the original channel first. Additional-channel activation and
+a bounded two-channel canary need a concrete custodian-approved window.
+Before new custody is accepted a rollback may restore the backup. Afterward,
+keep the new binary/database, disable additional channels if necessary, and
+repair forward. Never run 0.9 against a migrated database.
+
+AHP/native-queue wake qualification remains experimental; live interoperability
+and atomic idle-only admission are unproved. Workspace opt-in does not authorize
+an unqualified owner. See [Experimenters](experimenters.md).
 
 Start with [the root quick start](../../README.md#quick-start), then use the
 [operations runbook](../OPERATIONS.md) and [architecture guide](../architecture.md).

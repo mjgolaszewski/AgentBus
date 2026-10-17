@@ -13,35 +13,7 @@ architecture:
   mandatory_rule_gate_policy:
     every_mandatory_rule_has_executable_gate: true
     human_review_only_allowed_with_rationale: true
-    human_review_only_rules:
-      - rule_id: architecture-module-size
-        rationale: lite profile defers this structural gate until standard promotion
-        reviewer_role: technical_lead
-        phase_log_evidence: phases/phase-01-log.yml
-      - rule_id: architecture-layer-membership
-        rationale: lite profile defers this structural gate until standard promotion
-        reviewer_role: technical_lead
-        phase_log_evidence: phases/phase-01-log.yml
-      - rule_id: architecture-context-membership
-        rationale: lite profile defers this structural gate until standard promotion
-        reviewer_role: technical_lead
-        phase_log_evidence: phases/phase-01-log.yml
-      - rule_id: architecture-import-boundaries
-        rationale: lite profile defers this structural gate until standard promotion
-        reviewer_role: technical_lead
-        phase_log_evidence: phases/phase-01-log.yml
-      - rule_id: architecture-cqrs-side
-        rationale: lite profile defers this structural gate until standard promotion
-        reviewer_role: technical_lead
-        phase_log_evidence: phases/phase-01-log.yml
-      - rule_id: architecture-router-thinness
-        rationale: lite profile defers this structural gate until standard promotion
-        reviewer_role: technical_lead
-        phase_log_evidence: phases/phase-01-log.yml
-      - rule_id: architecture-duplication
-        rationale: lite profile defers this structural gate until standard promotion
-        reviewer_role: technical_lead
-        phase_log_evidence: phases/phase-01-log.yml
+    human_review_only_rules: []
   production_module_policy:
     max_loc: 800
     excluded_path_tokens: [generated, migrations, migration, vendor, fixtures, snapshots, testdata, tests]

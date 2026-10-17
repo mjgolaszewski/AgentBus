@@ -16,9 +16,11 @@ from pathlib import Path
 from typing import Annotated, Callable, Literal
 
 import httpx
-from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request, Response
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError, model_validator
 
+from src.agentbus_channel_api_service import api_inbox, api_info, api_read, claim_message
+from src.agentbus_channel_store_service import ChannelStore
 from src.agentbus_claim_recovery_service import ClaimRecoveryStore
 from src.agentbus_control_store_service import ControlStore
 from src.agentbus_delivery_api_service import send_message
@@ -27,14 +29,13 @@ from src.agentbus_federation_api_service import FederationAcceptance, api_federa
 from src.agentbus_federation_service import FederationStore
 from src.agentbus_federation_slack_service import SlackFederationProvider, bounded_response, validate_carrier_echo
 from src.agentbus_local_delivery_service import LOCAL_REFERENCE_PREFIX, LOCATOR_PREFIX, LocalDeliveryStore
-from src.agentbus_message_authorization_service import require_message_route
 from src.agentbus_participation_api_service import (
-    UPGRADE_NOTICE,
     api_claim_recovery,
     api_control_ack,
     api_control_issue,
     api_control_status,
     api_control_stop,
+    api_enrollment_grant,
     api_policy_effective,
     api_policy_set,
     api_profile_handoff,
@@ -49,7 +50,6 @@ from src.agentbus_participation_api_service import (
     api_session_rotate_secret,
     api_session_self_presence,
     authenticate_operator,
-    upgrade_notice,
 )
 from src.agentbus_participation_store_service import ParticipationStore
 from src.agentbus_participation_store_service import StoppedMessageSession as StoppedMessageSession
@@ -63,7 +63,7 @@ from src.agentbus_send_rate_service import SendRateStore
 from src.agentbus_settings_service import Settings
 from src.agentbus_slack_socket_service import SlackReceiver as SlackReceiver
 from src.agentbus_slack_socket_service import build_socket
-from src.agentbus_status_api_service import api_health, api_status
+from src.agentbus_status_api_service import api_health, api_status, authenticate_status
 
 LOGGER = logging.getLogger("agentbus")
 IDENTIFIER = r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$"
@@ -161,6 +161,8 @@ class Claim(BaseModel):
 
 class Info(BaseModel):
     protocol_version: int = 2
+    chat_id: str | None = None
+    session_id: str | None = None
     inbox_id: str
     channel: str
     high_water_cursor: int
@@ -261,6 +263,8 @@ class MessageStore:
         self.claim_recovery = ClaimRecoveryStore(self._db, self._lock)
         self.federation = FederationStore(self._db, self._lock)
         self.local_delivery = LocalDeliveryStore(self)
+        self.channels = ChannelStore(self)
+        self.participation.channels = self.channels
 
     def first_legacy_notice(self, channel: str, identity: str) -> bool:
         """Return an onboarding notice once per legacy inbox identity."""
@@ -304,6 +308,7 @@ class MessageStore:
             )
         row = self._db.execute("SELECT * FROM messages WHERE channel = ? AND slack_ts = ?",
                                (channel, slack_ts)).fetchone()
+        self.channels.allocate(channel, row["cursor"])
         return self._message(row)
 
     def claim_slash_command(self, command_id: str) -> bool:
@@ -467,7 +472,7 @@ class MessageStore:
                                    (channel, slack_ts)).fetchone()
             if row is None:
                 cursor = self.local_delivery.observation_cursor(channel, slack_ts)
-                row = self._db.execute('SELECT * FROM messages WHERE cursor=?', (cursor,)).fetchone() if cursor else None
+                row = self._db.execute('SELECT * FROM messages WHERE channel=? AND cursor=?', (channel,cursor)).fetchone() if cursor else None
             return self._message(row) if row else None
 
     def close(self) -> None:
@@ -521,8 +526,12 @@ def normalize_event(event: dict, channel: str, trusted_bot_id: str) -> tuple[str
 
 
 class SlackPoster:
-    def __init__(self, settings: Settings, client: httpx.AsyncClient):
+    def __init__(self, settings: Settings, client: httpx.AsyncClient, *, channel: str | None = None, store=None):
         self.settings, self.client = settings, client
+        self.channel = channel or settings.slack_channel
+        self.store = store
+        if self.channel not in settings.channels:
+            raise ValueError("Posting channel is not configured")
 
     async def authenticated_bot_id(self) -> str:
         try:
@@ -540,9 +549,12 @@ class SlackPoster:
 
     async def observed_messages(self, after: str, limit: int) -> list[dict]:
         return await SlackFederationProvider(self.client, self.settings.slack_bot_token,
-                                              self.settings.slack_channel).history(after, limit)
+                                              self.channel).history(after, limit)
 
     async def post(self, message: SendMessage, *, message_id: str | None = None) -> str:
+        if self.store is not None:
+            from src.agentbus_channel_api_service import provider_message
+            message = provider_message(self.store, self.channel, message)
         label = f"{message.sender} → {message.recipient} · {message.kind} · {message.audience}"
         if message.repo:
             label += f" · {message.repo}"
@@ -554,7 +566,7 @@ class SlackPoster:
         display = visible_text(message.text)
         blocks.extend({"type": "section", "text": {"type": "plain_text", "text": display[i:i + 3000], "emoji": False}}
                       for i in range(0, len(display), 3000))
-        payload = {"channel": self.settings.slack_channel, "text": encode_envelope(message), "blocks": blocks,
+        payload = {"channel": self.channel, "text": encode_envelope(message), "blocks": blocks,
                    "parse": "none", "mrkdwn": False, "unfurl_links": False, "unfurl_media": False}
         if message.thread_ts:
             payload["thread_ts"] = message.thread_ts
@@ -577,7 +589,7 @@ class SlackPoster:
         if not isinstance(data, dict) or data.get("ok") is not True:
             raise HTTPException(502, "Slack rejected the message; check app permissions and channel membership")
         ts = data.get("ts")
-        if not isinstance(ts, str) or not re.fullmatch(SLACK_TS, ts) or data.get("channel") != self.settings.slack_channel:
+        if not isinstance(ts, str) or not re.fullmatch(SLACK_TS, ts) or data.get("channel") != self.channel:
             raise HTTPException(502, "Slack returned an unexpected message response; delivery is uncertain")
         if message_id is not None:
             validate_carrier_echo(data, encode_envelope(message), ts, locator=LOCATOR_PREFIX + message_id)
@@ -599,60 +611,11 @@ async def api_send(request: Request, message: SendMessage, response: Response,
     return await send_message(request, message, x_agentbus_session_token, response)
 
 
-def api_read(request: Request, after: Annotated[int, Query(ge=0)] = 0,
-             recipient: Annotated[str | None, Query(pattern=IDENTIFIER)] = None,
-             limit: Annotated[int, Query(ge=1, le=200)] = 100,
-             thread_ts: Annotated[str | None, Query(pattern=SLACK_TS)] = None) -> MessagePage:
-    settings = request.app.state.settings
-    page = request.app.state.store.read(
-        settings.slack_channel, after, recipient, limit, thread_ts
-    )
-    return page
-
-
-def api_info(request: Request, response: Response) -> Info:
-    response.headers['X-AgentBus-Delivery-Version'] = '1'
-    settings = request.app.state.settings
-    info = request.app.state.store.info(settings.slack_channel)
-    info.upgrade_notice = upgrade_notice(request)
-    return info
-
-
-def api_inbox(request: Request, identity: Annotated[str, Query(pattern=IDENTIFIER)],
-              after: Annotated[int, Query(ge=0)] = 0,
-              limit: Annotated[int, Query(ge=1, le=200)] = 100,
-              thread_ts: Annotated[str | None, Query(pattern=SLACK_TS)] = None,
-              context: bool = False,
-              x_agentbus_session_token: Annotated[str | None, Header()] = None) -> InboxPage:
-    settings = request.app.state.settings
-    require_message_route(request.app.state.store, identity, x_agentbus_session_token)
-    page = request.app.state.store.inbox(
-        settings.slack_channel, identity, after, limit, thread_ts, context
-    )
-    if upgrade_notice(request) and request.app.state.store.first_legacy_notice(
-        settings.slack_channel, identity,
-    ):
-        page.upgrade_notice = UPGRADE_NOTICE
-    return page
 
 
 def api_claim(request: Request, cursor: int, claim: ClaimRequest,
               x_agentbus_session_token: Annotated[str | None, Header()] = None) -> Claim:
-    settings = request.app.state.settings
-    require_message_route(request.app.state.store, claim.identity, x_agentbus_session_token)
-    try:
-        result = request.app.state.store.claim(settings.slack_channel, cursor, claim.identity)
-    except KeyError:
-        raise HTTPException(404, "message not found") from None
-    except ValueError as exc:
-        raise HTTPException(409, str(exc)) from None
-    if result.identity != claim.identity:
-        raise HTTPException(
-            409,
-            f"message already claimed by {result.identity}",
-            headers={"X-AgentBus-Claimed-By": result.identity},
-        )
-    return result
+    return claim_message(request, cursor, claim, x_agentbus_session_token)
 
 
 # BCF inventories this closed population, and FastAPI registers these exact
@@ -669,6 +632,7 @@ API_OPERATIONS: dict[str, Callable[..., object]] = {
     "policy_set": api_policy_set,
     "policy_effective": api_policy_effective,
     "session_enroll": api_session_enroll,
+    "enrollment_grant": api_enrollment_grant,
     "profile_handoff": api_profile_handoff,
     "rotation_grant": api_rotation_grant,
     "session_presence": api_session_presence,
@@ -702,7 +666,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
     app.add_middleware(RequestBodyLimit)
     auth = [Depends(authenticate)]
     app.add_api_route("/healthz", API_OPERATIONS["health"], methods=["GET"])
-    app.add_api_route("/v1/status", API_OPERATIONS["status"], methods=["GET"], dependencies=auth)
+    app.add_api_route("/v1/status", API_OPERATIONS["status"], methods=["GET"], dependencies=[Depends(authenticate_status)])
     app.add_api_route("/v1/messages", API_OPERATIONS["send"], methods=["POST"],
                       dependencies=auth, response_model=Message, status_code=201)
     app.add_api_route('/v1/federation/messages', API_OPERATIONS['federation_enqueue'], methods=['POST'],
@@ -721,6 +685,8 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                       dependencies=[Depends(authenticate_operator)], status_code=201)
     app.add_api_route("/v1/policy/effective", API_OPERATIONS["policy_effective"], methods=["GET"],
                       dependencies=auth)
+    app.add_api_route("/v1/sessions/enrollment-grants", API_OPERATIONS["enrollment_grant"], methods=["POST"],
+                      dependencies=[Depends(authenticate_operator)], status_code=201)
     app.add_api_route("/v1/sessions", API_OPERATIONS["session_enroll"], methods=["POST"],
                       dependencies=auth, status_code=201)
     app.add_api_route("/v1/sessions/profile-handoffs", API_OPERATIONS["profile_handoff"],

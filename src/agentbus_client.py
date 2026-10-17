@@ -7,8 +7,6 @@ import argparse
 import fcntl
 import json
 import os
-import re
-import secrets
 import signal
 import subprocess
 import sys
@@ -20,7 +18,7 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 from src.agentbus_delivery_client import send_command
-from src.agentbus_transport_client import ClientError, api, configuration, local_prefix, profile_session_token
+from src.agentbus_transport_client import ClientError, api, configuration, profile_session_token
 
 NAME_RE = r"^[a-z0-9][a-z0-9-]{0,31}$"
 REPO_RE = r"^[a-z0-9][a-z0-9._-]{0,63}$"
@@ -123,10 +121,7 @@ def load_profile(values: dict[str, str], identity: str, *, save_migration: bool 
             "created_at": now(), "updated_at": now(), "legacy_metadata": legacy,
         }
         if save_migration:
-            info = api(values, "/v1/info")
-            profile.update(inbox_id=info["inbox_id"], channel=info["channel"],
-                           service_url=values.get("AGENTBUS_URL"))
-            atomic_json(path, profile)
+            raise ClientError("Legacy profile requires operator-granted enrollment; no automatic inbox binding")
     return profile
 
 
@@ -142,15 +137,30 @@ def save_profile(values: dict[str, str], profile: dict) -> None:
 
 def checked_profile(values: dict[str, str], identity: str) -> tuple[dict, dict]:
     profile = load_profile(values, identity)
-    info = api(values, "/v1/info")
-    if (profile.get("inbox_id") != info["inbox_id"] or profile.get("channel") != info["channel"] or
+    info = api(values, "/v1/info", session_token=profile_session_token(profile), inbox_id=profile.get("inbox_id"))
+    required = {"session-required", "channel-isolation-v1", "channel-local-cursors-v1"}
+    if not required <= set(info.get("features", [])):
+        raise ClientError("Service does not support required channel isolation; no legacy fallback")
+    if (profile.get("chat_id") != info.get("chat_id") or (profile.get("participation") or {}).get("session_id") != info.get("session_id") or
+            profile.get("inbox_id") != info["inbox_id"] or profile.get("channel") != info["channel"] or
             profile.get("service_url") != values.get("AGENTBUS_URL")):
-        raise ClientError("Profile is bound to a different inbox; run `agentbus rebind --from now|beginning`.")
+        raise ClientError("Profile channel scope differs; operator enrollment is required; no automatic switch.")
+    profile["scope_verified"] = True
     if profile.get("rename_source"):
         from src.agentbus_rename_client import recover_rename_state
 
         recover_rename_state(values, profile)
     return profile, info
+
+
+def control_profile(values, identity):
+    profile = load_profile(values, identity, save_migration=False)
+    from src.agentbus_scope_client import scoped_api
+    session = profile.get("participation") or {}
+    presence = scoped_api(values, f"/v1/sessions/{session.get('session_id')}/self-presence", profile, api_call=api)
+    if any(presence.get(key) != profile.get(key) for key in ("chat_id", "channel", "inbox_id")) or presence.get("session_id") != session.get("session_id"):
+        raise ClientError("Control profile scope differs; evidence retained")
+    return profile, presence
 
 
 def adoption_block(profile: dict) -> str:
@@ -265,73 +275,12 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
         return 0
     if ns.command in {"start", "stop", "status", "autostart"}:
         return lifecycle(ns.command, project, values)
-    if ns.command == "issue-handoff":
-        identity = resolve_identity(ns.identity)
-        profile, _ = checked_profile(values, identity)
-        # The operator command never promotes a service .env value into caller
-        # authority. The operator must receive this capability explicitly.
-        operator_token = os.environ.get("AGENTBUS_OPERATOR_TOKEN", "")
-        if not operator_token or operator_token == values.get("AGENTBUS_API_TOKEN"):
-            raise ClientError("Export a separate AGENTBUS_OPERATOR_TOKEN for operator handoff.")
-        destination = Path(ns.output)
-        if destination.is_symlink() or destination.exists():
-            raise ClientError("Handoff output already exists; choose a new private path.")
-        result = api(values, "/v1/sessions/profile-handoffs", {
-            "chat_id": profile["chat_id"], "repo": profile["repo"], "route": identity,
-        }, bearer_token=operator_token)
-        descriptor = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(descriptor, "w") as stream:
-            stream.write(result["handoff_token"] + "\n")
-            stream.flush()
-            os.fsync(stream.fileno())
-        print(f"Handoff written to {destination}; expires in {result['expires_in_seconds']} seconds.")
-        return 0
-    if ns.command == "join":
-        identity = resolve_identity(ns.identity)
-        profile, _ = checked_profile(values, identity)
-        if profile.get("participation"):
-            raise ClientError("This profile already has a participation session.")
-        pending = profile.get("participation_pending")
-        if pending is None:
-            pending = {"session_secret": secrets.token_urlsafe(32)}
-            if ns.handoff_file is not None:
-                handoff_file = Path(ns.handoff_file)
-                if handoff_file.is_symlink() or not handoff_file.is_file() or handoff_file.stat().st_mode & 0o077:
-                    raise ClientError("Handoff file must be a regular private file (mode 0600).")
-                token = handoff_file.read_text().strip()
-                if len(token) < 32:
-                    raise ClientError("Handoff file has no valid token.")
-                pending["handoff_token"] = token
-            profile["participation_pending"] = pending
-            save_profile(values, profile)
-        result = api(values, "/v1/sessions", {
-            "repo": profile["repo"], "route": identity,
-            "display_name": profile["display_name"],
-            "session_secret": pending["session_secret"],
-            "handoff_token": pending.get("handoff_token"),
-        })
-        if pending.get("handoff_token") and result["chat_id"] != profile["chat_id"]:
-            raise ClientError("Service chat ID differs from the local profile; join is not committed.")
-        profile["chat_id"] = result["chat_id"]
-        profile["participation"] = {
-            "session_id": result["session_id"], "session_secret": pending["session_secret"],
-            "acknowledged_policy_revision": None, "policy_values": result["values"],
-        }
-        profile.pop("participation_pending", None)
-        save_profile(values, profile)
-        print(json.dumps({key: result[key] for key in ("chat_id", "session_id", "revision", "values", "sources", "ack_required")}, indent=2))
-        # Bind only the current host-verifiable Codex thread.
-        from src.agentbus_codex_wake_client import enroll_current
-        try:
-            wake = enroll_current(values, identity)
-            if wake["status"] != "workspace_disabled":
-                print(json.dumps({"codex_wake": wake}))
-        except ClientError as exc:
-            print(f"Codex wake enrollment pending: {exc}", file=sys.stderr)
-        cadence = result["values"]
-        print(f"Acknowledge with `agentbus policy-ack --identity {identity} {result['revision']}`. Active-turn checks: `agentbus poll --check --identity {identity}` at work checkpoints; "
-              f"back off {cadence['initial_interval_seconds']}s ×{cadence['backoff_factor']} to {cadence['max_interval_seconds']}s after quiet checks. Idle live-wakable chats end turns; the worker keeps checking. Empty checks print nothing.")
-        return 0
+    if ns.command in {"migrate-channels", "migrate-profile-scope"}:
+        from src.agentbus_channel_migration_client import migrate_database, migrate_profile
+        return migrate_database(ns, values) if ns.command == "migrate-channels" else migrate_profile(ns, values)
+    if ns.command in {"issue-handoff", "issue-enrollment", "join", "onboard"}:
+        from src.agentbus_enrollment_client import enrollment_command
+        return enrollment_command(ns, project, values, api)
     if ns.command == "policy-ack":
         identity = resolve_identity(ns.identity)
         profile, _ = checked_profile(values, identity)
@@ -339,7 +288,7 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
         if not session:
             raise ClientError("This chat is not joined; run `agentbus join`.")
         result = api(values, f"/v1/sessions/{session['session_id']}/policy-ack",
-                     {"revision": ns.revision}, session_token=session["session_secret"])
+                     {"revision": ns.revision}, session_token=session["session_secret"], inbox_id=profile["inbox_id"])
         from src.agentbus_poll_client import ensure_worker, policy_values_for_revision, retire_event
 
         path = identity_path(values, identity).resolve()
@@ -349,6 +298,8 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
         session["acknowledged_policy_revision"] = ns.revision
         save_profile(values, profile)
         retire_event(path, profile, "POLICY_CHANGED", ns.revision)
+        from src.agentbus_enrollment_client import announce_pending
+        announce_pending(values, profile, api)
         ensure_worker(path, values)
         print(f"ACK {result['receipt']} POLICY")
         return 0
@@ -383,17 +334,17 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
             time.sleep(0.25)
     if ns.command == "check-in":
         identity = resolve_identity(ns.identity)
-        profile, _ = checked_profile(values, identity)
+        profile, _ = control_profile(values, identity)
         session = profile.get("participation")
         if not session:
             raise ClientError("This chat is not joined; run `agentbus join`.")
         result = api(values, f"/v1/sessions/{session['session_id']}/check-in",
-                     {}, session_token=session["session_secret"])
+                     {}, session_token=session["session_secret"], inbox_id=profile["inbox_id"])
         print(json.dumps(result, indent=2))
         return 0
     if ns.command == "ack-control":
         identity = resolve_identity(ns.identity)
-        profile, _ = checked_profile(values, identity)
+        profile, _ = control_profile(values, identity)
         session = profile.get("participation")
         if not session:
             raise ClientError("This chat is not joined; run `agentbus join`.")
@@ -404,7 +355,7 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
             except (OSError, ValueError):
                 raise ClientError("Checkpoint report file must contain valid JSON.") from None
         result = api(values, f"/v1/controls/{ns.control_id}/targets/{session['session_id']}/ack",
-                     {"report": report}, session_token=session["session_secret"])
+                     {"report": report}, session_token=session["session_secret"], inbox_id=profile["inbox_id"])
         stopped = result["directive"] == "STOP"
         if stopped:
             session["stopped"] = True
@@ -414,59 +365,15 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
         retire_event(identity_path(values, identity).resolve(), profile, "CONTROL", ns.control_id)
         print(f"ACK {result['receipt']} RECORDED" + ("\nSTOP" if stopped else ""))
         return 0
-    if ns.command == "onboard":
-        ns.repo = ns.repo or current_repo()
-        prefix = local_prefix(values, required=True)
-        if not re.fullmatch(NAME_RE, ns.name):
-            raise ClientError("Chat names must be lowercase letters, digits, or hyphens (maximum 32).")
-        if not re.fullmatch(REPO_RE, ns.repo):
-            raise ClientError("Repository names must be lowercase letters, digits, dots, underscores, or hyphens (maximum 64).")
-        identity = f"{prefix}:{ns.repo}:{ns.name}"
-        if len(identity) > 80:
-            raise ClientError("Combined AgentBus identity exceeds 80 characters.")
-        path = identity_path(values, identity)
-        directory = path.parent
-        directory.mkdir(parents=True, exist_ok=True, mode=0o700)
-        with (directory / ".profiles.lock").open("a") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
-            if path.exists():
-                if ns.resume:
-                    profile, _ = checked_profile(values, identity)
-                    print(adoption_block(profile))
-                    return 0
-                raise ClientError(f"Identity {identity!r} already exists; use --resume to adopt it explicitly.")
-            info = api(values, "/v1/info")
-            cursor = 0 if ns.start_from == "beginning" else info["high_water_cursor"]
-            profile = {
-                "schema_version": 2, "chat_id": str(uuid.uuid4()), "identity": identity,
-                "repo": ns.repo, "name": ns.name,
-                "display_name": ns.display_name or ns.name.replace("-", " ").title(),
-                "role": ns.role, "voice": ns.voice,
-                "remit": ns.remit or f"Work on {ns.repo}", "values": ns.values,
-                "working_style": ns.working_style, "signature": ns.signature,
-                "persona_file": ns.persona_file,
-                "service_url": values["AGENTBUS_URL"], "inbox_id": info["inbox_id"],
-                "channel": info["channel"], "ack_cursor": cursor, "observed_cursor": cursor,
-                "created_at": now(), "updated_at": now(), "announcement": None,
-            }
-            atomic_json(path, profile)
-        if ns.announce is not None:
-            message = ns.announce or f"{profile['display_name']} joined as {identity}, role {profile['role']}. {profile['remit']}"
-            receipt = api(values, "/v1/messages", {"sender": identity, "recipient": "all",
-                          "audience": "broadcast", "kind": "introduction", "repo": ns.repo,
-                          "text": message})
-            profile["announcement"] = {"cursor": receipt["cursor"], "slack_ts": receipt["slack_ts"]}
-            save_profile(values, profile)
-        print(adoption_block(profile))
-        return 0
     if ns.command == "agents":
+        bound, _ = checked_profile(values, resolve_identity(getattr(ns, "identity", None)))
         directory = consumer_state_dir(values)
         profiles = []
         if directory.is_dir():
             for path in sorted(directory.glob("*.json")):
                 try:
                     data = json.loads(path.read_text())
-                    if isinstance(data, dict):
+                    if isinstance(data, dict) and all(data.get(k) == bound.get(k) for k in ("service_url", "inbox_id", "channel")):
                         profiles.append({key: data.get(key) for key in
                                          ("identity", "display_name", "repo", "role", "chat_id")})
                 except (OSError, ValueError):
@@ -502,7 +409,7 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
             query["thread_ts"] = ns.thread_ts
         if ns.context:
             query["context"] = "true"
-        result = api(values, "/v1/inbox?" + urlencode(query), session_token=profile_session_token(profile))
+        result = api(values, "/v1/inbox?" + urlencode(query), session_token=profile_session_token(profile), inbox_id=profile["inbox_id"])
         if not historical and result["messages"]:
             profile["observed_cursor"] = max(int(profile.get("observed_cursor", 0)),
                                              max(item["cursor"] for item in result["messages"]))
@@ -527,7 +434,9 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
     elif ns.command == "rebind":
         identity = resolve_identity(ns.identity)
         profile = load_profile(values, identity, save_migration=False)
-        info = api(values, "/v1/info")
+        info = api(values, "/v1/info", session_token=profile_session_token(profile), inbox_id=profile.get("inbox_id"))
+        if (profile.get("channel") != info["channel"] or profile.get("inbox_id") != info["inbox_id"] or profile.get("service_url") != values["AGENTBUS_URL"]):
+            raise ClientError("Rebind cannot switch channel or service membership")
         cursor = 0 if ns.start_from == "beginning" else info["high_water_cursor"]
         profile.update(inbox_id=info["inbox_id"], channel=info["channel"],
                        service_url=values["AGENTBUS_URL"], ack_cursor=cursor,
@@ -537,12 +446,13 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
     elif ns.command == "claim":
         identity = resolve_identity(ns.identity)
         profile, _ = checked_profile(values, identity)
-        result = api(values, f"/v1/messages/{ns.cursor}/claim", {"identity": identity}, session_token=profile_session_token(profile))
+        result = api(values, f"/v1/messages/{ns.cursor}/claim", {"identity": identity}, session_token=profile_session_token(profile), inbox_id=profile["inbox_id"])
     elif ns.command in {"reply", "send"}:
         result = send_command(ns, values, checked_profile, resolve_identity, api)
-    else:  # legacy raw read
-        query = {key: value for key, value in vars(ns).items() if key != "command" and value is not None}
-        result = api(values, "/v1/messages?" + urlencode(query))
+    else:  # Raw history remains inside the authenticated membership.
+        profile, _ = checked_profile(values, resolve_identity(getattr(ns, "identity", None)))
+        query = {key: value for key, value in vars(ns).items() if key not in {"command", "identity"} and value is not None}
+        result = api(values, "/v1/messages?" + urlencode(query), session_token=profile_session_token(profile), inbox_id=profile["inbox_id"])
     print(json.dumps(result, indent=2, ensure_ascii=False))
     return 0
 
@@ -719,6 +629,9 @@ CLI_OPERATIONS = {
     "claim": cli_claim,
     "reply": cli_reply,
     "issue-handoff": cli_issue_handoff,
+    "issue-enrollment": cli_issue_handoff,
+    "migrate-channels": cli_issue_handoff,
+    "migrate-profile-scope": cli_issue_handoff,
     "issue-rotation": cli_issue_rotation,
     "rotate-secret": cli_rotate_secret,
     "join": cli_join,

@@ -38,6 +38,7 @@ from src.agentbus_codex_wake_intent_client import (
     validate_intent,
 )
 from src.agentbus_poll_client import ensure_worker, worker_running
+from src.agentbus_scope_client import FIELDS, scope, scoped_api, verify_projection
 from src.agentbus_transport_client import ClientError, api, profile_session_token
 
 THREAD_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$")
@@ -257,6 +258,23 @@ def bind(values: dict[str, str], identity: str, thread_id: str,
         prior = _load(path) if path.exists() else None
         if prior and (prior.get("last_attempt") or {}).get("state") in {"starting", "uncertain"}:
             raise ClientError("Resolve the uncertain prior wake before rebinding")
+        if prior:
+            expected = scope(profile)
+            legacy = any(key not in prior for key in FIELDS)
+            if legacy and all(key not in prior or prior[key] == expected[key] for key in FIELDS):
+                attempt = prior.get("last_attempt")
+                if attempt and any(key in attempt and attempt[key] != expected[key] for key in FIELDS):
+                    raise ClientError("Foreign wake attempt scope; evidence retained")
+                intent = prior.get("wake_intent")
+                if intent and any(key in intent and intent[key] != expected[key] for key in FIELDS):
+                    raise ClientError("Foreign wake intent scope; evidence retained")
+                prior.update(expected)
+                if attempt:
+                    attempt.update(expected)
+                if intent:
+                    intent.update(expected)
+                _save(path, prior)
+            verify_projection(prior, profile)
         if prior and prior["chat_id"] == profile["chat_id"] and prior["session_id"] == session["session_id"] and prior["thread_id"] == thread_id:
             if enabled and not prior["enabled"]:
                 prior["enabled"] = True
@@ -265,7 +283,7 @@ def bind(values: dict[str, str], identity: str, thread_id: str,
                     "thread_id": thread_id, "binding_generation": prior["binding_generation"],
                     "enabled": prior["enabled"]}
         state = WakeBinding({
-            "schema_version": 1, "chat_id": profile["chat_id"],
+            "schema_version": 1, **scope(profile), "chat_id": profile["chat_id"],
             "session_id": session["session_id"], "thread_id": thread_id,
             "binding_generation": (prior["binding_generation"] + 1) if prior else 1,
             "enabled": enabled, "actor": "local-workspace-user" if auto_enable else "local-host-operator", "created_at": _now(),
@@ -301,6 +319,10 @@ def set_enabled(values: dict[str, str], identity: str, enabled: bool) -> dict:
 
 
 def _validate_binding(state: WakeBinding, profile: dict, session: dict) -> None:
+    verify_projection(state, profile)
+    attempt = state.get("last_attempt")
+    if attempt and any(attempt.get(key) != state.get(key) for key in FIELDS):
+        raise ClientError("Wake attempt scope differs; evidence retained")
     if (state.get("chat_id") != profile.get("chat_id") or
             state.get("session_id") != session.get("session_id") or
             state.get("thread_id") is None):
@@ -357,8 +379,8 @@ def status(values: dict[str, str], identity: str) -> dict:
     token = profile_session_token(profile)
     if token and values.get("AGENTBUS_URL") and values.get("AGENTBUS_API_TOKEN"):
         try:
-            service_presence = api(values, f"/v1/sessions/{session['session_id']}/self-presence",
-                                   session_token=token)
+            service_presence = scoped_api(values, f"/v1/sessions/{session['session_id']}/self-presence", profile,
+                                   session_token=token, api_call=api)
         except ClientError as exc:
             service_error = str(exc)
     else:
@@ -479,8 +501,8 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
             return finish({"status": "notification_only", "reason": "owning_host_endpoint_unavailable",
                     "eligible": refs})
         try:
-            presence = api(values, f"/v1/sessions/{session['session_id']}/self-presence",
-                           session_token=profile_session_token(profile))
+            presence = scoped_api(values, f"/v1/sessions/{session['session_id']}/self-presence", profile,
+                           session_token=profile_session_token(profile), api_call=api)
         except ClientError:
             return finish({"status": "service_unavailable", "eligible": refs})
         if (presence.get("session_id") != session["session_id"] or
@@ -573,7 +595,7 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
                 attempt = {"attempt_id": attempt_id, "fingerprint": fingerprint,
                            "candidate_ids": refs, "state": "starting", "observed_at": _now(),
                            "turn_id": None, "wake_epoch": state["wake_epoch"],
-                           "followup": followup}
+                           "followup": followup, **scope(profile)}
                 state["last_attempt"] = attempt
                 record_intent(state, "submitting", refs, reason=attempt_id)
                 _save(path, state)

@@ -82,7 +82,7 @@ def configuration(*, include_operator: bool = False) -> tuple[Path, dict[str, st
 
 def api(values: dict[str, str], path: str, payload: dict | None = None, *,
         bearer_token: str | None = None, session_token: str | None = None,
-        timeout_seconds: float | None = None, delivery_key: str | None = None) -> dict:
+        timeout_seconds: float | None = None, delivery_key: str | None = None, inbox_id: str | None = None) -> dict:
     token = bearer_token if bearer_token is not None else values.get("AGENTBUS_API_TOKEN", "")
     if path != "/healthz" and not token:
         raise ClientError("Set AGENTBUS_API_TOKEN in the environment or AgentBus .env file.")
@@ -103,6 +103,8 @@ def api(values: dict[str, str], path: str, payload: dict | None = None, *,
         headers["Authorization"] = f"Bearer {token}"
     if session_token is not None:
         headers["X-AgentBus-Session-Token"] = session_token
+    if inbox_id is not None:
+        headers["X-AgentBus-Inbox-ID"] = inbox_id
     if delivery_key is not None:
         try:
             if str(UUID(delivery_key)) != delivery_key:

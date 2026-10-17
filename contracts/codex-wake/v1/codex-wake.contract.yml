@@ -11,6 +11,9 @@ scope:
   security_extension: https://github.com/mjgolaszewski/AgentBus/issues/20
   wake_scan_extension: https://github.com/mjgolaszewski/AgentBus/issues/31
   deployment: same_accessible_dev_workspace_first
+  channel_authority: contracts/channels/v1/channel-isolation.contract.yml
+  experimental_qualification: live_AHP_native_queue_interoperability_and_atomic_idle_only_admission_unqualified
+  channel_binding: service_inbox_channel_chat_session_scope_required_for_scan_binding_intent_and_attempt
   non_goals: [AgentBus_core_launching_model_turns, Slack_as_host_authority, generic_agent_orchestrator, automatic_UI_thread_resumption_without_host_hook, exactly_once_turn_execution_without_host_proof]
   compatibility: [adapter_absence_does_not_change_AgentBus, protocol_2_messages_unchanged, participation_controls_and_acknowledgements_remain_agent_owned]
 architecture_constraints:
@@ -54,7 +57,7 @@ primitives:
   status: {fields: [session_proved_self_presence, binding, workspace_and_chat_switches, worker_liveness, assured_candidates, readiness, reason, observed_at, last_attempt, host_uncertainty], owner: adapter_projection}
 contracts:
   bind: after_explicit_workspace_opt_in_auto_enrollment_uses_host_verified_current_thread_and_joined_session_then_records_private_generation
-  enrollment: a_single_user_request_to_join_triggers_chat_registration_and_host_binding_without_per_chat_user_commands_while_operator_handoff_authority_remains_separate
+  enrollment: operator_grant_fixes_chat_channel_membership_before_session_registration_and_optional_host_verified_binding
   eligibility:
     priority: [control, required_policy, direct_blocker, other_direct_message, claimed_work]
     default_exclusions: [broadcast, unrouted_unclaimed, informational_to_all, addressed_to_another_chat, ambiguous, unchanged, legacy_sender]

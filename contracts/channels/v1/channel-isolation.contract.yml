@@ -1,0 +1,62 @@
+document:
+  kind: channel_isolation_contract
+  version: 1.0.0
+  status: active
+  path: contracts/channels/v1/channel-isolation.contract.yml
+scope:
+  service_processes: 1
+  sqlite_databases: 1
+  slack_apps: 1
+  socket_connections: 1
+  maximum_channels: 16
+  immutable_channel_per_identity: true
+  federation: existing channel only
+  boundary: AgentBus authorization; not hostile OS isolation or Slack public visibility
+authority:
+  membership: operator grant bound to channel route repository and optional chat UUID
+  grant_expiry_seconds: 600
+  ordinary_operations: matching active session resolves channel and inbox before any target lookup
+  channel_selection: no agent supplied destination selector
+  foreign_or_unknown_target: same denial without existence disclosure
+  legacy_unjoined: no message authority
+persistence:
+  internal_message_id: existing messages.cursor and custody foreign keys retained
+  public_cursor: monotonic channel-local position allocated with message transaction
+  legacy_migration: offline explicit legacy channel; dry-run and atomic apply; preserve existing public cursors and inbox UUID
+  disabled_channel: retain data and obligations; deny ordinary access and suspend posting
+interfaces:
+  transport: existing HTTP paths and protocol2 Slack envelopes
+  capabilities:
+  - session-required
+  - channel-isolation-v1
+  - channel-local-cursors-v1
+  inbox_assertion: X-AgentBus-Inbox-ID must match resolved principal
+  enrollment: operator-only enrollment-grants; agent consumes a private grant file
+  profile: service channel inbox chat session binding; no automatic switch
+invariants:
+- Every identity has exactly one immutable channel; every session and alias inherits that identity binding
+- Bearer authentication alone cannot read info history inbox context or message content or submit claims and messages
+- Session credentials are unambiguous across all identities including rotation and grant retries
+- Replies derive parent recipient and thread only within authenticated channel; foreign cursors have no meaning there
+- Broadcast reaches only the originating channel; no cross-channel forwarding or combined inbox
+- No global message sequence database size foreign roster or foreign metrics reaches agent projections
+- Trusted Slack bot frames still require local route channel ownership; provider echoes bind actual channel
+- Admission custody provider delivery host execution completion and semantic ACK remain separate
+- Federation directory enqueue and projection cannot use additional channel identities
+- Wake scope mismatch cannot submit acknowledge merge or advance a cursor; unqualified owners remain notification-only
+acceptance:
+- grant expiry replay lost-response concurrent consumption and wrong target
+- session missing wrong stopped rotated duplicate and foreign proofs
+- raw info history context thread claim send reply and error isolation
+- identical timestamps request IDs and overlapping public positions across channels
+- restart uncertain delivery channel outage and disabled-channel custody retention
+- profile spool rename wake and acknowledgement scope mismatch
+- legacy migration atomic failure idempotent replay and preserved custody references
+- canonical manifests provider JUnit protected PR exact-main archive and isolated installation
+live_qualification:
+  status: blocked_prerequisites_not_authorized
+  requires:
+  - two isolated operator-approved Slack channels
+  - bounded canary deployment window and rollback
+  - separately granted channel identities
+  not_implied_by: offline deterministic passing tests

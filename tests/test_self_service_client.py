@@ -15,7 +15,7 @@ def test_first_join_stages_credential_then_adopts_service_identity(monkeypatch, 
                "display_name": "New Chat", "chat_id": "old-local-uuid"}
     values = {"AGENTBUS_URL": "http://example.invalid", "AGENTBUS_API_TOKEN": "test"}
     attempts = []
-    monkeypatch.setattr(client, "checked_profile", lambda *_: (profile, {}))
+    monkeypatch.setattr(client, "load_profile", lambda *_args, **_kwargs: profile)
     monkeypatch.setattr(client, "save_profile", lambda *_: None)
     monkeypatch.setattr(wake, "enroll_current", lambda *_: {"status": "workspace_disabled"})
 
@@ -25,13 +25,17 @@ def test_first_join_stages_credential_then_adopts_service_identity(monkeypatch, 
         if len(attempts) == 1:
             raise ClientError("response lost")
         return {"chat_id": "server-issued-uuid", "session_id": "session-one",
+                "channel": "C123", "inbox_id": "inbox-one", "high_water_cursor": 0,
                 "revision": "revision-one", "values": {
                     "initial_interval_seconds": 60, "backoff_factor": 2,
                     "max_interval_seconds": 1920,
                 }, "sources": {}, "ack_required": True}
 
     monkeypatch.setattr(client, "api", enroll)
-    ns = Namespace(command="join", identity="agentbus:new-chat", handoff_file=None)
+    grant = tmp_path / "enrollment-grant"
+    grant.write_text("g" * 40)
+    grant.chmod(0o600)
+    ns = Namespace(command="join", identity="agentbus:new-chat", handoff_file=None, enrollment_file=str(grant))
     with pytest.raises(ClientError, match="response lost"):
         client._execute_command(ns, Path(tmp_path), values)
     assert profile["chat_id"] == "old-local-uuid"

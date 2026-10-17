@@ -11,7 +11,7 @@ def test_joined_send_negotiates_durable_custody_and_reports_retry_identity(monke
     from src.agentbus_delivery_client import send_command
 
     values = {'_AGENTBUS_DELIVERY_VERSION': '1'}
-    profile = {'repo': 'agentbus', 'participation': {'session_secret': 'private-session'}}
+    profile = {'inbox_id': 'inbox-one', 'repo': 'agentbus', 'participation': {'session_secret': 'private-session'}}
     calls = []
     def post(_values, path, payload, **kwargs):
         calls.append((path, payload, kwargs))
@@ -29,17 +29,17 @@ def test_joined_send_negotiates_durable_custody_and_reports_retry_identity(monke
     assert calls[1] == calls[0]
 
 
-def test_legacy_server_keeps_legacy_call_but_rejects_explicit_durable_identity():
+def test_immediate_transport_retains_session_scope_and_rejects_unnegotiated_durable_identity():
     from src.agentbus_delivery_client import send_command
 
     calls = []
-    profile = {'repo': 'agentbus', 'participation': {'session_secret': 'session'}}
+    profile = {'inbox_id': 'inbox-one', 'repo': 'agentbus', 'participation': {'session_secret': 'session'}}
     def post(*args, **kwargs):
         calls.append((args, kwargs))
         return {'cursor': 1}
     ns = parse_args(['reply', '--identity', 'agentbus:flower', '--to-cursor', '1', 'hello'])
     assert send_command(ns, {}, lambda *_: (profile, {}), lambda value: value, post) == {'cursor': 1}
-    assert calls[0][1] == {'session_token': 'session'}
+    assert calls[0][1] == {'session_token': 'session', 'inbox_id': 'inbox-one'}
     ns = parse_args(['reply', '--identity', 'agentbus:flower', '--to-cursor', '1',
                      '--message-id', '7d76697d-ed3f-4abf-afc9-45e20312f42a', 'hello'])
     with pytest.raises(ClientError, match='advertise'):

@@ -14,7 +14,8 @@ from urllib.parse import urlencode
 
 from src.agentbus_client import atomic_json
 from src.agentbus_participation_service import next_inbox_interval_values
-from src.agentbus_transport_client import ClientError, api, configuration, profile_session_token
+from src.agentbus_scope_client import scope, scoped_api, verify_projection
+from src.agentbus_transport_client import ClientError, api, configuration
 
 T = TypeVar("T")
 
@@ -28,7 +29,7 @@ def _spool_lock(profile_path: Path) -> Path:
 
 
 def _default_spool(profile: dict) -> dict:
-    return {"cursor": int(profile.get("ack_cursor", 0)), "events": []}
+    return {**scope(profile), "cursor": int(profile.get("ack_cursor", 0)), "events": []}
 
 
 def _ack_cursor(profile_path: Path, profile: dict) -> int:
@@ -36,6 +37,8 @@ def _ack_cursor(profile_path: Path, profile: dict) -> int:
     through = int(profile.get("ack_cursor", 0))
     try:
         current = json.loads(profile_path.read_text())
+        if scope(current) != scope(profile):
+            raise ClientError("Profile acknowledgement scope changed")
     except FileNotFoundError:
         return through
     except (OSError, ValueError):
@@ -69,6 +72,7 @@ def change_spool(profile_path: Path, profile: dict, change: Callable[[dict], T],
             state = json.loads(path.read_text())
         except FileNotFoundError:
             state = _default_spool(profile)
+        verify_projection(state, profile)
         before = json.dumps(state, sort_keys=True)
         through = _ack_cursor(profile_path, profile) if reconcile_ack else None
         if through is not None:
@@ -94,6 +98,8 @@ def read_spool_events(profile_path: Path, *, profile: dict | None = None) -> lis
         raise ClientError("AgentBus poll state is unreadable") from None
     if not isinstance(state, dict) or not isinstance(state.get("events"), list):
         raise ClientError("AgentBus poll state has an unsupported schema")
+    if profile is not None:
+        verify_projection(state, profile)
     return (state["events"] if profile is None else
             _events_after_ack(state["events"], _ack_cursor(profile_path, profile)))
 
@@ -260,10 +266,9 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
                 reported_backoff = min(float(policy["max_interval_seconds"]),
                                        max(float(policy["initial_interval_seconds"]),
                                            interval or float(policy["initial_interval_seconds"])))
-                response = api(values, f"/v1/sessions/{session['session_id']}/check-in",
+                response = scoped_api(values, f"/v1/sessions/{session['session_id']}/check-in", profile,
                                {"current_backoff_seconds": reported_backoff},
-                               session_token=session["session_secret"],
-                               timeout_seconds=request_timeout)
+                               timeout_seconds=request_timeout, api_call=api)
                 service_healthy = True
                 if "controls" in response:
                     def record_controls(state: dict) -> None:
@@ -301,9 +306,9 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
                     def cursor_of(state: dict) -> int:
                         return max(int(state["cursor"]), _ack_cursor(profile_path, profile))
                     cursor = change_spool(profile_path, profile, cursor_of)
-                    page = api(values, "/v1/inbox?" + urlencode({
+                    page = scoped_api(values, "/v1/inbox?" + urlencode({
                         "identity": profile["identity"], "after": cursor, "limit": 100,
-                    }), session_token=profile_session_token(profile), timeout_seconds=request_timeout)
+                    }), profile, timeout_seconds=request_timeout, api_call=api)
                     service_healthy = True
                     def record_messages(state: dict) -> int:
                         relevant = 0

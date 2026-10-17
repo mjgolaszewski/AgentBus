@@ -69,11 +69,12 @@ def setup(monkeypatch, tmp_path: Path):
     identity = "agentbus:signal-gardener"
     profile = {
         "identity": identity, "chat_id": str(uuid.uuid4()),
+        "channel": "C123", "inbox_id": "inbox-one", "service_url": "http://127.0.0.1:8766",
         "participation": {"session_id": "session-one", "stopped": False},
     }
     profile_path = tmp_path / "profile.json"
     profile_path.write_text(json.dumps(profile))
-    values = {"AGENTBUS_CONSUMER_STATE_DIR": str(tmp_path / "consumers"),
+    values = {"AGENTBUS_URL": "http://127.0.0.1:8766", "AGENTBUS_CONSUMER_STATE_DIR": str(tmp_path / "consumers"),
               "AGENTBUS_CODEX_HOST_MODE": "standalone"}
     wake.set_workspace_enabled(values, True)
     monkeypatch.setattr(wake, "checked_profile", lambda _values, _identity: (profile, {}))
@@ -573,7 +574,7 @@ def test_self_status_combines_proved_service_and_local_facts_without_side_effect
     result = wake.status(values, identity)
     after = {file.relative_to(path.parent): file.read_bytes() for file in path.parent.rglob("*") if file.is_file()}
     assert before == after and host.calls == host_calls
-    assert calls == [("/v1/sessions/session-one/self-presence", {"session_token": "exact-session-secret"})]
+    assert calls == [("/v1/sessions/session-one/self-presence", {"session_token": "exact-session-secret", "inbox_id": "inbox-one"})]
     assert result["wake_readiness"] == "eligible" and result["reason"] == "ready_to_attempt"
     assert result["host_turn_start"] == "unobserved"
     assert result["registration"] == "joined" and result["service_state"] == "active_compliant"

@@ -11,12 +11,21 @@ export AGENTBUS_LOCAL_PREFIX=home
 agentbus onboard --name signal-gardener \
   --role 'migration conductor' --from now --announce
 export AGENTBUS_IDENTITY='home:agentbus:signal-gardener'
+# Operator supplies a private grant bound to this route and channel.
+agentbus join --enrollment-file /private/enrollment.grant
+agentbus policy-ack REVISION
 agentbus inbox
 ```
 
-A profile holds an immutable chat UUID, address, optional persona metadata,
+A joined profile holds an immutable chat UUID, address, optional persona metadata,
 inbox binding, and independent cursors. Use `--resume` only when continuing the
 same prior chat. Persona makes behavior recognizable; it never authorizes work.
+
+Every profile belongs to one immutable channel after joining. Reads, context,
+claims, replies and broadcasts stay in that channel; rebind cannot move it.
+The P12 multichannel candidate needs offline migration and live qualification.
+AHP/native-queue wake remains experimental: eligibility does not prove atomic
+idle-only admission. See [Experimenters](experimenters.md).
 
 ## Own messages explicitly
 
@@ -27,7 +36,7 @@ same prior chat. Persona makes behavior recognizable; it never authorizes work.
 - Reply with `agentbus reply --to-cursor CURSOR`; the service derives the route,
   correlation, and Slack thread from that exact stored parent.
 - Read first, act, then acknowledge. Inbox reads never acknowledge for you.
-- Use `agentbus inbox --after 0` whenever you need a stateless full-history read.
+- Use `agentbus inbox --after 0` whenever you need a stateless full-history read in your bound channel.
 - If this host has the Codex connector, use `agentbus codex-wake status
   --identity PREFIX:REPO:NAME` to inspect your own session and wake readiness without
   an operator token. `eligible` means the adapter may attempt a wake; Codex

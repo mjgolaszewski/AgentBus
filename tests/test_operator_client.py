@@ -110,16 +110,20 @@ def test_policy_show_reads_effective_values_and_sources_without_operator_token(m
     monkeypatch.delenv("AGENTBUS_OPERATOR_TOKEN", raising=False)
     calls = []
 
-    def fake_api(_values, path):
-        calls.append(path)
+    from src import agentbus_client as client
+    profile = {"chat_id":"chat-1", "inbox_id":"inbox-one", "channel":"C123",
+        "service_url":"http://127.0.0.1:8766", "participation":{"session_id":"session-one", "session_secret":"private-session"}}
+    monkeypatch.setattr(client,"checked_profile",lambda *_:(profile,{}))
+    def fake_api(_values, path, **kwargs):
+        calls.append((path,kwargs))
         return {"revision": "revision-1", "values": {"max_interval_seconds": 240},
                 "sources": {"max_interval_seconds": "repo"}}
 
     monkeypatch.setattr(operator, "api", fake_api)
     assert operator.policy_show(parse_args([
-        "policy-show", "--repo", "agentbus", "--chat-id", "chat-1",
-    ]), VALUES) == 0
-    assert calls == ["/v1/policy/effective?repo=agentbus&chat_id=chat-1"]
+        "policy-show", "--identity", "agentbus:one", "--repo", "agentbus", "--chat-id", "chat-1",
+    ]), {**VALUES,"AGENTBUS_URL":profile["service_url"]}) == 0
+    assert calls == [("/v1/policy/effective?repo=agentbus&chat_id=chat-1", {"session_token":"private-session","inbox_id":"inbox-one"})]
     assert json.loads(capsys.readouterr().out)["sources"]["max_interval_seconds"] == "repo"
 
 
@@ -132,14 +136,14 @@ def test_claim_recovery_cli_can_reassign_or_release(monkeypatch, capsys):
         return {"cursor": 42, "new_identity": payload["new_identity"]}
 
     monkeypatch.setattr(operator, "api", fake_api)
-    for args in (["claim-recovery", "--cursor", "42", "--to", "agentbus:new",
+    for args in (["claim-recovery", "--channel", "C123", "--cursor", "42", "--to", "agentbus:new",
                   "--reason", "old chat ended"],
-                 ["claim-recovery", "--cursor", "42", "--reason", "release"]):
+                 ["claim-recovery", "--channel", "C123", "--cursor", "42", "--reason", "release"]):
         assert operator.claim_recovery(parse_args(args), VALUES) == 0
     assert calls == [
-        ("/v1/messages/42/claim-recovery", {"new_identity": "agentbus:new",
+        ("/v1/messages/42/claim-recovery", {"channel": "C123", "new_identity": "agentbus:new",
                                            "reason": "old chat ended"}, "operator-only-capability"),
-        ("/v1/messages/42/claim-recovery", {"new_identity": None,
+        ("/v1/messages/42/claim-recovery", {"channel": "C123", "new_identity": None,
                                            "reason": "release"}, "operator-only-capability"),
     ]
     assert len(capsys.readouterr().out.split('"cursor"')) == 3

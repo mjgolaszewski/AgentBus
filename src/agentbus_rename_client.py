@@ -8,6 +8,7 @@ import os
 import re
 
 from src.agentbus_poll_client import _append, _worker_lock, change_spool, ensure_worker, spool_path
+from src.agentbus_scope_client import scope, verify_projection
 from src.agentbus_transport_client import ClientError, api, local_prefix
 
 NAME = re.compile(r"^[a-z0-9][a-z0-9-]{0,31}$")
@@ -54,7 +55,7 @@ def rename_chat(ns, values: dict[str, str]) -> int:
         profile["rename_pending"] = new_route
         save_profile(values, profile)
     result = api(values, f"/v1/sessions/{session['session_id']}/rename",
-                 {"route": new_route}, session_token=session["session_secret"])
+                 {"route": new_route}, session_token=session["session_secret"], inbox_id=profile["inbox_id"])
     if result.get("chat_id") != profile["chat_id"] or result.get("new_route") != new_route:
         raise ClientError("Service rename receipt does not match this chat.")
     directory_lock = old_path.parent / ".profiles.lock"
@@ -108,8 +109,13 @@ def recover_rename_state(values: dict[str, str], profile: dict) -> None:
                 previous = json.loads(old_path.read_text())
             except (OSError, ValueError):
                 raise ClientError("Old profile needs manual recovery before route handoff.") from None
+            if scope(previous) != scope(profile):
+                raise ClientError("Rename profile scope mismatch; evidence retained")
             if previous.get("chat_id") != profile.get("chat_id"):
                 raise ClientError("Old route now belongs to another local chat.")
+        prior_spool = spool_path(old_path)
+        if prior_spool.exists():
+            verify_projection(json.loads(prior_spool.read_text()), profile)
         old_path.unlink(missing_ok=True)
     # The old worker owns the old path and exits when it disappears. Wait for
     # its lifetime lock before moving its undelivered semantic events.
@@ -125,6 +131,7 @@ def recover_rename_state(values: dict[str, str], profile: dict) -> None:
         if old_spool.exists():
             try:
                 old_state = json.loads(old_spool.read_text())
+                verify_projection(old_state, profile)
             except (OSError, ValueError):
                 raise ClientError("Old poll state needs recovery before the new worker starts.") from None
 

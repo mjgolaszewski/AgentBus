@@ -68,7 +68,8 @@ governance:
       finding_accounting: governance/findings.yml
       durable_context_and_active_artifact_pointers: MEMORY.yml
       observability_contract_templates: contracts/observability/v1/
-      operator_participation_contract: contracts/participation/v1/participation.contract.yml
+      operator_participation_contract: contracts/participation/v2/participation.contract.yml
+      channel_isolation_contract: contracts/channels/v1/channel-isolation.contract.yml
       optional_codex_wake_contract: contracts/codex-wake/v1/codex-wake.contract.yml
     duplication_rules: [repeated fields need a canonical owner, derived fields update with their source, template-pack ownership boundaries remain unless this file changes]
   phase_transition_contract:

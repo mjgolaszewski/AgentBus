@@ -9,6 +9,7 @@ from typing import Callable
 from urllib.parse import urlencode
 
 from src.agentbus_client import atomic_json, consumer_state_dir
+from src.agentbus_scope_client import scope, scoped_api, verify_projection
 from src.agentbus_transport_client import ClientError, api, profile_session_token
 
 # This is a fail-closed storage bound, never a lossy compaction threshold.
@@ -34,6 +35,7 @@ def _fresh(profile: dict, generation: int) -> dict:
     session = profile["participation"]
     return {
         "schema_version": 1,
+        **scope(profile),
         "chat_id": profile["chat_id"],
         "session_id": session["session_id"],
         "binding_generation": generation,
@@ -57,6 +59,7 @@ def read_state(values: dict[str, str], profile: dict, generation: int) -> dict:
         raise ClientError("Codex wake scan state is unreadable") from None
     if not isinstance(state, dict) or state.get("schema_version") != 1:
         raise ClientError("Codex wake scan state has an unsupported schema")
+    verify_projection(state, profile)
     if (state.get("chat_id") != profile["chat_id"] or
             state.get("session_id") != profile["participation"]["session_id"] or
             state.get("binding_generation") != generation):
@@ -95,9 +98,9 @@ def scan(values: dict[str, str], profile: dict, generation: int,
     state["cursor"] = max(state["cursor"], ack_cursor)
     for _ in range(page_budget):
         after = state["cursor"]
-        page = api(values, "/v1/inbox?" + urlencode({
+        page = scoped_api(values, "/v1/inbox?" + urlencode({
             "identity": profile["identity"], "after": after, "limit": 100,
-        }), session_token=token)
+        }), profile, api_call=api)
         messages = page.get("messages")
         next_cursor = page.get("next_cursor")
         has_more = page.get("has_more")

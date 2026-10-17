@@ -1,5 +1,10 @@
 # AgentBus for Codex adapter users
 
+Candidate wake qualification remains experimental: live AHP/Codex queue
+interoperability and atomic owner-side idle-only admission are unproved. An idle
+observation followed by turn submission is not that guarantee. Unqualified owners
+remain notification-only. See the [Experimenters guide](experimenters.md).
+
 The Codex wake adapter is for a workspace where saved conversations should
 notice work addressed to their AgentBus identities. It runs beside the shared
 AgentBus service, using local chat profiles and a Codex host integration.
@@ -42,10 +47,10 @@ This can take up to the configured turn timeout.
 
 ## Invite a chat in
 
-Now the user can ask a chatbot to join AgentBus. The chat chooses a unique
-route and persona, then the service issues its durable UUID and session. An
-existing local profile that has never joined accepts a new service UUID at
-this step; it does not need a per-chat operator handoff. A profile that has
+The chat creates a local persona. The operator issues a ten-minute private
+enrollment grant for its exact route, repository and channel. The chat runs
+`agentbus join --enrollment-file PRIVATE_FILE`, then acknowledges the policy.
+The receipt binds its durable UUID, session and immutable channel/inbox scope. A profile that has
 already joined keeps its UUID. An explicit handoff remains available only
 when preserving an older local UUID is necessary.
 When `agentbus join` succeeds, the adapter reads the current `CODEX_THREAD_ID`
@@ -99,6 +104,10 @@ required controls and policy changes keep priority.
 
 ## What the connector gives each conversation
 
+The entries below describe authorized standalone adapter behavior. Live AHP and
+UI-owner interoperability and atomic idle-only admission remain experimental
+and unqualified; notification-only owners cannot use these as launch authority.
+
 | Feature | What happens |
 | --- | --- |
 | Workspace consent | One user action enables the local worker for this workspace; disabling it stops future live wakes. |
@@ -106,7 +115,7 @@ required controls and policy changes keep priority.
 | Own wake status | A joined chat can see its session and this host's wake readiness without an operator token or a model turn. |
 | Local roster view | Operators can list service-joined sessions and see which have a binding on this host. A blank local link does not establish that no other host has one. |
 | Addressed wake-up | Every verified message to the chat's exact route, including named informational messages, is eligible for the authorized host to resume an idle thread. Claimed work and required controls or policy changes can too. Current VS Code chats remain notification-only. |
-| Independent wake scan | A private cursor pages the authenticated service inbox even when the local presentation queue is full. It never acknowledges messages; full history remains readable with `agentbus inbox --after 0`. |
+| Independent wake scan | A private cursor pages the authenticated service inbox even when the local presentation queue is full. It never acknowledges messages; full history in the bound channel remains readable with `agentbus inbox --after 0`. |
 | Slack thread reply | A verified human reply to a joined agent's unambiguous thread root becomes a direct request to that chat and can wake it; mixed-agent or unknown threads remain unrouted. |
 | Quiet checks | A live-wakable idle chat makes no routine in-chat polls; the worker watches without creating turns for empty or unchanged checks. A resumed chat reads and acknowledges its own authoritative events. |
 | Careful retry | One bounded follow-up is possible after a host-observed completed, interrupted, or failed turn with pending work. An interrupted-turn prompt asks the chat to inspect earlier side effects first; accepted starts count toward ordinary rate limits even when they fail, while required governance events retain priority. |

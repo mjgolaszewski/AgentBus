@@ -50,6 +50,7 @@ def enrolled(tmp_path):
                         db_path=tmp_path / "messages.sqlite3",
                         slack_operator_user_ids=frozenset({"U123"}))
     store = MessageStore(settings.db_path)
+    store.channels.configure(settings.channels)
     store.participation.set_policy(scope="global", scope_key="*", values=POLICY, actor="operator")
     _, session_id, revision = store.participation.enroll(
         repo="agentbus", route="agentbus:flower", display_name="Flower", session_secret=SECRET)
@@ -111,8 +112,8 @@ def test_suffix_collision_and_wrong_channel_fail_closed(enrolled):
     assert "configured channel" in command(settings, store, web, "roster", channel="COTHER")
     assert "at least six" in command(settings, store, web, "pause 123")
     _, second, revision = store.participation.enroll(
-        repo="agentbus", route="agentbus:other", display_name="Other", session_secret=SECRET)
-    store.participation.acknowledge_policy(second, SECRET, revision)
+        repo="agentbus", route="agentbus:other", display_name="Other", session_secret=SECRET+"-other")
+    store.participation.acknowledge_policy(second, SECRET+"-other", revision)
     collision = second[:-6] + session_id[-6:]
     store._db.execute("UPDATE participation_sessions SET session_id = ? WHERE session_id = ?", (collision, second))
     store._db.commit()
@@ -159,6 +160,7 @@ def test_pause_survives_service_restart(enrolled):
     assert "Work paused" in command(settings, store, web, f"pause {session_id[-6:]}")
     store.close()
     reopened = MessageStore(settings.db_path)
+    reopened.channels.configure(settings.channels)
     try:
         assert reopened.participation.self_presence(session_id, SECRET)["work_paused"] is True
         assert "Work resumed" in command(settings, reopened, web, f"resume {session_id[-6:]}")

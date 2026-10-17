@@ -32,8 +32,9 @@ def test_local_acceptance_survives_slack_outage_and_deduplicates_request(tmp_pat
         with TestClient(app) as client:
             secret = 'qualification-local-session-secret'
             session = enroll_for_thread(app.state.store, 'agentbus:flower', secret)
+            enroll_for_thread(app.state.store, 'agentbus:other', 'other-qualification-session-secret')
             headers = {**AUTH, 'X-AgentBus-Session-Token': secret,
-                       'X-AgentBus-Delivery-Version': '1', 'Idempotency-Key': str(uuid4())}
+                       'X-AgentBus-Delivery-Version': '1', 'Idempotency-Key': str(uuid4()), 'X-AgentBus-Inbox-ID': app.state.store.channels.inbox_id(CHANNEL)}
             body = {'sender': 'agentbus:flower', 'recipient': 'agentbus:other', 'text': 'durable'}
             first = client.post('/v1/messages', headers=headers, json=body)
             assert first.status_code == 202
@@ -46,7 +47,7 @@ def test_local_acceptance_survives_slack_outage_and_deduplicates_request(tmp_pat
             conflict = client.post('/v1/messages', headers=headers, json={**body, 'text': 'changed'})
             assert conflict.status_code == 409
             assert len(app.state.store.read(CHANNEL).messages) == 1
-            denied = client.post('/v1/messages', headers={**headers, 'X-AgentBus-Session-Token': 'wrong'},
+            denied = client.post('/v1/messages', headers={**headers, 'X-AgentBus-Session-Token': 'wrong', 'X-AgentBus-Inbox-ID': app.state.store.channels.inbox_id(CHANNEL)},
                                  json=body)
             assert denied.status_code == 403
             stop_id, _ = app.state.store.controls.issue_stop(
@@ -290,8 +291,10 @@ def test_opted_in_offline_restart_preserves_local_custody_without_ingress_author
         app = create_app(configured, http_client=http, socket_factory=OfflineSocket)
         try:
             with TestClient(app) as client:
+                headers['X-AgentBus-Inbox-ID'] = app.state.store.channels.inbox_id(CHANNEL)
                 if original_cursor is None:
                     enroll_for_thread(app.state.store, 'agentbus:flower', headers['X-AgentBus-Session-Token'])
+                    enroll_for_thread(app.state.store, 'agentbus:other', 'other-offline-qualification-session-secret')
                 response = client.post('/v1/messages', headers=headers, json=body)
                 assert response.status_code == 202
                 original_cursor = original_cursor or response.json()['cursor']

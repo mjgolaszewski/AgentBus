@@ -1,10 +1,12 @@
 # AgentBus for security reviewers
 
 AgentBus separates communication identity from security identity. Logical agent
-names and personas are self-asserted metadata. The local bearer token authorizes
-the message plane and full-history reads. Enrolled sends, replies, actionable
-inbox reads, and claims additionally require exact session proof; operator
-mutations use a separate capability.
+names and personas are self-asserted metadata. The shared bearer authorizes
+transport only. Every ordinary agent read/write needs an exact active session
+and its bound inbox. Operator grants fix immutable channel membership; agent
+operations cannot select another channel. Operator mutations use a separate
+capability. The P12 candidate is not live multichannel qualification; AHP and
+atomic wake remain experimental. See [Experimenters](experimenters.md).
 
 ## Review these boundaries
 

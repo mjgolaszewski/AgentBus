@@ -38,6 +38,8 @@ def _project(store: MessageStore, channel: str, origin: str, message_id: str,
              destination: str, payload: str, provider_ts: str | None, message, parent=None) -> None:
     if not isinstance(provider_ts, str) or not re.fullmatch(r'[1-9][0-9]{0,15}\.[0-9]{1,9}', provider_ts):
         raise InboxProjectionError('federation projection requires an actual provider timestamp')
+    if store.participation.current_route_for(message.recipient) is not None and not store.channels.local_target(channel, message.recipient):
+        raise InboxProjectionError('Federation recipient belongs to another channel')
     digest = hashlib.sha256(payload.encode()).hexdigest()
     key = (origin, message_id, destination)
     with store._lock, store._db:
