@@ -255,3 +255,168 @@ def test_duplicate_owned_carrier_observations_preserve_cursor_and_destination_ac
     assert store.local_delivery.observation_cursor(CHANNEL, '2.000001') == accepted.cursor
     assert len(store.read(CHANNEL).messages) == 1
     assert store.federation.obligation('home', key, 'remote')['state'] == 'acknowledged'
+
+
+def ordinary_network(pair):
+    from dataclasses import replace
+    from functools import partial
+
+    from src.agentbus_federation_inbox_service import bind_ordinary_delivery, project_ordinary
+    bridges, stores, providers, _ = pair
+    events = []
+    for name, bridge in bridges.items():
+        bridge.bindings = {key: replace(binding, ordinary_version=3) for key, binding in bridge.bindings.items()}
+        bind_ordinary_delivery(bridge, stores[name], CHANNEL)
+        bridge.project_ordinary = partial(project_ordinary, stores[name], CHANNEL)
+        provider = providers[name]
+        provider.events = events
+        async def threaded(text, thread, provider=provider):
+            reference = await provider.publish(text)
+            provider.events[-1]['thread_ts'] = thread
+            return reference
+        provider.publish_in_thread = threaded
+    return bridges, stores, providers, events
+
+
+def accept_reply(store, bridge, parent, sender):
+    from src.agentbus_reply_policy_service import derive_reply_fields
+    message = SendMessage(sender=sender, text='reply', reply_to_cursor=parent.cursor)
+    derive_reply_fields(store, CHANNEL, message)
+    message._sender_assurance = 'session'
+    key = str(uuid4())
+    accepted = store.local_delivery.accept(CHANNEL, key, fingerprint(message.model_dump()),
+                                          message, sender, bridge=bridge)
+    return key, accepted
+
+
+def test_versioned_duplex_reply_maps_origin_parent_not_foreign_cursor(pair):
+    bridges, stores, providers, events = ordinary_network(pair)
+    unrelated = stores['remote'].append(CHANNEL, '90.000001', SendMessage(sender='local', text='unrelated'))
+    root_key, root = accept_remote(bridges, stores)
+    asyncio.run(bridges['home'].submit_once())
+    bridges['remote'].receive(events[-1])
+    remote_root = stores['remote'].read(CHANNEL).messages[-1]
+    assert remote_root.cursor != root.cursor
+    reply_key, reply = accept_reply(stores['remote'], bridges['remote'], remote_root, 'remote:agentbus:receiver')
+    asyncio.run(bridges['remote'].submit_once())
+    reply_event = next(e for e in events if f'"origin_message_id":"{reply_key}"' in e['text'])
+    assert reply_event['thread_ts'] == root.slack_ts or reply_event['thread_ts'] == '1.000001'
+    bridges['home'].receive(reply_event)
+    projected = stores['home'].read(CHANNEL).messages[-1]
+    assert projected.reply_to_cursor == root.cursor and projected.thread_ts == '1.000001'
+    assert projected.sender_assurance == 'legacy'
+    assert stores['remote'].message(CHANNEL, unrelated.cursor).text == 'unrelated'
+    next_key, _ = accept_reply(stores['home'], bridges['home'], projected, 'home:agentbus:sender')
+    asyncio.run(bridges['home'].submit_once())
+    next_event = next(e for e in events if f'"origin_message_id":"{next_key}"' in e['text'])
+    bridges['remote'].receive(next_event)
+    last = stores['remote'].read(CHANNEL).messages[-1]
+    assert last.reply_to_cursor == reply.cursor and last.thread_ts == '1.000001'
+    assert stores['home'].federation.obligation('home', root_key, 'remote')['state'] != 'acknowledged'
+
+
+def test_unobserved_local_parent_retains_remote_reply_without_receipt_until_recovery(pair):
+    from src.agentbus_federation_inbox_service import InboxProjectionError
+    bridges, stores, providers, events = ordinary_network(pair)
+    _, root = accept_remote(bridges, stores)
+    publish = providers['home'].publish
+    async def lost(text):
+        await publish(text)
+        raise TimeoutError('response lost')
+    providers['home'].publish = lost
+    asyncio.run(bridges['home'].submit_once())
+    bridges['remote'].receive(events[0])
+    remote_root = stores['remote'].read(CHANNEL).messages[-1]
+    reply_key, _ = accept_reply(stores['remote'], bridges['remote'], remote_root, 'remote:agentbus:receiver')
+    asyncio.run(bridges['remote'].submit_once())
+    reply_event = next(e for e in events if f'"origin_message_id":"{reply_key}"' in e['text'])
+    with pytest.raises(InboxProjectionError):
+        bridges['home'].receive(reply_event)
+    assert len(stores['home'].read(CHANNEL).messages) == 1
+    assert stores['home']._db.execute('SELECT count(*) FROM federated_messages').fetchone()[0] == 1
+    assert stores['home']._db.execute("SELECT count(*) FROM bridge_obligations WHERE kind='receipt'").fetchone()[0] == 0
+    bridges['home'].receive(events[0])
+    bridges['home'].receive(reply_event)
+    assert stores['home'].read(CHANNEL).messages[-1].reply_to_cursor == root.cursor
+
+
+@pytest.mark.parametrize('fault', ['origin', 'destination', 'missing', 'owner', 'legacy', 'unbound'])
+def test_signed_reply_cannot_bind_unrelated_or_unqualified_local_parent(pair, fault):
+    from src.agentbus_federation_ordinary_service import encode_ordinary
+    from src.agentbus_federation_wire_service import encode_frame
+
+    bridges, stores, providers, events = ordinary_network(pair)
+    root_key, root = accept_remote(bridges, stores)
+    asyncio.run(bridges['home'].submit_once())
+    parent = {'origin_instance_id': 'home', 'origin_message_id': root_key,
+              'destination_instance_id': 'remote'}
+    recipient = 'home:agentbus:sender'
+    if fault == 'origin':
+        parent['origin_instance_id'] = 'remote'
+    elif fault == 'destination':
+        parent['destination_instance_id'] = 'home'
+    elif fault == 'missing':
+        parent['origin_message_id'] = str(uuid4())
+    elif fault == 'owner':
+        recipient = 'home:agentbus:other'
+    elif fault == 'legacy':
+        with stores['home']._db:
+            stores['home']._db.execute('UPDATE local_delivery_obligations SET federation_frame_hash=NULL')
+    elif fault == 'unbound':
+        with stores['home']._db:
+            stores['home']._db.execute("UPDATE bridge_obligations SET payload_hash='wrong'")
+    message = SendMessage(sender='remote:agentbus:receiver', recipient=recipient, text='hostile reply')
+    payload = encode_ordinary(message, parent)
+    frame = encode_frame(bridges['remote'].identity, 'message', str(uuid4()), 'home', payload, version=3)
+    with pytest.raises(ValueError):
+        bridges['home'].receive({'publisher_id': providers['remote'].publisher, 'text': frame, 'ts': '2.000001'})
+    assert [m.cursor for m in stores['home'].read(CHANNEL).messages] == [root.cursor]
+    assert stores['home']._db.execute('SELECT count(*) FROM federation_inbox_projection').fetchone()[0] == 0
+    assert stores['home']._db.execute("SELECT count(*) FROM bridge_obligations WHERE kind='receipt'").fetchone()[0] == 0
+
+
+def test_duplicate_versioned_incoming_carrier_retains_one_cursor_and_all_provider_aliases(pair):
+    bridges, stores, _, events = ordinary_network(pair)
+    key, _ = accept_remote(bridges, stores)
+    asyncio.run(bridges['home'].submit_once())
+    event = events[0]
+    bridges['remote'].receive(event)
+    cursor = stores['remote'].read(CHANNEL).messages[-1].cursor
+    bridges['remote'].receive(dict(event, ts='2.000001'))
+    bridges['remote'].receive(dict(event, ts='2.000001'))
+    assert len(stores['remote'].read(CHANNEL).messages) == 1
+    assert stores['remote'].local_delivery.observation_cursor(CHANNEL, event['ts']) == cursor
+    assert stores['remote'].local_delivery.observation_cursor(CHANNEL, '2.000001') == cursor
+    assert stores['remote']._db.execute('SELECT count(*) FROM federation_inbox_projection').fetchone()[0] == 1
+    assert stores['remote']._db.execute("SELECT count(*) FROM bridge_obligations WHERE kind='receipt'").fetchone()[0] == 1
+    assert stores['remote']._db.execute('SELECT origin_message_id FROM federated_messages').fetchone()[0] == key
+
+
+def test_versioned_reply_parent_mapping_survives_destination_store_restart(pair):
+    from functools import partial
+
+    from src.agentbus_federation_bridge_service import FederationBridge
+    from src.agentbus_federation_inbox_service import bind_ordinary_delivery, project_ordinary
+    from src.agentbus_service import MessageStore
+
+    bridges, stores, providers, events = ordinary_network(pair)
+    _, root = accept_remote(bridges, stores)
+    asyncio.run(bridges['home'].submit_once())
+    bridges['remote'].receive(events[0])
+    remote_root = stores['remote'].read(CHANNEL).messages[-1]
+    old = bridges['remote']
+    path = stores['remote']._db.execute('PRAGMA database_list').fetchone()[2]
+    stores['remote'].close()
+    stores['remote'] = store = MessageStore(Path(path))
+    bridge = FederationBridge(store.federation, old.identity, old.bindings, providers['remote'], now=old.now)
+    bridges['remote'] = bridge
+    bind_ordinary_delivery(bridge, store, CHANNEL)
+    bridge.project_ordinary = partial(project_ordinary, store, CHANNEL)
+    # Canonical persisted custody and projection, rather than process memory, own the parent.
+    key, reply = accept_reply(store, bridge, store.message(CHANNEL, remote_root.cursor), 'remote:agentbus:receiver')
+    asyncio.run(bridge.submit_once())
+    event = next(e for e in events if f'"origin_message_id":"{key}"' in e['text'])
+    bridges['home'].receive(event)
+    projected = stores['home'].read(CHANNEL).messages[-1]
+    assert projected.reply_to_cursor == root.cursor and projected.sender_assurance == 'legacy'
+    assert store.message(CHANNEL, reply.cursor).reply_to_cursor == remote_root.cursor

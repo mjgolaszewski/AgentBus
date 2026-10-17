@@ -105,7 +105,10 @@ class LocalDeliveryStore:
                                     if binding.route_prefix == recipient[0]), None)
                 if destination is None:
                     raise LocalDeliveryRejected(422, 'Remote route has no approved federation binding')
-                if message.reply_to_cursor is not None or message.thread_ts is not None:
+                ordinary = bridge.bindings[destination].ordinary_version == 3
+                if ordinary and bridge.ordinary_channel != channel:
+                    raise LocalDeliveryRejected(503, 'Ordinary federation requires the same configured channel')
+                if not ordinary and (message.reply_to_cursor is not None or message.thread_ts is not None):
                     raise LocalDeliveryRejected(422, 'Remote ancestry requires a versioned origin-parent mapping')
             store.send_rate._reserve(principal)
             accepted = store._append(channel, LOCAL_REFERENCE_PREFIX + key, message)
@@ -113,7 +116,12 @@ class LocalDeliveryStore:
                 (channel,request_id,request_hash,local_cursor,state) VALUES (?,?,?,?,?)''',
                 (channel, key, request_hash, accepted.cursor, 'federated' if destination else 'pending'))
             if destination is not None:
-                bridge.enqueue(key, destination, message.model_dump_json())
+                if bridge.bindings[destination].ordinary_version == 3:
+                    from src.agentbus_federation_ordinary_service import outgoing_parent
+                    parent = outgoing_parent(store, channel, message, bridge.identity.instance_id, destination)
+                    bridge.enqueue_ordinary(key, destination, message, parent)
+                else:
+                    bridge.enqueue(key, destination, message.model_dump_json())
                 obligation = store.federation.obligation(bridge.identity.instance_id, key, destination)
                 if obligation is None:
                     raise ValueError('ordinary federation enqueue did not retain custody')
@@ -204,24 +212,30 @@ class LocalDeliveryStore:
                                     (channel, key)).fetchone()
             if row is None:
                 raise ValueError('unknown local delivery')
-            existing = self.observation_cursor(channel, provider_ref)
-            if existing is not None and existing != row['local_cursor']:
-                raise ValueError('provider observation already belongs to another message')
-            occupied = store._db.execute('SELECT cursor FROM messages WHERE channel=? AND slack_ts=?',
-                                         (channel, provider_ref)).fetchone()
-            if occupied is not None and occupied[0] != row['local_cursor']:
-                raise ValueError('provider timestamp collision')
-            if existing is None:
-                if store._db.execute('SELECT count(*) FROM local_delivery_observations').fetchone()[0] >= 8192:
-                    raise ValueError('local provider observation capacity exhausted')
-                store._db.execute('INSERT INTO local_delivery_observations VALUES (?,?,?)',
-                                  (channel, provider_ref, row['local_cursor']))
+            self._observe_cursor(channel, row['local_cursor'], provider_ref)
             if row['provider_ref'] is None:
                 store._db.execute('UPDATE messages SET slack_ts=? WHERE cursor=?',
                                   (provider_ref, row['local_cursor']))
             store._db.execute('''UPDATE local_delivery_obligations SET state='submitted',
                 provider_ref=COALESCE(provider_ref,?) WHERE channel=? AND request_id=?''',
                 (provider_ref, channel, key))
+
+    def _observe_cursor(self, channel: str, cursor: int, provider_ref: str) -> None:
+        """Caller holds the owning writer transaction and proves cursor custody."""
+        store = self.owner
+        if not isinstance(provider_ref, str) or not re.fullmatch(r'[1-9][0-9]{0,19}\.[0-9]{1,20}', provider_ref):
+            raise ValueError('invalid provider reference')
+        existing = self.observation_cursor(channel, provider_ref)
+        if existing is not None and existing != cursor:
+            raise ValueError('provider observation already belongs to another message')
+        occupied = store._db.execute('SELECT cursor FROM messages WHERE channel=? AND slack_ts=?',
+                                     (channel, provider_ref)).fetchone()
+        if occupied is not None and occupied[0] != cursor:
+            raise ValueError('provider timestamp collision')
+        if existing is None:
+            if store._db.execute('SELECT count(*) FROM local_delivery_observations').fetchone()[0] >= 8192:
+                raise ValueError('local provider observation capacity exhausted')
+            store._db.execute('INSERT INTO local_delivery_observations VALUES (?,?,?)', (channel, provider_ref, cursor))
 
     def accept_echo(self, channel: str, provider_ref: str, message: SendMessage, blocks: object) -> bool:
         key = _locator_key(blocks)

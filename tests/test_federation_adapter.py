@@ -20,6 +20,28 @@ from src.agentbus_slack_socket_service import SlackReceiver
 AUTH = {'Authorization': 'Bearer local-test-secret'}
 
 
+@pytest.mark.parametrize('echo_thread', ['1.000001', None, '9.000001'])
+def test_ordinary_thread_port_broadcasts_and_requires_exact_provider_thread(echo_thread):
+    from src.agentbus_federation_bridge_service import ProviderCarrierRejected
+
+    async def scenario():
+        posts = []
+        async def respond(request):
+            body = json.loads(request.content)
+            posts.append(body)
+            return httpx.Response(200, json={'ok': True, 'channel': 'C123', 'ts': '2.000001',
+                'message': {'text': body['text'], 'thread_ts': echo_thread}})
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            provider = SlackFederationProvider(client, 'local-fake-token', 'C123')
+            if echo_thread == '1.000001':
+                assert await provider.publish_in_thread('{}', '1.000001') == '2.000001'
+            else:
+                with pytest.raises(ProviderCarrierRejected):
+                    await provider.publish_in_thread('{}', '1.000001')
+            assert posts[0]['thread_ts'] == '1.000001' and posts[0]['reply_broadcast'] is True
+    asyncio.run(scenario())
+
+
 class Socket:
     def __init__(self, settings, receiver):
         self.receiver = receiver
@@ -339,6 +361,31 @@ def test_inbox_projection_requires_exact_operator_opt_in(tmp_path, version):
             assert (bridge.project_message is not None) == (version == 1)
         else:
             with pytest.raises(ValueError, match='projection version'):
+                load_bridge(config, store, client, 'xoxb-test-secret', 'B123')
+    finally:
+        store.close()
+        asyncio.run(client.aclose())
+
+
+@pytest.mark.parametrize('projection', [None, True, '1', 1])
+def test_ordinary_peer_requires_explicit_projection_and_installs_versioned_decoder(tmp_path, projection):
+    configured = settings(tmp_path, enabled=True)
+    config = configured.federation_config
+    assert config is not None
+    data = json.loads(config.read_text())
+    assert data['bindings']
+    data['bindings'][0]['ordinary_version'] = 3
+    if projection is not None:
+        data['inbox_projection'] = projection
+    config.write_text(json.dumps(data))
+    store = MessageStore(configured.db_path)
+    client = httpx.AsyncClient()
+    try:
+        if type(projection) is int and projection == 1:
+            bridge = load_bridge(config, store, client, 'xoxb-test-secret', 'B123')
+            assert bridge.project_ordinary is not None and bridge.project_message is not None
+        else:
+            with pytest.raises(ValueError, match='projection'):
                 load_bridge(config, store, client, 'xoxb-test-secret', 'B123')
     finally:
         store.close()
