@@ -1,0 +1,87 @@
+document:
+  kind: execution_phase_log
+  name: Phase 12 Log
+  id: agentbus-phase-12-log
+  version: 1.0.0
+  generated_at_utc: '2026-10-17T00:00:00Z'
+  status: active
+  path: phases/phase-12-log.yml
+phase:
+  id: P12
+  build_block: owner_wake_qualification
+summary:
+  outcome: active
+  highlights:
+  - Pinned upstream sources and local installed builds; actual AHP owner remains unverified
+  - Four new adapter boundary controls pass; no AHP implementation or live probe
+  - 57 affected wake cases, Ruff and governance YAML validation pass; computed closure remains unclaimed
+  - Actual pinned AHP reducer passes168 upstream chat fixtures and8 targeted controls; drift and semantic queue-order mutants reject
+workitems:
+- id: P12-P0-01
+  status: DONE
+  summary: deliver Pinned owner and protocol capability inventory with explicit unknowns
+- id: P12-P0-02
+  status: IN_PROGRESS
+  summary: deliver Conditional admission contract and deterministic conformance matrix
+- id: P12-P0-03
+  status: DONE
+  summary: deliver Separate live-provider prerequisite and go-no-go inventory
+execution_evidence:
+  planned_commands:
+  - canonical bcf ci submit after shared native capacity is available
+  executed_commands:
+  - 'Verified project interpreter pytest: 57 affected wake cases PASS'
+  - 'Verified project interpreter ruff check tests/test_owner_wake_qualification.py: PASS'
+  - 'Verified project interpreter scripts/validate_governance_yaml.py --repo-root .: PASS'
+  - Read-only codex --version and code --version; source commit and SHA256 pin capture
+  - 'Node22.23.2 builtin TypeScript transform: actual pinned AHP chat reducer168 upstream fixtures plus8 targeted cases PASS; source drift and
+    queue-order semantic negative controls reject'
+  - Pinned upstream action schema:5 wire-shape cases PASS; unknown expectedIdleEpoch accepts shape only and proves no idle precondition
+  - Released BCF2.3.4 canonical reconcile --apply converged in2 rounds; subsequent --check clean; generated only ci-graph and governance workflow
+    scope changes; authored and compiled scope both pr/None
+  notes:
+  - Tests exercise existing standalone adapter with fake owners, not Microsoft AHP or live OpenAI extension
+  - 'P12-P0-02 remains IN_PROGRESS: real protocol conformance requires identifying a disposable Agent-Host-managed chat and supported endpoint'
+  - Active VSCode user-data directory discovery found no AHP local-endpoint directory; no secret read, host connection or model turn
+  - Ironwatch10036 reports no new canonical invocation active/planned and offers fresh admission through released234 boundary; no lease inferred
+  - 'Canonical released234 submit on c028ce42204850b0b553b8857e4df2433541e3af terminated1 before execution: target_not_ready_for_phase_closure;
+    invocation PID15338 gone. First stdout/stderr/terminal retained under .artifacts/owner-wake/canonical-c028ce42.*; SHA256 stderr=937dae48da7ae71b74a3dcb935efdb6c1c9635d9dee4683453686f65f45f85aa'
+  - Generated graph retains old closure intent while authored P12 derives progress; owner classification requested at AgentBus10041/10043 before
+    retry; no manual graph edits, copied evidence or successor BCF code
+  - Ironwatch10046 confirmed exact released234 docs/USAGE.md34-58 canonical preparation route; preserves active P12 and original failure subject;
+    no successor code or manual workflow pins
+closeout_requirements:
+  claims:
+    workitems_closed:
+      required_evidence:
+      - governance-validate
+    required_suites_green:
+      required_evidence:
+      - lint
+      - typecheck
+      - test
+      - contract-test
+    architecture_gates_green:
+      required_evidence:
+      - architecture-test
+    health_checks_green:
+      required_evidence:
+      - runtime-smoke
+    security_review_complete:
+      required_evidence:
+      - governance-validate
+    findings_resolved:
+      required_evidence:
+      - security-vulnerability-scan
+  reconciliation:
+    required_evidence:
+    - governance-validate
+    - governance-exposure-scan
+  finding_registry: governance/findings.yml
+known_constraints:
+- No supported AHP owning host, negotiated protocol version or atomic idle-only admission is qualified
+- Installed OpenAI extension bundles0.162.0-alpha.17.2; release0.163 changes are upstream context
+- No production source, dependencies, credentials, deployment or existing release proof changed
+next_work:
+- Resolve actual owner inventory and run isolated zero-model protocol conformance before adapter implementation
+- One fresh canonical submit on clean generated progress subject; preserve first diagnostic on fail-close

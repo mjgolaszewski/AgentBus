@@ -1,0 +1,160 @@
+document:
+  kind: owner_wake_qualification
+  version: 1.0.0
+  status: deterministic_research_only
+  path: audits/owner-wake-qualification.yml
+scope:
+  issue: 75
+  phase: P12
+  baseline_commit: 8f2dbf5ced0f591bec21d561f3a39308bc3f373b
+  runtime_changes: false
+  live_provider_qualified: false
+  atomic_admission_qualified: false
+  existing_contract: contracts/codex-wake/v1/codex-wake.contract.yml
+source_pins:
+- repository: microsoft/vscode
+  commit: 1e81fc75bb564738c29771d9b17c72e708a8211c
+  path: src/vs/platform/agentHost/LOCAL_ENDPOINT.md
+  sha256: 41e32b9d51edc0b8a6a83b09ffc7e02ce3bbed1ff0c73416b1b6a7fe9f65754a
+  url: https://github.com/microsoft/vscode/blob/1e81fc75bb564738c29771d9b17c72e708a8211c/src/vs/platform/agentHost/LOCAL_ENDPOINT.md
+- repository: microsoft/vscode
+  commit: 1e81fc75bb564738c29771d9b17c72e708a8211c
+  path: src/vs/platform/agentHost/node/chatContributions/queueDrain/queueDrainContribution.ts
+  sha256: e84916aee9430fdb4e47de5bf8bd0389f7063929929b556ebf45a03668eab40c
+  url: https://github.com/microsoft/vscode/blob/1e81fc75bb564738c29771d9b17c72e708a8211c/src/vs/platform/agentHost/node/chatContributions/queueDrain/queueDrainContribution.ts
+- repository: microsoft/agent-host-protocol
+  commit: 1ef0642965efaa7ef98caff287bca923fbc80ec6
+  path: docs/specification/chat-channel.md
+  sha256: d89366d0270fbe6c827a9fe050737ad084d1b45b9485d5916dad692083a949d8
+  url: https://github.com/microsoft/agent-host-protocol/blob/1ef0642965efaa7ef98caff287bca923fbc80ec6/docs/specification/chat-channel.md
+local_inventory:
+  observed_at_utc: '2026-10-17'
+  vscode_version: 1.142.0
+  vscode_commit: 6d62b1d5dace93a33b3a6d3eca1317bd5e15bcb1
+  openai_extension_version: 26.1007.21434-linux-x64
+  bundled_codex_version: 0.162.0-alpha.17.2
+  owning_host_version: unverified
+  target_chat_owner: unverified
+  ahp_protocol_version: unverified
+  endpoint_authentication: unverified_no_connection_attempted
+  execution_policy: notification_only_for_unqualified_owners
+  release_watch_is_installed_runtime: false
+  discovery_observation: Active process advertises server user-data directory; no local-endpoint directory found there; no credential read or
+    owner connection
+authority_edges:
+- producer: service authenticated inbox
+  consumer: existing candidate selector
+  owner: AgentBus service
+  evidence: tests/test_wake_owner_eligibility.py
+- producer: candidate selector
+  consumer: existing private intent
+  owner: optional wake adapter
+  evidence: tests/test_wake_intent_lifecycle.py
+- producer: qualified future adapter
+  consumer: actual owning host
+  owner: host admission authority
+  evidence: not_implemented_not_qualified
+- producer: host turn observations
+  consumer: intent projection
+  owner: exact bound adapter session
+  evidence: tests/test_wake_intent_lifecycle.py
+- producer: agent semantic disposition
+  consumer: service acknowledgement
+  owner: authenticated agent session
+  evidence: tests/test_wake_intent_lifecycle.py
+excluded_edges:
+- federation metadata to local wake authority
+- advisory idle to guaranteed admission
+- queue receipt to execution
+- completion to semantic acknowledgement
+- Microsoft AHP source to OpenAI extension interoperability
+- another app-server to existing IDE writer ownership
+proposed_admission_requirements:
+  status: design_requirements_not_supported_RPC_schema
+  required_identity:
+  - exact chat and thread
+  - session
+  - workspace opt-in
+  - binding generation
+  - owner incarnation
+  - policy revision
+  - stable durable attempt and event references
+  decision: owner checks eligibility and reserves idle turn in the same serialized operation; reject stale or busy without leaving a deferred
+    wake
+  queued_alternative: separate weaker capability; may run after an intervening turn; never advertise as atomic reject-if-busy
+  unknown_response: retain original attempt and batch; reconcile same owner identity; no blind resubmission or alternate transport
+  resume: revalidate current permissions and network policy without copying credentials or treating resume as ownership transfer
+  idempotency: pending-message upsert is not proof of durable deduplication after consumption or owner restart
+  mixed_pending_list: explicit queued kind; never steering; reject ambiguous unsupported protocol shapes
+  acknowledgement: queue, admission, running and terminal observations cannot acknowledge AgentBus work
+evidence_matrix:
+- case: idle observation races with user turn
+  test: test_idle_observation_does_not_supply_atomic_admission
+  claim: current standalone interface has no conditional idle admission; characterization only
+- case: finalization and restored policy rejection
+  test: test_owner_rejection_never_promotes_input_to_acknowledgement
+  claim: owner rejection is not terminal execution or semantic ACK; injected errors, not upstream integration
+- case: restart after uncertain submission
+  test: test_restart_after_lost_start_response_preserves_original_attempt
+  claim: replacement fake host cannot trigger blind resend; durable intent preserved
+- case: actual AHP queue/steer routing, post-consumption replay, reconnect and permission negotiation
+  test: null
+  claim: pending real protocol conformance; no provider claim
+live_prerequisites:
+- identify a disposable Agent-Host-owned chat and exact provider/build
+- verify supported authenticated same-user endpoint without taking over a writer
+- pin negotiated protocol schema and action validation
+- establish reliable consumption/reconciliation and duplicate boundaries
+- operator-approved isolated bounded execution canary with rollback and current permission policy
+decision:
+  deterministic_research: go
+  production_AHP_adapter: no_go_until_owner_and_contract_qualified
+  atomic_idle_only_claim: no_go_without_owner_conditional_admission
+  runtime_default: retain notification_only
+upstream_addendum:
+  release: https://github.com/openai/codex/releases/tag/rust-v0.163.0
+  finalization_fix: https://github.com/openai/codex/pull/53452
+  scope: default steering, managed restart, cold-resume permissions and finishing-turn rejection require distinct tests; none establishes cross-client
+    ownership transfer
+offline_protocol_evidence:
+  scope: actual_upstream_pure_reducer_not_host_or_provider
+  source_commit: 1ef0642965efaa7ef98caff287bca923fbc80ec6
+  node_version: v22.23.2
+  upstream_chat_fixtures: 168
+  targeted_checks: 8
+  input_hashes: audits/owner-wake/ahp-reducer-pins.json
+  probe: audits/owner-wake/ahp-reducer-probe.mjs
+  command: node audits/owner-wake/ahp-reducer-probe.mjs SOURCE_ROOT audits/owner-wake/ahp-reducer-pins.json
+  source_acquisition: GitHub authenticated archive at exact pinned commit; extract into isolated SOURCE_ROOT; no npm install or live credentials
+    needed
+  semantics:
+  - same pending ID replaces in place while pending
+  - explicit queued never creates steering entry
+  - queue state can accept while active without starting a turn
+  - removal requires matching ID and kind
+  - turn start consumes the matching pending entry
+  - same consumed ID can be reinserted; reducer has no durable deduplication tombstone
+  - same ID can change kind; adapter must never permit steering promotion
+  negative_controls:
+  - control: source_drift
+    returncode: 1
+    expected_rejection: true
+    diagnostic_sha256: 64a477a61e072acd6b59f8fd072516584fd63986913a50ae6a72915df178f770
+  - control: semantic_queue_order
+    returncode: 1
+    expected_rejection: true
+    diagnostic_sha256: d9ea0d7419804628c959abcabb1241d51e483251f3a25ce75ce07d662d45d1bb
+  limitations:
+  - Node builtin experimental TypeScript transform runs pure upstream reducer; no upstream build or SDK transport qualification claimed
+  - Fixture null-to-undefined normalization matches pinned upstream test harness
+  - No host queue-drain, IPC authentication, permission restoration, writer custody or atomic admission proof
+  - No installed owner was discovered; real protocol negotiation remains pending
+offline_schema_evidence:
+  probe: audits/owner-wake/ahp-schema-probe.py
+  source: schema/actions.schema.json
+  source_commit: 1ef0642965efaa7ef98caff287bca923fbc80ec6
+  sha256: dcd9e6e2b2fd1693e7f403a3cf48ec416a8c4921ff9d377cfa37fab08fe94809
+  cases: 5
+  finding: queued and steering are both valid wire shapes; kind is required; unknown fields may pass schema validation but establish no conditional-admission
+    support
+  host_acceptance_qualified: false
