@@ -154,7 +154,9 @@ offline_schema_evidence:
   source: schema/actions.schema.json
   source_commit: 1ef0642965efaa7ef98caff287bca923fbc80ec6
   sha256: dcd9e6e2b2fd1693e7f403a3cf48ec416a8c4921ff9d377cfa37fab08fe94809
-  cases: 5
+  cases: 7
   finding: queued and steering are both valid wire shapes; kind is required; unknown fields may pass schema validation but establish no conditional-admission
     support
   host_acceptance_qualified: false
+  identity_boundary: Wire schema also accepts an empty ID and a non-user origin; client-only user origin, nonempty stable identity and exact owner
+    authorization require separate adapter/host checks; no host acceptance or protocol defect inferred

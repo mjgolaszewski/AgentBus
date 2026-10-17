@@ -28,6 +28,9 @@ def main() -> None:
     for name, change, expected in [
         ("queued", {}, True),
         ("steering_is_valid_protocol", {"kind": "steering"}, True),
+        ("empty_attempt_id_is_schema_valid", {"id": ""}, True),
+        ("non_user_origin_is_wire_valid",
+         {"message": {"text": "references", "origin": {"kind": "agent"}}}, True),
         ("unknown_kind", {"kind": "idle_only"}, False),
         ("absent_kind", {"kind": None}, False),
         ("unrecognized_idle_precondition_is_not_capability", {"expectedIdleEpoch": 1}, True),

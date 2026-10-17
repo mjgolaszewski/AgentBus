@@ -39,6 +39,8 @@ execution_evidence:
   - Pinned upstream action schema:5 wire-shape cases PASS; unknown expectedIdleEpoch accepts shape only and proves no idle precondition
   - Released BCF2.3.4 canonical reconcile --apply converged in2 rounds; subsequent --check clean; generated only ci-graph and governance workflow
     scope changes; authored and compiled scope both pr/None
+  - 'Extended pinned action-schema probe to7 cases PASS: empty ID and non-user origin are valid wire shapes; no client or host authority follows.
+    Focused probe lint PASS.'
   notes:
   - Tests exercise existing standalone adapter with fake owners, not Microsoft AHP or live OpenAI extension
   - 'P12-P0-02 remains IN_PROGRESS: real protocol conformance requires identifying a disposable Agent-Host-managed chat and supported endpoint'
@@ -60,6 +62,9 @@ execution_evidence:
     atomic admission remain unqualified, not waived.
   - Predecessor4f9617e canonical TERMINAL0; PR77 OPEN with run39047060363 provider evidence pending. Native handback stream hashes and all known
     PID absence retained in predecessor tree .artifacts/owner-wake/native-handback.json; no provider certification inferred.
+  - Predecessor PR77 subsequently normal-merged as e3097668c2b465a176c26e0573cdb8cbf4873125. Protected PR39047060363/1 and exact-main39047363257/1
+    all6 PASS; exact-main truth SHA256 d6ad2c9252a0f206ced28c0f2a98705e8622f2903928355a9aa445786bcef778 certifies only pull_request_progress_valid,
+    authorizes no successor/phase closure. Artifacts retained in predecessor .artifacts/owner-wake/provider-pr77 and exact-main-e309766.
 closeout_requirements:
   claims:
     workitems_closed:
