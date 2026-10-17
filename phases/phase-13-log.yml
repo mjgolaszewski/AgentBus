@@ -48,6 +48,7 @@ execution_evidence:
   - BCF owner10156 confirmed official234 exact-identity proof forbids docs-only baseline substitution;1cd1fac remains queued after committed Racecar and bounded BDMCP work; no production construction before its authentication
   - First three new behavioral controls are genuinely RED on missing channels settings registry and enrollment grant ownership; this is characterization not release evidence
   - Planned P13 triplet and both authorization contracts pass governance-yaml validation; initial test import ordering corrected with Ruff; no production code changed
+  - Six projection controls genuinely RED because current wake scan and spool ignore injected channel inbox and service scope; stdout retained under .artifacts/channels/projection-initial-red.stdout (non-authoritative local retention); digest in audit inventory; no live interoperability or exploit claim
   - Additional real API/store negative controls cover bearer reads foreign recipients inbox assertions broadcast isolation and disabled channels; offline migration tests require atomic dry-run and legacy custody preservation
 closeout_requirements:
   claims:

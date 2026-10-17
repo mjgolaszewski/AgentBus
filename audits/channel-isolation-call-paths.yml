@@ -131,3 +131,15 @@ live_qualification:
   - approved isolated two-channel provider arrangement
   - bounded deployment window and rollback
   no_live_changes: true
+projection_red_controls:
+  count: 6
+  scope: current single-channel projection characterization, not a live cross-channel
+    exploit claim
+  cases:
+  - foreign channel
+  - foreign inbox UUID
+  - foreign service URL
+  finding: both wake scan and presentation spool accept foreign scope labels without
+    rejection
+  stdout_sha256: 7ecad6d85e41fb06d06b07f9a3c2a30216483ab85980d31c89b0c08ee50c120b
+  authority: local non-authoritative characterization
