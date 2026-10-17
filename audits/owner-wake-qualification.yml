@@ -39,6 +39,8 @@ local_inventory:
   endpoint_authentication: unverified_no_connection_attempted
   execution_policy: notification_only_for_unqualified_owners
   release_watch_is_installed_runtime: false
+  discovery_observation: Active process advertises server user-data directory; no local-endpoint directory found there; no credential read or
+    owner connection
 authority_edges:
 - producer: service authenticated inbox
   consumer: existing candidate selector
@@ -114,3 +116,36 @@ upstream_addendum:
   finalization_fix: https://github.com/openai/codex/pull/53452
   scope: default steering, managed restart, cold-resume permissions and finishing-turn rejection require distinct tests; none establishes cross-client
     ownership transfer
+offline_protocol_evidence:
+  scope: actual_upstream_pure_reducer_not_host_or_provider
+  source_commit: 1ef0642965efaa7ef98caff287bca923fbc80ec6
+  node_version: v22.23.2
+  upstream_chat_fixtures: 168
+  targeted_checks: 8
+  input_hashes: audits/owner-wake/ahp-reducer-pins.json
+  probe: audits/owner-wake/ahp-reducer-probe.mjs
+  command: node audits/owner-wake/ahp-reducer-probe.mjs SOURCE_ROOT audits/owner-wake/ahp-reducer-pins.json
+  source_acquisition: GitHub authenticated archive at exact pinned commit; extract into isolated SOURCE_ROOT; no npm install or live credentials
+    needed
+  semantics:
+  - same pending ID replaces in place while pending
+  - explicit queued never creates steering entry
+  - queue state can accept while active without starting a turn
+  - removal requires matching ID and kind
+  - turn start consumes the matching pending entry
+  - same consumed ID can be reinserted; reducer has no durable deduplication tombstone
+  - same ID can change kind; adapter must never permit steering promotion
+  negative_controls:
+  - control: source_drift
+    returncode: 1
+    expected_rejection: true
+    diagnostic_sha256: 64a477a61e072acd6b59f8fd072516584fd63986913a50ae6a72915df178f770
+  - control: semantic_queue_order
+    returncode: 1
+    expected_rejection: true
+    diagnostic_sha256: d9ea0d7419804628c959abcabb1241d51e483251f3a25ce75ce07d662d45d1bb
+  limitations:
+  - Node builtin experimental TypeScript transform runs pure upstream reducer; no upstream build or SDK transport qualification claimed
+  - Fixture null-to-undefined normalization matches pinned upstream test harness
+  - No host queue-drain, IPC authentication, permission restoration, writer custody or atomic admission proof
+  - No installed owner was discovered; real protocol negotiation remains pending

@@ -15,6 +15,7 @@ summary:
   - Pinned upstream sources and local installed builds; actual AHP owner remains unverified
   - Four new adapter boundary controls pass; no AHP implementation or live probe
   - 57 affected wake cases, Ruff and governance YAML validation pass; computed closure remains unclaimed
+  - Actual pinned AHP reducer passes168 upstream chat fixtures and8 targeted controls; drift and semantic queue-order mutants reject
 workitems:
 - id: P12-P0-01
   status: DONE
@@ -33,11 +34,13 @@ execution_evidence:
   - 'Verified project interpreter ruff check tests/test_owner_wake_qualification.py: PASS'
   - 'Verified project interpreter scripts/validate_governance_yaml.py --repo-root .: PASS'
   - Read-only codex --version and code --version; source commit and SHA256 pin capture
+  - 'Node22.23.2 builtin TypeScript transform: actual pinned AHP chat reducer168 upstream fixtures plus8 targeted cases PASS; source drift and
+    queue-order semantic negative controls reject'
   notes:
   - Tests exercise existing standalone adapter with fake owners, not Microsoft AHP or live OpenAI extension
   - 'P12-P0-02 remains IN_PROGRESS: real protocol conformance requires identifying a disposable Agent-Host-managed chat and supported endpoint'
-  - BCF Ironwatch reported sole canonical native transaction still live at AgentBus9963; capacity request9964 pending; no overlapping heavy transaction
-    started
+  - Active VSCode user-data directory discovery found no AHP local-endpoint directory; no secret read, host connection or model turn
+  - Ironwatch10036 reports no new canonical invocation active/planned and offers fresh admission through released234 boundary; no lease inferred
 closeout_requirements:
   claims:
     workitems_closed:
