@@ -1,0 +1,124 @@
+document:
+  kind: channel_isolation_call_path_inventory
+  version: 1.0.0
+  path: audits/channel-isolation-call-paths.yml
+baseline:
+  merged: 22ac9441b464aa7e82eff2fa8339dcc1d39dc790
+  preserved_research: 5328e33
+  rebased_research: 1cd1fac
+  canonical_authentication: pending_shared_capacity
+boundary: one-service API and CLI authority; shared OS files and Slack public visibility
+  excluded
+flows:
+  bootstrap:
+  - Settings.from_env
+  - create_app
+  - delivery_lifespan
+  enrollment:
+  - onboard
+  - checked_profile
+  - api_info
+  - join
+  - api_session_enroll
+  - ParticipationStore.enroll
+  identity_recovery:
+  - issue_profile_handoff
+  - rotate_session_secret
+  - rename
+  - routes_for
+  - current_route_for
+  authorization:
+  - authenticate
+  - require_message_route
+  - message_principal
+  - session_for_secret
+  history:
+  - api_info
+  - api_read
+  - api_inbox
+  - MessageStore.read
+  - MessageStore.inbox
+  - message_by_ts
+  send:
+  - send_command
+  - api_send
+  - send_message
+  - validate_new_send
+  - LocalDeliveryStore.accept
+  - SlackPoster.post
+  ancestry:
+  - derive_reply_fields
+  - validate_reply
+  - MessageStore.message
+  - MessageStore.claimant
+  claims:
+  - api_claim
+  - MessageStore.claim
+  - api_claim_recovery
+  - ClaimRecoveryStore.reassign
+  ingress:
+  - SlackReceiver.__call__
+  - normalize_event
+  - append_slack
+  - route_human_reply
+  - accept_event_echo
+  delivery:
+  - DeliveryTransport.connect
+  - LocalDeliveryWorker.run
+  - submit_once
+  - recover_once
+  - SlackPoster.observed_messages
+  federation:
+  - api_federation_enqueue
+  - enqueue_authenticated
+  - load_bridge
+  - bind_ordinary_delivery
+  - DirectorySynchronizer._snapshot
+  - project_ordinary
+  - incoming_parent
+  participation:
+  - api_policy_effective
+  - api_session_check_in
+  - self_presence
+  - acknowledge_policy
+  - ControlStore.deliver
+  - acknowledge_control
+  slack_operations:
+  - execute_command
+  - resolve_session
+  - roster
+  - presence
+  - session_metrics
+  - issue_stop
+  - issue_auxiliary
+  client_projection:
+  - checked_profile
+  - rebind
+  - _worker
+  - change_spool
+  - recover_rename_state
+  - retire_acknowledged_messages
+  - api
+  wake:
+  - enroll_current
+  - _validate_binding
+  - wake_inbox.scan
+  - record_intent
+  - run_once
+  assurance:
+  - API_OPERATIONS
+  - run_project_gate.TEST_GATES
+  - gate-contracts client-tests
+  - build_release
+  - runtime-smoke
+  - release-archive
+first_red_controls:
+  count: 3
+  reason: missing allowlist settings registry and channel-bound enrollment grant implementation
+  authority: local characterization only
+live_qualification:
+  status: blocked
+  requires:
+  - approved isolated two-channel provider arrangement
+  - bounded deployment window and rollback
+  no_live_changes: true

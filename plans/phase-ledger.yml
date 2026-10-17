@@ -95,6 +95,7 @@ release_trains:
   release_7_prefix: {target_version: "0.8.0", status: active, focus: [configurable_local_identity_prefix, session_proved_legacy_route_migration, accumulated_unreleased_hotfixes]}
   release_8: {target_version: "0.8.1", status: planned, focus: [governance_dependency_hash_lock, proxy_header_remediation]}
   release_9: {target_version: "0.9.0", status: active, focus: [outbound_only_federation, durable_bridge_obligations, remote_directory_sync, owner_mediated_idle_wake, final_bcf_custody]}
+  release_13: {target_version: "0.10.0", status: planned, focus: [channel_isolation]}
 release_readiness:
   computed_by: bcf truth
   requirements_source: governance/evidence-policy.yml

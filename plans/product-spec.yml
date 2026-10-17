@@ -35,4 +35,5 @@ execution_phases:
   - {phase_id: P10, build_block: "security_wake_recovery", objective: "close Issue #20 security roots, Issue #27 wake eligibility, Issue #33 recovery, and Issue #45 projection cleanup after canonical P09 closeout", release_train: release_10}
   - {phase_id: P11, build_block: "qualified_federation_runtime", objective: "complete Issue #48 federation only after provider fan-out and origin authentication are qualified", release_train: release_11}
   - {phase_id: P12, build_block: owner_wake_qualification, objective: "Issue75 deterministic owner-wake qualification and explicit live prerequisites", release_train: release_12}
+  - {phase_id: P13, build_block: channel_isolation, objective: "One-service immutable channel authorization and local-only additional channels", release_train: release_13}
 acceptance: {release_gate: make release-check, evidence_location: phases/}

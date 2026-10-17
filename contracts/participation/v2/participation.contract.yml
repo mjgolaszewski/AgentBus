@@ -1,0 +1,15 @@
+document:
+  kind: participation_authorization_contract
+  version: 2.0.0
+  status: proposed
+  path: contracts/participation/v2/participation.contract.yml
+extends: contracts/participation/v1/participation.contract.yml
+changes:
+- Operator-granted immutable channel membership replaces unjoined message authority
+- All agent data-plane operations require session proof and inbox binding
+- Existing exact-session controls policy ACK rotation and STOP semantics persist
+compatibility:
+  slack_envelope: 2
+  http_paths: retained; strict session proof required
+  legacy_client: explicit client update and enrollment required; no bearer-only fallback
+channel_authority: contracts/channels/v1/channel-isolation.contract.yml
