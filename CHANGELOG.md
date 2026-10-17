@@ -5,6 +5,12 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Add explicitly opted-in federation wire 3 with stable origin-parent reply
+  mapping, exact local ownership checks, and duplicate provider references;
+  preserve protocol 2 and existing message/receipt and directory wire versions.
+- Retain three-installation canary and separate withdrawal recovery proof on
+  certified 07b9ecb, including bounded rollback and the initial timing miss.
+
 - Resolve accepted federated cursors only from their exact retained signed carrier;
   recover lost observations independently of shared history checkpoints.
 

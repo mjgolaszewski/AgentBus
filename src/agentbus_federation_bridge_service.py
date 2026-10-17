@@ -14,6 +14,7 @@ from typing import Callable, Protocol
 
 from src.agentbus_federation_directory_service import DirectorySynchronizer, decode_directory
 from src.agentbus_federation_inbox_service import InboxProjectionError
+from src.agentbus_federation_ordinary_service import decode_ordinary, encode_ordinary
 from src.agentbus_federation_service import CustodyCapacityError, DirectoryCapacityError, FederationStore
 from src.agentbus_federation_wire_service import (
     MAX_FRAME_BYTES,
@@ -97,6 +98,8 @@ class FederationBridge:
         self.directory: DirectorySynchronizer | None = None
         self.project_submission: Callable[[str, str, str], bool] | None = None
         self.ordinary_channel: str | None = None
+        self.submission_thread: Callable[[str, str], str | None] | None = None
+        self.project_ordinary: Callable[[str, str, str, str, str | None], None] | None = None
         self.project_message: Callable[[str, str, str, str, str | None], None] | None = None
         publishers = {identity.publisher_id: identity.instance_id}
         prefixes = {identity.route_prefix: identity.instance_id}
@@ -130,6 +133,15 @@ class FederationBridge:
         self.store.accept(origin_instance_id=self.identity.instance_id, origin_message_id=message_id,
                           destination_instance_id=destination, payload=frame, local_payload=local)
 
+    def enqueue_ordinary(self, message_id: str, destination: str, message, parent: dict | None) -> None:
+        if destination not in self.bindings or self.bindings[destination].ordinary_version != 3:
+            raise ValueError('ordinary peer version is not operator-approved')
+        payload = encode_ordinary(message, parent)
+        self._message(canonical(decode_ordinary(payload).message), self.identity.instance_id, destination)
+        frame = encode_frame(self.identity, 'message', message_id, destination, payload, version=3)
+        self.store.accept(origin_instance_id=self.identity.instance_id, origin_message_id=message_id,
+                          destination_instance_id=destination, payload=frame, local_payload=payload)
+
     def directory_now(self) -> float:
         return self.now()
 
@@ -150,11 +162,20 @@ class FederationBridge:
             digest = hashlib.sha256(row['payload'].encode()).hexdigest()
             if digest != row['payload_hash']:
                 raise ValueError('retained carrier content does not match its custody hash')
+            thread = None
+            frame = json.loads(row['payload'])
+            if frame.get('agentbus_federation') == 3 and decode_ordinary(frame['payload']).parent is not None:
+                if self.submission_thread is None or not callable(getattr(self.provider, 'publish_in_thread', None)):
+                    raise ValueError('ordinary threaded provider port is unavailable')
+                thread = self.submission_thread(row['origin_message_id'], digest)
+                if not thread:
+                    raise InboxProjectionError('ordinary submission awaits its actual local parent reference')
             delay = min(600, 60 * 2 ** row['attempts'])
             if not self.store.reserve_submission(*key, now=self.now(), delay=delay, max_attempts=self.max_attempts):
                 continue
             try:
-                reference = await self.provider.publish(row['payload'])
+                reference = (await getattr(self.provider, 'publish_in_thread')(row['payload'], thread)
+                             if thread is not None else await self.provider.publish(row['payload']))
             except ProviderCarrierRejected as exc:
                 self.store.block_submission(*key, reason=exc.reason, provider_ref=exc.provider_ref)
             except ProviderUnavailable as exc:
@@ -185,7 +206,7 @@ class FederationBridge:
             raise ValueError('invalid own carrier identity')
         frame = decode_frame(text, self.identity.publisher_id, destination, {self.identity.instance_id:
             Binding(self.identity.instance_id, self.identity.route_prefix, self.identity.publisher_id,
-                    self.identity.private_key.public_key())})
+                    self.identity.private_key.public_key(), ordinary_version=3)})
         message, destination = frame['origin_message_id'], frame['destination_instance_id']
         row = self.store.obligation(self.identity.instance_id, message, destination)
         digest = hashlib.sha256(text.encode()).hexdigest()
@@ -224,6 +245,15 @@ class FederationBridge:
                 raise ValueError('directory synchronization is not configured')
             self.directory.receive(frame)
             payload = frame['payload']
+        elif frame['agentbus_federation'] == 3:
+            if self.project_ordinary is None:
+                raise ValueError('ordinary federation projection is not configured')
+            ordinary = decode_ordinary(frame['payload'])
+            self._message(canonical(ordinary.message), origin, self.identity.instance_id)
+            payload = frame['payload']
+            self.store.accept_destination(origin_instance_id=origin, publisher_id=event['publisher_id'],
+                origin_message_id=message_id, destination_instance_id=self.identity.instance_id, payload=payload)
+            self.project_ordinary(origin, message_id, self.identity.instance_id, payload, event.get('ts'))
         else:
             payload = self._message(frame['payload'], origin, self.identity.instance_id)
             self.store.accept_destination(origin_instance_id=origin, publisher_id=event['publisher_id'],

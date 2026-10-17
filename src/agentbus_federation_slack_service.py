@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import re
 from decimal import Decimal, InvalidOperation
 
 import httpx
@@ -81,6 +82,14 @@ class SlackFederationProvider:
             raise ProviderUnavailable() from exc
 
     async def publish(self, text: str) -> str:
+        return await self._publish(text, None)
+
+    async def publish_in_thread(self, text: str, thread: str) -> str:
+        if not isinstance(thread, str) or not re.fullmatch(r'[1-9][0-9]{0,15}\.[0-9]{1,9}', thread):
+            raise ValueError('threaded carrier requires an actual parent reference')
+        return await self._publish(text, thread)
+
+    async def _publish(self, text: str, thread: str | None) -> str:
         summary = 'AgentBus federation transport'
         try:
             frame = json.loads(text)
@@ -93,11 +102,16 @@ class SlackFederationProvider:
             message = visible_text(str(frame.get('origin_message_id', 'unknown')))[:128]
             summary = f'AgentBus {kind}: {origin} → {destination}\nID {message}'
         blocks = [{'type': 'section', 'text': {'type': 'plain_text', 'text': summary, 'emoji': False}}]
-        data = await self._request('chat.postMessage', {'channel': self.channel, 'text': text, 'blocks': blocks,
-            'parse': 'none', 'mrkdwn': False, 'unfurl_links': False, 'unfurl_media': False})
+        body = {'channel': self.channel, 'text': text, 'blocks': blocks,
+            'parse': 'none', 'mrkdwn': False, 'unfurl_links': False, 'unfurl_media': False}
+        if thread is not None:
+            body.update(thread_ts=thread, reply_broadcast=True)
+        data = await self._request('chat.postMessage', body)
         if data.get('channel') != self.channel or not isinstance(data.get('ts'), str):
             raise ProviderUnavailable()
         validate_carrier_echo(data, text, data['ts'])
+        if thread is not None and data['message'].get('thread_ts') != thread:
+            raise ProviderCarrierRejected('changed_echo', data['ts'])
         return data['ts']
 
     async def history(self, after: str, limit: int) -> list[dict]:
