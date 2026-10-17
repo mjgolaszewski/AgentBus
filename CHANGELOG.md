@@ -5,6 +5,12 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Allow trusted federation configuration to select a strict history budget of
+  1–1,000 events while preserving the 100-event default, complete coverage,
+  and existing checkpoints on overflow.
+- Verify pinned historical canary carriers and exact destination receipts in CI;
+  reject forgery, omitted receipts, and false final-subject or semantic-ACK claims.
+
 - Add explicitly opted-in federation wire 3 with stable origin-parent reply
   mapping, exact local ownership checks, and duplicate provider references;
   preserve protocol 2 and existing message/receipt and directory wire versions.

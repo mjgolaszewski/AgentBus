@@ -40,7 +40,7 @@ ignore = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"
-files = ["src", "agentbus_service.py"]
+files = ["src", "agentbus_service.py", "scripts/verify_provider_canary.py"]
 check_untyped_defs = true
 ignore_missing_imports = true
 warn_unused_ignores = true

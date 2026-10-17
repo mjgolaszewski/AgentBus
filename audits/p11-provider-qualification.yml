@@ -1,0 +1,67 @@
+document:
+  kind: federation_provider_qualification
+  id: p11-provider-qualification
+  version: 1.0.0
+  path: audits/p11-provider-qualification.yml
+authority: bounded observations and their verifier; no computed phase closure or deployment authority
+baseline:
+  bcf_runtime_lock: governance/bcf-runtime-lock.json
+  released_bcf: 2.3.4
+  predecessor_closure_owner: plans/phase-history.yml
+  implementation_main: 5e05c04d87c036a33dd6d8adfe10a6f3b1bf2291
+  implementation_tree: e600d4eff17ef2a3d4dcf7f2288f1dfb70d8595d
+  implementation_main_truth: github-actions://mjgolaszewski/AgentBus/runs/38989758793/attempts/1/bcf-governance-truth
+  implementation_truth_sha256: 8aef53260aef23e41a8c0515df45dc95fec05c947f286485f30a1f53bd5649a3
+provider:
+  arrangement: operator-approved public channel C0C4GDC7Q4D; distinct home, moranwm and home-latejoin publishers
+    and local signing keys
+  audience: public; no content confidentiality guarantee
+  scopes: existing authenticated chat:write and channel history observed; dedicated late app also permits channel
+    metadata reads
+  subscriptions: actual message receipt observed; installed remote subscription manifest not independently audited
+  retention: operator retain-all as far as known; only observed bounded history recovery is qualified
+  isolation: separate installation state, ports and credentials; local late joiner shares the home physical host
+  credential_replication: false
+qualified_historical_candidate:
+  source: 07b9ecb5e478ce0728b3a788071d50469294c327
+  tree: d262f84243282741292bcc3befd7f29ece43f17f
+  released_archive_sha256: 1d6f42543c85d408d480d923e2fc04445766a99075d0d66a99943218c3d466b8
+  archive_bytes: 6273647
+  original_window: 2026-10-17T00:08:00Z/2026-10-17T00:18:00Z
+  observations:
+  - all six directed root pairs and extra5392-byte signed carrier reached destination custody
+  - late history recovery and restart preserved exact request identities/cursors
+  - all three revision2 rename snapshots converged with unchanged registration UUIDs
+  initial_residual: Moran revision3 published after the original bound; not counted as original-window convergence
+  separate_recovery_window: 2026-10-17T00:25:00Z/2026-10-17T00:30:00Z
+  recovery:
+  - all three revision3 streams gap0 and all canary routes withdrawn
+  - all six original withdrawal obligations received destination acceptance with original IDs/hashes
+  - no registration, message origin, revision reset or checkpoint reset
+  recovery_custody_id: p11-withdrawal-recovery-20261017
+  recovery_summary_sha256: d3a49b50d3c73e98375f99f1a49a45336570adc31ecd68a520f905b8fff13c2c
+  remote_final_receipt_cursor: 8840
+authenticated_root_evidence:
+  snapshot: audits/p11-provider-canary-07b9ecb.yml
+  snapshot_sha256: 5ba9fdfa7155871748c735c978971de1d422704d9dc87453cb122bc042eec7b2
+  verifier: scripts/verify_provider_canary.py
+  positive_control: tests.test_federation_canary_evidence::test_historical_real_provider_carriers_and_receipts_authenticate_all_six_directions
+  negative_control: tests.test_federation_canary_evidence::test_historical_provider_proof_rejects_forgery_omission_and_scope_promotion
+  scope: historical wire1 root fan-out and exact destination receipts only
+  provider_timestamp_authentication: read-only authenticated-provider observation; not an independently signed provider
+    timestamp attestation
+recovery_budget:
+  default_events: 100
+  existing_supported_maximum: 1000
+  trusted_setting: history_limit
+  provider_page_events: 100
+  provider_page_ceiling: 10
+  overflow: complete coverage required; keep existing checkpoint and custody
+  status: operator composition implemented; current-field canary still pending final certified subject
+remaining:
+- final-subject wire3 threaded-broadcast and recovery qualification
+- final canonical PR/main, archive, isolated installation and closure applicability
+- provider indefinite retention, availability, physical exactly-once and semantic ACK are not guaranteed
+- ordinary inbox/index/WAL do not inherit a global disk quota from custody row limits
+rollback: both primary prior cores healthy with federation disabled and latest custody preserved; late stopped
+lifecycle: P11 active; authored DONE workitems do not establish computed closure
