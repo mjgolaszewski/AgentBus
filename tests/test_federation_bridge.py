@@ -436,3 +436,39 @@ def test_key_rotation_rejects_retired_and_false_generations_even_with_a_valid_si
     frame['signature'] = base64.b64encode(current_key.sign(canonical(frame).encode())).decode()
     with pytest.raises(ValueError, match='key generation'):
         decode_frame(canonical(frame), 'home-publisher', 'remote', bindings)
+
+
+def test_operator_history_budget_recovers_complete_backlog_without_checkpoint_reset(pair):
+    bridges, stores, providers, _ = pair
+    bridges['home'].enqueue('after-offline-gap', 'remote', payload('after offline gap'))
+    for i in range(101):
+        providers['home'].events.append({'publisher_id': 'unrelated', 'text': 'not a federation frame', 'ts': f'{i+1}.000001'})
+    asyncio.run(bridges['home'].submit_once())
+    providers['remote'].events = list(providers['home'].events)
+    receiver = bridges['remote']
+    reader = receiver.identity.instance_id + '/' + receiver.identity.publisher_id
+    before = stores['remote'].federation.checkpoint(reader)
+    asyncio.run(receiver.cycle())
+    assert stores['remote'].federation.checkpoint(reader) == before
+    assert stores['remote']._db.execute('SELECT count(*) FROM federated_messages').fetchone()[0] == 0
+    receiver.history_limit = 200
+    asyncio.run(receiver.cycle())
+    assert stores['remote'].federation.checkpoint(reader) == '102.000001'
+    assert stores['remote']._db.execute('SELECT count(*) FROM federated_messages').fetchone()[0] == 1
+    assert stores['remote']._db.execute("SELECT count(*) FROM bridge_obligations WHERE kind='receipt'").fetchone()[0] == 1
+
+
+@pytest.mark.parametrize('limit', [True, False, 0, -1, 1001, '200', 200.0])
+def test_recovery_rejects_noncanonical_budget_before_provider_or_checkpoint_work(pair, limit):
+    bridges, stores, providers, _ = pair
+    bridge = bridges['remote']
+    calls = []
+    async def forbidden(after, budget):
+        calls.append((after, budget))
+        return []
+    providers['remote'].history = forbidden
+    reader = bridge.identity.instance_id + '/' + bridge.identity.publisher_id
+    before = stores['remote'].federation.checkpoint(reader)
+    with pytest.raises(ValueError):
+        asyncio.run(bridge.recover_once(limit=limit))
+    assert not calls and stores['remote'].federation.checkpoint(reader) == before

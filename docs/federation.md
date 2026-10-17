@@ -36,6 +36,15 @@ shared; Slack tokens and signing keys remain local. An absent configuration
 keeps the adapter disabled. Distinct origins require distinct publisher IDs
 and route prefixes.
 
+The optional trusted `history_limit` setting selects an exact integer from 1
+through 1,000 events for a recovery cycle; omitting it keeps the 100-event
+default. Provider pages remain limited to 100 events, at most ten pages. The
+worker requires complete coverage after its existing reader checkpoint before
+advancing to an actual observed provider reference. An incomplete or oversized
+history leaves custody and the checkpoint intact. Select a documented budget
+for the installation’s traffic and resource assumptions; there is no automatic
+checkpoint reset, pruning, or indefinite retention guarantee.
+
 Each signed frame carries `key_generation`, the SHA-256 fingerprint of its raw
 Ed25519 public key. The operator approves that fingerprint and the complete
 instance/prefix/app/bot/channel binding before activation. Only the configured
@@ -323,3 +332,10 @@ bounds, not a global database quota. There is no automatic pruning. Preserve the
 new tables and pending local references during rollback; older transport code
 cannot safely resume their obligations. Runtime activation and complete rollback
 qualification remain gated separately.
+
+Historical provider proof is retained in
+[audits/p11-provider-qualification.yml](../audits/p11-provider-qualification.yml).
+`python scripts/verify_provider_canary.py` checks the pinned source, original
+carrier signatures, publishers and exact destination receipt hashes. Its
+historical wire-1 observations do not certify a later source or wire-3 threaded
+operation, and destination custody never becomes semantic acknowledgement.

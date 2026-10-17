@@ -87,10 +87,17 @@ def enqueue_authenticated(bridge, store, channel, message_id, destination, paylo
         raise EnqueueRejected(422, 'Federation message or route is invalid') from None
 
 
+def _recovery_limit(limit: int) -> int:
+    if type(limit) is not int or not 1 <= limit <= 1000:
+        raise ValueError('invalid federation recovery budget')
+    return limit
+
+
 class FederationBridge:
     def __init__(self, store: FederationStore, identity: Identity,
                  bindings: dict[str, Binding], provider: FederationProvider,
-                 *, now: Callable[[], float] = time.time, max_attempts: int = 8):
+                 *, now: Callable[[], float] = time.time, max_attempts: int = 8, history_limit: int = 100):
+        self.history_limit = _recovery_limit(history_limit)
         if not 1 <= max_attempts <= 32:
             raise ValueError('invalid federation attempt budget')
         self.store, self.identity, self.bindings, self.provider = store, identity, dict(bindings), provider
@@ -268,8 +275,7 @@ class FederationBridge:
                           destination_instance_id=origin, payload=signed, kind='receipt')
 
     async def recover_once(self, limit: int = 100) -> None:
-        if not 1 <= limit <= 1000:
-            raise ValueError('invalid federation recovery budget')
+        limit = _recovery_limit(limit)
         reader = self.identity.instance_id + '/' + self.identity.publisher_id
         events = await self.provider.history(self.store.checkpoint(reader), limit)
         if len(events) > limit:
@@ -294,7 +300,7 @@ class FederationBridge:
         try:
             if self.directory is not None:
                 self.directory.reconcile()
-            await self.recover_once()
+            await self.recover_once(limit=self.history_limit)
             await self.submit_once()
         except ProviderUnavailable as exc:
             delay = max(delay, exc.retry_after)

@@ -6,6 +6,7 @@ import json
 
 import httpx
 import pytest
+import test_federation_bridge as bridge_tests
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi.testclient import TestClient
 from slack_sdk.socket_mode.request import SocketModeRequest
@@ -18,6 +19,7 @@ from src.agentbus_service import MessageStore, Settings, create_app
 from src.agentbus_slack_socket_service import SlackReceiver
 
 AUTH = {'Authorization': 'Bearer local-test-secret'}
+pair = bridge_tests.pair
 
 
 @pytest.mark.parametrize('echo_thread', ['1.000001', None, '9.000001'])
@@ -390,3 +392,75 @@ def test_ordinary_peer_requires_explicit_projection_and_installs_versioned_decod
     finally:
         store.close()
         asyncio.run(client.aclose())
+
+
+@pytest.mark.parametrize('limit', [None, 1, 100, 1000, True, False, 0, -1, 1001, '200', 200.0])
+def test_operator_history_budget_is_explicit_strict_and_bounded(tmp_path, limit):
+    configured = settings(tmp_path, enabled=True)
+    config = configured.federation_config
+    assert config is not None
+    data = json.loads(config.read_text())
+    if limit is not None:
+        data['history_limit'] = limit
+    config.write_text(json.dumps(data))
+    store = MessageStore(configured.db_path)
+    client = httpx.AsyncClient()
+    try:
+        if limit is None or type(limit) is int and 1 <= limit <= 1000:
+            bridge = load_bridge(config, store, client, 'xoxb-test-secret', 'B123')
+            assert bridge.history_limit == (100 if limit is None else limit)
+        else:
+            with pytest.raises(ValueError):
+                load_bridge(config, store, client, 'xoxb-test-secret', 'B123')
+            assert all(not store.federation.verify_origin(origin_instance_id=row['instance_id'],
+                       publisher_id=row['publisher_id']) for row in data['bindings'])
+    finally:
+        store.close()
+        asyncio.run(client.aclose())
+
+
+@pytest.mark.parametrize('incomplete', [False, True])
+def test_maximum_history_budget_requires_all_ten_provider_pages_before_checkpoint(pair, tmp_path, incomplete):
+    from dataclasses import replace
+
+    from src.agentbus_federation_bridge_service import FederationBridge
+
+    bridges, stores, _, _ = pair
+    bridges['home'].enqueue('bounded-history-root', 'remote', bridge_tests.payload())
+    wire = stores['home'].federation.obligation('home', 'bounded-history-root', 'remote')['payload']
+    calls = []
+    async def respond(request):
+        body = json.loads(request.content)
+        page = int(body.get('cursor', '0'))
+        calls.append(body)
+        messages = [{'type': 'message', 'app_id': 'home', 'bot_id': 'publisher',
+                     'ts': f'{1000-page*100-i}.000001', 'text': 'unrelated'} for i in range(100)]
+        if page == 5:
+            messages[0]['text'] = wire
+        more = page < 9 or incomplete
+        return httpx.Response(200, json={'ok': True, 'messages': messages, 'has_more': more,
+            'response_metadata': {'next_cursor': str(page+1) if more else ''}})
+    async def scenario():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            old = bridges['remote']
+            bindings = dict(old.bindings)
+            bindings['home'] = replace(bindings['home'], publisher_id='home/publisher/channel')
+            target = MessageStore(tmp_path / 'history-reader.sqlite3')
+            receiver = FederationBridge(target.federation, old.identity, bindings,
+                SlackFederationProvider(client, 'local-fake-token', 'channel'), history_limit=1000)
+            # Observe only history; submission is separately owned and would post a receipt.
+            reader = receiver.identity.instance_id + '/' + receiver.identity.publisher_id
+            before = target.federation.checkpoint(reader)
+            if incomplete:
+                from src.agentbus_federation_bridge_service import ProviderUnavailable
+                with pytest.raises(ProviderUnavailable):
+                    await receiver.recover_once(limit=receiver.history_limit)
+                assert target.federation.checkpoint(reader) == before
+                assert target._db.execute('SELECT count(*) FROM federated_messages').fetchone()[0] == 0
+            else:
+                await receiver.recover_once(limit=receiver.history_limit)
+                assert target.federation.checkpoint(reader) == '1000.000001'
+                assert target._db.execute('SELECT count(*) FROM federated_messages').fetchone()[0] == 1
+            target.close()
+    asyncio.run(scenario())
+    assert len(calls) == 10 and all(c['limit'] == 100 for c in calls)

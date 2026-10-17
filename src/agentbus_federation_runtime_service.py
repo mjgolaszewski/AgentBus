@@ -40,7 +40,7 @@ def load_bridge(path: Path, store, client, token: str, bot_id: str) -> SlackFede
         raise ValueError('federation configuration exceeds limit')
     data = json.loads(path.read_text())
     required = {'instance_id', 'route_prefix', 'publisher_id', 'private_key_file', 'key_generation', 'channel', 'bindings'}
-    if not isinstance(data, dict) or not required <= set(data) or set(data) - required - {'directory', 'inbox_projection'} or not isinstance(data['bindings'], list) or len(data['bindings']) > 64:
+    if not isinstance(data, dict) or not required <= set(data) or set(data) - required - {'directory', 'inbox_projection', 'history_limit'} or not isinstance(data['bindings'], list) or len(data['bindings']) > 64:
         raise ValueError('invalid operator federation configuration')
     local_publisher = data['publisher_id']
     if (not isinstance(local_publisher, str) or len(local_publisher.split('/')) != 3
@@ -69,7 +69,8 @@ def load_bridge(path: Path, store, client, token: str, bot_id: str) -> SlackFede
         if type(data.get('inbox_projection')) is not int or data['inbox_projection'] != 1:
             raise ValueError('ordinary peers require explicitly enabled inbox projection')
     bridge = SlackFederationBridge(store.federation, identity, bindings,
-                                  SlackFederationProvider(client, token, data['channel']))
+                                  SlackFederationProvider(client, token, data['channel']),
+                                  history_limit=data.get('history_limit', 100))
     bridge.channel = data['channel']
     if 'inbox_projection' in data:
         if type(data['inbox_projection']) is not int or data['inbox_projection'] != 1:
