@@ -1,0 +1,75 @@
+document:
+  kind: execution_phase_log
+  name: Phase 12 Log
+  id: agentbus-phase-12-log
+  version: 1.0.0
+  generated_at_utc: '2026-10-17T00:00:00Z'
+  status: active
+  path: phases/phase-12-log.yml
+phase:
+  id: P12
+  build_block: owner_wake_qualification
+summary:
+  outcome: active
+  highlights:
+  - Pinned upstream sources and local installed builds; actual AHP owner remains unverified
+  - Four new adapter boundary controls pass; no AHP implementation or live probe
+  - 57 affected wake cases, Ruff and governance YAML validation pass; computed closure remains unclaimed
+workitems:
+- id: P12-P0-01
+  status: DONE
+  summary: deliver Pinned owner and protocol capability inventory with explicit unknowns
+- id: P12-P0-02
+  status: IN_PROGRESS
+  summary: deliver Conditional admission contract and deterministic conformance matrix
+- id: P12-P0-03
+  status: DONE
+  summary: deliver Separate live-provider prerequisite and go-no-go inventory
+execution_evidence:
+  planned_commands:
+  - canonical bcf ci submit after shared native capacity is available
+  executed_commands:
+  - 'Verified project interpreter pytest: 57 affected wake cases PASS'
+  - 'Verified project interpreter ruff check tests/test_owner_wake_qualification.py: PASS'
+  - 'Verified project interpreter scripts/validate_governance_yaml.py --repo-root .: PASS'
+  - Read-only codex --version and code --version; source commit and SHA256 pin capture
+  notes:
+  - Tests exercise existing standalone adapter with fake owners, not Microsoft AHP or live OpenAI extension
+  - 'P12-P0-02 remains IN_PROGRESS: real protocol conformance requires identifying a disposable Agent-Host-managed chat and supported endpoint'
+  - BCF Ironwatch reported sole canonical native transaction still live at AgentBus9963; capacity request9964 pending; no overlapping heavy transaction
+    started
+closeout_requirements:
+  claims:
+    workitems_closed:
+      required_evidence:
+      - governance-validate
+    required_suites_green:
+      required_evidence:
+      - lint
+      - typecheck
+      - test
+      - contract-test
+    architecture_gates_green:
+      required_evidence:
+      - architecture-test
+    health_checks_green:
+      required_evidence:
+      - runtime-smoke
+    security_review_complete:
+      required_evidence:
+      - governance-validate
+    findings_resolved:
+      required_evidence:
+      - security-vulnerability-scan
+  reconciliation:
+    required_evidence:
+    - governance-validate
+    - governance-exposure-scan
+  finding_registry: governance/findings.yml
+known_constraints:
+- No supported AHP owning host, negotiated protocol version or atomic idle-only admission is qualified
+- Installed OpenAI extension bundles0.162.0-alpha.17.2; release0.163 changes are upstream context
+- No production source, dependencies, credentials, deployment or existing release proof changed
+next_work:
+- Resolve actual owner inventory and run isolated zero-model protocol conformance before adapter implementation
+- Run one canonical submit when shared native capacity is released; retain first fail-close diagnostic

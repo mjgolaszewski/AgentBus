@@ -5,7 +5,7 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
-No changes recorded.
+- Begin #75 owner-wake qualification with pinned source and local capability inventory, explicit admission requirements, and deterministic adapter boundary controls. No runtime behavior changes.
 
 ## [0.9.0] - 2026-10-17
 

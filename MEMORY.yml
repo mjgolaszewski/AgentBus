@@ -53,7 +53,7 @@ environment_facts:
     - structural anti-drift gates are scaffolded for module size, layer ownership, bounded-context ownership, CQRS side rules, router thinness, and duplication
     - application behavior is characterized on Python 3.12 with a pinned Python 3.14 compatibility subprocess in the primary BCF evidence lane
     - Released BCF 2.3.4 Standard profile contract v3 governs the repository; P09 closed on exact main 1f306fa0 through authenticated run 38927748749 and P10 on 013ce32e through run 38934988411; uv 0.12.18 remains pinned across development and immutable Docker bootstrap
-    - direct protected-main authority is retained without trusted-controller or BCF release authority; P11 construction independently CLOSED on maine67e45e/run39001380265 with archive/isolated installs; operator authorized0.9 release preparation/publication, whose final versioned subject still requires canonical proof
+    - direct protected-main authority retains no trusted-controller or BCF release authority; P11 construction closed on e67e45e/run39001380265; immutable0.9 released at8f2dbf5 with exact-main39004312758/1 and isolated archive installs; P12 is a separate qualification tranche
     - production implementations live under src while top-level client and service shims preserve public executable and import paths
     - routed Slack envelopes are admitted only from the bot identity authenticated from the configured bot token
     - new consumer profiles use the XDG state directory; existing deployments select their prior profile directory through explicit AgentBus configuration
@@ -65,10 +65,11 @@ environment_facts:
     build_plan: plans/build-plan.yml
     active_phase_ledger: plans/phase-ledger.yml
     phase_history: plans/phase-history.yml
-    active_phase_plan: plans/phase-11-plan.yml
-    active_workitem_ledger: plans/phase-11-workitems.yml
-    active_phase_log: phases/phase-11-log.yml
+    active_phase_plan: plans/phase-12-plan.yml
+    active_workitem_ledger: plans/phase-12-workitems.yml
+    active_phase_log: phases/phase-12-log.yml
 known_constraints:
+  - Issue75/P12 qualifies owner wake separately from closed0.9; installed extension bundles0.162.0-alpha.17.2; AHP ownership and atomic admission remain unverified; audits/owner-wake-qualification.yml owns qualification unknowns; no live probe or runtime changes
   - Negotiated ordinary delivery keeps atomic acceptance, provider submission, destination custody and semantic ACK distinct; exact00e wire3 canary proves six reply parent/thread pairs and restart recovery while retained54-file manifest must match after only reviewed matching0.8-to0.9 version literals in project/service/root-lock metadata; no other bytes are exempt; history_limit keeps default100/existing max1000 with complete coverage or unchanged checkpoint; foreign data remains legacy assurance and grants no session/owner/wake/execution authority
   - P11 operator-approved home/moranwm/local late joiner r2 window02:45-03:05 passed12 origins/receipts, offline recovery, targetedSTOP/423, rev7 withdrawal and latest-primary-preserving rollback before the bound;07b history and02:23 root receipt deadline miss remain separate; public channel has no confidentiality or indefinite retention/availability/physical exactly-once/global disk quota guarantee; per-message recovery ingress was not instrumented; versioned release needs fresh canonical custody; production deployment stays separate, prior1be cores bridge-disabled and late stopped
   - AgentBus remains on installed released BCF2.3.4 even after2.3.5 publication; operator8474 authorizes only Racecar to upgrade2.3.5; preserve provider boundaries without persistent trusted-controller capability
@@ -78,13 +79,7 @@ known_constraints:
   - legacy protocol-2 clients receive one upgrade notice per inbox identity, with repeatable instructions on explicit info reads; ordinary message pages stay unchanged
   - Issue 8 Codex wake is optional host-owned adapter behavior from contracts/codex-wake/v1/codex-wake.contract.yml; AgentBus core never owns threads, credentials, or turn lifecycle
   - live-wakable idle chats spend zero turns on routine in-chat polling; the local worker continues and unchanged observations start no model turn
-reusable_commands:
-  - make governance-validate
-  - make architecture-test
-  - make lint
-  - make typecheck
-  - make test
-  - make release-check
+reusable_commands: [make governance-validate, make architecture-test, make lint, make typecheck, make test, make release-check]
 references:
   governance:
     - AGENTS.yml

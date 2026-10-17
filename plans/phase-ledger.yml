@@ -4,22 +4,22 @@ document:
   id: "agentbus-phase-ledger"
   version: 1.0.0
   generated_at_utc: "2026-09-27T00:00:00Z"
-  status: active_phase_completed
+  status: active
   path: plans/phase-ledger.yml
 build_plan_mandate:
   format: yaml
   required_fields: [tightly_scoped_deliverables, parallelizable_workstreams, hard_dependencies, docker_first_local_runtime, completeness_standard]
   completeness_standard: full_completeness_for_declared_scope
 active_phase:
-  id: P11
-  build_block: "qualified_federation_runtime"
-  plan: plans/phase-11-plan.yml
-  workitems: plans/phase-11-workitems.yml
-  log: phases/phase-11-log.yml
+  id: P12
+  build_block: "owner_wake_qualification"
+  plan: plans/phase-12-plan.yml
+  workitems: plans/phase-12-workitems.yml
+  log: phases/phase-12-log.yml
   memory: MEMORY.yml
   spec: plans/product-spec.yml
   build_plan: plans/build-plan.yml
-  lifecycle_status: completed
+  lifecycle_status: active
   owner: "agentbus:signal-gardener"
   validation_commands: [make governance-validate, make architecture-test, make lint, make typecheck, make test, make release-check]
 hotfix_lane:
@@ -54,7 +54,7 @@ operator_requirements_choices_disambiguations:
     statement: adopter governance must not install a persistent trusted controller or inherit BCF self-authority
 active_delivery_priorities:
   current_tranche:
-    - "qualified_federation_runtime"
+    - "owner_wake_qualification"
 release_trains:
   release_1:
     target_version: "0.3.0"

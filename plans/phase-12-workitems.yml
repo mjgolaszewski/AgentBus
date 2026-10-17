@@ -1,0 +1,37 @@
+document:
+  kind: execution_phase_workitem_ledger
+  name: Phase 12 Workitems
+  id: agentbus-phase-12-workitems
+  version: 1.0.0
+  generated_at_utc: '2026-10-17T00:00:00Z'
+  status: active
+  path: plans/phase-12-workitems.yml
+  phase_id: P12
+workitems:
+- id: P12-P0-01
+  priority: P0
+  status: DONE
+  summary: deliver Pinned owner and protocol capability inventory with explicit unknowns
+  acceptance:
+  - Inventory pins local builds, upstream source identities, authority owners, exclusions and explicit unverified facts
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P12-P0-02
+  priority: P0
+  status: IN_PROGRESS
+  summary: deliver Conditional admission contract and deterministic conformance matrix
+  acceptance:
+  - Design requirements and existing adapter controls pass; actual AHP protocol conformance remains pending an identified disposable owning host
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P12-P0-03
+  priority: P0
+  status: DONE
+  summary: deliver Separate live-provider prerequisite and go-no-go inventory
+  acceptance:
+  - Live prerequisites and go-no-go decision distinguish deterministic research from owner interoperability and atomic admission
+  acceptance_evidence:
+  - test
+  - contract-test

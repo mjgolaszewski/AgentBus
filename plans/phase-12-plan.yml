@@ -1,0 +1,39 @@
+document:
+  kind: execution_phase_plan
+  name: Phase 12 Plan
+  id: agentbus-phase-12-plan
+  version: 1.0.0
+  generated_at_utc: '2026-10-17T00:00:00Z'
+  status: active
+  path: plans/phase-12-plan.yml
+phase:
+  id: P12
+  build_block: owner_wake_qualification
+  planner: codex
+  date: '2026-10-17'
+  scope_source:
+  - AGENTS.yml
+  - plans/product-spec.yml
+  - plans/build-plan.yml
+  - plans/phase-ledger.yml
+  - MEMORY.yml
+delivery_contract:
+  tightly_scoped_deliverables:
+  - Pinned owner and protocol capability inventory with explicit unknowns
+  - Conditional admission contract and deterministic conformance matrix
+  - Separate live-provider prerequisite and go-no-go inventory
+  parallelizable_workstreams:
+  - id: P12-WS1
+    name: owner_protocol_qualification
+  hard_dependencies:
+  - P11 and v0.9.0 exact-main closure retained at 8f2dbf5
+  docker_first_local_runtime: repo_native_validation_and_governance_commands
+  completeness_standard: full_completeness_for_declared_scope
+scope_lock:
+- order: 1
+  statement: keep the phase narrowly scoped to declared deliverables and update canonical governed artifacts in the same change
+- order: 3
+  statement: No live owner connection, model turn, adapter implementation, deployment or new authority in this research slice.
+verification_plan:
+- make governance-validate
+- make contract-test
