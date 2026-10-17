@@ -178,8 +178,14 @@ uv run --frozen --extra dev python scripts/verify_provider_canary.py \
   --path audits/p11-provider-canary-00eecbe.yml
 ```
 
-The verifier also compares 54 runtime, bootstrap and dependency files with the
-pinned qualified archive. A changed runtime requires new applicable evidence.
+The verifier compares 54 runtime, bootstrap and dependency files with the pinned
+qualified archive. For release 0.9.0 it permits only matching version declarations
+in `pyproject.toml`, the FastAPI service literal, and the root package in `uv.lock`.
+It reverses exactly those three literals and requires every original SHA-256 to
+match. Mixed or unknown versions, dependency changes, and any other bytes fail.
+Results distinguish 51 byte-identical files from three verified metadata changes;
+the original canary source, signatures, window, and limitations remain unchanged.
+A changed runtime requires new applicable evidence.
 This audit grants no deployment, session, owner, wake or semantic acknowledgement
 authority. Provider timestamps are authenticated API observations, without an
 independent server attestation. Retention and availability remain bounded claims;

@@ -208,6 +208,40 @@ def _qualified_observations(observed: dict) -> None:
              and times['home_stopped_at'] < times['home_prior_core_healthy_at'], 'rollback missed fixed end')
 
 
+def _runtime_applicability(runtime_files: dict) -> dict:
+    """Permit only the reviewed 0.8.0 -> 0.9.0 release-version literals."""
+    root = Path(__file__).resolve().parents[1]
+    contents = {}
+    for name in runtime_files:
+        path = root / name
+        _require(path.resolve().is_relative_to(root) and not path.is_symlink() and path.is_file(),
+                 'qualified runtime path changed')
+        contents[name] = path.read_bytes()
+    declarations = {
+        'uv.lock': (b'\nname = "superworkspace-agentbus"\nversion = "0.8.0"\nsource = { virtual = "." }\n',
+                    b'\nname = "superworkspace-agentbus"\nversion = "0.9.0"\nsource = { virtual = "." }\n'),
+        'pyproject.toml': (b'\nversion = "0.8.0"\n', b'\nversion = "0.9.0"\n'),
+        'src/agentbus_service.py': (b'FastAPI(title="AgentBus", version="0.8.0", lifespan=lifespan,',
+                                    b'FastAPI(title="AgentBus", version="0.9.0", lifespan=lifespan,'),
+    }
+    baseline = all(contents[name].count(old) == 1 and contents[name].count(new) == 0
+                   for name, (old, new) in declarations.items())
+    release = all(contents[name].count(new) == 1 and contents[name].count(old) == 0
+                  for name, (old, new) in declarations.items())
+    _require(baseline or release, 'mixed or unsupported release metadata')
+    if release:
+        for name, (old, new) in declarations.items():
+            contents[name] = contents[name].replace(new, old, 1)
+    for name, digest in runtime_files.items():
+        raw = contents[name]
+        _require(hashlib.sha256(raw).hexdigest() == digest,
+                 'retained provider evidence does not qualify changed runtime bytes')
+    result: dict = {'runtime_files_match': 51 if release else 54}
+    if release:
+        result.update(release_metadata_files_match=3, release_metadata_transition='0.8.0->0.9.0')
+    return result
+
+
 def _verify_qualified(data: dict) -> dict:
     from src.agentbus_federation_ordinary_service import decode_ordinary
     from src.agentbus_federation_wire_service import canonical
@@ -219,12 +253,7 @@ def _verify_qualified(data: dict) -> dict:
              and hashlib.sha256(canonical(runtime_files).encode()).hexdigest()
              == '50174ce1438696da8016ea810b5a3c325ecdd6d05180c189b499088a5a98a493',
              'qualified archive runtime manifest changed')
-    root = Path(__file__).resolve().parents[1]
-    for name, digest in runtime_files.items():
-        path = root / name
-        _require(path.resolve().is_relative_to(root) and not path.is_symlink() and path.is_file()
-                 and hashlib.sha256(path.read_bytes()).hexdigest() == digest,
-                 'retained provider evidence does not qualify changed runtime bytes')
+    runtime_applicability = _runtime_applicability(runtime_files)
     _require(data['document'] == {'kind': 'released_runtime_provider_canary_evidence',
              'id': 'p11-provider-canary-00eecbe', 'version': 2, 'path': 'audits/p11-provider-canary-00eecbe.yml'},
              'qualified document identity changed')
@@ -319,7 +348,7 @@ def _verify_qualified(data: dict) -> dict:
     _qualified_observations(data['observations'])
     return {'source': QUALIFIED_SOURCE, 'messages': 12, 'receipts': 12, 'reply_parents': 6,
             'withdrawals': 6, 'withdrawal_receipts': 6, 'physical_observations': len(rows),
-            'runtime_files_match': 54,
+            **runtime_applicability,
             'scope': 'certified_wire3_canary_only'}
 
 
