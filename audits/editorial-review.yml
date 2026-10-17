@@ -72,9 +72,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 102
-  line_count: 102
-  sha256: dd13c63fab6e37069960319c2a4d2a68d5838bfec3bd6cc41d3add8778bdec16
+    - 103
+  line_count: 103
+  sha256: 084aac3943f7f16d89c2b817ba5a5348b74b94dd0c8ec58a0e2e9e2f2d640325
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current
@@ -145,9 +145,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 155
-  line_count: 155
-  sha256: e9dcf7e8e7acf36591094783feaafd5642356d0d4e6cbdf18232f6c89d0f362a
+    - 168
+  line_count: 168
+  sha256: 6100c3abf8f2f38143c430c8805137a4fe8f678ebd8d860eb6540c4021813308
   disposition: updates
   findings:
   - Retained historical evidence with original exact subject limits; no candidate proof applicability
@@ -402,9 +402,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 67
-  line_count: 67
-  sha256: 487d96a56f05c819d52482ddb87af31d481a4e5bab15000c94f4e81a83757aaf
+    - 71
+  line_count: 71
+  sha256: b6575f034a6a92e296a02cb48bd0c3e1f2cbf0ea7cb6b7e6fdf30d1d620a25c3
   disposition: new
   findings:
   - New seat separates experimental candidate claims from released baseline and bounded tests; no live
@@ -472,9 +472,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 75
-  line_count: 75
-  sha256: c54a0d782c2418182f97f7d2d32c679fca128d7f657ed59a88be649b68ff7ff3
+    - 78
+  line_count: 78
+  sha256: 01dca1f0cbc1e31b8dd2cab784db3f58a96e1c56f137b6c57b0b0b5b070007ee
   disposition: new
   findings:
   - New offline dry-run/apply, client migration, custody-preserving forward repair and separate canary
@@ -737,9 +737,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 181
-  line_count: 181
-  sha256: 3f6a4f879246d9b20f4318b0556141dbe21b730d55971f5b8e93cafb8e30d0d1
+    - 186
+  line_count: 186
+  sha256: 870410c448e1edd38e9de2cc25dbe86686f56bf795ac3f5057fc204e6bfbe95f
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current

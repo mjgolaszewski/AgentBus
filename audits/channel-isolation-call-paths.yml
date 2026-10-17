@@ -6,8 +6,8 @@ baseline:
   merged: 22ac9441b464aa7e82eff2fa8339dcc1d39dc790
   preserved_research: 5328e33
   rebased_research: 1cd1fac
-  canonical_authentication: combined final candidate; baseline-only gate superseded
-    by explicit operator steering
+  canonical_authentication: combined final candidate; baseline-only gate superseded by explicit operator
+    steering
   exact_main_proof:
     run: 39049904693/1
     subject: 22ac9441b464aa7e82eff2fa8339dcc1d39dc790
@@ -15,10 +15,9 @@ baseline:
     truth_sha256: ca245f2c5de8dcb86e52ba6e104767a2df4a75566649d87b99047ed1d43a2b38
     predicate: pull_request_progress_valid
     authorizes: []
-  reuse_classification: Exact22ac proof remains scoped to22ac; no inferred authentication
-    of1cd or later subjects
-boundary: one-service API and CLI authority; shared OS files and Slack public visibility
-  excluded
+  reuse_classification: Exact22ac proof remains scoped to22ac; no inferred authentication of1cd or later
+    subjects
+boundary: one-service API and CLI authority; shared OS files and Slack public visibility excluded
 baseline_flows_before_construction:
   bootstrap:
   - Settings.from_env
@@ -128,20 +127,25 @@ first_red_controls:
   authority: local characterization only
 live_qualification:
   status: blocked
+  arrangement: operator approved original C0C4GDC7Q4D and test C0C9WQ74W7M; both primary and distinct
+    latejoiner bot history access verified
+  lifecycle_owner: superworkspace custodian, explicit coordinated authorization
+  current_state: custodian installed9d30bf9 and migrated shared store; supported serve running, managed
+    start/autostart duplicate check blocks live canary
   requires:
-  - approved isolated two-channel provider arrangement
-  - bounded deployment window and rollback
-  no_live_changes: true
+  - protected exact-main qualification of unified startup preflight
+  - custodian verified code-only repair preserving migrated DB and accepted obligations
+  - reviewed readiness receipt before scoped canary execution
+  canary_started: false
+  historical_no_live_changes_claim: construction-stage only; superseded by custodian cutover observation
 projection_red_controls:
   count: 6
-  scope: current single-channel projection characterization, not a live cross-channel
-    exploit claim
+  scope: current single-channel projection characterization, not a live cross-channel exploit claim
   cases:
   - foreign channel
   - foreign inbox UUID
   - foreign service URL
-  finding: both wake scan and presentation spool accept foreign scope labels without
-    rejection
+  finding: both wake scan and presentation spool accept foreign scope labels without rejection
   stdout_sha256: 7ecad6d85e41fb06d06b07f9a3c2a30216483ab85980d31c89b0c08ee50c120b
   authority: local non-authoritative characterization
 construction_phase: P12-P1 workitems; former P13 preparation retained in Git history
@@ -152,4 +156,13 @@ candidate_flows:
   delivery: one_coordinator_round_robin_per_channel_poster_with_aggregate_budget
   projections: strict_service_inbox_channel_chat_session_scope_before_read_merge_or_advance
   federation: explicitly_configured_existing_bridge_channel_only
+  startup:
+    direct: serve -> _service_configuration_preflight -> uvicorn -> Settings.from_env -> create_app ->
+      delivery_lifespan
+    managed: start or enabled autostart -> lifecycle -> _service_configuration_preflight -> child serve
+      -> same preflight -> service startup
+    disabled_autostart: no-op before credentials or state requirements
+    control_paths: status and stop retain existing lifecycle behavior
+    regression: 11 new managed/entrypoint cases reproduce6fail/5pass; all70 launcher/architecture cases
+      pass after one-owner extraction; final protected proof pending
 editorial_owner: audits/editorial-review.yml

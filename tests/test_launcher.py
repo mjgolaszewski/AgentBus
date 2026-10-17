@@ -49,6 +49,67 @@ def test_serve_rejects_simultaneous_channel_forms_before_execution(launcher, pro
     assert calls == []
 
 
+@pytest.mark.parametrize("command", ["start", "autostart"])
+@pytest.mark.parametrize("channels", [
+    {"AGENTBUS_SLACK_CHANNEL": "C111"},
+    {"AGENTBUS_SLACK_CHANNELS": "C111,C222"},
+])
+def test_lifecycle_accepts_either_channel_configuration(launcher, project, monkeypatch, command, channels):
+    values = {"AGENTBUS_API_TOKEN": TOKEN, "AGENTBUS_SLACK_BOT_TOKEN": "xoxb-test",
+              "AGENTBUS_SLACK_APP_TOKEN": "xapp-test", "AGENTBUS_AUTOSTART": "1",
+              "AGENTBUS_STATE_DIR": str(project / "state"), **channels}
+    calls = []
+
+    class Child:
+        pid = 4321
+
+        def poll(self):
+            return None
+
+    def spawn(*args, **kwargs):
+        calls.append((args, kwargs))
+        return Child()
+
+    monkeypatch.setattr(launcher.subprocess, "Popen", spawn)
+    monkeypatch.setattr(launcher, "running_process", lambda _state: None)
+    monkeypatch.setattr(launcher, "process_identity", lambda _pid: "test-start")
+    monkeypatch.setattr(launcher.time, "sleep", lambda _seconds: None)
+    assert launcher.lifecycle(command, project, values) == 0
+    assert len(calls) == 1
+    assert calls[0][0][0][-1] == "serve"
+    assert calls[0][1]["env"] == values
+
+
+@pytest.mark.parametrize("command", ["start", "autostart"])
+@pytest.mark.parametrize("single", ["C111", ""])
+def test_lifecycle_rejects_simultaneous_channel_forms_before_spawn(launcher, project, monkeypatch, command, single):
+    values = {"AGENTBUS_API_TOKEN": TOKEN, "AGENTBUS_SLACK_BOT_TOKEN": "xoxb-test",
+              "AGENTBUS_SLACK_APP_TOKEN": "xapp-test", "AGENTBUS_AUTOSTART": "1",
+              "AGENTBUS_STATE_DIR": str(project / "state"), "AGENTBUS_SLACK_CHANNEL": single,
+              "AGENTBUS_SLACK_CHANNELS": "C111,C222"}
+    monkeypatch.setattr(launcher, "running_process", lambda _state: None)
+
+    def forbidden_spawn(*args, **kwargs):
+        pytest.fail("Ambiguous channel configuration reached process creation")
+
+    monkeypatch.setattr(launcher.subprocess, "Popen", forbidden_spawn)
+    with pytest.raises(launcher.ClientError, match="both channel"):
+        launcher.lifecycle(command, project, values)
+
+
+@pytest.mark.parametrize("command", ["serve", "start", "autostart"])
+def test_all_service_entrypoints_require_a_channel_before_execution(launcher, project, monkeypatch, command):
+    values = {"AGENTBUS_API_TOKEN": TOKEN, "AGENTBUS_SLACK_BOT_TOKEN": "xoxb-test",
+              "AGENTBUS_SLACK_APP_TOKEN": "xapp-test", "AGENTBUS_AUTOSTART": "1",
+              "AGENTBUS_STATE_DIR": str(project / "state")}
+    monkeypatch.setattr(launcher, "running_process", lambda _state: None)
+    with pytest.raises(launcher.ClientError, match="SLACK_CHANNEL"):
+        if command == "serve":
+            launcher.serve(project, values)
+        else:
+            launcher.lifecycle(command, project, values)
+
+
 @pytest.fixture
 def launcher():
     loader = SourceFileLoader("agentbus_launcher_tests", str(LAUNCHER))
