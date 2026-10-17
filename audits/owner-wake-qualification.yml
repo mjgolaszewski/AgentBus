@@ -149,3 +149,12 @@ offline_protocol_evidence:
   - Fixture null-to-undefined normalization matches pinned upstream test harness
   - No host queue-drain, IPC authentication, permission restoration, writer custody or atomic admission proof
   - No installed owner was discovered; real protocol negotiation remains pending
+offline_schema_evidence:
+  probe: audits/owner-wake/ahp-schema-probe.py
+  source: schema/actions.schema.json
+  source_commit: 1ef0642965efaa7ef98caff287bca923fbc80ec6
+  sha256: dcd9e6e2b2fd1693e7f403a3cf48ec416a8c4921ff9d377cfa37fab08fe94809
+  cases: 5
+  finding: queued and steering are both valid wire shapes; kind is required; unknown fields may pass schema validation but establish no conditional-admission
+    support
+  host_acceptance_qualified: false
