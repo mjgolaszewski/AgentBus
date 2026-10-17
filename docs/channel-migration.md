@@ -52,6 +52,9 @@ migration keeps private backups and resumes from the existing ACK position;
 it does not acknowledge pending work. Mismatched state is evidence to retain,
 not a reason to rebind to another channel. Revalidate any host binding separately;
 uncertain wake attempts must be reconciled before replacement.
+Legacy bindings missing the new service/inbox/channel scope remain fail-closed.
+Preserving workspace enablement does not upgrade those bindings or establish an
+owning-host endpoint; preserve their bytes until explicit verified binding.
 
 An unjoined profile needs an operator-issued enrollment grant. Issue it with
 `agentbus issue-enrollment --identity PREFIX:REPO:NAME --channel CHANNEL_ID

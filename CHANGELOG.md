@@ -5,7 +5,7 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
-- Fix service launcher startup with the plural channel allowlist and reject simultaneous channel configuration forms before execution.
+- Use one configuration preflight for serve, start, and enabled autostart; accept either channel form and reject simultaneous forms before process execution.
 
 - Stack channel-isolation construction in P12 with versioned authorization contracts and cross-channel negative controls; implementation is in progress; live qualification remains pending.
 

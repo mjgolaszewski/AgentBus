@@ -202,7 +202,8 @@ def running_process(state: Path) -> int | None:
     return None
 
 
-def serve(project: Path, values: dict[str, str]) -> None:
+def _service_configuration_preflight(values: dict[str, str]) -> None:
+    """Keep direct serve and managed startup on the same configuration contract."""
     for name in ("API_TOKEN", "SLACK_BOT_TOKEN", "SLACK_APP_TOKEN"):
         if not values.get(f"AGENTBUS_{name}"):
             raise ClientError(f"Set AGENTBUS_{name} before starting AgentBus.")
@@ -210,6 +211,10 @@ def serve(project: Path, values: dict[str, str]) -> None:
         raise ClientError("Do not configure both channel variables together.")
     if not (values.get("AGENTBUS_SLACK_CHANNEL") or values.get("AGENTBUS_SLACK_CHANNELS")):
         raise ClientError("Set AGENTBUS_SLACK_CHANNEL or AGENTBUS_SLACK_CHANNELS before starting AgentBus.")
+
+
+def serve(project: Path, values: dict[str, str]) -> None:
+    _service_configuration_preflight(values)
     if not (project / "uv.lock").is_file():
         raise ClientError(f"AgentBus installation is incomplete: missing {project / 'uv.lock'}")
     os.umask(0o077)
@@ -252,9 +257,7 @@ def lifecycle(command: str, project: Path, values: dict[str, str]) -> int:
         if pid:
             print(f"AgentBus already running (PID {pid}).")
             return 0
-        for name in ("API_TOKEN", "SLACK_BOT_TOKEN", "SLACK_APP_TOKEN", "SLACK_CHANNEL"):
-            if not values.get(f"AGENTBUS_{name}"):
-                raise ClientError(f"Set AGENTBUS_{name} before starting AgentBus.")
+        _service_configuration_preflight(values)
         launcher = project / "agentbus"
         with (state / "service.log").open("ab") as log:
             child = subprocess.Popen([sys.executable, str(launcher), "serve"], env=values,

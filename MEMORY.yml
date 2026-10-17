@@ -55,6 +55,7 @@ environment_facts:
     - Released BCF 2.3.4 Standard profile contract v3 governs the repository; P09 closed on exact main 1f306fa0 through authenticated run 38927748749 and P10 on 013ce32e through run 38934988411; uv 0.12.18 remains pinned across development and immutable Docker bootstrap
     - direct protected-main authority retains no trusted-controller or BCF release authority; P11 construction closed on e67e45e/run39001380265; immutable0.9 released at8f2dbf5 with exact-main39004312758/1 and isolated archive installs; P12 is a separate qualification tranche
     - production implementations live under src while top-level client and service shims preserve public executable and import paths
+    - one CLI configuration preflight is shared by direct serve and managed start/enabled autostart; Settings owns full channel registry validation
     - routed Slack envelopes are admitted only from the bot identity authenticated from the configured bot token
     - new consumer profiles use the XDG state directory; existing deployments select their prior profile directory through explicit AgentBus configuration
     - identity-aware inbox reads filter and page in indexed SQLite queries with legacy audience migration

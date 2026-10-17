@@ -22,6 +22,10 @@ owners. Workspace opt-in, a saved thread UUID, an accessible backend, and a loca
 lock do not independently establish owner-side atomic admission. Backend identity,
 owner incarnation and connection/binding generation matter alongside thread ID.
 No message, queue acceptance or custody receipt proves execution or completion.
+After channel migration, inherited bindings that lack the new scope fields stay
+fail-closed even when workspace wake remains enabled. Projection migration does
+not rewrite those bindings or qualify their owner; retain them for explicit
+verified binding rather than silently adopting a scope.
 
 ## Work offline first
 
