@@ -47,7 +47,8 @@ execution_evidence:
   - Active VSCode user-data directory discovery found no AHP local-endpoint directory; no secret read, host connection or model turn
   - Ironwatch10036 reports no new canonical invocation active/planned and offers fresh admission through released234 boundary; no lease inferred
   - 'Canonical released234 submit on c028ce42204850b0b553b8857e4df2433541e3af terminated1 before execution: target_not_ready_for_phase_closure;
-    invocation PID15338 gone. First stdout/stderr/terminal retained under .artifacts/owner-wake/canonical-c028ce42.*; SHA256 stderr=937dae48da7ae71b74a3dcb935efdb6c1c9635d9dee4683453686f65f45f85aa'
+    invocation PID15338 gone. First stdout/stderr/terminal retained under .artifacts/owner-wake/canonical-c028ce42.* (non-authoritative local
+    retention); SHA256 stderr=937dae48da7ae71b74a3dcb935efdb6c1c9635d9dee4683453686f65f45f85aa'
   - Generated graph retains old closure intent while authored P12 derives progress; owner classification requested at AgentBus10041/10043 before
     retry; no manual graph edits, copied evidence or successor BCF code
   - Ironwatch10046 confirmed exact released234 docs/USAGE.md34-58 canonical preparation route; preserves active P12 and original failure subject;
@@ -61,16 +62,20 @@ execution_evidence:
   - Operator clarified no known disposable Agent-Host-managed chat; continue offline only. Real owner negotiation, provider interoperability and
     atomic admission remain unqualified, not waived.
   - Predecessor4f9617e canonical TERMINAL0; PR77 OPEN with run39047060363 provider evidence pending. Native handback stream hashes and all known
-    PID absence retained in predecessor tree .artifacts/owner-wake/native-handback.json; no provider certification inferred.
+    PID absence retained in predecessor tree .artifacts/owner-wake/native-handback.json (non-authoritative local retention); no provider certification
+    inferred.
   - Predecessor PR77 subsequently normal-merged as e3097668c2b465a176c26e0573cdb8cbf4873125. Protected PR39047060363/1 and exact-main39047363257/1
     all6 PASS; exact-main truth SHA256 d6ad2c9252a0f206ced28c0f2a98705e8622f2903928355a9aa445786bcef778 certifies only pull_request_progress_valid,
-    authorizes no successor/phase closure. Artifacts retained in predecessor .artifacts/owner-wake/provider-pr77 and exact-main-e309766.
+    authorizes no successor/phase closure. Artifacts retained in predecessor .artifacts/owner-wake/provider-pr77 (non-authoritative local retention)
+    and exact-main-e309766.
   - 'Correction4b7939b native wrapper terminated1 before execution/provider mutation: every pull request must update CHANGELOG.md. First stdout/stderr/terminal
-    preserved in .artifacts/owner-wake/canonical-4b7939b8.*; rebased correction needed its own changelog entry; corrected through authored CHANGELOG
-    owner, no bypass or BCF change.'
+    preserved in .artifacts/owner-wake/canonical-4b7939b8.* (non-authoritative local retention); rebased correction needed its own changelog entry;
+    corrected through authored CHANGELOG owner, no bypass or BCF change.'
   - 'Candidate5bf8600 wrapper terminated1 in cheap exposure preflight: phase log included an absolute local workspace path. Original diagnostics
-    retained in .artifacts/owner-wake/canonical-5bf8600c.*; removed path through authored log owner; no provider mutation, heavy evidence execution
-    or exposure exception.'
+    retained in .artifacts/owner-wake/canonical-5bf8600c.* (non-authoritative local retention); removed path through authored log owner; no provider
+    mutation, heavy evidence execution or exposure exception.'
+  - Standalone cheap preflight found unqualified ephemeral diagnostic references in this log; marked retained local copies non-authoritative,
+    while public run IDs and exact truth digest remain the proof authority. No exposure/evidence-policy exception added.
 closeout_requirements:
   claims:
     workitems_closed:
