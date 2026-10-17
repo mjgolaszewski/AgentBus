@@ -7,6 +7,15 @@ baseline:
   preserved_research: 5328e33
   rebased_research: 1cd1fac
   canonical_authentication: pending_shared_capacity
+  exact_main_proof:
+    run: 39049904693/1
+    subject: 22ac9441b464aa7e82eff2fa8339dcc1d39dc790
+    tree: bb826d0910d31eab083c1deafd350d293020fc2e
+    truth_sha256: ca245f2c5de8dcb86e52ba6e104767a2df4a75566649d87b99047ed1d43a2b38
+    predicate: pull_request_progress_valid
+    authorizes: []
+  reuse_classification: BCF owner10156 confirms exact22ac proof cannot authenticate1cd1fac;
+    native baseline submit queued after existing commitments
 boundary: one-service API and CLI authority; shared OS files and Slack public visibility
   excluded
 flows:
