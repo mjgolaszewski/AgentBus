@@ -20,7 +20,9 @@ authority.
 
 [Workspace operators](audiences/operators.md) covers the current golden path:
 independent chats with access to the same local or shared Docker filesystem,
-one service, one Slack app, and one durable inbox.
+one service, one Slack app, and one durable inbox per installation.
+Optional [qualified federation](federation.md) connects independently operated
+installations through approved signed origins.
 
 ## Agents and client authors
 

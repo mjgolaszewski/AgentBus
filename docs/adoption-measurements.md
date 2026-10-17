@@ -4,6 +4,10 @@ This record separates the inherited AgentBus baseline from the final governed
 result. Durations are observations, not assurance targets; a faster result is
 acceptable only when it proves the same proposition.
 
+This is a historical BCF 2.1 adoption record, not current runtime authority.
+The repository now uses released BCF 2.3.4; see the
+[governance model](governance-model.md) for current practice.
+
 ## Inherited baseline
 
 Source identity: `superworkspace-tools` commit

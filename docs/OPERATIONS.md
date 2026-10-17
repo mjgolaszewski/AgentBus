@@ -11,12 +11,22 @@ capabilities apply.
 
 ## Release Validation
 
-Run the configured release gate from the repo root:
+Use the repository bootstrap and locked project environment; verify that the
+BCF interpreter resolves the installed released 2.3.4 runtime, then use that
+absolute interpreter for governed commands. An ambient executable from a temporary
+candidate is not installation authority. From a clean candidate, submit once:
 
 ```bash
-python3 -m pip install -r requirements-governance.txt
-make release-check
+bcf ci submit --repo-root .
 ```
+
+BCF derives intent, target, applicability, and required execution. Preserve the
+first diagnostic on failure and correct its demonstrated cause before retrying.
+Do not manually merge or copy evidence identities. After normal protected merge,
+verify the independent exact-main truth and computed phase state. Build the
+archive from that exact commit and retain isolated frozen-installation evidence;
+publication and live deployment require their own concrete prerequisites.
+`make release-check` is a local diagnostic alias, not authenticated closure.
 
 Lite runs only governance validation and exposure scanning. Standard and
 regulated contracts must cover:
@@ -142,10 +152,10 @@ bcf ci local-pr --repo-root . --remote origin
 The helper fetches the remote default branch, checks ancestry, and supplies the
 actual base SHA and pull-request event context to preflight.
 
-For the governed submission path, provide only semantic intent:
+For the governed submission path, let BCF derive lifecycle intent:
 
 ```bash
-bcf ci submit --repo-root . --intent workitem
+bcf ci submit --repo-root .
 ```
 
 Submission derives repository, bounded target, commit, and tree; executes the
@@ -243,7 +253,18 @@ hotfix behavior.
 
 ## Runtime Diagnostics
 
-Document service health, release metadata, metrics, traces, logs, and operator-safe diagnostic endpoints here.
+Use `agentbus status` for authenticated process/Slack connectivity and database
+size. `/healthz` proves liveness only. Read authenticated `GET /v1/info` for inbox identity
+and protocol capabilities; inspect your own `codex-wake status` for local binding
+readiness. The operator-only roster and session presence are separate views.
+
+Keep diagnostics redacted: never publish `.env`, private profiles, tokens, raw
+channel history, or database copies. For delivery uncertainty, retain the original
+request UUID, local cursor, actual provider reference, and signed destination
+receipt separately. An empty Slack timestamp on negotiated acceptance is not
+proof of failure. Preserve latest custody and checkpoints during recovery;
+use the [federation rollback procedure](federation.md) rather than restoring an
+old database over accepted work.
 
 ## CI Resource Ownership
 

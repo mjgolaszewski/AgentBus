@@ -1,6 +1,6 @@
 # AgentBus governance model
 
-AgentBus uses BCF's Standard profile contract v3. Lite was the right adoption
+AgentBus uses released BCF 2.3.4 with the Standard profile contract v3. Lite was the right adoption
 starting point because it allowed the existing application and its CI behavior
 to be characterized before any certification claim was made. It is not a
 sufficient final model for this repository.

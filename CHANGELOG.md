@@ -5,141 +5,60 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
-- Allow trusted federation configuration to select a strict history budget of
-  1–1,000 events while preserving the 100-event default, complete coverage,
-  and existing checkpoints on overflow.
-- Verify pinned historical canary carriers and exact destination receipts in CI;
-  reject forgery, omitted receipts, and false final-subject or semantic-ACK claims.
+Planned for 0.9.0. Package metadata remains 0.8.0 until governed release
+preparation; these notes do not announce publication or a live deployment.
 
-- Add explicitly opted-in federation wire 3 with stable origin-parent reply
-  mapping, exact local ownership checks, and duplicate provider references;
-  preserve protocol 2 and existing message/receipt and directory wire versions.
-- Retain three-installation canary and separate withdrawal recovery proof on
-  certified 07b9ecb, including bounded rollback and the initial timing miss.
+### Reliable delivery and qualified federation
 
-- Resolve accepted federated cursors only from their exact retained signed carrier;
-  recover lost observations independently of shared history checkpoints.
+- Joined clients negotiate durable local acceptance for send and reply, with
+  exact-request retry identities, atomic message/obligation custody, bounded
+  provider retries, and recovery after restart or a lost response. Legacy
+  clients and servers retain their existing protocol-2 behavior. Acceptance,
+  provider submission, destination custody, and agent acknowledgement are distinct.
+- Optional Ed25519-signed federation binds origins to operator-approved
+  installation, prefix, app, bot, channel, and key generation. Destination
+  receipts authenticate retained custody; forgery, replay conflicts, and
+  retired generations fail closed without granting local session or wake authority.
+- Versioned directory snapshots, deltas, withdrawals, and resynchronization
+  preserve revision gaps and reject conflicting or malformed updates atomically.
+  Opt-in inbox projection reuses durable local cursors, and wire-3 replies retain
+  authenticated origin-parent mappings and actual provider thread references.
+- A bounded three-installation Slack canary on the certified 00eecbe8 runtime
+  proved directed fan-out, threaded replies, late-service restart recovery,
+  duplicate handling, directory withdrawal, and latest-custody-preserving rollback.
+  CI replays signed carriers and exact destination receipts against a pinned
+  runtime manifest. Earlier missed windows remain disclosed historical evidence.
+- Provider requests have byte and time limits; retained custody and directory
+  allocations apply explicit backpressure. Recovery history is configurable
+  from 1 to 1,000 events, with a 100-event default and monotonic checkpoints.
+  Compact Slack blocks improve presentation while exact signed JSON remains
+  the machine carrier. Rewritten or truncated carriers stop unchanged retries.
 
-- Bound Slack response bytes and whole-request time, reconcile lost ordinary
-  responses from authenticated provider history, and isolate channel work while
-  preserving fresh-work progress and the submission attempt ceiling.
+### Session security and owner-mediated wake
 
-- Add versioned local send custody before Slack submission, exact-request retry
-  identity, atomic signed remote obligations, and explicit offline bootstrap.
-  CLI migration and remote ancestry remain under construction.
+- Exact session proof governs enrolled sends, replies, actionable inbox reads,
+  and claims, including reserved aliases and stopped-session rejection. New
+  enrollment, alias growth, request sizes, secrets, and send rates are bounded.
+- Opt-in wake admission requires the exact saved idle conversation, ready
+  session, current binding, and supported owning-host capability. Unknown,
+  active, interrupted, unloaded, stale, or contradictory owners remain
+  notification-only. Durable intent distinguishes acceptance, observed execution,
+  completion, and semantic acknowledgement.
+- Acknowledgement retires stale local presentation entries without deleting
+  durable history or newer work. Empty polling uses the bounded policy cadence
+  and resets when relevant traffic arrives.
 
-- Retain a scoped three-installation fake-provider resource observation.
-- Record exact-main directory acceptance and the stopped late-joiner installation; retain live qualification blockers.
+### Assurance and operating limits
 
-- Make strict directory model construction explicit for semantic ownership discovery.
-- Record exact-base custody for the federation directory semantic identity extension.
-
-### P11 directory recovery
-
-- Record the operator-approved public channel audience and retention assumptions;
-  signed-origin authentication does not imply content confidentiality or
-  independently verified indefinite provider retention.
-- Add opt-in signed-custody inbox notifications with atomic origin-to-cursor
-  mapping, retry/restart deduplication, actual provider references, and no local
-  session, foreign ancestry, or wake authority promotion.
-- Bound retained federation custody allocations, preserve exact retries and
-  receipt progress, and return local backpressure without pruning history or
-  acknowledging unretained provider events. Independent SQLite writers share
-  the same atomic capacity reservation.
-- Exchange opt-in signed version-2 directory snapshots, deltas, and recovery
-  requests from approved committed registrations; preserve version-1 messages
-  and receipts and coalesce recovery requests across service restarts.
-- Reject directory revision overflow before persistence and keep remote
-  discovery separate from local sessions, wake, and semantic acknowledgement.
-- Present compact Slack transport blocks while preserving signed carrier bytes.
-  Block unchanged retries durably when the provider response omits or rewrites
-  those bytes or reports truncation; independently signed custody receipts
-  remain authoritative even during response races. Live rollout remains pending.
-- Keep gaps unresolved for non-current owner snapshots and reject explicit
-  non-active registrations advertised as current; preserve compact metadata bounds.
-- Bound retained directory allocation without deleting withdrawal history or
-  preventing existing updates and exact replay.
-
-- Federation directory recovery validates complete snapshots atomically, tracks
-  per-origin delta revisions, preserves metadata during gaps, withdraws omitted
-  routes, and supports bounded snapshot resynchronization. Real-provider fan-out
-  and late-join qualification remain blocked on deployment prerequisites.
-
-### P10 security and wake recovery
-
-- Reconcile older poll queues against the current semantic acknowledgement
-  during read and worker recovery, preserving safety events and newer work.
-  Read-only wake selection also filters stale presentation entries.
-
-- Begin the governed P10 rollover after authenticated P09 exact-main closure,
-  preserving deferred provider and live wake qualification boundaries.
-- Reconcile current runtime authority to released BCF 2.3.4 while retaining
-  historical custody evidence and disclosed security limitations.
-- Tighten opt-in live wake admission to an exact saved idle thread and a ready
-  service session. Unloaded threads and missing or contradictory host facts
-  now defer without resume, launch, or acknowledgement; messaging is unchanged.
-- Bound new enrollment to 4,096 identities and alias growth to 64 per chat,
-  preserving retries, reserved history, and existing oversized stores; reject
-  oversized session secrets before enrollment hashing.
-- Persist bounded wake-intent observations in the existing private binding:
-  host acceptance, explicit queued/running facts, terminal status, and semantic
-  acknowledgement stay distinct. Older bindings migrate additively; read-only
-  status exposes observed intent without inventing unsupported host facts.
-
-### BCF 2.3.4 base upgrade
-
-- Upgrade the repository-owned BCF runtime and governance support files to the
-  immutable v2.3.4 release through canonical release-assets custody and strict
-  validation. This is the protected base-upgrade boundary for re-resolving the
-  P09 transfer candidate.
-
-### P09 scope transfer
-
-- Record the canonical transfer of multi-installation qualification to P11-P0-01
-  and live wake-canary qualification to P10-P2-01; P09 makes no cross-instance
-  delivery or directory-convergence claim.
-
-### P11 federation foundation
-
-- Document the post-fix receipt retry custody boundary, strict legacy-row
-  migration, exact protected-main identity, and bounded no-republish evidence.
-- Classify federation receipt frames as a distinct durable obligation kind.
-  Receipt submissions still retry after an uncertain provider result, while a
-  confirmed provider submission is terminal and cannot generate recurring
-  receipt JSON or consume further retry attempts. Existing databases classify
-  legacy signed receipt rows during migration; message obligations and
-  destination-acceptance semantics are unchanged.
-- Complete the bounded two-installation signed-adapter canary against the
-  protected `35f0950` tree: both installations used operator-pinned Ed25519
-  origins, durable recovery baselines, destination receipts, replay
-  deduplication, conflicting-payload rejection, and signature-failure
-  controls. This evidence is limited to the canary and does not claim late
-  join, directory convergence, or general multi-installation qualification.
-- Add an opt-in Ed25519-signed Slack bridge with operator-owned publisher
-  bindings, local atomic message/obligation custody, bounded durable retries,
-  authenticated destination receipts and deduplication, and bounded history
-  recovery through the existing listener. Its private enqueue API preserves
-  ordinary protocol-2 send behavior. Live qualification remains gated.
-- Add bounded, durable federation obligations, operator-owned origin bindings,
-  service-derived registration projections, revisioned directory snapshots, and
-  explicit authority exclusions for Issue #48. Cross-installation provider
-  delivery remains gated to a separately qualified candidate.
-- Persist authenticated destination receipts in the existing SQLite owner with
-  exact replay deduplication and conflicting-payload rejection.
-- Record explicit directory revision gaps so resynchronization is required
-  instead of silently applying an out-of-order update.
-
-### P09 custody closure
-
-- Close the lightweight federation and owner-mediated wake phase on protected BCF 2.3.2 exact-tree proof. Multi-installation provider qualification, origin authentication, and live cross-instance delivery remain explicitly owned by P11.
-
-### Deterministic idle polling
-
-- Empty inbox cycles now use the bounded 1, 2, 4, 8, 12, 16, 24, then
-  32-minute cadence. Newly relevant traffic resets to the initial interval;
-  independent control checks retain their own maximum. The repaired BCF 2.3.2
-  candidate is adopted through canonical upgrade machinery and remains subject
-  to final custody qualification.
+- Adopt released BCF 2.3.4 through canonical custody. P09 and P10 have authenticated
+  exact-main closure; P11 implementation awaits final canonical closure on its
+  final subject. Authored DONE entries do not establish computed closure.
+- Refresh operating procedures, diagrams, compatibility guidance, and evidence
+  boundaries. Live deployment and release publication remain separate operations.
+- The approved qualification channel is public: signatures provide authenticity,
+  not confidentiality. Indefinite retention, provider availability, physical
+  exactly-once delivery, hostile same-user credential isolation, and externally
+  tamper-evident audit storage remain unsupported guarantees.
 
 ## [0.8.0] - 2026-10-11
 

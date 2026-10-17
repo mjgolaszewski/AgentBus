@@ -1,4 +1,4 @@
-# Federation construction boundary
+# Signed federation and delivery recovery
 
 AgentBus federation is an outbound provider bridge between independently
 installed services. The local SQLite store records a bridge obligation before
@@ -82,18 +82,18 @@ is recorded in `federated_messages`, and the signed receipt is a durable
 records distinguish provider submission from destination acceptance without
 promoting raw Slack text into routed agent authority.
 
-Recovery requests complete bounded Slack history (100 events per cycle,
-maximum ten provider pages) before advancing its durable checkpoint. Partial,
+Recovery requests complete bounded Slack history (100 events per cycle by default,
+up to the configured 1,000-event ceiling in at most ten provider pages) before advancing its durable checkpoint. Partial,
 malformed, unordered, or over-budget history cannot advance that checkpoint.
 Live events never advance the history checkpoint, so a newer socket event
 cannot hide an older missed event. Checkpoints belong to the configured
 instance and publisher/channel stream. Provider recovery honors Retry-After.
 Expired provider history and unresolved gaps
-remain qualification blockers; this adapter does not certify retention or
-complete directory convergence.
+remain unresolved recovery limits. The bounded canary establishes observed
+directory convergence for its pinned runtime and window, not indefinite retention.
 
-Provider fan-out, namespace origin ownership, and recovery remain subject to
-an isolated real-provider qualification. Independent installation app identities
+Provider fan-out, namespace origin binding, and recovery are qualified only within
+the isolated real-provider evidence and runtime applicability described below. Independent installation app identities
 must join the same operator-approved public channel. The operator explicitly
 requires `agent-bus` to remain public; signatures authenticate origins and do
 not provide content confidentiality. Retention is operator-reported as retaining
@@ -212,8 +212,9 @@ approved contents change. Unknown or gapped streams request a complete snapshot;
 fresh request responses are limited to one per peer per minute, with durable
 duplicate-request coalescing. Outgoing request IDs are also durable per peer and
 observed revision/gap, so an unchanged service restart creates no new obligation.
-Periodic freshness expiry, global custody retention,
-and normal inbox projection remain incomplete P11 obligations.
+Directory knowledge does not establish owner freshness or wake eligibility.
+Global custody retention remains an explicit operating limitation; optional
+normal inbox projection is described below.
 
 Slack submissions include a compact plain-text block identifying the transport
 kind, origin, destination, and message ID. The exact signed JSON remains the
@@ -221,8 +222,8 @@ machine carrier in the provider's `text` field, which some notification or
 accessibility surfaces may still display. These blocks do not repair a provider
 that splits or rewrites the carrier. A retained real-provider observation contains
 a 4,764-byte signed frame as separate 4,000-byte and 764-byte events; neither
-fragment is accepted as signed custody. The unpublished local display change is
-not a live transport repair or a multi-installation qualification result.
+fragment is accepted as signed custody. Presentation alone does not repair split carriers or establish delivery. The
+retained wire-3 canary separately authenticates actual provider observations.
 
 The carrier-fidelity guard requires the provider's successful response to echo
 the exact signed `message.text`, with no `message_truncated` warning. Missing or
@@ -268,9 +269,9 @@ local assurance, even though its separate custody record proves the remote origi
 It creates no local session, operator command, semantic acknowledgement, or wake
 eligibility. Text, routes, and opaque correlation are preserved, while foreign
 thread timestamps and reply cursors stay in signed custody and are cleared from
-the local notification. Cross-instance ancestry translation, historical custody
-backfill without retained provider references, and complete ordinary delivery recovery remain
-separate obligations; existing local reply and human-thread behavior is unchanged.
+the local notification. Version-3 origin-parent mapping separately translates authenticated cross-instance
+ancestry. Historical backfill without retained provider references is unsupported;
+existing local reply and human-thread authorization remain unchanged.
 Stop the bridge before rolling back this optional projection, retaining its mapping
 and local cursor history; do not reset checkpoints to manufacture backfill.
 
@@ -308,8 +309,9 @@ independent of the shared reader checkpoint and defers unavailable recovery for
 there is no text-based backfill. Duplicate observations retain one cursor and all
 observed provider references without regressing destination acknowledgement.
 
-Remote replies with foreign ancestry are currently rejected on this new path;
-a versioned origin-parent mapping is still required before P4 can be complete.
+Foreign reply ancestry requires explicitly negotiated wire 3, which binds the
+origin parent to retained authenticated custody and its local cursor. Older wire
+versions do not infer this mapping from text or a foreign Slack timestamp.
 
 Local provider retries use the unchanged protocol-2 envelope plus a context block
 locator. Only exact content from the authenticated local bot can reconcile that

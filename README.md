@@ -31,12 +31,11 @@ because somebody sent them a message.
 
 **Messages invite. Operator controls and Codex turns keep their own authority.**
 
-Federation construction is documented in
-[docs/federation.md](docs/federation.md). The local foundation records
-outbound obligations and remote-directory observations in the existing store;
-P11 now adds bounded payload custody, operator-owned origin bindings, and
-service-derived registration projections. Provider fan-out and
-cross-installation delivery remain separately qualified boundaries.
+Optional [signed federation](docs/federation.md) connects independently installed
+services through operator-approved origins. A bounded three-installation canary
+proved fan-out, threaded replies, restart recovery, and directory withdrawal on
+the pinned qualified runtime. It grants no remote execution or local session
+ownership. Production activation and final release custody remain separate.
 
 ## See it work
 
@@ -112,15 +111,16 @@ BCF proxy-header handling remain tracked for a follow-up release; the
 ```mermaid
 flowchart LR
   Chat["Joined chat"] -->|session proof and message| Gate["AgentBus<br/>route, stop, and rate checks"]
-  Gate -->|protocol 2| Slack["Slack channel"]
-  Slack -->|receipt or echo| Store["SQLite<br/>raw text and assurance"]
+  Gate -->|negotiated durable acceptance| Store["SQLite<br/>message and delivery obligation"]
+  Store -->|bounded provider worker| Slack["Slack channel"]
+  Slack -->|verified receipt or echo| Store
   Store -->|addressed work| Worker["Local participation worker"]
   Worker -->|event references| Wake["Optional wake adapter"]
   Wake -->|resume request| Host["Codex host"]
   Host -->|authorized new turn| Chat
 ```
 
-**One Slack bot. Many logical agent identities.** Route labels remain
+**One Slack bot per installation. Many logical agent identities.** Route labels remain
 coordination metadata. A joined session credential is proof for that chat's
 session; the service records whether a message has that proof, comes from a
 verified Slack human, or arrived through the legacy path.
@@ -628,7 +628,9 @@ marked non-actionable.
 
 ## Delivery behavior
 
-- Accepted Slack events and successful sends are durable. Channel/timestamp
+- Negotiated HTTP 202 means durable local custody, not provider delivery or agent
+  acknowledgement. Legacy HTTP 201 retains its successful-send contract.
+  Accepted Slack events and successful sends are durable. Channel/timestamp
   identity deduplicates Slack retries and outgoing-message echoes.
 - Routed envelopes are accepted only from the bot identity authenticated from
   the configured bot token. Human and foreign-bot text is always `unrouted`,
@@ -639,11 +641,14 @@ marked non-actionable.
   send receipt is reconciled to the proved session record.
 - Dangerous invisible controls are escaped in Slack and compact CLI views;
   explicit JSON/history reads preserve the underlying message text.
-- AgentBus records a live feed; it performs no historical import. Messages sent
-  while disconnected may be absent. Slack edits and deletions do not rewrite the
-  local inbox.
-- A send timeout can leave delivery uncertain. Inspect the channel or inbox
-  before retrying. AgentBus does not promise exactly-once outbound delivery.
+- Ordinary ingress records a live feed, without general channel-history import.
+  Opt-in federation and delivery recovery inspect bounded authenticated history
+  for existing obligations. Expired or unavailable history can leave gaps; Slack
+  edits and deletions do not rewrite the local inbox.
+- A send timeout can leave delivery uncertain. A negotiated joined-client send
+  reports `--message-id UUID`; retry the identical command with that UUID to reuse
+  its custody. For legacy sends, inspect the channel or inbox before retrying.
+  AgentBus does not promise exactly-once outbound delivery.
 - Slack `429` responses preserve `Retry-After`. Other upstream details are
   redacted from local error responses.
 - Full `inbox --after 0` history remains available. Bounded requests and the
@@ -666,17 +671,18 @@ records, or other restricted material unless the operator has approved both
 storage systems for that data. Use a private channel with the smallest useful
 membership and apply the organization's normal Slack retention policy.
 
-The current product is intentionally a same-workspace, single-service bus:
+The default deployment is a same-workspace service; optional federation has
+separate operator approval and signed-origin boundaries:
 
 - Logical routes and personas are coordination labels. Joined sessions have
   credentials for service-derived assurance; self-service enrollment does not
   prove repository ownership, and processes sharing a Unix account can access
   one another's local state. Stronger isolation needs a different trust domain.
 - The authenticated Slack bot binding protects routed ingress. Issue #48's
-  outbound-only federation and owner-mediated wake laws are now specified in
-  `contracts/federation/v1/`; cross-instance delivery, origin authentication,
-  and directory convergence remain explicitly unclaimed until a qualifying
-  multi-installation provider candidate proves them.
+  outbound-only federation and owner-mediated wake laws are specified in
+  `contracts/federation/v1/`. The retained three-installation proof covers its
+  pinned runtime, observed recovery window, and approved origin bindings; it
+  does not establish indefinite retention or general provider availability.
 - SQLite inbox reads are bounded and indexed, but clustering, multi-tenant
   authorization, and distributed storage remain outside the current scope.
 - The Python distribution and Compose project retain the legacy
@@ -703,7 +709,8 @@ session-bound operations and assured sends.
 | `GET` | `/healthz` | Public liveness only |
 | `GET` | `/v1/status` | Authenticated Slack connectivity and local SQLite footprint |
 | `GET` | `/v1/info` | Protocol features, inbox ID, channel, and high-water cursor |
-| `POST` | `/v1/messages` | Post a bounded message and persist server-derived sender assurance |
+| `POST` | `/v1/messages` | Negotiate durable local acceptance, or use legacy successful-post behavior |
+| `POST` | `/v1/federation/messages` | Opt-in signed remote enqueue under exact sender session proof |
 | `GET` | `/v1/messages` | Read durable history by cursor, recipient, or Slack thread |
 | `GET` | `/v1/inbox` | Read identity-aware routing and actionable annotations |
 | `POST` | `/v1/messages/{cursor}/claim` | Atomically claim an unrouted message |
@@ -760,8 +767,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run --locked --extra dev pytest
 
 The tests use simulated Slack events and responses. They need no Slack token and
 must never post to a real channel. Update dependency declarations and `uv.lock`
-together. Normal governed work uses `bcf ci submit --repo-root . --intent
-workitem`, which derives the required preflight, evidence, and lifecycle steps.
+together. Normal governed work uses `bcf ci submit --repo-root .`, which derives the required preflight, evidence, and lifecycle steps.
 
 ## Security and support
 
