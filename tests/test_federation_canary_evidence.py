@@ -71,7 +71,8 @@ def test_released_wire3_canary_authenticates_replies_recovery_and_complete_withd
         'messages': 12, 'receipts': 12, 'reply_parents': 6,
         'withdrawals': 6, 'withdrawal_receipts': 6,
         'physical_observations': 43, 'scope': 'certified_wire3_canary_only',
-        'runtime_files_match': 54,
+        'runtime_files_match': 51, 'release_metadata_files_match': 3,
+        'release_metadata_transition': '0.8.0->0.9.0',
     }
 
 
@@ -140,3 +141,61 @@ def test_retained_provider_evidence_cannot_qualify_changed_runtime_bytes(monkeyp
     monkeypatch.setattr(Path, 'read_bytes', changed)
     with pytest.raises(ValueError):
         verify_evidence(data)
+
+
+@pytest.mark.parametrize('version', ['0.8.0', '0.9.0'])
+def test_canary_accepts_only_exact_release_metadata_transition(monkeypatch, version):
+    original = Path.read_bytes
+
+    def metadata(path):
+        raw = original(path)
+        if path == PATH.parents[1] / 'uv.lock':
+            raw = raw.replace(b'name = "superworkspace-agentbus"\nversion = "0.8.0"', b'name = "superworkspace-agentbus"\nversion = "0.9.0"')
+            return raw.replace(b'name = "superworkspace-agentbus"\nversion = "0.9.0"', ('name = "superworkspace-agentbus"\nversion = "' + version + '"').encode())
+        if path == PATH.parents[1] / 'pyproject.toml':
+            raw = raw.replace(b'\nversion = "0.8.0"\n', b'\nversion = "0.9.0"\n')
+            return raw.replace(b'\nversion = "0.9.0"\n', ('\nversion = "' + version + '"\n').encode())
+        if path == PATH.parents[1] / 'src/agentbus_service.py':
+            raw = raw.replace(b'version="0.8.0", lifespan=lifespan,', b'version="0.9.0", lifespan=lifespan,')
+            return raw.replace(b'version="0.9.0", lifespan=lifespan,', ('version="' + version + '", lifespan=lifespan,').encode())
+        return raw
+
+    monkeypatch.setattr(Path, 'read_bytes', metadata)
+    result = verify_evidence(qualified_evidence())
+    assert result['source'] == '00eecbe82e28fcfc12936f11d70ec3c41186bc31'
+    assert result['runtime_files_match'] == (54 if version == '0.8.0' else 51)
+    assert result.get('release_metadata_files_match', 0) == (0 if version == '0.8.0' else 3)
+
+
+@pytest.mark.parametrize('fault', ['unknown', 'mixed', 'duplicate', 'service_behavior', 'dependency', 'bootstrap', 'lock_dependency', 'lock_mixed'])
+def test_release_metadata_applicability_rejects_other_runtime_changes(monkeypatch, fault):
+    original = Path.read_bytes
+
+    def changed(path):
+        raw = original(path)
+        if path == PATH.parents[1] / 'uv.lock':
+            if fault == 'lock_dependency':
+                raw = raw.replace(b'name = "cryptography"\nversion = "50.0.2"', b'name = "cryptography"\nversion = "50.0.1"')
+            if fault == 'lock_mixed':
+                raw = raw.replace(b'name = "superworkspace-agentbus"\nversion = "0.9.0"', b'name = "superworkspace-agentbus"\nversion = "0.8.0"')
+        if path == PATH.parents[1] / 'pyproject.toml':
+            raw = raw.replace(b'\nversion = "0.8.0"\n', b'\nversion = "0.9.0"\n')
+            if fault == 'unknown':
+                raw = raw.replace(b'\nversion = "0.9.0"\n', b'\nversion = "0.9.1"\n')
+            if fault == 'duplicate':
+                raw += b'\nversion = "0.9.0"\n'
+            if fault == 'dependency':
+                raw = raw.replace(b'cryptography==50.0.2', b'cryptography==50.0.1')
+        elif path == PATH.parents[1] / 'src/agentbus_service.py':
+            raw = raw.replace(b'version="0.8.0", lifespan=lifespan,', b'version="0.9.0", lifespan=lifespan,')
+            if fault == 'mixed':
+                raw = raw.replace(b'version="0.9.0", lifespan=lifespan,', b'version="0.8.0", lifespan=lifespan,')
+            if fault == 'service_behavior':
+                raw += b'\n# changed runtime\n'
+        elif path == PATH.parents[1] / 'Dockerfile' and fault == 'bootstrap':
+            raw += b'\n# changed bootstrap\n'
+        return raw
+
+    monkeypatch.setattr(Path, 'read_bytes', changed)
+    with pytest.raises(ValueError):
+        verify_evidence(qualified_evidence())

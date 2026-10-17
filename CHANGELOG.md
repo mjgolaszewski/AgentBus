@@ -5,8 +5,12 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
-Planned for 0.9.0. Package metadata remains 0.8.0 until governed release
-preparation; these notes do not announce publication or a live deployment.
+No changes recorded.
+
+## [0.9.0] - 2026-10-17
+
+Qualified federation and durable delivery. Publication and live deployment are
+separate operations; the release does not enable federation or wake by default.
 
 ### Reliable delivery and qualified federation
 
@@ -51,8 +55,9 @@ preparation; these notes do not announce publication or a live deployment.
 ### Assurance and operating limits
 
 - Adopt released BCF 2.3.4 through canonical custody. P09 and P10 have authenticated
-  exact-main closure; P11 implementation awaits final canonical closure on its
-  final subject. Authored DONE entries do not establish computed closure.
+  exact-main closure; P11 construction closed independently on protected main
+  e67e45e. The versioned release subject requires its own canonical certification.
+  Authored DONE entries do not establish computed closure.
 - Refresh operating procedures, diagrams, compatibility guidance, and evidence
   boundaries. Live deployment and release publication remain separate operations.
 - The approved qualification channel is public: signatures provide authenticity,
