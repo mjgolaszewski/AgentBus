@@ -56,7 +56,7 @@ execution_evidence:
     file to test selection and client-test dependency population. Existing runtime src, public interfaces, secrets, and generated manifests are
     forbidden manual-edit surfaces. Expected proof is canonical exact node-manifest capture plus affected test gate.'
   - The4f9617e progress train was already executing when explicit gate omission was found; its bytes remain fixed. Follow-up prepared independently
-    in /docker/.wt-agentbus-p12-wiring, with no second heavy train. New4 qualification cases are locally green but not claimed as authenticated
+    in the separate proof-wiring worktree, with no second heavy train. New4 qualification cases are locally green but not claimed as authenticated
     by4f gate list.
   - Operator clarified no known disposable Agent-Host-managed chat; continue offline only. Real owner negotiation, provider interoperability and
     atomic admission remain unqualified, not waived.
@@ -68,6 +68,9 @@ execution_evidence:
   - 'Correction4b7939b native wrapper terminated1 before execution/provider mutation: every pull request must update CHANGELOG.md. First stdout/stderr/terminal
     preserved in .artifacts/owner-wake/canonical-4b7939b8.*; rebased correction needed its own changelog entry; corrected through authored CHANGELOG
     owner, no bypass or BCF change.'
+  - 'Candidate5bf8600 wrapper terminated1 in cheap exposure preflight: phase log included an absolute local workspace path. Original diagnostics
+    retained in .artifacts/owner-wake/canonical-5bf8600c.*; removed path through authored log owner; no provider mutation, heavy evidence execution
+    or exposure exception.'
 closeout_requirements:
   claims:
     workitems_closed:
