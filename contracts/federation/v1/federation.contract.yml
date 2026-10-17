@@ -144,6 +144,16 @@ proof_obligations:
   - {id: FB-PO-006, proves: [FB-INV-010, FB-INV-011], scenario: oversized_untrusted_metadata_credentials_routes_and_execution_requests_are_rejected}
   - {id: FB-PO-007, proves: [FB-INV-012], scenario: bounded_snapshot_revision_gap_and_partial_input_preserve_directory_custody}
 
+qualified_provider_evidence:
+  consumer: scripts/verify_provider_canary.py
+  scope: exact_released_subject_and_observed_window_only
+  runtime_applicability: pinned_released_archive_runtime_file_manifest_must_equal_current_runtime_bytes
+  versions: {ordinary_message: 3, signed_receipt: 1, directory_control: 2}
+  required: [approved_publisher_and_ed25519_generation, exact_origin_destination_and_payload_digest, six_directed_roots, six_signed_reply_parent_triplets, observed_thread_broadcast_parent_references, twelve_signed_destination_receipts, six_empty_directory_withdrawals_and_signed_receipts, offline_same_database_recovery, stopped_session_rejection, bounded_latest_primary_preserving_rollback]
+  physical_retries: identical_signed_carriers_may_repeat_without_new_logical_origins
+  provenance: provider_metadata_is_authenticated_api_observation_not_independent_server_attestation
+  exclusions: [semantic_acknowledgement, local_session_owner_or_wake_authority, deployment_authority, computed_phase_closure, subject_relabeling, indefinite_retention_or_confidentiality_guarantee]
+
 implementation_order:
   - {id: FB-IU-001, unit: local_acceptance_and_bridge_obligation, depends_on: []}
   - {id: FB-IU-002, unit: authenticated_provider_submission_and_destination_deduplication, depends_on: [FB-IU-001]}

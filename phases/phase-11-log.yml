@@ -4,28 +4,28 @@ document:
   id: agentbus-phase-11-log
   version: 1.0.0
   generated_at_utc: '2026-10-15T00:00:00Z'
-  status: active
+  status: completed
   path: phases/phase-11-log.yml
 phase:
   id: P11
   build_block: qualified_federation_runtime
 summary:
-  outcome: construction_in_progress
+  outcome: implementation_complete_final_native_verification_pending
   highlights:
-  - P09 and P10 have authenticated exact-main closure; P11 is active for independent deterministic construction.
+  - P09 and P10 have authenticated exact-main closure; P11 implementation is complete and awaits canonical final-subject closure.
   - Released BCF 2.3.4 is the current installed authority; older release statements below are historical evidence.
   - Deterministic federation contracts and local custody primitives are implemented in the existing SQLite owner.
-  - Historical certified07b three-installation fan-out/origin qualification is recorded; final wire3 qualification remains P6.
+  - Historical07b evidence remains separate; certified00e r2 proves twelve signed origins/receipts, six reply parents, offline recovery, stopped controls, full withdrawal and bounded rollback.
 workitems:
   - {id: P11-P0-01, status: DONE, summary: "released baseline and bounded historical three-installation fan-out/origin proof recorded; unsupported assumptions disclosed"}
   - {id: P11-P1-01, status: DONE, summary: "define canonical federation, discovery, custody, receipt, revision, and authority-exclusion contracts"}
   - {id: P11-P2-01, status: DONE, summary: "implement durable local bridge obligations, bounded payload custody, origin binding, and provider uncertainty primitives"}
   - {id: P11-P3-01, status: DONE, summary: "implement service-owned remote directory snapshots, deltas, revisions, gaps, withdrawal, and resynchronization"}
-  - {id: P11-P4-01, status: DONE, summary: "versioned parent integration and authority exclusions proved on protected main5e05c04; final provider qualification stays P6"}
-  - {id: P11-P4-02, status: DONE, summary: "bounded signed-origin adapter implemented with deterministic custody, replay, signature, recovery, and existing-listener failure evidence; live qualification remains blocked"}
+  - {id: P11-P4-01, status: DONE, summary: "versioned parents and authority exclusions implemented; exact00e real-provider r2 qualification retained with current runtime-byte applicability"}
+  - {id: P11-P4-02, status: DONE, summary: "bounded signed-origin adapter and explicit provider arrangement qualified on exact00e; production deployment remains separate"}
   - {id: P11-P5-01, status: DONE, summary: "deterministic controls, pinned historical provider corpus and bounded resource evidence registered; canonical final-subject proof remains required"}
-  - {id: P11-P6-01, status: BLOCKED, summary: "qualify one authorized real provider arrangement and isolated multi-installation canary"}
-  - {id: P11-P7-01, status: TODO, summary: "upgrade to newest authorized BCF custody and publish only after exact-tree proof and rollback evidence"}
+  - {id: P11-P6-01, status: DONE, summary: "operator-approved home/moranwm/local late joiner r2 canary and signed corpus complete; failed timing windows preserved"}
+  - {id: P11-P7-01, status: DONE, summary: "released2.3.4 authority, canonical archive/frozen-install producers and custody-preserving rollback implemented; final required native PR/main/closure verification pending"}
 execution_evidence:
   planned_commands:
   - make governance-validate
@@ -36,6 +36,12 @@ execution_evidence:
   - make contract-test
   - make release-check
   executed_commands:
+  - "P6 completed on certified00eecbe82e28fcfc12936f11d70ec3c41186bc31/tree b95264e19f2db0b40a73b1883dea77d44c1ca19f: PR72 protected38992983934/1 and independent exact-main38993263023/1 all six checks pass, issues empty, historical P11active truth sha256:02c638fc44b6e20b61e6b66bf034f840f6506cbfa27121c29a9024da40db62bf. Canonical archive6297671 bytes sha256:8c99f9258c852e8574e1800dd65e3480b7fe9bdf4d63e6c4062d91ead35f0d20 installed frozen20 runtime packages on home/late Python3.14.5 and independently on moranwm3.14.4; private-copy candidate/prior reopens preserve custody. No dependency or runtime implementation change in final evidence slice."
+  - "Retained failed v3 window02:23-02:35: all six roots eventually signed-accepted, but25:15 global receipt deadline missed (last local25:52); no Late outage or reply origins. First helper guard assumed launcher rather than canonical uv exec and was corrected before first HTTP send. Initial publication snapshots were superseded by retained actual submitted/accepted timestamps, never inferred as product/BCF defect. All dedicated sessions stopped and rev5 withdrawals accepted; rollback requested35:00 finished2-9 seconds later, explicitly outside nominal bound. Original records remain immutable; new r2 reserved shutdown margin and adequate receipt cadence."
+  - "Mutually authorized r2 window02:45-03:05 on the same certified00e used fresh sessions/UUIDs, unchanged publishers/keys and latest databases, history_limit1000, ordinary3/projection1, singleton sharing and no host bindings. Six roots signed-custody gate48:21 before49; actual Late SERVICE stop49:16.099 left participation active, H/M four replies became actual thread_broadcast events while Late offline. Same-database restart52:03.291 recovered both replies at local131/132 with exact own parents110/111 and preserved thread refs; checkpoint1792205315.327409 advanced1792205501.422549 without reset. Final Late two replies queued52:53 before53:30. Both custodians independently verified twelve signed origins/receipts and all six signed parent/thread pairs by55:18/55:39 before56. No claim of exclusive per-message ingress instrumentation or physical exactly-once."
+  - "All three r2 dedicated sessions canonically issued STOP, delivered check-in and ACK at56:00; exact original-key/body stopped replays423 created no new identities/obligations. All six emptyrev7 directory frames and signed destination receipts independently authenticated by58:56, all streams gap0. Timed shutdown requested03:04:45, Late stopped45.934, home47.890, prior home healthy51.370 and prior moranwm healthy51.856, both before03:05; late stopped and both primary bridges disabled in process/config. Latest primary custody unchanged and checkpoints non-regressing; no old-backup restore. Independent final custodian report sha256:2cae4c7de4f164f38bd064530521d6936167082874523a4083a84b7f4da12d14, selected corpus1a83ada46fd83099a1ca831e20113eed9d43c3fa4ad1b35716be2a6de173675a and combined proof8a2e084ff4fbebef236ac3959478ca4fba4d0e7e78f817a1fc1198ba2151d205 retained. Operator celebration broadcast9520; delegated remote stand-down9527/9531 acknowledged/read back9541, runtime/evidence preserved and no more remote work needed."
+  - "Final query-side verifier retains07 historical scope and authenticates new audits/p11-provider-canary-00eecbe.yml:43 actual observations,12 logical origins/receipts,6 reply parents/threads and6 withdrawal/receipt pairs, actual deadlines and custody-preserving rollback. Public pinned manifest50174ce1438696da8016ea810b5a3c325ecdd6d05180c189b499088a5a98a493 binds54 runtime/bootstrap/dependency files from the certified archive to current bytes; altered runtime cannot reuse this proof or relabel its subject. Contract/red controls preceded implementation. Focused33 tests pass; script typecheck/lint pass. Three isolated causal probes each baseline0/mutant1 for physical parent, actual receipt deadline and runtime-byte guards; diagnostics retained locally and final native graph must authenticate applicability. Authored DONE/completed requests final verification, never computed closure."
+  - "P6/P7 final-evidence pre-edit: bounded context federation qualification; application proof/query side. Targets: federation evidence contract, offline provider verifier, its behavioral/negative controls, public signed corpus, audit/log/memory closeout and rollback prose. Runtime modules, live configuration, credentials, existing provider custody, inherited hotfixes and installer-owned generated files are forbidden edits; generated projections only through released2.3.4 aggregate reconciliation. Preserve07 historical evidence and both failed timing windows; never relabel00e live evidence as another subject or confer semantic/wake/deployment authority. Required controls cover exact signatures/publishers, twelve origin/receipt bindings, six parent/thread pairs, six withdrawal/receipt pairs, deadlines, stopped controls, custody-preserving rollback and final-subject promotion rejection. P11 remains active until canonical final-subject closure."
   - uv run --locked python scripts/validate_governance_yaml.py
   - uv run --locked pytest -q tests/test_federation_contract.py tests/test_federation_service.py
   - uv run --locked --extra dev python -m pytest -q tests
@@ -117,12 +123,15 @@ execution_evidence:
   - Directory metadata is allowlisted and cannot carry credentials, privileges, execution, wake, or session authority.
   - Historical BCF 2.3.3 custody intent is superseded by the installed released 2.3.4 baseline.
 known_constraints:
-  - historical07b wire1 fan-out and origin authentication are qualified within observed windows; final wire3/provider applicability remains P6
-  - P11 rollover updates phase-ledger and MEMORY together after authenticated P10 closure; closed remains computed only by canonical BCF truth
+  - retained07b and00e corpora keep their exact subjects; current54-file runtime manifest must match00e before retained wire3 proof applies
+  - P11 authored completed and DONE mean implementation finished with final checks pending; verified/closed remain computed only by canonical BCF truth
   - notification-only behavior remains the safe fallback for unsupported or uncertain provider and owner states
+  - public channel offers no confidentiality; indefinite retention/availability/global disk quota/physical exactly-once and semantic ACK are unqualified
+  - restart recovery and checkpoint advance were observed; individual message ingress path was not instrumented
+  - live deployment/publication is separate; both prior1be cores remain healthy with federation disabled, late stopped and latest custody preserved
 next_work:
-  - implement directory projection and Slack adapter integration after deterministic contract review
-  - coordinate provider prerequisites with the runtime custodian and BCF 2.3.4 issues with closure-engine over AgentBus
+  - run one final canonical released2.3.4 submission after actual shared-capacity handback and verify protected PR/main computed closure
+  - retain exact final archive/isolated-install receipts and reconcile Issue48 only after authenticated acceptance and closure
 closeout_requirements:
   claims:
     workitems_closed:

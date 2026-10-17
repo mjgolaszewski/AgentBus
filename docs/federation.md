@@ -153,11 +153,38 @@ across routes; a gap keeps last valid metadata visible as non-current and blocks
 promotion until a complete snapshot covers the observed gap. Replaying stale
 snapshots cannot remove newer entries.
 
-For rollback, stop the isolated candidate before restoring its pre-upgrade SQLite
-backup and previous source archive. The new revision table is additive and older
-code ignores it, but older directory code lacks these recovery guarantees; do not
-resume federation on that older implementation or drop revision state to conceal
-a gap. No shared runtime migration or restart is performed by these tests.
+For an offline compatibility test, stop the isolated candidate before reopening
+its private database copy with the previous source archive. For a live canary,
+stop the candidate and retain the latest primary database, accepted obligations,
+projection cursors and monotonic checkpoints. Restore the prior core with
+federation disabled; never replace new custody with a pre-upgrade backup. The
+revision table is additive and older code ignores it, but older directory code
+lacks these recovery guarantees. Keep its bridge disabled and retain revision
+state. Live cutovers require a separately agreed bounded window and custodian.
+
+The retained wire-3 qualification in
+[`p11-provider-canary-00eecbe.yml`](../audits/p11-provider-canary-00eecbe.yml)
+covers the certified `00eecbe8` runtime and its 02:45–03:05 UTC window. It contains
+the actual signed origins, replies, receipts and empty directory withdrawals,
+including identical physical retries. The late service stopped, restarted with
+its latest database and checkpoint, and recovered both replies with the original
+local parents. All dedicated sessions then acknowledged STOP; both prior cores
+were healthy with federation disabled before the window ended.
+
+Replay its evidence from a development checkout:
+
+```bash
+uv run --frozen --extra dev python scripts/verify_provider_canary.py \
+  --path audits/p11-provider-canary-00eecbe.yml
+```
+
+The verifier also compares 54 runtime, bootstrap and dependency files with the
+pinned qualified archive. A changed runtime requires new applicable evidence.
+This audit grants no deployment, session, owner, wake or semantic acknowledgement
+authority. Provider timestamps are authenticated API observations, without an
+independent server attestation. Retention and availability remain bounded claims;
+individual recovery ingress paths were not instrumented. The older wire-1 corpus
+and the separate missed receipt-deadline window retain their historical scope.
 
 Directory admission retains at most 1,024 routes per origin, including withdrawn
 tombstones, and 65 origin records (64 peers plus the local installation). A full

@@ -69,7 +69,7 @@ workitems:
   acceptance_evidence: [test, contract-test, architecture-test]
 - id: P11-P6-01
   priority: P1
-  status: BLOCKED
+  status: DONE
   summary: qualify one authorized real provider arrangement and isolated multi-installation canary
   acceptance:
   - two isolated installations and a late joiner prove outbound fan-out, authenticated origin, recovery, and directory convergence
@@ -77,7 +77,7 @@ workitems:
   acceptance_evidence: [test, contract-test]
 - id: P11-P7-01
   priority: P0
-  status: TODO
+  status: DONE
   summary: publish only after final BCF custody, upgrading to the newest authorized release with exact-tree proof and rollback evidence
   acceptance:
   - BCF upgrade, reconcile, prospective train, protected PR/main, archive, isolated install, compatibility, and rollback evidence are green
