@@ -37,6 +37,8 @@ execution_evidence:
   - 'Node22.23.2 builtin TypeScript transform: actual pinned AHP chat reducer168 upstream fixtures plus8 targeted cases PASS; source drift and
     queue-order semantic negative controls reject'
   - Pinned upstream action schema:5 wire-shape cases PASS; unknown expectedIdleEpoch accepts shape only and proves no idle precondition
+  - Released BCF2.3.4 canonical reconcile --apply converged in2 rounds; subsequent --check clean; generated only ci-graph and governance workflow
+    scope changes; authored and compiled scope both pr/None
   notes:
   - Tests exercise existing standalone adapter with fake owners, not Microsoft AHP or live OpenAI extension
   - 'P12-P0-02 remains IN_PROGRESS: real protocol conformance requires identifying a disposable Agent-Host-managed chat and supported endpoint'
@@ -46,6 +48,8 @@ execution_evidence:
     invocation PID15338 gone. First stdout/stderr/terminal retained under .artifacts/owner-wake/canonical-c028ce42.*; SHA256 stderr=937dae48da7ae71b74a3dcb935efdb6c1c9635d9dee4683453686f65f45f85aa'
   - Generated graph retains old closure intent while authored P12 derives progress; owner classification requested at AgentBus10041/10043 before
     retry; no manual graph edits, copied evidence or successor BCF code
+  - Ironwatch10046 confirmed exact released234 docs/USAGE.md34-58 canonical preparation route; preserves active P12 and original failure subject;
+    no successor code or manual workflow pins
 closeout_requirements:
   claims:
     workitems_closed:
@@ -80,4 +84,4 @@ known_constraints:
 - No production source, dependencies, credentials, deployment or existing release proof changed
 next_work:
 - Resolve actual owner inventory and run isolated zero-model protocol conformance before adapter implementation
-- Obtain BCF owner-supported lifecycle projection route before another canonical submit; retain original first diagnostic
+- One fresh canonical submit on clean generated progress subject; preserve first diagnostic on fail-close
