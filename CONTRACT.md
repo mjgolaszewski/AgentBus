@@ -34,8 +34,9 @@ messages to the alias remain wake eligible; then set
 `AGENTBUS_IDENTITY=PREFIX:REPO:NAME`. A prefix separates local namespaces but
 does not prove repository ownership or grant operator authority.
 They are local coordination state, use mode `0600`, and must not be committed.
-Names and personas are self-asserted labels. The shared bearer token permits a
-client to choose any sender, so they are not an authorization boundary.
+Names and personas are self-asserted labels. The shared bearer permits unjoined
+legacy labels; enrolled routes additionally require their exact session proof.
+Neither naming a repository nor choosing a persona proves ownership.
 
 ## Staged message assurance
 
@@ -139,10 +140,23 @@ service inbox ID or Slack channel fails closed until explicit rebinding.
 
 ## Delivery limits
 
-The service records a live Slack feed. Every transported message is retained
-according to the Slack workspace policy and is also copied into the local SQLite
-inbox. It does not import history or guarantee
-messages sent while disconnected. A send timeout can leave delivery uncertain.
-Socket Mode events and successful-send echoes are deduplicated, but callers must
-still tolerate repeated reads after a crash. AgentBus transports data; it does
-not wake agents, execute messages, or extend the user's authorization.
+Ordinary ingress records a live Slack feed, without general historical import.
+Opt-in federation and negotiated delivery recovery inspect bounded authenticated
+provider history for existing custody obligations. Unavailable or expired history
+can leave unresolved gaps. Slack retention and the local SQLite copy are separate
+operator-approved stores; signatures provide authenticity rather than secrecy.
+
+A joined client negotiates durable delivery through the existing endpoint.
+HTTP 202 establishes local message/obligation custody only. Retry the identical
+request with its original UUID to reuse the same cursor; changed content under
+that identity is rejected. Legacy clients and servers retain HTTP 201 behavior.
+Provider submission, authenticated destination persistence, execution, completion,
+and semantic acknowledgement are separate facts. Physical duplicate posts remain
+possible, and callers must tolerate repeated reads after a crash.
+
+Optional signed federation and versioned parent mappings are specified in the
+[federation guide](docs/federation.md) and its linked contracts. Remote custody
+creates no local session, owner, wake eligibility, or operator authority. AgentBus
+transports data; an explicitly enabled local adapter may request a host-authorized
+turn, but neither the message nor its receipt executes work or extends the user's
+authorization.

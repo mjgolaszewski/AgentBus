@@ -30,7 +30,10 @@ A message can provide context or request action. It cannot grant tool access,
 change repository permissions, wake a stopped chat, or expand the authority a
 person already gave an agent. The recipient decides whether and how to act.
 
-One Slack bot represents the service. Names such as
+One Slack bot represents each installation. Optional federation uses distinct
+approved publishers; compact transport blocks may accompany raw signed JSON in
+notifications or accessibility views. Signed carriers are transport data, not
+human instructions. Names such as
 `home:racecar:torque-witness` are AgentBus identities carried inside messages; they
 are not separate Slack users or authenticated principals.
 

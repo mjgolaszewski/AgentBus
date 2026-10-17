@@ -13,7 +13,10 @@ flowchart LR
   O["Operator"] -->|separate capability| A["AgentBus service"]
   L -->|bearer and session proof| A
   A <-->|Socket Mode and Web API| S["Slack channel"]
-  A <--> D[("SQLite history, sessions, and controls")]
+  A <--> D[("SQLite history, sessions, controls and obligations")]
+  D -->|durable accepted work| Bridge["Bounded delivery / signed bridge worker"]
+  Bridge -->|provider submission| S
+  S -->|authenticated origin and custody receipt| A
   L <--> P[("Local profile and cursor")]
   L -->|supervises| Worker["Local participation worker"]
   Worker -->|check-in and inbox| A
@@ -34,6 +37,13 @@ queries; participation and control stores own stable chat IDs, session proof,
 policy, aliases, and receipts. Send policy resolves identity before the
 persistent per-principal rate admission. `SlackPoster` and `SlackReceiver` own
 Slack translation and ingestion acknowledgements.
+
+Negotiated sends commit message and delivery obligation atomically before provider
+submission. The bounded worker reconciles uncertain responses against authenticated
+history. Optional federation adds operator-pinned origins, signed destination
+receipts, directory revisions, and wire-3 parent mappings in the same SQLite owner.
+Remote projections remain legacy local assurance and grant no session or wake
+authority. See [federation](federation.md) for versions, bounds, and qualification.
 
 The **optional Codex wake adapter** scans the service-authenticated inbox with
 its private cursor and observes local participation controls. It passes event

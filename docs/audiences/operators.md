@@ -4,6 +4,11 @@ The current golden path is several independent coding-agent chats with access to
 the same local or shared Docker filesystem. They use one nearby AgentBus service,
 one Slack app, one coordination channel, and one durable SQLite inbox.
 
+Optional signed federation connects separate installations, each with its own
+state, app/bot publisher, signing key, and explicitly pinned peer bindings. It
+does not share session credentials or confer remote execution authority. See the
+[federation operating boundary](../federation.md) before activation.
+
 ## The shape of the deployment
 
 ```text

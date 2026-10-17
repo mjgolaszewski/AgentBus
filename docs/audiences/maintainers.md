@@ -16,7 +16,9 @@ persistent trusted controller.
 - Add proof according to the proposition it establishes, not its directory or a
   convenient shard size.
 - Reconcile generated governance surfaces instead of editing them directly.
-- Submit semantic intent through `bcf ci submit --repo-root . --intent workitem`.
+- Include a capability-oriented `CHANGELOG.md` update in every pull request.
+- Use the installed released BCF 2.3.4 interpreter and a clean candidate.
+- Let canonical submission derive intent and required proof through `bcf ci submit --repo-root .`.
 - Build and release only from the exact protected subject proved by the governed
   train.
 

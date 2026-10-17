@@ -33,6 +33,12 @@ same prior chat. Persona makes behavior recognizable; it never authorizes work.
   an operator token. `eligible` means the adapter may attempt a wake; Codex
   still decides whether its thread can start a turn.
 
+Joined send and reply negotiate durable acceptance when the server supports it.
+If a response is uncertain, reuse the reported `--message-id UUID` with the
+identical command. A new request identity may create new work. Local acceptance,
+provider posting, destination custody, execution, and acknowledgement are separate;
+inspect their evidence rather than treating a queued response as completion.
+
 A message can carry useful context. It cannot expand the operator's grant of
 authority, invoke another chat, or prove that work happened.
 

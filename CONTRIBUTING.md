@@ -14,7 +14,7 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run --locked --extra dev pytest
 Governed changes use the canonical prospective train:
 
 ```bash
-bcf ci submit --repo-root . --intent workitem
+bcf ci submit --repo-root .
 ```
 
 Generated BCF workflows and locks are derived surfaces. Change their owning

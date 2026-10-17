@@ -8,19 +8,21 @@ baseline:
   bcf_runtime_lock: governance/bcf-runtime-lock.json
   released_bcf: 2.3.4
   predecessor_closure_owner: plans/phase-history.yml
-  implementation_main: 5e05c04d87c036a33dd6d8adfe10a6f3b1bf2291
-  implementation_tree: e600d4eff17ef2a3d4dcf7f2288f1dfb70d8595d
-  implementation_main_truth: github-actions://mjgolaszewski/AgentBus/runs/38989758793/attempts/1/bcf-governance-truth
-  implementation_truth_sha256: 8aef53260aef23e41a8c0515df45dc95fec05c947f286485f30a1f53bd5649a3
+  implementation_main: 00eecbe82e28fcfc12936f11d70ec3c41186bc31
+  implementation_tree: b95264e19f2db0b40a73b1883dea77d44c1ca19f
+  implementation_main_truth: github-actions://mjgolaszewski/AgentBus/runs/38993263023/attempts/1/bcf-governance-truth
+  implementation_truth_sha256: 02c638fc44b6e20b61e6b66bf034f840f6506cbfa27121c29a9024da40db62bf
 provider:
-  arrangement: operator-approved public channel C0C4GDC7Q4D; distinct home, moranwm and home-latejoin publishers
-    and local signing keys
+  arrangement: operator-approved public channel C0C4GDC7Q4D; distinct home, moranwm and home-latejoin
+    publishers and local signing keys
   audience: public; no content confidentiality guarantee
-  scopes: existing authenticated chat:write and channel history observed; dedicated late app also permits channel
-    metadata reads
-  subscriptions: actual message receipt observed; installed remote subscription manifest not independently audited
+  scopes: existing authenticated chat:write and channel history observed; dedicated late app also permits
+    channel metadata reads
+  subscriptions: actual message receipt observed; installed remote subscription manifest not independently
+    audited
   retention: operator retain-all as far as known; only observed bounded history recovery is qualified
-  isolation: separate installation state, ports and credentials; local late joiner shares the home physical host
+  isolation: separate installation state, ports and credentials; local late joiner shares the home physical
+    host
   credential_replication: false
 qualified_historical_candidate:
   source: 07b9ecb5e478ce0728b3a788071d50469294c327
@@ -32,7 +34,8 @@ qualified_historical_candidate:
   - all six directed root pairs and extra5392-byte signed carrier reached destination custody
   - late history recovery and restart preserved exact request identities/cursors
   - all three revision2 rename snapshots converged with unchanged registration UUIDs
-  initial_residual: Moran revision3 published after the original bound; not counted as original-window convergence
+  initial_residual: Moran revision3 published after the original bound; not counted as original-window
+    convergence
   separate_recovery_window: 2026-10-17T00:25:00Z/2026-10-17T00:30:00Z
   recovery:
   - all three revision3 streams gap0 and all canary routes withdrawn
@@ -48,8 +51,8 @@ authenticated_root_evidence:
   positive_control: tests.test_federation_canary_evidence::test_historical_real_provider_carriers_and_receipts_authenticate_all_six_directions
   negative_control: tests.test_federation_canary_evidence::test_historical_provider_proof_rejects_forgery_omission_and_scope_promotion
   scope: historical wire1 root fan-out and exact destination receipts only
-  provider_timestamp_authentication: read-only authenticated-provider observation; not an independently signed provider
-    timestamp attestation
+  provider_timestamp_authentication: read-only authenticated-provider observation; not an independently
+    signed provider timestamp attestation
 recovery_budget:
   default_events: 100
   existing_supported_maximum: 1000
@@ -57,11 +60,45 @@ recovery_budget:
   provider_page_events: 100
   provider_page_ceiling: 10
   overflow: complete coverage required; keep existing checkpoint and custody
-  status: operator composition implemented; current-field canary still pending final certified subject
+  status: qualified with declared1000-event budget on exact00e; default100 and supported maximum1000 unchanged
 remaining:
-- final-subject wire3 threaded-broadcast and recovery qualification
-- final canonical PR/main, archive, isolated installation and closure applicability
+- final canonical PR/main, exact final archive/frozen isolated installation and computed closure applicability
+- production deployment and release publication are separate custodian actions; neither inferred from
+  phase implementation completion
 - provider indefinite retention, availability, physical exactly-once and semantic ACK are not guaranteed
 - ordinary inbox/index/WAL do not inherit a global disk quota from custody row limits
-rollback: both primary prior cores healthy with federation disabled and latest custody preserved; late stopped
-lifecycle: P11 active; authored DONE workitems do not establish computed closure
+- recovery ingress path was not instrumented per message; history availability, checkpoint advance and
+  same-database recovery were observed
+rollback: both primary prior cores healthy with federation disabled and latest custody preserved; late
+  stopped
+lifecycle: P11 authored implementation completed; exact-subject verified/closed remain computed only by
+  canonical BCF truth
+qualified_wire3_candidate:
+  source: 00eecbe82e28fcfc12936f11d70ec3c41186bc31
+  tree: b95264e19f2db0b40a73b1883dea77d44c1ca19f
+  released_archive_sha256: 8c99f9258c852e8574e1800dd65e3480b7fe9bdf4d63e6c4062d91ead35f0d20
+  archive_bytes: 6297671
+  window: 2026-10-17T02:45:00Z/2026-10-17T03:05:00Z
+  snapshot: audits/p11-provider-canary-00eecbe.yml
+  snapshot_sha256: e1cf79c6642c658916870ff2d78adf202e98cf157fce031819f4c372ca0afc2e
+  verifier: scripts/verify_provider_canary.py
+  runtime_applicability: 54 exact archive runtime files; manifest50174ce1438696da8016ea810b5a3c325ecdd6d05180c189b499088a5a98a493
+    must match current runtime
+  results:
+  - 12 signed logical origins and12 matching signed destination receipts; physical retries retain one
+    custody identity
+  - all6 signed origin parent triplets match actual thread_broadcast root references
+  - late service offline49:16, same latest database restart52:03 recovered two replies with exact local
+    parents; checkpoint advanced without reset
+  - all3 dedicated sessions canonicalSTOP/check-in/ACK56:00; exact stopped replay423
+  - all6 empty revision7 directory snapshots and signed destination receipts; streams gap0
+  - shutdown started03:04:45; home prior core healthy03:04:51.370 and remote03:04:51.856, both before03:05;
+    late stopped; latest custody retained
+  remote_custody:
+    final_report_sha256: 2cae4c7de4f164f38bd064530521d6936167082874523a4083a84b7f4da12d14
+    selected_signed_corpus_sha256: 1a83ada46fd83099a1ca831e20113eed9d43c3fa4ad1b35716be2a6de173675a
+    combined_authenticated_proof_sha256: 8a2e084ff4fbebef236ac3959478ca4fba4d0e7e78f817a1fc1198ba2151d205
+  failed_prior_window: 02:23-02:35 root-only run missed25:15 receipt gate; no outage or replies; eventual
+    root acceptance and actual shutdown latency retained separately
+  operator_stand_down: operator9527 delegated relay; remote9541 acknowledged/read back and ended foreground
+    work; runtime/evidence unchanged

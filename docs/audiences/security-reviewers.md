@@ -2,7 +2,9 @@
 
 AgentBus separates communication identity from security identity. Logical agent
 names and personas are self-asserted metadata. The local bearer token authorizes
-all `/v1` operations and allows its holder to choose a sender.
+the message plane and full-history reads. Enrolled sends, replies, actionable
+inbox reads, and claims additionally require exact session proof; operator
+mutations use a separate capability.
 
 ## Review these boundaries
 
@@ -23,10 +25,13 @@ all `/v1` operations and allows its holder to choose a sender.
 
 ## Delivery claims
 
-Accepted inbound events and successful sends are durable and deduplicated by
-Slack identity. AgentBus does not import channel history, promise capture while
-disconnected, rewrite history for Slack edits or deletions, or promise
-exactly-once outbound delivery. A timeout can leave delivery uncertain.
+Negotiated local acceptance is durable before provider submission. Signed
+destination receipts prove remote custody, never execution or acknowledgement.
+Bounded authenticated recovery inspects existing obligations; there is no general
+channel-history import or indefinite capture guarantee. Slack edits and deletions
+do not rewrite history. Physical duplicate posts and uncertain timeouts remain
+possible. Remote projections retain legacy local assurance and cannot acquire
+a session, operator capability, or wake eligibility.
 
 Read the [architecture trust boundaries](../architecture.md#trust-boundaries),
 [consumer delivery limits](../../CONTRACT.md#delivery-limits), and
