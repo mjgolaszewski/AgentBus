@@ -50,6 +50,16 @@ execution_evidence:
     retry; no manual graph edits, copied evidence or successor BCF code
   - Ironwatch10046 confirmed exact released234 docs/USAGE.md34-58 canonical preparation route; preserves active P12 and original failure subject;
     no successor code or manual workflow pins
+  - 'Follow-up scope: assurance producer command argv in scripts/run_project_gate.py and owning governance/gate-contracts.yml; add qualification
+    file to test selection and client-test dependency population. Existing runtime src, public interfaces, secrets, and generated manifests are
+    forbidden manual-edit surfaces. Expected proof is canonical exact node-manifest capture plus affected test gate.'
+  - The4f9617e progress train was already executing when explicit gate omission was found; its bytes remain fixed. Follow-up prepared independently
+    in /docker/.wt-agentbus-p12-wiring, with no second heavy train. New4 qualification cases are locally green but not claimed as authenticated
+    by4f gate list.
+  - Operator clarified no known disposable Agent-Host-managed chat; continue offline only. Real owner negotiation, provider interoperability and
+    atomic admission remain unqualified, not waived.
+  - Predecessor4f9617e canonical TERMINAL0; PR77 OPEN with run39047060363 provider evidence pending. Native handback stream hashes and all known
+    PID absence retained in predecessor tree .artifacts/owner-wake/native-handback.json; no provider certification inferred.
 closeout_requirements:
   claims:
     workitems_closed:
@@ -83,5 +93,6 @@ known_constraints:
 - Installed OpenAI extension bundles0.162.0-alpha.17.2; release0.163 changes are upstream context
 - No production source, dependencies, credentials, deployment or existing release proof changed
 next_work:
-- Resolve actual owner inventory and run isolated zero-model protocol conformance before adapter implementation
-- One fresh canonical submit on clean generated progress subject; preserve first diagnostic on fail-close
+- Canonical reconcile must regenerate exact test node manifest after explicit producer/selection correction; do not edit manifest by hand
+- Obtain next fresh native capacity after Ironwatch qualification terminal, then one corrected canonical progress submit
+- Remain offline at operator instruction; actual owner interoperability and atomic admission stay unqualified in Issue75
