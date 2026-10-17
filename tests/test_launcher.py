@@ -19,6 +19,36 @@ LAUNCHER = Path(__file__).resolve().parents[1] / "agentbus"
 TOKEN = "test-agentbus-token-never-use-in-production"
 
 
+@pytest.mark.parametrize("channels", [
+    {"AGENTBUS_SLACK_CHANNEL": "C111"},
+    {"AGENTBUS_SLACK_CHANNELS": "C111,C222"},
+])
+def test_serve_accepts_either_channel_configuration(launcher, project, monkeypatch, channels):
+    (project / "uv.lock").write_text("test-lock")
+    values = {"AGENTBUS_API_TOKEN": TOKEN, "AGENTBUS_SLACK_BOT_TOKEN": "xoxb-test",
+              "AGENTBUS_SLACK_APP_TOKEN": "xapp-test", "AGENTBUS_HOST": "127.0.0.1",
+              "AGENTBUS_PORT": "8766", **channels}
+    calls = []
+    monkeypatch.setattr(launcher.os, "execvpe", lambda *args: calls.append(args))
+    launcher.serve(project, values)
+    assert len(calls) == 1
+    assert calls[0][0] == "uv"
+    assert calls[0][2] == values
+
+
+@pytest.mark.parametrize("single", ["C111", ""])
+def test_serve_rejects_simultaneous_channel_forms_before_execution(launcher, project, monkeypatch, single):
+    (project / "uv.lock").write_text("test-lock")
+    values = {"AGENTBUS_API_TOKEN": TOKEN, "AGENTBUS_SLACK_BOT_TOKEN": "xoxb-test",
+              "AGENTBUS_SLACK_APP_TOKEN": "xapp-test", "AGENTBUS_SLACK_CHANNEL": single,
+              "AGENTBUS_SLACK_CHANNELS": "C111,C222"}
+    calls = []
+    monkeypatch.setattr(launcher.os, "execvpe", lambda *args: calls.append(args))
+    with pytest.raises(launcher.ClientError, match="both channel"):
+        launcher.serve(project, values)
+    assert calls == []
+
+
 @pytest.fixture
 def launcher():
     loader = SourceFileLoader("agentbus_launcher_tests", str(LAUNCHER))

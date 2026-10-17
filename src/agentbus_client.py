@@ -203,9 +203,13 @@ def running_process(state: Path) -> int | None:
 
 
 def serve(project: Path, values: dict[str, str]) -> None:
-    for name in ("API_TOKEN", "SLACK_BOT_TOKEN", "SLACK_APP_TOKEN", "SLACK_CHANNEL"):
+    for name in ("API_TOKEN", "SLACK_BOT_TOKEN", "SLACK_APP_TOKEN"):
         if not values.get(f"AGENTBUS_{name}"):
             raise ClientError(f"Set AGENTBUS_{name} before starting AgentBus.")
+    if "AGENTBUS_SLACK_CHANNEL" in values and "AGENTBUS_SLACK_CHANNELS" in values:
+        raise ClientError("Do not configure both channel variables together.")
+    if not (values.get("AGENTBUS_SLACK_CHANNEL") or values.get("AGENTBUS_SLACK_CHANNELS")):
+        raise ClientError("Set AGENTBUS_SLACK_CHANNEL or AGENTBUS_SLACK_CHANNELS before starting AgentBus.")
     if not (project / "uv.lock").is_file():
         raise ClientError(f"AgentBus installation is incomplete: missing {project / 'uv.lock'}")
     os.umask(0o077)
