@@ -5,6 +5,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Strengthen offline wake qualification requirements for exact backend identity, reconnect generations, and operation-owned recovery after uncertain submission; classify October 17 upstream reports without enabling live wake.
+
 - Include owner-wake qualification cases in the canonical test gate and expand offline schema controls for identity and message-origin boundaries.
 
 - Begin #75 owner-wake qualification with pinned source and local capability inventory, explicit admission requirements, and deterministic adapter boundary controls. Added an offline probe of the pinned upstream AHP reducer, with source-integrity and semantic negative controls. No runtime behavior changes.

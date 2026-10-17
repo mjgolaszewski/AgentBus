@@ -76,6 +76,9 @@ execution_evidence:
     mutation, heavy evidence execution or exposure exception.'
   - Standalone cheap preflight found unqualified ephemeral diagnostic references in this log; marked retained local copies non-authoritative,
     while public run IDs and exact truth digest remain the proof authority. No exposure/evidence-policy exception added.
+  - October17 source review verified Codex issue54683 OPEN and PR54681/54664 merged at exact commits recorded in audits/owner-wake-qualification.yml; independent loaded/unloaded reports remain unqualified, private app-tools excluded
+  - Separate authored assurance follow-up adds backend/transport identity, connection generation and owner-classified uncertain outcomes to qualification requirements; no runtime or public contract change and no live owner tests; predecessor ad975 subject remains unchanged while provider runs
+  - October17 authored assurance follow-up passed governance-yaml validation and git diff whitespace check; documentation-only scope adds no runtime behavior or live evidence
 closeout_requirements:
   claims:
     workitems_closed:
