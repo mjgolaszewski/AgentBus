@@ -65,6 +65,9 @@ execution_evidence:
   - Predecessor PR77 subsequently normal-merged as e3097668c2b465a176c26e0573cdb8cbf4873125. Protected PR39047060363/1 and exact-main39047363257/1
     all6 PASS; exact-main truth SHA256 d6ad2c9252a0f206ced28c0f2a98705e8622f2903928355a9aa445786bcef778 certifies only pull_request_progress_valid,
     authorizes no successor/phase closure. Artifacts retained in predecessor .artifacts/owner-wake/provider-pr77 and exact-main-e309766.
+  - 'Correction4b7939b native wrapper terminated1 before execution/provider mutation: every pull request must update CHANGELOG.md. First stdout/stderr/terminal
+    preserved in .artifacts/owner-wake/canonical-4b7939b8.*; rebased correction needed its own changelog entry; corrected through authored CHANGELOG
+    owner, no bypass or BCF change.'
 closeout_requirements:
   claims:
     workitems_closed:
