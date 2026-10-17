@@ -10,6 +10,7 @@ import test_federation_bridge as bridge_tests
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi.testclient import TestClient
 from slack_sdk.socket_mode.request import SocketModeRequest
+from test_service import CHANNEL
 
 from src.agentbus_federation_bridge_service import ProviderUnavailable
 from src.agentbus_federation_runtime_service import load_bridge
@@ -87,7 +88,7 @@ def test_enqueue_is_disabled_without_explicit_configuration(tmp_path):
         with TestClient(app) as api:
             body = {'origin_message_id': 'm1', 'destination_instance_id': 'remote', 'message': {}}
             assert api.post('/v1/federation/messages', json=body).status_code == 401
-            assert api.post('/v1/federation/messages', headers=AUTH, json=body).status_code == 503
+            assert api.post('/v1/federation/messages', headers=AUTH, json=body).status_code == 403
         await client.aclose()
     asyncio.run(scenario())
 
@@ -117,7 +118,7 @@ def test_enqueue_requires_exact_session_and_is_durable_idempotent_and_local_only
             'sender': 'home:agentbus:sender', 'recipient': 'remote:agentbus:receiver',
             'audience': 'direct', 'text': 'nonce'}}
         assert api.post('/v1/federation/messages', headers=AUTH, json=body).status_code == 403
-        joined = dict(AUTH, **{'X-AgentBus-Session-Token': secret})
+        joined = dict(AUTH, **{'X-AgentBus-Session-Token': secret, 'X-AgentBus-Inbox-ID': app.state.store.channels.inbox_id(CHANNEL)})
         for _ in range(2):
             response = api.post('/v1/federation/messages', headers=joined, json=body)
             assert response.status_code == 202 and response.json()['accepted'] is True

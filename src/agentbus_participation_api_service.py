@@ -37,10 +37,29 @@ class EnrollSession(BaseModel):
     display_name: str = Field(min_length=1, max_length=120)
     session_secret: str = Field(min_length=32, max_length=512, repr=False)
     handoff_token: str | None = Field(default=None, min_length=32, max_length=512, repr=False)
+    enrollment_token: str | None = Field(default=None, min_length=32, max_length=512, repr=False)
+
+
+class IssueEnrollmentGrant(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    channel: str = Field(pattern=r"^[CG][A-Z0-9]+$")
+    repo: str = Field(min_length=1, max_length=64)
+    route: str = Field(min_length=3, max_length=80)
+    chat_id: str | None = None
+
+
+def api_enrollment_grant(request: Request, body: IssueEnrollmentGrant) -> dict:
+    try:
+        token = request.app.state.store.channels.issue_grant(**body.model_dump(), actor="operator-capability")
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from None
+    return {"enrollment_token": token, "expires_in_seconds": 600}
 
 
 class IssueProfileHandoff(BaseModel):
     model_config = ConfigDict(extra="forbid")
+
+    channel: str = Field(pattern=r"^[CG][A-Z0-9]+$")
 
     chat_id: str
     repo: str = Field(min_length=1, max_length=64)
@@ -129,6 +148,8 @@ class RenameSession(BaseModel):
 class RecoverClaim(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    channel: str = Field(pattern=r"^[CG][A-Z0-9]+$")
+
     new_identity: str | None = Field(default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$")
     reason: str = Field(min_length=1, max_length=1000)
 
@@ -155,6 +176,10 @@ def api_policy_set(request: Request, body: SetPolicyRevision) -> dict:
 
 
 def api_policy_effective(request: Request, repo: str, chat_id: str) -> dict:
+    from src.agentbus_channel_api_service import resolve_principal
+    principal = resolve_principal(request)
+    if principal.chat_id != chat_id or principal.route.split(":")[-2] != repo:
+        raise HTTPException(403, "Matching session scope required")
     try:
         policy = request.app.state.store.participation.effective_policy(repo, chat_id)
     except ValueError as exc:
@@ -177,21 +202,29 @@ def api_session_policy_explain(request: Request, session_id: str) -> dict:
 
 def api_session_enroll(request: Request, body: EnrollSession) -> dict:
     try:
-        chat_id, session_id, revision = request.app.state.store.participation.enroll(
+        if body.enrollment_token and body.handoff_token:
+            raise PermissionError("Choose one enrollment grant")
+        chat_id, session_id, revision = request.app.state.store.channels.enroll(
+            body.enrollment_token or body.handoff_token,
             repo=body.repo, route=body.route, display_name=body.display_name,
-            session_secret=body.session_secret, handoff_token=body.handoff_token,
+            session_secret=body.session_secret,
         )
+    except PermissionError:
+        raise HTTPException(403, "Matching enrollment grant required") from None
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from None
     policy = request.app.state.store.participation.effective_policy(body.repo, chat_id)
-    return {"chat_id": chat_id, "session_id": session_id, "revision": revision,
+    channel = request.app.state.store.channels.channel_for_chat(chat_id)
+    return {"channel": channel, "inbox_id": request.app.state.store.channels.inbox_id(channel),
+            "high_water_cursor": request.app.state.store.channels.high_water(channel),
+            "chat_id": chat_id, "session_id": session_id, "revision": revision,
             "values": policy.values, "sources": policy.sources, "ack_required": True}
 
 
 def api_profile_handoff(request: Request, body: IssueProfileHandoff) -> dict:
     try:
-        token = request.app.state.store.participation.issue_profile_handoff(
-            chat_id=body.chat_id, repo=body.repo, route=body.route, actor="operator-capability",
+        token = request.app.state.store.channels.issue_grant(
+            channel=body.channel, chat_id=body.chat_id, repo=body.repo, route=body.route, actor="operator-capability",
         )
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from None
@@ -229,6 +262,8 @@ def api_session_self_presence(
     request: Request, session_id: str,
     session_token: Annotated[str | None, Header(alias="X-AgentBus-Session-Token")] = None,
 ) -> dict:
+    from src.agentbus_channel_api_service import assert_session_scope
+    assert_session_scope(request, session_id, session_token)
     try:
         return request.app.state.store.participation.self_presence(session_id, session_token or "")
     except PermissionError:
@@ -244,6 +279,8 @@ def api_session_policy_ack(
     request: Request, session_id: str, body: AcknowledgePolicy,
     session_token: Annotated[str | None, Header(alias="X-AgentBus-Session-Token")] = None,
 ) -> dict:
+    from src.agentbus_channel_api_service import assert_session_scope
+    assert_session_scope(request, session_id, session_token)
     try:
         receipt = request.app.state.store.participation.acknowledge_policy(
             session_id, session_token or "", body.revision,
@@ -260,6 +297,8 @@ def api_session_check_in(
     body: CheckInSession | None = None,
     session_token: Annotated[str | None, Header(alias="X-AgentBus-Session-Token")] = None,
 ) -> dict:
+    from src.agentbus_channel_api_service import assert_session_scope
+    assert_session_scope(request, session_id, session_token)
     try:
         contacted = request.app.state.store.participation.contact(
             session_id, session_token or "",
@@ -309,15 +348,20 @@ def api_control_status(request: Request, control_id: str) -> dict:
 
 
 def api_claim_recovery(request: Request, cursor: int, body: RecoverClaim) -> dict:
+    store = request.app.state.store
+    if body.channel not in store.channels.enabled or (body.new_identity is not None and not store.channels.local_target(body.channel, body.new_identity)):
+        raise HTTPException(403, "Recovery target unavailable in this scope")
+    internal = store.channels.internal_cursor(body.channel, cursor)
+    if internal is None:
+        raise HTTPException(404, "Message not found")
     try:
-        return request.app.state.store.claim_recovery.reassign(
-            channel=request.app.state.settings.slack_channel, cursor=cursor,
-            new_identity=body.new_identity, actor="operator-capability", reason=body.reason,
-        )
+        result = store.claim_recovery.reassign(channel=body.channel, cursor=internal,
+            new_identity=body.new_identity, actor="operator-capability", reason=body.reason)
     except KeyError:
         raise HTTPException(404, "Message not found") from None
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from None
+    return {**result, "cursor": cursor}
 
 
 def api_control_ack(
@@ -325,6 +369,8 @@ def api_control_ack(
     body: AcknowledgeControl | None = None,
     session_token: Annotated[str | None, Header(alias="X-AgentBus-Session-Token")] = None,
 ) -> dict:
+    from src.agentbus_channel_api_service import assert_session_scope
+    assert_session_scope(request, session_id, session_token)
     try:
         receipt, kind = request.app.state.store.controls.acknowledge_control(
             control_id, session_id, session_token or "",
@@ -343,6 +389,8 @@ def api_session_rename(
     request: Request, session_id: str, body: RenameSession,
     session_token: Annotated[str | None, Header(alias="X-AgentBus-Session-Token")] = None,
 ) -> dict:
+    from src.agentbus_channel_api_service import assert_session_scope
+    assert_session_scope(request, session_id, session_token)
     try:
         chat_id, old_route, new_route = request.app.state.store.participation.rename(
             session_id, session_token or "", body.route,

@@ -11,6 +11,15 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = yaml.safe_load((ROOT / "architecture-boundaries.yml").read_text())["architecture"]
 MODULES = {
+    "src/agentbus_channel_api_service.py": ("service", "service"),
+    "src/agentbus_channel_grants_service.py": ("service", "service"),
+    "src/agentbus_channel_ingress_service.py": ("service", "service"),
+    "src/agentbus_channel_migration_service.py": ("service", "service"),
+    "src/agentbus_channel_store_service.py": ("service", "service"),
+    "src/agentbus_transaction_service.py": ("service", "service"),
+    "src/agentbus_channel_migration_client.py": ("client", "client"),
+    "src/agentbus_enrollment_client.py": ("client", "client"),
+    "src/agentbus_scope_client.py": ("client", "client"),
     "src/agentbus_delivery_client.py": ("client", "client"),
     "src/agentbus_client.py": ("client", "client"),
     "src/agentbus_transport_client.py": ("client", "client"),
@@ -149,7 +158,11 @@ def test_http_routers_remain_thin_transport_adapters() -> None:
         for node in tree("src/agentbus_service.py").body
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("api_")
     }
-    assert set(handlers) == {"api_send", "api_read", "api_info", "api_inbox", "api_claim"}
+    assert set(handlers) == {"api_send", "api_claim"}
+    channel_handlers = {node.name: node for node in tree("src/agentbus_channel_api_service.py").body
+                        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("api_")}
+    assert set(channel_handlers) == {"api_read", "api_info", "api_inbox"}
+    handlers.update(channel_handlers)
     status_handlers = {node.name: node for node in tree("src/agentbus_status_api_service.py").body
                        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("api_")}
     assert set(status_handlers) == {"api_health", "api_status"}

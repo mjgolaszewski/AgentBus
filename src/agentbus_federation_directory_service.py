@@ -105,6 +105,8 @@ class DirectorySynchronizer:
             chat = row['chat_id']
             if chat not in self.shared:
                 continue
+            if row.get('channel') is not None and row['channel'] != getattr(self.bridge, 'channel', row['channel']):
+                raise ValueError('Directory identity belongs to another channel')
             if chat not in selected or row['last_client_contact_at'] > selected[chat]['last_client_contact_at']:
                 selected[chat] = row
         entries = []

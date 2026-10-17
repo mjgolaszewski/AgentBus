@@ -60,3 +60,31 @@ def test_participation_contract_is_structurally_and_semantically_closed() -> Non
     assert contract["primitives"]["participation_session"]["states"] == [
         "joining", "active", "overdue", "stopping", "stopped",
     ]
+
+
+def test_current_authorization_model_resolves_inherited_rules_without_legacy_authority():
+    """A v2 extension cannot silently inherit permission its channel law removes."""
+    base = yaml.safe_load(CONTRACT.read_text())
+    current = yaml.safe_load((ROOT / "contracts/participation/v2/participation.contract.yml").read_text())
+    channel = yaml.safe_load((ROOT / current["channel_authority"]).read_text())
+    assert ROOT / current["extends"] == CONTRACT
+    assert base["document"]["status"] == "superseded"
+    assert current["document"]["status"] == channel["document"]["status"] == "active"
+    inherited = {entry["id"] for entry in base["invariants"]}
+    replaced = current["inheritance"]["replaced_invariants"]
+    assert set(replaced) <= inherited
+    # Every inherited invariant explicitly permitting legacy or unrestricted
+    # enrollment must have a named current replacement; unchanged controls stay.
+    incompatible = {entry["id"] for entry in base["invariants"]
+                    if any(term in entry["rule"] for term in (
+                        "legacy messaging remains usable", "without per-chat operator intervention",
+                        "old clients remain legible", "unjoined legacy", "unique across all sessions",
+                        "Unjoined legacy callers"))}
+    assert incompatible <= set(replaced)
+    assert channel["authority"]["legacy_unjoined"] == "no message authority"
+    assert channel["scope"]["immutable_channel_per_identity"] is True
+    assert set(current["model"]["principal"]["fields"]) == {
+        "chat_id", "session_id", "route", "channel", "inbox_id",
+    }
+    assert current["model"]["enrollment_grant"]["lifetime_seconds"] == channel["authority"]["grant_expiry_seconds"]
+    assert current["experimental_boundary"]["atomic_idle_only_wake"] == "unqualified"

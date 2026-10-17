@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
+from src.agentbus_scope_client import FIELDS
 from src.agentbus_transport_client import ClientError
 
 STATES = {"pending", "eligible", "submitting", "uncertain", "queued", "admitted",
@@ -23,6 +24,7 @@ def validate_intent(binding: dict) -> None:
             or intent.get("session_id") != binding["session_id"]
             or intent.get("thread_id") != binding["thread_id"]
             or intent.get("binding_generation") != binding["binding_generation"]
+            or any(intent.get(key) != binding.get(key) for key in FIELDS)
             or not isinstance(intent.get("candidate_ids"), list)
             or not intent["candidate_ids"]
             or not all(isinstance(ref, str) for ref in intent["candidate_ids"])
@@ -48,11 +50,12 @@ def record_intent(binding: dict, phase: str, refs: list[str], *, reason: str = "
     if previous and previous["state"] in IN_FLIGHT and phase in {"blocked", "uncertain"}:
         refs = previous["candidate_ids"]
     if previous is None or previous["candidate_ids"] != refs:
-        identity = [binding["session_id"], binding["thread_id"], binding["binding_generation"], refs]
+        identity = [*(binding[key] for key in FIELDS), binding["thread_id"], binding["binding_generation"], refs]
         binding["wake_intent"] = {
             "id": hashlib.sha256(json.dumps(identity).encode()).hexdigest(),
             "session_id": binding["session_id"], "thread_id": binding["thread_id"],
             "binding_generation": binding["binding_generation"], "candidate_ids": list(refs),
+            **{key: binding[key] for key in FIELDS},
             "state": phase, "transitions": [],
         }
     intent = binding["wake_intent"]

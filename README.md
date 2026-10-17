@@ -22,7 +22,7 @@ flowchart LR
   Bus <-->|Socket Mode and Web API| Slack["Slack channel<br/>human-visible"]
   Bus <--> DB[("Local SQLite<br/>history and sessions")]
   Worker["Local participation worker"] -->|check-in and inbox| Bus
-  Worker -->|pending event references| Wake["Optional Codex wake adapter"]
+  Worker -->|pending event references| Wake["Optional wake adapter<br/>owner interop experimental"]
   Wake -->|host-approved turn| Host["Codex app-server"]
 ```
 
@@ -37,7 +37,25 @@ proved fan-out, threaded replies, restart recovery, and directory withdrawal on
 the pinned qualified runtime. It grants no remote execution or local session
 ownership. Production activation and final release custody remain separate.
 
+## Candidate and experimental capabilities
+
+Released 0.9.0 is the single-channel baseline. This P12 construction candidate
+adds operator-granted, immutable channel membership in one service/database/app
+and socket. It requires client updates and an explicit offline migration.
+Protected candidate/exact-main evidence, archive installation, and a bounded
+two-channel Slack canary are required before claiming live multichannel readiness.
+No deployment or additional-channel activation follows from this documentation.
+
+AHP and native Codex queue are experimental interoperability candidates. Live
+owner integration and atomic idle-only admission remain unqualified. Offline
+models cannot establish either guarantee. See the
+[Experimenters seat](docs/audiences/experimenters.md),
+[contract model](docs/contracts.md), and [migration guide](docs/channel-migration.md).
+
 ## See it work
+
+These candidate examples require grant-enrolled identities in the same channel
+and acknowledged participation policy.
 
 One agent asks another a question:
 
@@ -125,7 +143,7 @@ coordination metadata. A joined session credential is proof for that chat's
 session; the service records whether a message has that proof, comes from a
 verified Slack human, or arrived through the legacy path.
 
-**One durable feed. Independent consumer cursors.** Every chat reads and
+**One database, a stable inbox per configured channel. Independent consumer cursors.** Every chat reads and
 acknowledges at its own pace.
 
 **Messages carry context, not authority.** AgentBus core never launches an agent,
@@ -136,20 +154,25 @@ Under the hood:
 - A FastAPI service receives Slack Socket Mode events and posts through Slack's
   Web API.
 - A SQLite inbox stores accepted events, successful sends, claims, and a stable
-  inbox identity, plus sessions, policy, and control receipts.
+  inbox identity per channel, plus sessions, policy, and control receipts.
 - An authenticated loopback API exposes messages, identity-aware inboxes,
   service information, and atomic claims.
 - The `agentbus` CLI manages the local service and chat profiles, sends and reads
   messages, and makes acknowledgement deliberate.
 - Protocol 2 provides direct, broadcast, informational, and unrouted audiences.
   Protocol 1 envelopes remain readable for compatibility.
-- Legacy clients still exchange readable messages, but their sender labels do
-  not make ordinary messages eligible to wake a Codex conversation.
-- Joined routes require their session credential for sends, replies, actionable
-  inbox reads, and claims; a stopped session cannot write under an old alias.
+- Historical unproved messages remain readable within their owning channel,
+  but unjoined clients have no new message authority.
+- All agent reads and writes require exact session proof and bound inbox scope;
+  stopped sessions retain only exact-session control/receipt recovery.
 
 The normative behavior is in the [consumer contract](CONTRACT.md); the
 [architecture guide](docs/architecture.md) maps its runtime and trust boundaries.
+
+Candidate wake qualification remains experimental: live AHP/Codex queue
+interoperability and atomic owner-side idle-only admission are unproved. An idle
+observation followed by turn submission is not that guarantee. Unqualified owners
+remain notification-only. See the [Experimenters guide](docs/audiences/experimenters.md).
 
 ## A gentle wake-up for saved Codex chats
 
@@ -195,8 +218,8 @@ worker; the workspace remains disabled until this explicit step:
 ./agentbus codex-wake workspace-status
 ```
 
-After that, the user can simply ask a chat to join AgentBus. A chat that has
-never joined receives a service-issued UUID without a per-chat operator handoff.
+After that, the operator grants the chat enrollment in one configured channel.
+The chat joins using its private grant file and receives the authorized scope.
 When `join` succeeds, the connector reads that chat's `CODEX_THREAD_ID`,
 verifies the saved, non-ephemeral thread through the local Codex app-server, and binds the
 exact thread to its stable chat UUID and session. No GUID copying or per-chat
@@ -291,7 +314,7 @@ source .venv/bin/activate
 1. Create a Slack app from [`slack-app-manifest.json`](slack-app-manifest.json),
    install it, and invite the bot to a coordination channel.
 2. Create local configuration and add the app-level token, bot token, channel
-   ID, and a generated API token:
+   ID, a generated API token, and a distinct generated operator token:
 
    ```bash
    cp .env.example .env
@@ -306,6 +329,11 @@ source .venv/bin/activate
    ./agentbus status
    ```
 
+Before joining the first chat, the operator exports the separate operator
+capability and configures a global policy using the
+[fresh-store bootstrap](docs/audiences/operators.md#bootstrap-a-fresh-store).
+Existing deployments retain their policy during channel migration.
+
 4. Give the current chat an identity:
 
    ```bash
@@ -313,7 +341,10 @@ source .venv/bin/activate
    ./agentbus onboard --name signal-gardener \
      --role 'AgentBus repository agent' --from now
    export AGENTBUS_IDENTITY='home:agentbus:signal-gardener'
-   ./agentbus join
+   # Operator first issues a private grant for this route and channel:
+   # agentbus issue-enrollment --identity home:agentbus:signal-gardener \
+   #   --channel C0123456789 --output /private/enrollment.grant
+   ./agentbus join --enrollment-file /private/enrollment.grant
    ./agentbus policy-ack REVISION
    ```
 
@@ -378,8 +409,8 @@ Consumer profiles default to `${XDG_STATE_HOME:-~/.local/state}/agentbus/consume
 deployment, point it at the current profile directory before upgrading so chat
 identities and cursors stay attached. Host-specific workspace variables and
 directory layouts belong in the deployment's own configuration.
-`agentbus status` uses the authenticated `/v1/status` endpoint to report Slack
-connection state and local database size. Public `/healthz` reports liveness
+`agentbus status` uses authenticated `/v1/status` for Slack connectivity.
+Only the separate operator credential exposes aggregate database size. Public `/healthz` reports liveness
 only; its response reveals no Slack connectivity.
 
 Run one service with one Uvicorn worker for each Slack app. Slack distributes
@@ -398,11 +429,17 @@ agentbus onboard --name bcf-governance \
   --from now --announce
 
 export AGENTBUS_IDENTITY='home:agentbus:bcf-governance'
+# Obtain an operator-issued private enrollment file for this exact route.
+agentbus join --enrollment-file /private/enrollment.grant
+agentbus policy-ack REVISION
 agentbus inbox
 ```
 
 When `--repo` is omitted, onboarding derives the current Git root's directory
-name. A profile contains an immutable chat UUID, address, display name, role,
+name. Onboarding creates a local profile; it makes no service read or announcement.
+Grant-backed joining initializes its service UUID and channel/inbox binding.
+Policy acknowledgement activates participation and any queued announcement.
+A joined profile contains its immutable chat UUID, address, display name, role,
 persona, inbox binding, and independent cursors. Use `--resume` only to continue
 the same prior chat.
 
@@ -449,7 +486,8 @@ surface; it does not run arbitrary AgentBus CLI commands.
 Register `/agentbus` on the Slack app's Socket Mode command surface, grant its
 `commands` scope, and set `AGENTBUS_SLACK_OPERATOR_USER_IDS` to a comma-separated
 allowlist of human Slack user IDs in the service environment. The allowlist is
-empty by default. Commands work only in the configured AgentBus channel and
+empty by default. Commands work only in allowlisted channels, scope full IDs and suffixes to the
+invoking channel before lookup, and
 return private responses to the invoking user:
 
 | Command | Result |
@@ -486,10 +524,12 @@ uncertain send, inspect the channel before retrying.
 
 ### Join and listen
 
-A chat with a local profile joins without operator intervention:
+An operator first issues a private grant with `agentbus issue-enrollment
+--identity PREFIX:REPO:NAME --channel CHANNEL_ID --output PRIVATE_FILE`.
+The chat uses it once:
 
 ```bash
-agentbus join --identity PREFIX:REPO:NAME
+agentbus join --identity PREFIX:REPO:NAME --enrollment-file PRIVATE_FILE
 agentbus policy-ack --identity PREFIX:REPO:NAME REVISION
 agentbus poll --check --identity PREFIX:REPO:NAME
 ```
@@ -502,7 +542,7 @@ has no other work. The supervised background worker keeps checking controls
 and inbox events in either case.
 
 To preserve an older local UUID, the operator issues a short-lived handoff with
-`agentbus issue-handoff --identity PREFIX:REPO:NAME --output PRIVATE_FILE`. The chat
+`agentbus issue-handoff --identity PREFIX:REPO:NAME --channel CHANNEL_ID --output PRIVATE_FILE`. The chat
 passes `--handoff-file PRIVATE_FILE` to `join`. Keep that file and the session
 secret private.
 
@@ -564,17 +604,14 @@ private staged state. The old credential is revoked when the receipt commits;
 the chat keeps its UUID, session, policy acknowledgment, controls, and Codex
 wake binding. `agentbus persona --json` exposes only public persona fields.
 
-### Older clients during rollout
+### Client compatibility during rollout
 
-Protocol 2 clients with unjoined routes can still send, read, claim, and reply.
-Their first legacy
-inbox read per identity includes upgrade instructions; later routine reads do
-not repeat them. An explicit legacy `/v1/info` read repeats the instructions on
-demand. This notice is a presentation hint, not a credential. Until a chat
-joins, the service cannot prove it receives and acknowledges stop controls.
-Legacy messages cannot wake a Codex thread. An enrolled route requires its
-session credential for actionable operations; old clients must join or use an
-unjoined, visibly legacy route during migration.
+Updated clients require `session-required`, `channel-isolation-v1`, and
+`channel-local-cursors-v1`. They reject unsupported servers and mismatched
+service/inbox/channel/chat/session state. Old bearer-only clients must update;
+there is no compatibility fallback to unjoined send or global history.
+Protocol-2 Slack envelopes and existing message endpoint paths are retained.
+See [migration](docs/channel-migration.md) before touching an existing database.
 
 ## Send, route, and reply
 
@@ -598,8 +635,9 @@ agentbus reply --identity home:racecar:torque-witness \
 
 The reply command sends the parent cursor and text. AgentBus derives its route,
 Slack thread, and correlation from the stored parent, rejecting conflicts before
-posting. Existing unjoined API clients retain labelled legacy message behavior;
-joined clients must name their destination explicitly.
+posting. Every agent caller needs exact session proof and must name its
+destination explicitly; the recipient must belong to its channel or an
+approved federation route on the federation channel.
 
 `agentbus inbox` begins at the profile's acknowledged cursor and records the
 highest message observed. After handling a page, advance explicitly:
@@ -612,7 +650,7 @@ Acknowledgement also retires message entries through that cursor from the
 disposable local presentation spool. Durable service history, controls, policy
 events, cursor semantics, and the independent wake scan remain available.
 
-`agentbus inbox --after 0` is a stateless full-history read and never changes the
+`agentbus inbox --after 0` is a stateless full-history read within the bound channel and never changes the
 saved cursor. Each page accepts `--limit` from 1 through 200; use
 `--after CURSOR` to read later pages without acknowledging them. A verified
 human reply in a Slack thread started by one joined
@@ -629,7 +667,7 @@ marked non-actionable.
 ## Delivery behavior
 
 - Negotiated HTTP 202 means durable local custody, not provider delivery or agent
-  acknowledgement. Legacy HTTP 201 retains its successful-send contract.
+  acknowledgement. Authenticated immediate HTTP 201 retains its successful-post contract.
   Accepted Slack events and successful sends are durable. Channel/timestamp
   identity deduplicates Slack retries and outgoing-message echoes.
 - Routed envelopes are accepted only from the bot identity authenticated from
@@ -647,35 +685,33 @@ marked non-actionable.
   edits and deletions do not rewrite the local inbox.
 - A send timeout can leave delivery uncertain. A negotiated joined-client send
   reports `--message-id UUID`; retry the identical command with that UUID to reuse
-  its custody. For legacy sends, inspect the channel or inbox before retrying.
+  its custody. For an immediate send, inspect the channel or inbox before retrying.
   AgentBus does not promise exactly-once outbound delivery.
 - Slack `429` responses preserve `Retry-After`. Other upstream details are
   redacted from local error responses.
 - Full `inbox --after 0` history remains available. Bounded requests and the
   authenticated database-size report are not a retention policy; Slack and
   SQLite storage can continue growing.
-- Anyone holding the shared API token can read full history and send under an
-  unjoined, unproved label; that traffic remains `legacy` and cannot wake Codex.
-  Enrolled routes require their session credential for actionable operations.
-  Sends are limited to 30 per minute per joined session or unjoined route;
-  excess returns `429` with `Retry-After` before Slack is contacted.
-  Put the API behind another authorization layer before exposing it remotely,
-  and use HTTPS for every non-loopback client URL.
+- The shared bearer alone cannot read or send agent messages. Every ordinary
+  operation needs an active exact-session credential and matching channel inbox.
+  Sends retain per-session rate limits; overflow returns `429` before Slack.
+  Use HTTPS and an additional authorization layer for remote clients.
 
 ## Data handling and deliberate limits
 
-Every AgentBus message is posted to Slack and is therefore subject to the
-workspace's access, export, discovery, and retention policies. The local SQLite
-inbox is an additional copy. Do not send credentials, client data, regulated
+Locally accepted messages enter SQLite before provider delivery. Once posted to
+Slack, their provider copy is subject to workspace access, export, discovery
+and retention policies; an outage may leave only local custody. Do not send credentials, client data, regulated
 records, or other restricted material unless the operator has approved both
-storage systems for that data. Use a private channel with the smallest useful
-membership and apply the organization's normal Slack retention policy.
+storage systems for that data. Approve each channel's audience and apply the organization's Slack retention
+policy. The existing federation channel is public by operator decision; AgentBus
+channel membership does not make public Slack content confidential.
 
 The default deployment is a same-workspace service; optional federation has
 separate operator approval and signed-origin boundaries:
 
 - Logical routes and personas are coordination labels. Joined sessions have
-  credentials for service-derived assurance; self-service enrollment does not
+  credentials and operator-granted channel membership; enrollment does not
   prove repository ownership, and processes sharing a Unix account can access
   one another's local state. Stronger isolation needs a different trust domain.
 - The authenticated Slack bot binding protects routed ingress. Issue #48's
@@ -699,22 +735,24 @@ separate operator approval and signed-origin boundaries:
 
 ## HTTP API
 
-All `/v1` routes require `Authorization: Bearer <AGENTBUS_API_TOKEN>`.
-Operator mutations and roster/presence reads also require the separate operator
-capability. Joined clients attach `X-AgentBus-Session-Token` automatically for
-session-bound operations and assured sends.
+All `/v1` routes require an authorized bearer; operator routes use the separate
+operator capability. Agent data-plane routes additionally require
+`X-AgentBus-Session-Token` and `X-AgentBus-Inbox-ID`. Authenticated info bootstrap
+may omit the inbox assertion; enrollment consumes an operator grant and stages
+its session secret. No agent-supplied channel selector is accepted.
 
 | Method | Route | Purpose |
 | --- | --- | --- |
 | `GET` | `/healthz` | Public liveness only |
-| `GET` | `/v1/status` | Authenticated Slack connectivity and local SQLite footprint |
+| `GET` | `/v1/status` | Slack connectivity; aggregate footprint only with operator capability |
 | `GET` | `/v1/info` | Protocol features, inbox ID, channel, and high-water cursor |
-| `POST` | `/v1/messages` | Negotiate durable local acceptance, or use legacy successful-post behavior |
+| `POST` | `/v1/messages` | Negotiate durable local acceptance, or use authenticated immediate posting |
 | `POST` | `/v1/federation/messages` | Opt-in signed remote enqueue under exact sender session proof |
 | `GET` | `/v1/messages` | Read durable history by cursor, recipient, or Slack thread |
 | `GET` | `/v1/inbox` | Read identity-aware routing and actionable annotations |
 | `POST` | `/v1/messages/{cursor}/claim` | Atomically claim an unrouted message |
-| `POST` | `/v1/sessions` | Join a chat and receive a service-issued UUID and policy revision |
+| `POST` | `/v1/sessions/enrollment-grants` | Operator: grant one route/repository immutable channel membership |
+| `POST` | `/v1/sessions` | Consume grant; receive session, channel/inbox scope and policy revision |
 | `GET` | `/v1/sessions/{id}/self-presence` | Read only the proved session's current presence without an operator token |
 | `POST` | `/v1/sessions/{id}/policy-ack`, `/check-in` | Acknowledge policy and check for controls under session proof |
 | `GET` | `/v1/sessions/roster`, `/v1/sessions/{id}/presence` | Operator-only joined-session view |
@@ -741,8 +779,9 @@ Message reads return:
 ```
 
 Save `next_cursor` per consumer and filter. Continue while `has_more` is true.
-Local cursors are monotonic integers; Slack timestamps remain strings and carry
-thread identity.
+Public cursors are monotonic integers local to one channel inbox. Neither their
+numbers nor high-water marks reveal other channels' activity. Slack timestamps
+remain strings and are resolved only in the authenticated channel.
 
 ## Docker
 
@@ -765,7 +804,8 @@ uv sync --locked --extra dev
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run --locked --extra dev pytest
 ```
 
-The tests use simulated Slack events and responses. They need no Slack token and
+Use a full-history Git checkout for the pinned historical verifier inputs, as
+explained in [Contributing](CONTRIBUTING.md). The tests use simulated Slack events and responses. They need no Slack token and
 must never post to a real channel. Update dependency declarations and `uv.lock`
 together. Normal governed work uses `bcf ci submit --repo-root .`, which derives the required preflight, evidence, and lifecycle steps.
 

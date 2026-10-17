@@ -1,7 +1,7 @@
 document:
   kind: participation_authorization_contract
   version: 2.0.0
-  status: proposed
+  status: active
   path: contracts/participation/v2/participation.contract.yml
 extends: contracts/participation/v1/participation.contract.yml
 changes:
@@ -13,3 +13,50 @@ compatibility:
   http_paths: retained; strict session proof required
   legacy_client: explicit client update and enrollment required; no bearer-only fallback
 channel_authority: contracts/channels/v1/channel-isolation.contract.yml
+model:
+  identity:
+    owner: ParticipationStore
+    stable_key: chat_id
+    cardinality: one_immutable_channel_per_chat
+    inherited_membership: [session, current_route, reserved_aliases]
+  principal:
+    owner: ChannelPrincipal
+    fields: [chat_id, session_id, route, channel, inbox_id]
+    resolution: exact_secret_then_enabled_channel_then_inbox_assertion_before_resource_lookup
+  enrollment_grant:
+    owner: ChannelStore_and_grant_consumption_transaction
+    fields: [channel, route, repo, optional_chat_id, expires_at, token_hash]
+    lifetime_seconds: 600
+    retry: same_staged_secret_returns_original_receipt
+  public_position:
+    owner: ChannelStore
+    key: channel_plus_public_position
+    internal_reference: messages_cursor_private_and_unchanged
+inheritance:
+  precedence: v2_and_channel_contract_override_conflicting_v1_authorization_only
+  retained: [policy_resolution, exact_revision_ack, durable_controls, stop_receipts, presence, cadence, alias_attribution, rotation, work_hold, presentation_cleanup]
+  replaced_invariants:
+    INV-017: no_legacy_compatibility_authority_or_upgrade_notice_path
+    INV-021: all_new_enrollment_requires_operator_grant
+    INV-023: historical_legacy_rows_retained_but_no_new_unjoined_API_sends
+    INV-027: exact_session_and_inbox_required_for_all_agent_reads_and_writes
+    INV-030: per_session_send_limit_and_existing_allocation_bounds_preserved_without_unjoined_tier
+    INV-032: explicit_destination_within_membership_or_existing_approved_federation_channel
+    INV-036: suffix_and_full_ID_lookup_scoped_before_resolution_to_invoking_channel
+  replaced_sections:
+    scope_compatibility: protocol2_wire_and_paths_preserved_but_legacy_authorization_removed
+    scope_migration_assumptions: explicit_offline_channel_migration_and_matching_client_required
+    message_principal: immutable_channel_and_inbox_in_exact_session_principal
+    join_and_resume: operator_grant_before_new_identity_and_exact_policy_ack_before_activation
+    security_expansion: strict_session_channel_contract_without_bearer_only_fallback
+    Slack_operator_commands: allowlisted_invoking_channel_only
+  superseded_proof_expectations:
+    PO-25: unsupported_client_fails_closed_instead_of_retaining_legacy_message_access
+    PO-32: first_join_uses_grant_and_recovers_lost_response_with_same_secret
+    PO-36: missing_or_foreign_proof_denies_all_message_operations
+    PO-41: no_unjoined_destination_compatibility
+    PO-45: suffix_and_full_ID_resolve_only_within_invoking_channel
+experimental_boundary:
+  multichannel: candidate_until_final_canonical_and_two_channel_live_evidence
+  AHP_or_native_queue: research_only_no_production_adapter
+  atomic_idle_only_wake: unqualified

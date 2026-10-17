@@ -26,6 +26,30 @@ workitems:
 - id: P12-P0-03
   status: DONE
   summary: deliver Separate live-provider prerequisite and go-no-go inventory
+- id: P12-P1-01
+  status: IN_PROGRESS
+  summary: deliver Contracts lifecycle and characterization
+- id: P12-P1-02
+  status: IN_PROGRESS
+  summary: deliver Channel registry and additive offline migration
+- id: P12-P1-03
+  status: IN_PROGRESS
+  summary: deliver Operator-granted enrollment and strict session authorization
+- id: P12-P1-04
+  status: IN_PROGRESS
+  summary: deliver Scoped messaging and durable delivery
+- id: P12-P1-05
+  status: IN_PROGRESS
+  summary: deliver Client control and wake isolation
+- id: P12-P1-06
+  status: IN_PROGRESS
+  summary: deliver Single-channel federation containment
+- id: P12-P1-07
+  status: TODO
+  summary: deliver Canonical proof archive isolated install and bounded canary prerequisites
+- id: P12-P1-08
+  status: IN_PROGRESS
+  summary: deliver Complete product editorial audit with line coverage dispositions current contract model and Experimenters seat
 execution_evidence:
   planned_commands:
   - canonical bcf ci submit after shared native capacity is available
@@ -42,6 +66,17 @@ execution_evidence:
   - 'Extended pinned action-schema probe to7 cases PASS: empty ID and non-user origin are valid wire shapes; no client or host authority follows.
     Focused probe lint PASS.'
   notes:
+  - Migration CLI characterization failed outside the checkout because its subprocess could not resolve the owned service module. Child execution now uses the installed source root while retaining the caller's absolute database path and symlink refusal. All21 migration/projection/architecture cases pass; source Ruff and58-module mypy pass locally. Aggregate8 converged; final exact candidate custody remains pending.
+  - Final boundary review reproduced an uncaught malformed federation DTO and an offline migration bypass through a symlinked database alias. Malformed authorized enqueue now returns422 before custody; migration rejects symlinked databases and reserves the canonical path lease. Thirteen migration/API/architecture cases pass locally.
+  - Trusted-ingress first probe used a slack sender that correctly downgraded to raw unrouted text; original observation retained, not classified as cross-channel routing. Corrected legacy-label probe against isolated staged source reproduced one routed foreign-recipient row; unconditional recipient scope validation repairs it. Twenty ingress/channel/human-reply cases pass. Ten new channel causal controls are registered; source and final canonical proof remain separately qualified.
+  - 'Editorial bootstrap review found omitted prerequisites for a fresh store: a distinct service operator capability and explicit global participation policy. Example configuration and operator/root instructions now cover both, preserve existing migrated policies and public federation audience, and describe operator-selected example cadence without claiming installed defaults.'
+  - Released2.3.4 aggregate initially rejected stale authored read/claim/recovery/enrollment operation owners; first diagnostic sha2564d7004dad4460b119bc987803e6ad0ed8539026338f0b868d19d2490556eebe3 retained in .artifacts/channels/canonical-reconcile.stderr (non-authoritative local retention). Updated only authored operation/family/representation owners and exact22ac migrations; repeated scalars factored with YAML aliases while asserting decoded equality, preserving36KiB registry budget. Aggregate6 converged in2 rounds and generated locks/manifests; no provider mutation.
+  - Aggregate submission-budget negative control reproduced8 remaining attempts after3 reserved attempts followed by local completion failure; coordinator now accounts consumed attempts even on a channel exception. All31 channel config/auth/read/write/delivery/migration/projection cases pass. Nine channel causal controls are registered alongside existing controls; final exact-node manifest and native applicability still require canonical regeneration/authentication.
+  - Complete editorial line review covers89 product documents/contracts/plans/logs and historical audits; content hashes/ranges/dispositions recorded in audits/editorial-review.yml. BCF machinery and changelog excluded. Current v2 inheritance and channel model plus Experimenters/migration seats replace stale authority descriptions; historical subjects retained. Governance YAML,20 Markdown target checks and4 contract model cases pass locally; no current candidate certification inferred.
+  - Full development suite539 cases returned536pass/3historical-canary applicability rejections. Guard correctly rejects changed runtime. Historical positive controls now read exact0.9 Git inputs; all44 verifier cases pass and an explicit actual-candidate rejection remains. No historical identity relabeled or verifier guard weakened.
+  - New rotation foreign-credential test reproduced SQLite uniqueness exception; explicit same-writer rejection now returns409 without credential change. Foreign inbox rename test reproduced unauthorized mutation; exact session/inbox assertion now precedes rename and client supplies bound inbox. Six affected rename cases pass. Migration rollback/architecture12 cases, grant expiry/concurrent receipt and federation directory/projection containment cases pass locally.
+  - Profile migration refuses foreign scope before changes, backs up legacy disposable projections and rebuilds from existing ACK without semantic acknowledgement; wake workers must be disabled/drained and exact binding lock acquired. Eight projection/migration cases pass. Ruff/source and mypy checks are local diagnostics; generated manifests and final canonical applicability remain pending.
+  - Operator expanded P12 to a complete line-by-line product editorial review, excluding BCF machinery and changelog. audits/editorial-review.yml records explicit reviewed and pending coverage; docs/contracts.md models v2 inheritance and new channel authority; Experimenters seat and local qualification disclosures added. Audit remains incomplete while pending rows exist.
   - Tests exercise existing standalone adapter with fake owners, not Microsoft AHP or live OpenAI extension
   - 'P12-P0-02 remains IN_PROGRESS: real protocol conformance requires identifying a disposable Agent-Host-managed chat and supported endpoint'
   - Active VSCode user-data directory discovery found no AHP local-endpoint directory; no secret read, host connection or model turn
@@ -76,9 +111,30 @@ execution_evidence:
     mutation, heavy evidence execution or exposure exception.'
   - Standalone cheap preflight found unqualified ephemeral diagnostic references in this log; marked retained local copies non-authoritative,
     while public run IDs and exact truth digest remain the proof authority. No exposure/evidence-policy exception added.
-  - October17 source review verified Codex issue54683 OPEN and PR54681/54664 merged at exact commits recorded in audits/owner-wake-qualification.yml; independent loaded/unloaded reports remain unqualified, private app-tools excluded
-  - Separate authored assurance follow-up adds backend/transport identity, connection generation and owner-classified uncertain outcomes to qualification requirements; no runtime or public contract change and no live owner tests; predecessor ad975 subject remains unchanged while provider runs
-  - October17 authored assurance follow-up passed governance-yaml validation and git diff whitespace check; documentation-only scope adds no runtime behavior or live evidence
+  - October17 source review verified Codex issue54683 OPEN and PR54681/54664 merged at exact commits recorded in audits/owner-wake-qualification.yml;
+    independent loaded/unloaded reports remain unqualified, private app-tools excluded
+  - Separate authored assurance follow-up adds backend/transport identity, connection generation and owner-classified uncertain outcomes to qualification
+    requirements; no runtime or public contract change and no live owner tests; predecessor ad975 subject remains unchanged while provider runs
+  - October17 authored assurance follow-up passed governance-yaml validation and git diff whitespace check; documentation-only scope adds no runtime
+    behavior or live evidence
+  - Released BCF2.3.4 scaffold created the P13 triplet; production changes await exact baseline authentication on preserved research1cd1fac
+  - Pre-edit scope is service authorization and SQLite scope owner plus client enrollment and projection owners; command authorization precedes
+    custody; query scope precedes target lookup; no live DB keys service configuration generated BCF files or owner adapter production authority
+    may be changed
+  - BCF owner10156 confirmed official234 exact-identity proof forbids docs-only baseline substitution;1cd1fac remains queued after committed Racecar
+    and bounded BDMCP work; no production construction before its authentication
+  - First three new behavioral controls are genuinely RED on missing channels settings registry and enrollment grant ownership; this is characterization
+    not release evidence
+  - Planned P13 triplet and both authorization contracts pass governance-yaml validation; initial test import ordering corrected with Ruff; no
+    production code changed
+  - Six projection controls genuinely RED because current wake scan and spool ignore injected channel inbox and service scope; stdout retained
+    under .artifacts/channels/projection-initial-red.stdout (non-authoritative local retention); digest in audit inventory; no live interoperability
+    or exploit claim
+  - Additional real API/store negative controls cover bearer reads foreign recipients inbox assertions broadcast isolation and disabled channels;
+    offline migration tests require atomic dry-run and legacy custody preservation
+  - Operator18:16UTC explicitly superseded separate baseline-only certification and P13 activation; stack channel isolation directly in active
+    P12. Preserve1cd as uncertified research lineage; one combined candidate gets final canonical authentication. No P12 closure or live qualification
+    claimed.
 closeout_requirements:
   claims:
     workitems_closed:
@@ -110,7 +166,7 @@ closeout_requirements:
 known_constraints:
 - No supported AHP owning host, negotiated protocol version or atomic idle-only admission is qualified
 - Installed OpenAI extension bundles0.162.0-alpha.17.2; release0.163 changes are upstream context
-- No production source, dependencies, credentials, deployment or existing release proof changed
+- P12 channel construction changes production source and authorization contracts; dependencies, live credentials, deployment and historical release proof stay unchanged
 next_work:
 - Canonical reconcile must regenerate exact test node manifest after explicit producer/selection correction; do not edit manifest by hand
 - Obtain next fresh native capacity after Ironwatch qualification terminal, then one corrected canonical progress submit

@@ -20,6 +20,11 @@ class Settings:
     slack_operator_user_ids: frozenset[str] = frozenset()
     federation_config: Path | None = None
     local_delivery_version: int | None = None
+    slack_channels: tuple[str, ...] = ()
+
+    @property
+    def channels(self) -> tuple[str, ...]:
+        return self.slack_channels or (self.slack_channel,)
 
     def __post_init__(self):
         if self.local_delivery_version is not None and (type(self.local_delivery_version) is not int or self.local_delivery_version != 1):
@@ -32,7 +37,7 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> Settings:
-        names = ("API_TOKEN", "SLACK_BOT_TOKEN", "SLACK_APP_TOKEN", "SLACK_CHANNEL")
+        names = ("API_TOKEN", "SLACK_BOT_TOKEN", "SLACK_APP_TOKEN")
         values = {name.lower(): os.environ.get(f"AGENTBUS_{name}", "").strip() for name in names}
         missing = [f"AGENTBUS_{name}" for name in names if not values[name.lower()]]
         if missing:
@@ -43,8 +48,12 @@ class Settings:
             raise ValueError("AGENTBUS_SLACK_BOT_TOKEN must be a bot token (xoxb-)")
         if not values["slack_app_token"].startswith("xapp-"):
             raise ValueError("AGENTBUS_SLACK_APP_TOKEN must be an app token (xapp-)")
-        if not re.fullmatch(r"[CG][A-Z0-9]+", values["slack_channel"]):
-            raise ValueError("AGENTBUS_SLACK_CHANNEL must be a channel ID, not a name")
+        single = os.environ.get("AGENTBUS_SLACK_CHANNEL")
+        multiple = os.environ.get("AGENTBUS_SLACK_CHANNELS")
+        if single is not None and multiple is not None:
+            raise ValueError("Do not configure both channel variables together")
+        from src.agentbus_channel_store_service import ChannelStore
+        channels = ChannelStore.validate_channels(tuple(c.strip() for c in (multiple if multiple is not None else single or "").split(',')))
         state = Path(os.environ.get("XDG_STATE_HOME", str(Path(os.path.expanduser("~")) / ".local/state")))
         db_path = Path(os.environ.get("AGENTBUS_DB_PATH", str(state / "agentbus/messages.sqlite3")))
         operator_token = os.environ.get("AGENTBUS_OPERATOR_TOKEN", "").strip() or None
@@ -61,6 +70,10 @@ class Settings:
         delivery_version = os.environ.get('AGENTBUS_LOCAL_DELIVERY_VERSION', '').strip()
         if delivery_version not in {'', '1'}:
             raise ValueError('AGENTBUS_LOCAL_DELIVERY_VERSION must be 1 when set')
-        return cls(**values, db_path=db_path.expanduser(), operator_token=operator_token,
+        return cls(api_token=values["api_token"], slack_bot_token=values["slack_bot_token"],
+                   slack_app_token=values["slack_app_token"],
+                   slack_channel=channels[0] if len(channels)==1 else "",
+                   slack_channels=channels if multiple is not None else (),
+                   db_path=db_path.expanduser(), operator_token=operator_token,
                    slack_operator_user_ids=users, local_delivery_version=1 if delivery_version else None,
                    federation_config=Path(federation_config).expanduser() if federation_config else None)

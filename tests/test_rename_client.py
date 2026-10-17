@@ -37,7 +37,7 @@ def test_rename_recovers_uncertain_response_and_moves_undelivered_events(
     }))
     monkeypatch.setattr(client, "configuration", lambda **_kwargs: (Path("/unused"), values))
     monkeypatch.setattr(client, "api", lambda *_args, **_kwargs:
-                        {"inbox_id": "inbox-1", "channel": "C123"})
+                        {"chat_id": "chat-1", "session_id": "session-1", "inbox_id": "inbox-1", "channel": "C123", "features": ["session-required", "channel-isolation-v1", "channel-local-cursors-v1"]})
     attempts = []
 
     def fake_rename(_values, path, payload, **kwargs):
@@ -70,7 +70,7 @@ def test_rename_rejects_local_collision_before_remote_mutation(tmp_path, monkeyp
     values, _, old_path = setup_profile(tmp_path)
     old_path.with_name("home:agentbus:taken.json").write_text(json.dumps({"chat_id": "other"}))
     monkeypatch.setattr(client, "api", lambda *_args, **_kwargs:
-                        {"inbox_id": "inbox-1", "channel": "C123"})
+                        {"chat_id": "chat-1", "session_id": "session-1", "inbox_id": "inbox-1", "channel": "C123", "features": ["session-required", "channel-isolation-v1", "channel-local-cursors-v1"]})
     monkeypatch.setattr(rename, "api", lambda *_args, **_kwargs:
                         pytest.fail("remote rename must not execute after local collision"))
     with pytest.raises(ClientError, match="another chat"):
@@ -81,7 +81,7 @@ def test_rename_rejects_local_collision_before_remote_mutation(tmp_path, monkeyp
 def test_rename_without_new_name_moves_joined_chat_to_configured_prefix(tmp_path, monkeypatch):
     values, profile, old_path = setup_profile(tmp_path)
     monkeypatch.setattr(client, "api", lambda *_args, **_kwargs:
-                        {"inbox_id": "inbox-1", "channel": "C123"})
+                        {"chat_id": "chat-1", "session_id": "session-1", "inbox_id": "inbox-1", "channel": "C123", "features": ["session-required", "channel-isolation-v1", "channel-local-cursors-v1"]})
     monkeypatch.setattr(rename, "api", lambda *_args, **_kwargs:
                         {"chat_id": "chat-1", "new_route": "home:agentbus:flower"})
     monkeypatch.setattr(rename, "ensure_worker", lambda *_args: None)
@@ -98,7 +98,7 @@ def test_rename_rejects_invalid_configured_prefix_before_service_mutation(tmp_pa
     values, profile, old_path = setup_profile(tmp_path)
     values["AGENTBUS_LOCAL_PREFIX"] = "Home!"
     monkeypatch.setattr(client, "api", lambda *_args, **_kwargs:
-                        {"inbox_id": "inbox-1", "channel": "C123"})
+                        {"chat_id": "chat-1", "session_id": "session-1", "inbox_id": "inbox-1", "channel": "C123", "features": ["session-required", "channel-isolation-v1", "channel-local-cursors-v1"]})
     monkeypatch.setattr(rename, "api", lambda *_args, **_kwargs:
                         pytest.fail("invalid prefix reached the service"))
     with pytest.raises(ClientError, match="AGENTBUS_LOCAL_PREFIX"):
@@ -117,7 +117,7 @@ def test_first_new_route_read_recovers_crash_after_service_receipt(tmp_path, mon
                    "rename_source": "agentbus:flower"}
     new_path.write_text(json.dumps(new_profile))
     monkeypatch.setattr(client, "api", lambda *_args, **_kwargs:
-                        {"inbox_id": "inbox-1", "channel": "C123"})
+                        {"chat_id": "chat-1", "session_id": "session-1", "inbox_id": "inbox-1", "channel": "C123", "features": ["session-required", "channel-isolation-v1", "channel-local-cursors-v1"]})
     workers = []
     monkeypatch.setattr(rename, "ensure_worker", lambda path, _values: workers.append(path))
     recovered, _ = client.checked_profile(values, "agentbus:night-flower")

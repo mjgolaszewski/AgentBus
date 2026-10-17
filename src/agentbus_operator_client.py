@@ -41,7 +41,10 @@ def policy_show(ns, values: dict[str, str]) -> int:
         if not ns.repo or not ns.chat_id:
             raise ClientError("Policy show needs --repo and --chat-id or --session-id.")
         query = urlencode({"repo": ns.repo, "chat_id": ns.chat_id})
-        response = api(values, f"/v1/policy/effective?{query}")
+        from src.agentbus_client import checked_profile, resolve_identity
+        from src.agentbus_scope_client import scoped_api
+        profile, _ = checked_profile(values, resolve_identity(getattr(ns, "identity", None)))
+        response = scoped_api(values, f"/v1/policy/effective?{query}", profile, api_call=api)
     print(json.dumps(response, indent=2))
     return 0
 
@@ -116,7 +119,7 @@ def roster(ns, values: dict[str, str]) -> int:
 
 def claim_recovery(ns, values: dict[str, str]) -> int:
     response = api(values, f"/v1/messages/{ns.cursor}/claim-recovery", {
-        "new_identity": ns.to, "reason": ns.reason,
+        "channel": ns.channel, "new_identity": ns.to, "reason": ns.reason,
     }, bearer_token=_operator_token(values))
     print(json.dumps(response, indent=2))
     return 0

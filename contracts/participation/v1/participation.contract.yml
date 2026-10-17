@@ -2,7 +2,7 @@ document:
   kind: agentbus_participation_contract
   id: agentbus-participation-v1
   version: 1.9.1
-  status: active
+  status: superseded
   path: contracts/participation/v1/participation.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/6
   authority: normative_for_issue_6_delivery

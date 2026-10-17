@@ -19,6 +19,7 @@ POLICY = {
 def profile_at(tmp_path):
     path = tmp_path / "agentbus:flower.json"
     profile = {"identity": "agentbus:flower", "ack_cursor": 0,
+               "chat_id": "chat-one", "channel": "C123", "inbox_id": "inbox-one", "service_url": "http://127.0.0.1:8766",
                "participation": {"session_id": "session-1", "session_secret": "x" * 32,
                                  "policy_values": POLICY, "stopped": False}}
     path.write_text(json.dumps(profile))
@@ -60,7 +61,7 @@ def test_worker_empty_cycles_are_silent_and_keep_control_checks_running(tmp_path
         return {"messages": [], "next_cursor": 0, "has_more": False}
 
     monkeypatch.setattr(poll, "api", fake_api)
-    poll._worker(path, {})
+    poll._worker(path, {"AGENTBUS_URL": profile["service_url"]})
     assert checks == [0.0, 1.0, 2.0]
     assert reads == [0.0, 1.0]
     assert poll.peek_event(path, profile) is None
@@ -93,7 +94,7 @@ def test_post_restart_healthy_cycle_retires_durable_transport_alarm(tmp_path, mo
         return {"messages": [], "next_cursor": 0, "has_more": False}
 
     monkeypatch.setattr(poll, "api", fake_api)
-    poll._worker(path, {})
+    poll._worker(path, {"AGENTBUS_URL": profile["service_url"]})
     assert checks[0] == 2
     assert reads[0] == 0
     state = json.loads(poll.spool_path(path).read_text())
@@ -122,7 +123,7 @@ def test_failed_check_in_keeps_transport_alarm_when_presentation_is_full(tmp_pat
         raise poll.ClientError("Cannot reach AgentBus")
 
     monkeypatch.setattr(poll, "api", failed_api)
-    poll._worker(path, {})
+    poll._worker(path, {"AGENTBUS_URL": profile["service_url"]})
     assert checks[0] == 1
     state = json.loads(poll.spool_path(path).read_text())
     assert state["cursor"] == 100
@@ -252,7 +253,7 @@ def test_quiet_worker_advances_durable_cursor_without_routine_spool(tmp_path, mo
         ], "next_cursor": 2, "has_more": False}
 
     monkeypatch.setattr(poll, "api", fake_api)
-    poll._worker(path, {})
+    poll._worker(path, {"AGENTBUS_URL": profile["service_url"]})
     state = json.loads(poll.spool_path(path).read_text())
     assert state["cursor"] == 2
     assert [event["id"] for event in state["events"]] == ["2"]
@@ -282,7 +283,7 @@ def test_worker_keeps_probing_controls_after_message_is_ready_for_agent(tmp_path
         return {"messages": [], "next_cursor": 1, "has_more": False}
 
     monkeypatch.setattr(poll, "api", fake_api)
-    poll._worker(path, {})
+    poll._worker(path, {"AGENTBUS_URL": profile["service_url"]})
     assert checks[0] == 3
     assert poll.peek_event(path, profile)["kind"] == "CONTROL"
     poll.retire_event(path, profile, "CONTROL", "stop-1")
@@ -309,7 +310,7 @@ def test_policy_tightening_accepts_old_report_then_clamps_worker_backoff(tmp_pat
         return {"messages": [], "next_cursor": 0, "has_more": False}
 
     monkeypatch.setattr(poll, "api", fake_api)
-    poll._worker(path, {})
+    poll._worker(path, {"AGENTBUS_URL": profile["service_url"]})
     assert reports[4] > tighter["max_interval_seconds"]
     assert reports[5:] == [2, 2]
     assert poll.peek_event(path, profile)["kind"] == "POLICY_CHANGED"

@@ -61,8 +61,8 @@ The authenticated local API adds `POST /v1/federation/messages` with
 `message` object. It requires the exact sender's joined session token and
 returns 202 with the accepted identity tuple. A stable caller-supplied message
 ID makes retries idempotent; changed content under that identity is rejected.
-Legacy `POST /v1/messages` requests retain their existing HTTP 201 delivery
-behavior. New joined clients can negotiate durable acceptance on that endpoint
+Authenticated immediate `POST /v1/messages` requests retain HTTP 201 delivery
+behavior; unjoined API callers have no candidate message authority. New joined clients can negotiate durable acceptance on that endpoint
 as described below; the explicit federation enqueue interface remains supported.
 
 One SQLite transaction stores the origin message and outbound obligation.
@@ -103,6 +103,18 @@ unsupported expiry assumptions. Discovery never bootstraps trust
 or grants local execution authority. Deterministic fake-provider tests establish
 adapter behavior; they do not establish live multi-installation delivery.
 
+## Candidate channel containment
+
+The P12 channel-isolation candidate retains one explicitly configured federation
+channel. Additional channels are local-only: they cannot enqueue federation,
+export registrations, or receive another channel's local identity projection.
+Ordinary delivery, directory sharing and parent mappings remain bound to that
+bridge channel. This changed runtime needs its own applicable proof; the
+historical canaries below do not certify its bytes. Final canonical and bounded
+two-channel live qualification remain pending. AHP/native-queue wake and atomic
+idle-only admission are experimental and unqualified; federation receipts grant
+neither. See [Experimenters](audiences/experimenters.md).
+
 ## Bounded signed-adapter canary
 
 The protected `35f0950ec01f34e49caeb2c13b4806e249989f82` tree was exercised
@@ -138,8 +150,8 @@ can recover on restart.
 
 The repair was merged in PR #57. Protected main is
 `47f61aaea618b83cb5b127a1999c47b0cc40722e` with tree
-`8e3c5b11dd7ae77fa18e4ec29bd9a5205dba18f5`; both the local and remote
-installations run the identical tree. The bounded post-fix observation found
+`8e3c5b11dd7ae77fa18e4ec29bd9a5205dba18f5`; both local and remote
+installations ran that identical tree during the recorded observation. The bounded post-fix observation found
 zero new federation frames or receipt reposts over 180.8 seconds, preserved
 all obligation states, hashes, attempts, and checkpoints, and confirmed that
 the repaired pending selector excludes submitted receipts while retaining
@@ -285,7 +297,7 @@ and local cursor history; do not reset checkpoints to manufacture backfill.
 ## Negotiated ordinary delivery custody
 
 `GET /v1/info` advertises `X-AgentBus-Delivery-Version: 1` as a response header,
-without changing the protocol-2 info object. A joined client may then send
+alongside explicit session/channel capabilities in the candidate info object. A joined client may then send
 `X-AgentBus-Delivery-Version: 1` and a canonical UUID `Idempotency-Key` to the
 existing `POST /v1/messages` endpoint. Exact session authorization precedes each
 new request and retry. One SQLite transaction reserves the existing send-rate
@@ -301,7 +313,8 @@ server advertises it. A failed or uncertain response reports `--message-id UUID`
 retry the identical command with that UUID. A changed command must use a new
 identity. An explicit retry identity requires both the advertised capability and
 a joined session; it cannot silently downgrade to an older server's delivery path.
-Legacy servers and unjoined compatibility sends retain their prior behavior.
+The channel-isolation client requires current session/channel capabilities;
+it does not fall back to unjoined sends or an unsupported server.
 
 For an operator-approved distinct recipient prefix, acceptance commits the signed
 bridge obligation and local cursor together. It never falls back to an unsigned

@@ -85,6 +85,18 @@ def http_service(responder):
         worker.join(timeout=2)
 
 
+def scope_info():
+    return {"inbox_id": "inbox-1", "channel": "C123", "chat_id": "chat-1",
+            "session_id": "session-1", "high_water_cursor": 50,
+            "features": ["session-required", "channel-isolation-v1", "channel-local-cursors-v1"]}
+
+
+def joined_profile():
+    return {"repo": "tools", "identity": "tools:weed", "chat_id": "chat-1",
+            "channel": "C123", "inbox_id": "inbox-1", "service_url": "http://127.0.0.1:8766",
+            "participation": {"session_id": "session-1", "session_secret": "s" * 32}}
+
+
 def success(_request):
     return 200, {"Content-Type": "application/json"}, b'{"ok":true}'
 
@@ -348,10 +360,11 @@ def test_send_reads_stdin_and_preserves_thread_and_recipient(launcher, monkeypat
     monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), {}))
     monkeypatch.setattr(launcher, "api", lambda values, path, payload=None, **_kwargs: captured.append((path, payload)) or {"ok": True})
     monkeypatch.setattr(launcher.sys, "stdin", io.StringIO("first line\nsecond line\n"))
+    monkeypatch.setattr(launcher, "checked_profile", lambda *_args: (joined_profile(), {}))
     assert launcher.main(["send", "-", "--sender", "writer", "--recipient", "reviewer",
                           "--thread-ts", "123.456", "--correlation-id", "task-1"]) == 0
     assert captured == [("/v1/messages", {
-        "text": "first line\nsecond line\n", "sender": "writer", "recipient": "reviewer",
+        "text": "first line\nsecond line\n", "sender": "writer", "recipient": "reviewer", "repo": "tools",
         "kind": "message", "audience": "direct", "thread_ts": "123.456", "correlation_id": "task-1",
     })]
     assert json.loads(capsys.readouterr().out) == {"ok": True}
@@ -359,9 +372,10 @@ def test_send_reads_stdin_and_preserves_thread_and_recipient(launcher, monkeypat
 
 def test_read_encodes_filter_query_without_leaking_token(launcher, monkeypatch):
     captured = []
-    monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), {"AGENTBUS_API_TOKEN": TOKEN}))
-    monkeypatch.setattr(launcher, "api", lambda values, path, payload=None: captured.append(path) or {"messages": []})
-    assert launcher.main(["read", "--after", "17", "--limit", "3", "--recipient", "agent:one",
+    monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), {"AGENTBUS_API_TOKEN": TOKEN, "AGENTBUS_URL": "http://127.0.0.1:8766"}))
+    monkeypatch.setattr(launcher, "checked_profile", lambda *_args: (joined_profile(), {}))
+    monkeypatch.setattr(launcher, "api", lambda values, path, payload=None, **_kwargs: captured.append(path) or {"messages": []})
+    assert launcher.main(["read", "--identity", "tools:weed", "--after", "17", "--limit", "3", "--recipient", "agent:one",
                           "--thread-ts", "123.456"]) == 0
     parsed = urlsplit(captured[0])
     assert parsed.path == "/v1/messages"
@@ -385,7 +399,8 @@ def test_onboard_creates_unique_chat_profiles_for_same_repo(launcher, tmp_path, 
     fern = json.loads((state / "home:tools:fern.json").read_text())
     assert weed["identity"] == "home:tools:weed" and fern["identity"] == "home:tools:fern"
     assert weed["chat_id"] != fern["chat_id"]
-    assert weed["ack_cursor"] == fern["ack_cursor"] == 42
+    assert weed["ack_cursor"] == fern["ack_cursor"] == 0
+    assert weed["inbox_id"] is None and fern["channel"] is None
     assert (state.stat().st_mode & 0o777) == 0o700
     assert (state / "home:tools:weed.json").stat().st_mode & 0o777 == 0o600
     assert launcher.main(["onboard", "--repo", "tools", "--name", "weed",
@@ -418,14 +433,15 @@ def test_inbox_after_zero_is_stateless_and_ack_is_bounded(launcher, tmp_path, mo
     profile = {"schema_version": 2, "chat_id": "chat-1", "identity": "tools:weed",
                "repo": "tools", "name": "weed", "display_name": "Weed", "role": "maintainer",
                "voice": "plain", "remit": "tools", "inbox_id": "inbox-1", "channel": "C123",
-               "service_url": "http://127.0.0.1:8766", "ack_cursor": 8, "observed_cursor": 10}
+               "service_url": "http://127.0.0.1:8766", "ack_cursor": 8, "observed_cursor": 10,
+               "participation": {"session_id": "session-1", "session_secret": "s" * 32}}
     (state / "tools:weed.json").write_text(json.dumps(profile))
     values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766"}
     monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
 
     def fake_api(_values, path, payload=None, **_kwargs):
         if path == "/v1/info":
-            return {"inbox_id": "inbox-1", "channel": "C123", "high_water_cursor": 50}
+            return scope_info()
         assert "after=0" in path
         return {"messages": [{"cursor": 40}], "next_cursor": 50, "has_more": False}
 
@@ -441,6 +457,7 @@ def test_inbox_after_zero_is_stateless_and_ack_is_bounded(launcher, tmp_path, mo
 
 def test_cli_rejects_ambiguous_actionable_send_before_api(launcher, monkeypatch, capsys):
     called = []
+    monkeypatch.setattr(launcher, "checked_profile", lambda *_args: (joined_profile(), {}))
     monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), {}))
     monkeypatch.setattr(launcher, "api", lambda *args, **kwargs: called.append(args))
     assert launcher.main(["send", "Who owns this?", "--sender", "tools:weed",
@@ -459,7 +476,7 @@ def test_cli_rejects_ambiguous_actionable_send_before_api(launcher, monkeypatch,
 
 def test_cli_reply_sends_only_parent_cursor_and_text(launcher, monkeypatch, capsys):
     payloads = []
-    profile = {"repo": "agentbus", "participation": {"session_secret": "secret"}}
+    profile = {**joined_profile(), "repo": "agentbus"}
     monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), {}))
     monkeypatch.setattr(launcher, "checked_profile", lambda *_args: (profile, {}))
     monkeypatch.setattr(launcher, "api", lambda _values, path, payload=None, **_kwargs:
@@ -524,7 +541,8 @@ def test_onboard_derives_repo_and_records_rich_persona(launcher, tmp_path, monke
     values = {"AGENTBUS_CONSUMER_STATE_DIR": str(state), "AGENTBUS_URL": "http://127.0.0.1:8766",
               "AGENTBUS_LOCAL_PREFIX": "home"}
     monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
-    monkeypatch.setattr(launcher, "current_repo", lambda: "some_repo")
+    from src import agentbus_client
+    monkeypatch.setattr(agentbus_client, "current_repo", lambda: "some_repo")
     monkeypatch.setattr(launcher, "api", lambda *_args, **_kwargs: {
         "inbox_id": "inbox-1", "channel": "C123", "high_water_cursor": 9,
     })
@@ -558,7 +576,7 @@ def test_public_cli_operation_inventory_matches_parser_surface(launcher):
         "rename",
         "claim-recovery",
         "control-issue",
-        "codex-wake",
+        "codex-wake", "issue-enrollment", "migrate-channels", "migrate-profile-scope",
     }
     assert all(callable(operation) for operation in launcher.CLI_OPERATIONS.values())
     command_action = next(action for action in build_parser()._actions
@@ -613,11 +631,12 @@ def test_join_retries_with_same_session_secret_and_keeps_legacy_uuid(launcher, t
 
     def fake_api(_values, path, payload=None, **_kwargs):
         if path == "/v1/info":
-            return {"inbox_id": "inbox-1", "channel": "C123"}
+            return scope_info()
         attempts.append(payload)
         if len(attempts) == 1:
             raise launcher.ClientError("transport uncertain")
         return {"chat_id": chat_id, "session_id": "session-1", "revision": "revision-1",
+                "channel": "C123", "inbox_id": "inbox-1", "high_water_cursor": 0,
                 "values": {"initial_interval_seconds": 60, "backoff_factor": 2,
                            "max_interval_seconds": 1920}, "sources": {}, "ack_required": True}
 
@@ -656,7 +675,7 @@ def test_policy_ack_updates_local_budget_after_exact_revision_receipt(launcher, 
     }))
     monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
     monkeypatch.setattr(launcher, "api", lambda _values, route, *_args, **_kwargs:
-                        {"inbox_id": "inbox-1", "channel": "C123"} if route == "/v1/info"
+                        scope_info() if route == "/v1/info"
                         else {"receipt": "receipt-2"})
     monkeypatch.setattr(poll, "ensure_worker", lambda *_args: None)
     assert launcher.main(["policy-ack", "--identity", identity, "revision-2"]) == 0
@@ -681,7 +700,7 @@ def test_poll_cli_uses_budgeted_default_and_full_json_on_demand(launcher, tmp_pa
     path.write_text(json.dumps(profile))
     monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
     monkeypatch.setattr(launcher, "api", lambda *_args, **_kwargs:
-                        {"inbox_id": "inbox-1", "channel": "C123"})
+                        scope_info())
     monkeypatch.setattr(poll, "ensure_worker", lambda *_args: None)
 
     def queue(cursor):
@@ -719,7 +738,7 @@ def test_auxiliary_control_ack_does_not_stop_client_polling(launcher, tmp_path, 
     }))
     monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
     monkeypatch.setattr(launcher, "api", lambda _values, route, *_args, **_kwargs:
-                        {"inbox_id": "inbox-1", "channel": "C123"} if route == "/v1/info"
+                        scope_info() if route.endswith("/self-presence")
                         else {"receipt": "nudge-receipt", "directive": "CONTINUE"})
     assert launcher.main(["ack-control", "--identity", identity, "nudge-1"]) == 0
     assert json.loads(path.read_text())["participation"].get("stopped") is None
@@ -731,8 +750,10 @@ def test_auxiliary_control_ack_does_not_stop_client_polling(launcher, tmp_path, 
     payloads = []
 
     def checkpoint_api(_values, route, payload=None, **_kwargs):
+        if route.endswith("/self-presence"):
+            return scope_info()
         if route == "/v1/info":
-            return {"inbox_id": "inbox-1", "channel": "C123"}
+            return scope_info()
         payloads.append(payload)
         return {"receipt": "checkpoint-receipt", "directive": "CONTINUE"}
 

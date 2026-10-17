@@ -1,7 +1,7 @@
 document:
   kind: channel_isolation_contract
   version: 1.0.0
-  status: proposed
+  status: active
   path: contracts/channels/v1/channel-isolation.contract.yml
 scope:
   service_processes: 1

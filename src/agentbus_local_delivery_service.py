@@ -268,7 +268,9 @@ class LocalDeliveryStore:
             if row is None:
                 return False
             expected = SendMessage.model_validate_json(row['payload'])
-            if text != encode_envelope(expected):
+            from src.agentbus_channel_api_service import provider_message
+            wire = provider_message(self.owner, channel, expected)
+            if text != encode_envelope(wire):
                 raise ValueError('provider wire echo conflicts with accepted local content')
             if thread_ts is not None and not isinstance(thread_ts, str):
                 raise ValueError('invalid provider thread reference')

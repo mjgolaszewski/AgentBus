@@ -11,6 +11,7 @@ import sqlite3
 import threading
 import uuid
 from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING
 
 from src.agentbus_message_assurance_service import route_parts
 from src.agentbus_participation_service import (
@@ -19,6 +20,10 @@ from src.agentbus_participation_service import (
     EffectivePolicy,
     resolve_policy,
 )
+from src.agentbus_transaction_service import atomic
+
+if TYPE_CHECKING:
+    from src.agentbus_channel_store_service import ChannelStore
 
 
 class StoppedMessageSession(PermissionError):
@@ -31,6 +36,8 @@ def _now() -> str:
 
 class ParticipationStore:
     """Share the service's SQLite transaction lock with its durable inbox."""
+
+    channels: ChannelStore
 
     def __init__(self, db: sqlite3.Connection, lock: threading.RLock):
         self._db = db
@@ -143,7 +150,7 @@ class ParticipationStore:
             raise ValueError("handoff actor is required")
         token = secrets.token_urlsafe(32)
         issued = datetime.now(timezone.utc)
-        with self._lock, self._db:
+        with self._lock, atomic(self._db):
             if self._db.execute(
                 "SELECT 1 FROM chat_identities WHERE chat_id = ? OR current_route = ?", (chat_id, route)
             ).fetchone() or self._db.execute(
@@ -164,7 +171,7 @@ class ParticipationStore:
             raise ValueError("rotation actor is required")
         token = secrets.token_urlsafe(32)
         issued = datetime.now(timezone.utc)
-        with self._lock, self._db:
+        with self._lock, atomic(self._db):
             session = self._db.execute(
                 "SELECT chat_id, state FROM participation_sessions WHERE session_id = ?", (session_id,)
             ).fetchone()
@@ -189,7 +196,7 @@ class ParticipationStore:
             raise ValueError("rotation token and new session secret must be at least 32 characters")
         token_digest = hashlib.sha256(token.encode()).hexdigest()
         new_digest = hashlib.sha256(new_secret.encode()).hexdigest()
-        with self._lock, self._db:
+        with self._lock, atomic(self._db):
             grant = self._db.execute(
                 "SELECT * FROM session_rotation_grants WHERE token_sha256 = ?", (token_digest,)
             ).fetchone()
@@ -209,6 +216,9 @@ class ParticipationStore:
                 raise ValueError("stopped session cannot rotate credentials")
             if hmac.compare_digest(session["secret_sha256"], new_digest):
                 raise ValueError("new credential must differ from the current credential")
+            if self._db.execute("SELECT 1 FROM participation_sessions WHERE secret_sha256=? AND session_id!=?",
+                                (new_digest, session_id)).fetchone():
+                raise ValueError("new credential is unavailable")
             committed = _now()
             self._db.execute(
                 "UPDATE participation_sessions SET secret_sha256 = ? WHERE session_id = ?", (new_digest, session_id)
@@ -229,7 +239,7 @@ class ParticipationStore:
             raise ValueError("policy scope, key, and actor are required")
         if scope == "global" and scope_key != "*":
             raise ValueError("global policy key must be *")
-        with self._lock, self._db:
+        with self._lock, atomic(self._db):
             if scope == "global":
                 resolve_policy(("candidate", values))
             else:
@@ -333,8 +343,11 @@ class ParticipationStore:
     def enroll(
         self, *, repo: str, route: str, display_name: str,
         session_secret: str, handoff_token: str | None = None,
+        granted_chat_id: str | None = None, channel: str | None = None,
     ) -> tuple[str, str, str]:
         """Create a new identity and joining session; no ordinary participation yet."""
+        if channel is None and hasattr(self, "channels") and len(self.channels.enabled) == 1:
+            channel = next(iter(self.channels.enabled))
         parts = route_parts(route)
         if parts is None or parts[1] != repo:
             raise ValueError("invalid chat route")
@@ -345,10 +358,10 @@ class ParticipationStore:
         if len(session_secret) > 512:
             raise ValueError("session credential exceeds maximum length")
         created = _now()
-        chat_id = str(uuid.uuid4())
+        chat_id = granted_chat_id or str(uuid.uuid4())
         session_id = str(uuid.uuid4())
         secret_digest = hashlib.sha256(session_secret.encode()).hexdigest()
-        with self._lock, self._db:
+        with self._lock, atomic(self._db):
             if handoff_token is None:
                 existing = self._db.execute("""
                     SELECT c.chat_id, s.session_id, s.secret_sha256, s.state
@@ -405,12 +418,14 @@ class ParticipationStore:
                     "UPDATE profile_handoffs SET consumed_at = ?, session_id = ? WHERE token_sha256 = ?",
                     (created, session_id, token_digest),
                 )
+            if channel is not None:
+                self.channels.bind(chat_id, channel)
             self._audit("enrollment", "issued", chat_id, session_id, policy_revision, created)
         return chat_id, session_id, policy_revision
 
     def acknowledge_policy(self, session_id: str, session_secret: str, revision: str) -> str:
         """Only exact-session proof may activate the delivered policy revision."""
-        with self._lock, self._db:
+        with self._lock, atomic(self._db):
             session = self._authorized_session(session_id, session_secret)
             if session["state"] == "stopped":
                 raise ValueError("stopped session cannot be reactivated")
@@ -435,7 +450,7 @@ class ParticipationStore:
 
     def deliver_policy(self, session_id: str, session_secret: str) -> EffectivePolicy:
         """Deliver the current effective revision without treating read as acknowledgement."""
-        with self._lock, self._db:
+        with self._lock, atomic(self._db):
             session = self._authorized_session(session_id, session_secret)
             if session["state"] == "stopped":
                 raise ValueError("stopped session cannot receive policy")
@@ -454,7 +469,7 @@ class ParticipationStore:
     def contact(self, session_id: str, session_secret: str,
                 current_backoff_seconds: float | None = None) -> str:
         """Record target client contact without claiming model attention."""
-        with self._lock, self._db:
+        with self._lock, atomic(self._db):
             session = self._authorized_session(session_id, session_secret)
             if session["state"] not in {"active", "overdue", "stopping"}:
                 raise ValueError("session is not active")
@@ -481,7 +496,7 @@ class ParticipationStore:
             raise KeyError(session_id)
         return row
 
-    def roster(self, *, include_stopped: bool = False) -> list[dict]:
+    def roster(self, *, include_stopped: bool = False, channel: str | None = None) -> list[dict]:
         """List service-joined sessions, projecting each session's current presence."""
         with self._lock:
             rows = self._db.execute("""
@@ -489,8 +504,8 @@ class ParticipationStore:
                 JOIN chat_identities AS c ON c.chat_id = s.chat_id
                 WHERE (? OR s.state != 'stopped') ORDER BY c.current_route, s.joined_at
             """, (include_stopped,)).fetchall()
-            return [dict(self.presence(row["session_id"]), display_name=row["display_name"])
-                    for row in rows]
+            result = [dict(self.presence(row["session_id"]), display_name=row["display_name"]) for row in rows]
+            return result if channel is None else [item for item in result if item.get("channel") == channel]
 
     def presence(self, session_id: str, *, observed_at: datetime | None = None) -> dict:
         """Project participation from target contact; an operator read writes nothing."""
@@ -524,7 +539,12 @@ class ParticipationStore:
             state = "control_pending"
         else:
             state = "active_compliant"
+        channel = None
+        if hasattr(self, "channels"):
+            binding = self._db.execute("SELECT channel FROM chat_channels WHERE chat_id=?", (row["chat_id"],)).fetchone()
+            channel = binding[0] if binding else None
         return {
+            "channel": channel, "inbox_id": self.channels.inbox_id(channel) if channel else None,
             "chat_id": row["chat_id"], "session_id": session_id, "route": row["current_route"],
             "state": state, "last_client_contact_at": row["last_client_contact_at"],
             "last_semantic_ack_at": row["last_semantic_ack_at"],
@@ -554,7 +574,7 @@ class ParticipationStore:
 
     def rename(self, session_id: str, session_secret: str, new_route: str) -> tuple[str, str, str]:
         """Move the route atomically; the former address remains reserved."""
-        with self._lock, self._db:
+        with self._lock, atomic(self._db):
             session = self._authorized_session(session_id, session_secret)
             if session["state"] == "stopped":
                 raise ValueError("stopped session cannot rename")

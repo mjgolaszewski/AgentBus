@@ -2,7 +2,11 @@
 import base64
 import copy
 import hashlib
+import io
 import json
+import subprocess
+import tarfile
+from functools import lru_cache
 from pathlib import Path
 
 import pytest
@@ -11,6 +15,32 @@ import yaml
 from scripts.verify_provider_canary import verify_evidence
 
 PATH = Path(__file__).resolve().parents[1] / 'audits/p11-provider-canary-07b9ecb.yml'
+
+
+@lru_cache(maxsize=1)
+def released_runtime_bytes():
+    """Immutable historical inputs; never substitute them for candidate proof."""
+    corpus = yaml.safe_load(PATH.with_name('p11-provider-canary-00eecbe.yml').read_text())
+    source = '8f2dbf5ced0f591bec21d561f3a39308bc3f373b'
+    archive = subprocess.check_output(
+        ['git', 'archive', '--format=tar', source, '--', *corpus['runtime_files']],
+        cwd=PATH.parents[1],
+    )
+    with tarfile.open(fileobj=io.BytesIO(archive)) as bundle:
+        return {PATH.parents[1] / member.name: bundle.extractfile(member).read()
+                for member in bundle.getmembers() if member.isfile()}
+
+
+@pytest.fixture(autouse=True)
+def historical_runtime(monkeypatch):
+    original = Path.read_bytes
+    released = released_runtime_bytes()
+
+    def read_historical(path):
+        return released[path] if path in released else original(path)
+
+    monkeypatch.setattr(Path, 'read_bytes', read_historical)
+    return original
 
 
 def evidence():
@@ -198,4 +228,11 @@ def test_release_metadata_applicability_rejects_other_runtime_changes(monkeypatc
 
     monkeypatch.setattr(Path, 'read_bytes', changed)
     with pytest.raises(ValueError):
+        verify_evidence(qualified_evidence())
+
+
+def test_current_channel_runtime_cannot_inherit_historical_live_qualification(historical_runtime, monkeypatch):
+    # Exercise the actual candidate as well as the isolated historical model.
+    monkeypatch.setattr(Path, 'read_bytes', historical_runtime)
+    with pytest.raises(ValueError, match='does not qualify changed runtime bytes'):
         verify_evidence(qualified_evidence())

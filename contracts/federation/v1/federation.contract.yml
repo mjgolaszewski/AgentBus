@@ -9,7 +9,10 @@ document:
 
 scope:
   purpose: outbound_only_inter_instance_transport_and_remote_directory_projection
-  deployment: independent_private_agentbus_installations_using_an_existing_provider
+  deployment: independent_agentbus_installations_using_an_existing_provider
+  channel_authority: contracts/channels/v1/channel-isolation.contract.yml
+  candidate_qualification: changed_runtime_requires_fresh_applicability_and_two_channel_canary
+  owner_wake_experimental: live_AHP_native_queue_and_atomic_idle_only_admission_unqualified
   provider: slack_first_outbound_bridge
   compatibility: [protocol_2_messages, local_cursors, slack_threads, sessions, claims, operator_controls]
   non_goals: [public_agentbus_endpoint, bespoke_relay, distributed_registry, credential_replication, remote_execution_authority, exactly_once_business_effects]
@@ -44,7 +47,7 @@ contracts:
     request_identity: canonical_UUID_Idempotency-Key_bound_to_exact_authenticated_request
     response: HTTP_202_existing_Message_shape_after_atomic_local_message_and_outbox_commit
     pending_provider_reference: empty_slack_ts_never_a_fabricated_provider_timestamp
-    compatibility: legacy_requests_keep_existing_HTTP_201_path_and_protocol_2_envelopes_remain_supported
+    compatibility: authenticated_immediate_requests_keep_HTTP_201_and_protocol_2_envelopes_no_unjoined_authority
     provider_locator: context_block_id_binds_existing_outbox_identity_only_content_must_match_canonical_protocol_2_payload
     authority: exact_session_authorization_before_each_accept_or_replay_no_provider_or_semantic_ack_inferred
     custody: existing_MessageStore_SQLite_transaction_and_single_service_process

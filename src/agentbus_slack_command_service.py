@@ -14,9 +14,11 @@ HELP = ("/agentbus help | roster | status ID | metrics ID | send ID MESSAGE | wa
         "ID is a unique last 6–12 hex characters or a full session UUID.")
 
 
-def resolve_session(store, reference: str) -> str:
+def resolve_session(store, reference: str, channel: str | None = None) -> str:
     if SESSION_ID.fullmatch(reference):
-        store.participation.session_state(reference)
+        presence = store.participation.presence(reference)
+        if channel is not None and presence.get("channel") != channel:
+            raise KeyError(reference)
         return reference
     if not SUFFIX.fullmatch(reference):
         raise ValueError("Use at least six hexadecimal suffix characters or a full session UUID.")
@@ -25,6 +27,8 @@ def resolve_session(store, reference: str) -> str:
             "SELECT session_id FROM participation_sessions WHERE session_id LIKE ?",
             (f"%{reference}",),
         ).fetchall()
+    if channel is not None:
+        rows = [row for row in rows if store.participation.presence(row["session_id"]).get("channel") == channel]
     if not rows:
         raise KeyError(reference)
     if len(rows) != 1:
@@ -42,7 +46,8 @@ def short_session(session_id: str, all_ids: list[str]) -> str:
 
 def execute_command(payload: dict, settings, store, web_client) -> str:
     """Authorize by Slack's verified Socket Mode user ID and exact session ID."""
-    if payload.get("command") != "/agentbus" or payload.get("channel_id") != settings.slack_channel:
+    channel = payload.get("channel_id")
+    if payload.get("command") != "/agentbus" or not isinstance(channel, str) or channel not in settings.channels:
         return "AgentBus commands are available only in the configured channel."
     user = payload.get("user_id")
     if not isinstance(user, str) or user not in settings.slack_operator_user_ids:
@@ -55,7 +60,7 @@ def execute_command(payload: dict, settings, store, web_client) -> str:
         return HELP
     action = parts[0]
     if action == "roster" and len(parts) == 1:
-        sessions = store.participation.roster(include_stopped=True)
+        sessions = store.participation.roster(include_stopped=True, channel=channel)
         if not sessions:
             return "No joined sessions."
         all_ids = [item["session_id"] for item in sessions]
@@ -67,7 +72,7 @@ def execute_command(payload: dict, settings, store, web_client) -> str:
     if len(parts) < 2:
         return HELP
     try:
-        session_id = resolve_session(store, parts[1])
+        session_id = resolve_session(store, parts[1], channel)
         presence = store.participation.presence(session_id)
     except KeyError:
         return "Unknown session ID. Use /agentbus roster."
@@ -81,7 +86,7 @@ def execute_command(payload: dict, settings, store, web_client) -> str:
                 f"pending controls: {len(presence['outstanding_controls'])}. "
                 "Host wake availability is local to the adapter.")
     if action == "metrics" and len(parts) == 2:
-        metrics = session_metrics(store, settings.slack_channel, session_id)
+        metrics = session_metrics(store, channel, session_id)
         return (f"{metrics['route']} | {session_id}\n"
                 f"Sent: {metrics['sent_messages']}; received: {metrics['received_messages']}; "
                 f"received high-water cursor: {metrics['received_high_water_cursor']}; "
@@ -158,12 +163,12 @@ def execute_command(payload: dict, settings, store, web_client) -> str:
         blocks.extend({"type": "section", "text": {"type": "plain_text", "text": display[i:i + 3000]}}
                       for i in range(0, len(display), 3000))
         response = web_client.chat_postMessage(
-            channel=settings.slack_channel, text=encode_envelope(message),
+            channel=channel, text=encode_envelope(message),
             blocks=blocks,
             parse="none", unfurl_links=False, unfurl_media=False,
         )
-        if not response.get("ok") or response.get("channel") != settings.slack_channel:
+        if not response.get("ok") or response.get("channel") != channel:
             return "Slack delivery is uncertain; inspect the channel before retrying."
-        stored = store.append(settings.slack_channel, response["ts"], message)
-        return f"Delivered to {presence['route']} as cursor {stored.cursor}."
+        stored = store.append(channel, response["ts"], message)
+        return f"Delivered to {presence['route']} as cursor {store.channels.public_cursor(channel, stored.cursor)}."
     return HELP

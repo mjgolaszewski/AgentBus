@@ -5,7 +5,7 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
-- Begin P13 channel-isolation construction with versioned authorization contracts and cross-channel negative controls; production implementation and live qualification remain pending.
+- Stack channel-isolation construction in P12 with versioned authorization contracts and cross-channel negative controls; implementation is in progress; live qualification remains pending.
 
 - Strengthen offline wake qualification requirements for exact backend identity, reconnect generations, and operation-owned recovery after uncertain submission; classify October 17 upstream reports without enabling live wake.
 

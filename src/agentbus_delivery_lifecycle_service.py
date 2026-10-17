@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager, suppress
 
 import httpx
 
-from src.agentbus_delivery_runtime_service import LocalDeliveryWorker
+from src.agentbus_delivery_runtime_service import DeliveryCoordinator
 from src.agentbus_federation_inbox_service import bind_ordinary_delivery
 from src.agentbus_federation_runtime_service import load_bridge
 from src.agentbus_slack_socket_service import SlackReceiver
@@ -38,16 +38,17 @@ class DeliveryTransport:
                               settings.slack_bot_token, bot_id)
                   if settings.federation_config is not None else None)
         if bridge is not None:
-            bind_ordinary_delivery(bridge, self.store, settings.slack_channel)
-        self.receiver = SlackReceiver(self.store, settings.slack_channel, bot_id, settings, bridge)
+            if bridge.channel not in settings.channels:
+                raise ValueError("Federation channel is not configured")
+            bind_ordinary_delivery(bridge, self.store, bridge.channel)
+        self.receiver = SlackReceiver(self.store, settings.channels, bot_id, settings, bridge)
         self.socket = self.socket_factory(settings, self.receiver)
         try:
             await asyncio.to_thread(self.socket.connect)
         except Exception:
             await self.close()
             raise RuntimeError('Slack Socket Mode connection failed; check app configuration and connectivity') from None
-        self.app.state.delivery.trusted_bot_id = bot_id
-        self.app.state.delivery.federation = bridge
+        self.app.state.delivery.bind_transport(bot_id, bridge)
         self.connected, self.bridge = True, bridge
         self.app.state.socket, self.app.state.federation_bridge = self.socket, bridge
         return bridge
@@ -64,16 +65,27 @@ class DeliveryTransport:
 
 @asynccontextmanager
 async def delivery_lifespan(app, settings, http_client, socket_factory):
+    from src.agentbus_channel_migration_service import check_startup, database_lease
     from src.agentbus_service import MessageStore, SlackPoster
 
-    store = MessageStore(settings.db_path)
+    lease = database_lease(settings.db_path)
+    lease.__enter__()
+    try:
+        check_startup(settings.db_path)
+        store = MessageStore(settings.db_path)
+        store.channels.configure(settings.channels)
+    except BaseException:
+        lease.__exit__(None, None, None)
+        raise
     client = http_client or httpx.AsyncClient(timeout=15, follow_redirects=False)
-    poster = SlackPoster(settings, client)
+    posters = {channel: SlackPoster(settings, client, channel=channel, store=store) for channel in settings.channels}
+    poster = next(iter(posters.values()))
     transport = DeliveryTransport(app, store, settings, client, poster, socket_factory)
     task = None
     app.state.store, app.state.poster = store, poster
+    app.state.posters = posters
     app.state.socket, app.state.federation_bridge = None, None
-    app.state.delivery = LocalDeliveryWorker(store, poster, settings.slack_channel)
+    app.state.delivery = DeliveryCoordinator(store, posters)
     try:
         try:
             await transport.connect()
@@ -92,3 +104,4 @@ async def delivery_lifespan(app, settings, http_client, socket_factory):
         if http_client is None:
             await client.aclose()
         store.close()
+        lease.__exit__(None, None, None)

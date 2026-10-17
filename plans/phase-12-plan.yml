@@ -22,9 +22,19 @@ delivery_contract:
   - Pinned owner and protocol capability inventory with explicit unknowns
   - Conditional admission contract and deterministic conformance matrix
   - Separate live-provider prerequisite and go-no-go inventory
+  - Contracts lifecycle and characterization
+  - Channel registry and additive offline migration
+  - Operator-granted enrollment and strict session authorization
+  - Scoped messaging and durable delivery
+  - Client control and wake isolation
+  - Single-channel federation containment
+  - Canonical proof archive isolated install and bounded canary prerequisites
+  - Complete product editorial audit with line coverage dispositions current contract model and Experimenters seat
   parallelizable_workstreams:
   - id: P12-WS1
     name: owner_protocol_qualification
+  - id: P12-WS2
+    name: channel_isolation
   hard_dependencies:
   - P11 and v0.9.0 exact-main closure retained at 8f2dbf5
   docker_first_local_runtime: repo_native_validation_and_governance_commands
@@ -33,7 +43,8 @@ scope_lock:
 - order: 1
   statement: keep the phase narrowly scoped to declared deliverables and update canonical governed artifacts in the same change
 - order: 3
-  statement: No live owner connection, model turn, adapter implementation, deployment or new authority in this research slice.
+  statement: No live owner connection, model turn, AHP/native-queue adapter authority or deployment; operator-authorized channel isolation construction
+    is stacked in P12.
 verification_plan:
 - make governance-validate
 - make contract-test

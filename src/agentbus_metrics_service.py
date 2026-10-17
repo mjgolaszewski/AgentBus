@@ -27,12 +27,14 @@ def session_metrics(store, channel: str, session_id: str) -> dict:
         control_count = store._db.execute(
             "SELECT COUNT(*) FROM control_targets WHERE session_id = ?", (session_id,)
         ).fetchone()[0]
+    def public(value):
+        return store.channels.public_cursor(channel, value) if value else value
     return {
         "session_id": session_id, "route": presence["route"],
         "received_messages": received["count"], "sent_messages": sent["count"],
-        "received_high_water_cursor": received["high_water"],
-        "sent_high_water_cursor": sent["high_water"],
-        "channel_high_water_cursor": latest, "control_count": control_count,
+        "received_high_water_cursor": public(received["high_water"]),
+        "sent_high_water_cursor": public(sent["high_water"]),
+        "channel_high_water_cursor": public(latest), "control_count": control_count,
         "outstanding_control_count": len(presence["outstanding_controls"]),
         "last_client_contact_at": presence["last_client_contact_at"],
         "last_semantic_ack_at": presence["last_semantic_ack_at"],

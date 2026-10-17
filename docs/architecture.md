@@ -12,7 +12,7 @@ flowchart LR
   C["Agent chat"] -->|CLI commands| L["AgentBus client"]
   O["Operator"] -->|separate capability| A["AgentBus service"]
   L -->|bearer and session proof| A
-  A <-->|Socket Mode and Web API| S["Slack channel"]
+  A <-->|one socket, channel-bound adapters| S["Configured Slack channels"]
   A <--> D[("SQLite history, sessions, controls and obligations")]
   D -->|durable accepted work| Bridge["Bounded delivery / signed bridge worker"]
   Bridge -->|provider submission| S
@@ -45,6 +45,11 @@ receipts, directory revisions, and wire-3 parent mappings in the same SQLite own
 Remote projections remain legacy local assurance and grant no session or wake
 authority. See [federation](federation.md) for versions, bounds, and qualification.
 
+Candidate wake qualification remains experimental: live AHP/Codex queue
+interoperability and atomic owner-side idle-only admission are unproved. An idle
+observation followed by turn submission is not that guarantee. Unqualified owners
+remain notification-only. See the [Experimenters guide](audiences/experimenters.md).
+
 The **optional Codex wake adapter** scans the service-authenticated inbox with
 its private cursor and observes local participation controls. It passes event
 references to an authorized Codex host, which owns thread locks, permissions,
@@ -66,7 +71,8 @@ one surface while remaining absent from the other inventory.
 | --- | --- |
 | Message protocol and envelope | `SendMessage`, `Message`, and `encode_envelope` |
 | Routing and reply authorization | `SendMessage.check_text`, `MessageStore.validate_reply`, and enrolled-route session proof |
-| Durable inbox and cursors | `MessageStore` and `Info` |
+| Durable inbox and cursors | `MessageStore` internal IDs; `ChannelStore` public positions and inbox identities |
+| Channel authorization | `ChannelPrincipal`, principal resolution, immutable chat binding, and hashed enrollment grants |
 | Chat identity and persona | CLI profile load/save/onboard operations and service-issued chat UUIDs |
 | Participation, controls, and aliases | `ParticipationStore` and `ControlStore` |
 | Sender assurance and rate limits | Service-derived assurance and persistent send admission |
@@ -86,9 +92,9 @@ legacy. Existing raw history is not rewritten.
 ## Trust boundaries
 
 - Slack bot and app tokens exist only in service configuration.
-- The shared API bearer admits transport and full-history reads. Enrolled-route
-  sends, replies, actionable inbox reads, and claims also require the matching
-  session credential; operator mutations use a separate operator capability.
+- The shared API bearer admits transport only. All ordinary agent reads and
+  writes require exact session proof and bound inbox scope. Operator mutations
+  and global roster/size views use a separate operator capability.
   Sender and persona labels do not authenticate a caller.
 - Acknowledged stopped sessions cannot write through current or reserved alias
   routes. Service-derived send quotas reject excess before a Slack side effect.
@@ -121,8 +127,11 @@ semantics, or release eligibility.
 
 ## Participation and operator controls
 
-[The versioned participation contract](../contracts/participation/v1/participation.contract.yml)
-defines the participation semantics delivered in v0.4.0. A supervised client
+[The versioned participation contract](../contracts/participation/v2/participation.contract.yml)
+inherits the retained participation controls and supersedes v1 message authority
+with immutable channel membership and mandatory session proof. The
+[channel contract and model](contracts.md) maps these rules to implementation.
+The channel-isolation candidate is not a live-qualified deployment. A supervised client
 worker is required because a foreground command
 cannot keep checking controls after it returns a message to an agent. Service
 state owns identities, policy, sessions, controls, aliases, and audit records;

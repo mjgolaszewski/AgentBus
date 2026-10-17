@@ -18,6 +18,7 @@ class LocalDeliveryWorker:
     def __init__(self, store, poster, channel: str):
         self.store, self.poster, self.channel = store, poster, channel
         self.wake = asyncio.Event()
+        self.cycle_attempts = 0
         self.trusted_bot_id: str | None = None
         self.federation: FederationBridge | None = None
 
@@ -55,20 +56,21 @@ class LocalDeliveryWorker:
             LOGGER.warning('Local provider history incomplete; uncertain custody retained')
             return set()
 
-    async def submit_once(self) -> None:
+    async def submit_once(self, *, budget=8, deadline=None) -> int:
         from src.agentbus_service import SendMessage
 
+        self.cycle_attempts = 0
         pending = self.store.local_delivery.pending(channel=self.channel)
         uncertain = self.store.local_delivery.recovery_pending(self.channel)
         if self.federation is not None and self.federation.ordinary_channel == self.channel:
             uncertain = (uncertain + self.store.local_delivery.federated_recovery_pending(
                 self.channel, self.federation.identity.instance_id))[:100]
         covered = await self.recover_once(uncertain) if uncertain else set()
-        deadline, attempted = time.monotonic() + 30, 0
+        deadline, attempted = deadline or time.monotonic() + 30, 0
         for row in pending:
             if row['attempts'] > 0 and row['request_id'] not in covered:
                 continue
-            if time.monotonic() >= deadline or attempted >= 8:
+            if time.monotonic() >= deadline or attempted >= budget:
                 break
             message = SendMessage.model_validate_json(row['payload'])
             if message.reply_to_cursor is not None:
@@ -82,6 +84,7 @@ class LocalDeliveryWorker:
             if not self.store.local_delivery.reserve(self.channel, row['request_id']):
                 continue
             attempted += 1
+            self.cycle_attempts = attempted
             try:
                 reference = await self.poster.post(message, message_id=row['request_id'])
                 self.store.local_delivery.complete(self.channel, row['request_id'], reference)
@@ -91,27 +94,62 @@ class LocalDeliveryWorker:
                 self.store.local_delivery.uncertain(self.channel, row['request_id'])
                 LOGGER.warning('Ordinary provider submission incomplete; local custody retained')
 
+        return attempted
+
     async def run(self, bridge=None, *, connect=None) -> None:
-        next_federation = 0.0
-        while True:
-            self.wake.clear()
-            try:
-                if connect is not None:
+        await run_delivery(self, bridge, connect=connect)
+
+
+async def run_delivery(worker, bridge=None, *, connect=None):
+    next_federation = 0.0
+    while True:
+        worker.wake.clear()
+        try:
+            if connect is not None:
+                try:
+                    bridge = await connect()
+                except RuntimeError:
+                    LOGGER.warning('Slack bootstrap unavailable; local custody retained')
                     try:
-                        bridge = await connect()
-                    except RuntimeError:
-                        LOGGER.warning('Slack bootstrap unavailable; local custody retained')
-                        try:
-                            await asyncio.wait_for(self.wake.wait(), timeout=60)
-                        except TimeoutError:
-                            pass
-                        continue
-                await self.submit_once()
-            except (sqlite3.Error, OSError, ValueError):
-                LOGGER.warning('Local delivery cycle incomplete; durable custody retained')
-            if bridge is not None and time.monotonic() >= next_federation:
-                next_federation = time.monotonic() + await bridge.cycle()
+                        await asyncio.wait_for(worker.wake.wait(), timeout=60)
+                    except TimeoutError:
+                        pass
+                    continue
+            await worker.submit_once()
+        except (sqlite3.Error, OSError, ValueError):
+            LOGGER.warning('Local delivery cycle incomplete; durable custody retained')
+        if bridge is not None and time.monotonic() >= next_federation:
+            next_federation = time.monotonic() + await bridge.cycle()
+        try:
+            await asyncio.wait_for(worker.wake.wait(), timeout=60)
+        except TimeoutError:
+            pass
+
+
+class DeliveryCoordinator:
+    """One bounded loop rotates channel-bound workers; one bridge cycles once."""
+    def __init__(self,store,posters):
+        self.workers=[LocalDeliveryWorker(store,poster,channel) for channel,poster in posters.items()]
+        self.wake=asyncio.Event()
+        self.offset=0
+
+    def bind_transport(self,bot_id,bridge):
+        for worker in self.workers:
+            worker.trusted_bot_id=bot_id
+            worker.federation=bridge if bridge is not None and bridge.channel==worker.channel else None
+
+    async def submit_once(self):
+        quota,deadline=8,time.monotonic()+30
+        workers=self.workers[self.offset:]+self.workers[:self.offset]
+        self.offset=(self.offset+1)%len(workers)
+        for worker in workers:
+            if quota<=0 or time.monotonic()>=deadline:
+                break
             try:
-                await asyncio.wait_for(self.wake.wait(), timeout=60)
-            except TimeoutError:
-                pass
+                quota-=await worker.submit_once(budget=quota,deadline=deadline)
+            except (sqlite3.Error,OSError,ValueError):
+                quota -= worker.cycle_attempts
+                LOGGER.warning('Channel cycle incomplete; retained custody remains channel-bound')
+
+    async def run(self,bridge=None,*,connect=None):
+        await run_delivery(self,bridge,connect=connect)

@@ -9,6 +9,12 @@ runtime, schemas, generated workflows, evidence planning, and eligibility
 machinery. The repository retains direct project authority and does not adopt a
 persistent trusted controller.
 
+The P12 candidate is stacked on preserved wake research. Multichannel live
+qualification and AHP/native-queue atomic wake remain separate, unproved claims.
+Use the [contract model](../contracts.md) and [Experimenters guide](experimenters.md)
+when reviewing capability descriptions. The editorial audit records per-document
+line coverage and dispositions rather than inferring review from link checks.
+
 ## Working path
 
 - Change dependency declarations and `uv.lock` together.

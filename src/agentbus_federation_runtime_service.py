@@ -82,6 +82,8 @@ def load_bridge(path: Path, store, client, token: str, bot_id: str) -> SlackFede
         if (not isinstance(policy, dict) or set(policy) != {'share_chat_ids', 'peers'}
                 or not isinstance(policy['share_chat_ids'], list) or not isinstance(policy['peers'], list)):
             raise ValueError('invalid operator directory sharing policy')
+        if any(store.channels.channel_for_chat(chat) != data['channel'] for chat in policy['share_chat_ids']):
+            raise ValueError('Directory sharing identity belongs to another channel')
         bridge.directory = DirectorySynchronizer(bridge, store.participation,
             share_chat_ids=policy['share_chat_ids'], peers=policy['peers'])
     return bridge

@@ -6,7 +6,8 @@ baseline:
   merged: 22ac9441b464aa7e82eff2fa8339dcc1d39dc790
   preserved_research: 5328e33
   rebased_research: 1cd1fac
-  canonical_authentication: pending_shared_capacity
+  canonical_authentication: combined final candidate; baseline-only gate superseded
+    by explicit operator steering
   exact_main_proof:
     run: 39049904693/1
     subject: 22ac9441b464aa7e82eff2fa8339dcc1d39dc790
@@ -14,11 +15,11 @@ baseline:
     truth_sha256: ca245f2c5de8dcb86e52ba6e104767a2df4a75566649d87b99047ed1d43a2b38
     predicate: pull_request_progress_valid
     authorizes: []
-  reuse_classification: BCF owner10156 confirms exact22ac proof cannot authenticate1cd1fac;
-    native baseline submit queued after existing commitments
+  reuse_classification: Exact22ac proof remains scoped to22ac; no inferred authentication
+    of1cd or later subjects
 boundary: one-service API and CLI authority; shared OS files and Slack public visibility
   excluded
-flows:
+baseline_flows_before_construction:
   bootstrap:
   - Settings.from_env
   - create_app
@@ -143,3 +144,12 @@ projection_red_controls:
     rejection
   stdout_sha256: 7ecad6d85e41fb06d06b07f9a3c2a30216483ab85980d31c89b0c08ee50c120b
   authority: local non-authoritative characterization
+construction_phase: P12-P1 workitems; former P13 preparation retained in Git history
+candidate_flows:
+  enrollment: local_onboard_then_operator_grant_then_atomic_enroll_then_policy_ack
+  authorization: bearer_then_exact_session_principal_then_bound_inbox_before_lookup
+  cursor_boundary: private_internal_ID_to_channel_public_position_at_HTTP_Slack_metrics_client_edges
+  delivery: one_coordinator_round_robin_per_channel_poster_with_aggregate_budget
+  projections: strict_service_inbox_channel_chat_session_scope_before_read_merge_or_advance
+  federation: explicitly_configured_existing_bridge_channel_only
+editorial_owner: audits/editorial-review.yml

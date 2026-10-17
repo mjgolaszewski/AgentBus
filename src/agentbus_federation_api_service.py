@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Annotated, Any
 
 from fastapi import Header, HTTPException, Request
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from src.agentbus_federation_bridge_service import EnqueueRejected, enqueue_authenticated
 
@@ -26,12 +26,19 @@ class FederationAcceptance(BaseModel):
 
 def api_federation_enqueue(request: Request, body: FederationSendRequest,
         x_agentbus_session_token: Annotated[str | None, Header()] = None) -> FederationAcceptance:
+    from src.agentbus_channel_api_service import require_target, resolve_principal
+    from src.agentbus_service import SendMessage
+    principal = resolve_principal(request, body.message.get('sender'), x_agentbus_session_token)
     bridge = request.app.state.federation_bridge
-    if bridge is None:
-        raise HTTPException(503, 'Federation is not configured')
+    if bridge is None or bridge.channel != principal.channel:
+        raise HTTPException(403, 'Federation unavailable in this scope')
     try:
-        enqueue_authenticated(bridge, request.app.state.store, request.app.state.settings.slack_channel,
+        message = SendMessage(**body.message)
+        require_target(request.app.state.store, principal.channel, message, bridge)
+        enqueue_authenticated(bridge, request.app.state.store, principal.channel,
                               body.origin_message_id, body.destination_instance_id, body.message, x_agentbus_session_token)
+    except ValidationError:
+        raise HTTPException(422, "Invalid federation message") from None
     except EnqueueRejected as exc:
         raise HTTPException(exc.status, str(exc), headers=exc.headers) from None
     return FederationAcceptance(origin_instance_id=bridge.identity.instance_id,
