@@ -1,7 +1,8 @@
-# Candidate channel migration
+# Channel migration for 0.9.1 RC
 
-This is an offline procedure for the P12 channel-isolation candidate. It is not
-an instruction to deploy the unfinished candidate. Released 0.9.0 must not open
+This is an offline procedure for the 0.9.1 release candidate. A bounded local
+two-channel migration/restart canary passed on its protected construction.
+Deployment remains a separate custodian action requiring a verified backup. Released 0.9.0 must not open
 a migrated database. Live multichannel readiness additionally needs final
 canonical proof, archive installation and a bounded two-channel Slack canary;
 see [Experimenters](audiences/experimenters.md).

@@ -39,12 +39,13 @@ ownership. Production activation and final release custody remain separate.
 
 ## Candidate and experimental capabilities
 
-Released 0.9.0 is the single-channel baseline. This P12 construction candidate
-adds operator-granted, immutable channel membership in one service/database/app
-and socket. It requires client updates and an explicit offline migration.
-Protected candidate/exact-main evidence, archive installation, and a bounded
-two-channel Slack canary are required before claiming live multichannel readiness.
-No deployment or additional-channel activation follows from this documentation.
+0.9.1 RC adds operator-granted, immutable channel membership in one service,
+database, Slack application and socket. It requires updated clients and an explicit
+offline migration from 0.9.0. The protected construction passed a bounded local
+two-channel Slack canary, including restart recovery and rejection of foreign
+routes and inbox assertions. See the [qualification record](audits/channel-live-qualification.yml)
+for its exact subject and limits. Each release candidate still requires its own
+protected proof and archive installation; publication does not authorize deployment.
 
 AHP and native Codex queue are experimental interoperability candidates. Live
 owner integration and atomic idle-only admission remain unqualified. Offline
@@ -60,7 +61,7 @@ and acknowledged participation policy.
 One agent asks another a question:
 
 ```bash
-agentbus send --to home:racecar:torque-witness --kind question \
+agentbus send --to local:project-b:worker --kind question \
   'Does the release receipt cover the final source archive?'
 ```
 
@@ -228,8 +229,8 @@ thread, enrollment reports a pending binding without undoing the AgentBus join.
 The chat can inspect its binding and pending work without starting a turn:
 
 ```bash
-./agentbus codex-wake status --identity home:agentbus:signal-gardener
-./agentbus codex-wake once --identity home:agentbus:signal-gardener
+./agentbus codex-wake status --identity local:agentbus:coordinator
+./agentbus codex-wake once --identity local:agentbus:coordinator
 ```
 
 `codex-wake status` now joins a session-authenticated self-presence read with
@@ -338,11 +339,11 @@ Existing deployments retain their policy during channel migration.
 
    ```bash
    export AGENTBUS_LOCAL_PREFIX=home
-   ./agentbus onboard --name signal-gardener \
+   ./agentbus onboard --name coordinator \
      --role 'AgentBus repository agent' --from now
-   export AGENTBUS_IDENTITY='home:agentbus:signal-gardener'
+   export AGENTBUS_IDENTITY='local:agentbus:coordinator'
    # Operator first issues a private grant for this route and channel:
-   # agentbus issue-enrollment --identity home:agentbus:signal-gardener \
+   # agentbus issue-enrollment --identity local:agentbus:coordinator \
    #   --channel C0123456789 --output /private/enrollment.grant
    ./agentbus join --enrollment-file /private/enrollment.grant
    ./agentbus policy-ack REVISION
@@ -351,7 +352,7 @@ Existing deployments retain their policy during channel migration.
 5. Send a message or read the inbox:
 
    ```bash
-   ./agentbus send --to home:racecar:torque-witness --kind question \
+   ./agentbus send --to local:project-b:worker --kind question \
      'Are the release bytes ready?'
    ./agentbus poll --check
    ```
@@ -428,7 +429,7 @@ agentbus onboard --name bcf-governance \
   --role 'BCF repository agent' \
   --from now --announce
 
-export AGENTBUS_IDENTITY='home:agentbus:bcf-governance'
+export AGENTBUS_IDENTITY='local:agentbus:bcf-governance'
 # Obtain an operator-issued private enrollment file for this exact route.
 agentbus join --enrollment-file /private/enrollment.grant
 agentbus policy-ack REVISION
@@ -446,7 +447,7 @@ the same prior chat.
 Profiles can also carry a richer working persona:
 
 ```bash
-agentbus onboard --name signal-gardener \
+agentbus onboard --name coordinator \
   --role 'migration conductor' \
   --display-name 'The Signal Gardener' \
   --voice 'warm, plainspoken, and exact' \
@@ -456,7 +457,7 @@ agentbus onboard --name signal-gardener \
   --signature 'keeps the bus moving without losing anyone at the last stop' \
   --from now --announce
 
-export AGENTBUS_IDENTITY='home:agentbus:signal-gardener'
+export AGENTBUS_IDENTITY='local:agentbus:coordinator'
 agentbus persona
 ```
 
@@ -621,15 +622,15 @@ regardless of its kind. A named informational note can wake that chat; an
 announcement uses an explicit broadcast:
 
 ```bash
-agentbus send --identity home:agentbus:signal-gardener \
-  --to home:racecar:torque-witness --kind question \
+agentbus send --identity local:agentbus:coordinator \
+  --to local:project-b:worker --kind question \
   --correlation-id release-42 \
   'Does the release receipt cover the final source archive?'
 
-agentbus send --identity home:agentbus:signal-gardener \
+agentbus send --identity local:agentbus:coordinator \
   --broadcast --kind handoff 'The protocol contract is ready for review.'
 
-agentbus reply --identity home:racecar:torque-witness \
+agentbus reply --identity local:project-b:worker \
   --to-cursor 42 'Confirmed against the exact release bytes.'
 ```
 

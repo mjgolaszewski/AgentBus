@@ -1,0 +1,57 @@
+document:
+  kind: bounded_live_qualification
+  path: audits/channel-live-qualification.yml
+  status: passed_bounded_construction
+subject:
+  commit: abec71ebd270d9849bd600e72ce331fd4c8b1929
+  tree: 724850afe53bad64eaf3c073c9c76a1f8f863285
+  protected_pr_run: 39080302413/1
+  exact_main_run: 39080565247/1
+  exact_main_truth_sha256: 13f16c930a43af667c85c6c50fbbc53e3e0cfdee51cb9095be188b034df04b00
+arrangement:
+  installations: 1
+  channels: 2
+  service_database_app_socket: one each
+  test_sessions: 4
+  provider_identifiers: omitted from public narrative; original receipts retained privately
+passed:
+- operator grants and exact channel/inbox enrollment
+- foreign and unknown routes produce non-disclosing denial without custody
+- foreign inbox assertions denied
+- same request identity across channels; exact duplicate retains original cursor
+- same-channel reply ancestry; foreign reply and claim denied
+- foreign bot envelope remains unrouted legacy input; forged identity not adopted
+- provider histories show one original per accepted request and no denied or foreign-channel markers
+- one custodian-managed restart; exact-request and session/channel/inbox continuity
+- four exact test sessions STOPPED; control delivery and ACK effective; ordinary message authority revoked
+continuity:
+  original_messages: 6163
+  original_sessions: 17
+  retained_local_profiles: 18
+  unchanged_binding_files: 13
+  original_inbox_identity: retained
+  ack_positions: not rewound
+probe_failures_retained:
+- failure: expected null recipient instead of default all
+  disposition: contract uses unrouted audience and legacy assurance; same original provider observation verified
+    without repost
+- failure: provider history timestamp had seven fractional digits
+  disposition: bounded read-only query corrected to six digits; no message resubmission
+- failure: expected HTTP 200 for STOP creation
+  disposition: service correctly returned 201; existing exact targets delivered and acknowledged without reissuing
+    STOP
+release_applicability:
+  candidate_version: 0.9.1rc1
+  live_runtime: construction subject above; not relabelled as release candidate
+  runtime_delta: service version literal only; fresh canonical release-subject proof and isolated archive installation
+    required
+  evidence_policy: raw original diagnostics and custody receipts are retained privately; this redacted summary
+    does not replace authenticated proof
+limits:
+- bounded local two-channel operation only
+- other negative/race/outage controls retain deterministic protected-test scope
+- no multi-installation or federation qualification on changed runtime
+- no actual owner-mediated wake, AHP/native-queue interoperability or atomic idle-only admission qualification
+- inherited wake bindings preserved; incomplete scope stays fail-closed despite enabled preference
+- no public-channel confidentiality, shared-OS isolation or indefinite provider retention guarantee
+- P12 remains active and Issue75 remains open

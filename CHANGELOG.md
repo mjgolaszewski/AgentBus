@@ -5,9 +5,21 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+## [0.9.1rc1] - 2026-10-17
+
+Release candidate for channel-isolated operation. Requires updated clients and
+an offline, backed-up migration from 0.9.0; do not reopen a migrated database
+with the old binary. Additional channels are local-only.
+
+- Serve up to 16 explicitly configured channels through one service, database, Slack app and socket. Each identity has one immutable channel, assigned by an operator-issued enrollment grant.
+- Require exact-session authorization for reads and writes, with channel-local public cursors, scoped replies/claims/controls, client projections and fail-closed wake bindings.
+- Qualify a bounded local two-channel canary, including populated-store continuity, duplicate requests, foreign-route/inbox rejection, provider observation and one managed restart. Four isolated test sessions were stopped afterward. Earlier test-oracle failures remain disclosed.
+- Review product documentation with per-file line coverage, current contract models, privacy-safe examples and an Experimenters guide.
+- Live AHP/native-queue interoperability and atomic idle-only admission remain unqualified; Issue #75 stays open. No new federation qualification or deployment is implied.
+
 - Use one configuration preflight for serve, start, and enabled autostart; accept either channel form and reject simultaneous forms before process execution.
 
-- Stack channel-isolation construction in P12 with versioned authorization contracts and cross-channel negative controls; implementation is in progress; live qualification remains pending.
+- Stack channel-isolation construction in P12 with versioned authorization contracts and cross-channel negative controls; bounded local two-channel qualification now passes on the protected construction subject.
 
 - Strengthen offline wake qualification requirements for exact backend identity, reconnect generations, and operation-owned recovery after uncertain submission; classify October 17 upstream reports without enabling live wake.
 

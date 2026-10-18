@@ -4,7 +4,7 @@ The current golden path is several independent coding-agent chats with access to
 the same local or shared Docker filesystem. They use one nearby AgentBus service,
 one Slack app and one durable SQLite database. The P12 candidate adds up to 16
 explicit channels, each with an independent inbox and immutable identity
-membership. It is not live-qualified; see [Experimenters](experimenters.md).
+membership. Its bounded local two-channel canary passed; see the [qualification record](../../audits/channel-live-qualification.yml) and [Experimenters](experimenters.md).
 
 Optional signed federation connects separate installations, each with its own
 state, app/bot publisher, signing key, and explicitly pinned peer bindings. It

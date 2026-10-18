@@ -2,16 +2,16 @@
 
 This seat is for people qualifying capabilities that are still under construction.
 It does not authorize deployment, channel provisioning, credentials, host access,
-or a live wake attempt. Released 0.9.0 is the single-channel baseline. The P12
-candidate preserves that lineage while adding channel isolation and retaining
-unfinished owner-wake research.
+or a live wake attempt. Released 0.9.0 is the single-channel baseline. The 0.9.1 RC train adds channel
+isolation and retains unfinished P12 owner-wake research. Its protected construction
+passed a bounded local two-channel canary; release-subject custody remains separate.
 
 ## Know which claim you are testing
 
 | Capability | Candidate scope | Evidence still required |
 | --- | --- | --- |
-| Multiple channels | One service, database, Slack app and socket; explicit allowlist of at most 16 channels | Final protected candidate/exact-main proof, archive/install verification, and a bounded two-channel Slack canary |
-| Channel authorization | One immutable channel per identity; grant-backed enrollment; exact-session reads and writes; channel-local public cursors | Complete negative controls, populated-store migration/recovery proof, final canonical test population |
+| Multiple channels | One service, database, Slack app and socket; explicit allowlist of at most 16 channels | Bounded local two-channel canary passed on the protected construction; each release subject requires fresh canonical custody and archive/install verification |
+| Channel authorization | One immutable channel per identity; grant-backed enrollment; exact-session reads and writes; channel-local public cursors | Protected construction includes negative controls and populated-store migration/restart continuity; see the exact [qualification record](../../audits/channel-live-qualification.yml) |
 | Federation | Existing bridge channel only; additional channels stay local | New source must establish applicability; historical 0.9 canary does not certify changed runtime bytes |
 | AHP owner-mediated wake | Offline contract/reducer research and owner/backend binding requirements | An authorized disposable host-managed chat, supported owner endpoint, live interoperability and restart evidence |
 | Native Codex queue | Research fallback, not a production adapter | Supported admission and recovery contract; no active-turn steering or unwanted later turn |

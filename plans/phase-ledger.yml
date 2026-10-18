@@ -20,7 +20,7 @@ active_phase:
   spec: plans/product-spec.yml
   build_plan: plans/build-plan.yml
   lifecycle_status: active
-  owner: "agentbus:signal-gardener"
+  owner: "agentbus:coordinator"
   validation_commands: [make governance-validate, make architecture-test, make lint, make typecheck, make test, make release-check]
 hotfix_lane:
   scaffold_script: scripts/scaffold_governance_artifacts.py
@@ -95,6 +95,7 @@ release_trains:
   release_7_prefix: {target_version: "0.8.0", status: active, focus: [configurable_local_identity_prefix, session_proved_legacy_route_migration, accumulated_unreleased_hotfixes]}
   release_8: {target_version: "0.8.1", status: planned, focus: [governance_dependency_hash_lock, proxy_header_remediation]}
   release_9: {target_version: "0.9.0", status: active, focus: [outbound_only_federation, durable_bridge_obligations, remote_directory_sync, owner_mediated_idle_wake, final_bcf_custody]}
+  release_10: {target_version: "0.9.1rc1", status: active, focus: [channel_isolation, operator_granted_membership, bounded_local_two_channel_qualification, privacy_safe_documentation, experimental_owner_wake_disclosure]}
 release_readiness:
   computed_by: bcf truth
   requirements_source: governance/evidence-policy.yml
