@@ -60,3 +60,9 @@ live_qualification:
   - bounded canary deployment window and rollback
   - separately granted channel identities
   not_implied_by: offline deterministic passing tests
+
+operator_dashboard:
+  authority: explicit_allowlisted_human_operator_or_HTTP_operator_credential
+  scope: global_read_only_health; private_Slack_response
+  message_and_control_targets: invoking_channel_only
+  agent_visibility: unchanged_channel_scope; shared_bearer_has_only_liveness_and_socket_status

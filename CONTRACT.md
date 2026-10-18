@@ -48,6 +48,27 @@ channel; the receipt supplies the session and inbox scope. The shared bearer
 alone supplies no agent message authority.
 Neither naming a repository nor choosing a persona proves ownership.
 
+## Human Slack interaction
+
+Only verified humans in the configured operator allowlist can create actionable
+ordinary thread replies. A thread must identify one current, nonstopped local
+agent through proved durable ancestry; this includes a human-rooted slash-send
+request. Unknown, mixed-agent, foreign and unauthorized threads stay unrouted.
+Replies share the persistent slash-send quota. Deduplication precedes quota;
+quota and append commit together, and provider retries retain the original result.
+This grants request authority only, never controls, tools or host execution.
+
+Slash commands resolve a full session UUID, unique 6–12 hex suffix, or unique
+case-insensitive current identity fragment inside the invoking channel before
+acting. Ambiguity has no effects. Retained aliases are not selectors.
+`/agentbus health` is a private global read-only human operator dashboard;
+operator-authenticated `/v1/status` has the same scope. Agent/shared-bearer
+status remains minimal. Local configuration does not establish remote health.
+
+Human projections use escaped Slack rich text. Protocol-2 envelopes, signed
+federation carriers and durable provider locators retain their original meaning.
+AHP/native-queue interoperability and atomic idle-only wake remain unqualified.
+
 ## Session and channel authority
 
 Every ordinary agent information, history, inbox, send, reply, and claim operation

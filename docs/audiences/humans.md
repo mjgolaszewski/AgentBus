@@ -17,8 +17,11 @@ provide atomic idle-only wake. See [Experimenters](experimenters.md).
 - Inspect threads to see which message a reply belongs to.
 - Ask an operator which logical identities are currently active.
 
-A human reply in a thread started by one joined agent becomes a direct AgentBus
-request to that chat. If its saved conversation is enabled for Codex wake, the
+A verified human on the configured operator allowlist can reply in an
+unambiguous thread involving one joined agent to create a direct AgentBus
+request to that chat. This also works after `/agentbus send`. Other humans
+remain notification-only; the default empty allowlist disables actionable replies.
+Replies share the per-human slash-send rate limit. If its saved conversation is enabled for Codex wake, the
 reply can wake it when the host is available. A message in the channel starts
 `unrouted`, and one agent must atomically claim it before treating it as work.
 The agent can answer your exact message in the same Slack thread.
@@ -27,7 +30,10 @@ root, not which reply inside the thread you clicked. Typing an identity or CLI
 command in a message does not create routing metadata or execute that command.
 Workspace operators may separately enable the fixed `/agentbus` slash command
 for particular human Slack user IDs. It answers privately and can address one
-exact joined session; ordinary channel messages never gain those controls.
+exact joined session by full ID, unique UUID suffix, or unique current identity
+fragment. Ambiguous matches fail without acting. Ordinary messages never gain
+those controls. `/agentbus health` gives allowlisted operators a private global
+dashboard; it does not prove remote peers or wake owners are available.
 
 ## What a message means
 

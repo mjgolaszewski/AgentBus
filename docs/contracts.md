@@ -26,6 +26,15 @@ not current authority. Contract schemas validate structure; implementation owner
 and behavioral tests establish application behavior. BCF authenticates required
 proof applicability and exact-subject custody.
 
+## RC2 human interaction
+
+Participation v2 also models allowlisted ordinary replies with slash-send
+request authority and quota, current identity fragments resolved channel-first,
+and the private global human-operator health exception. Unknown or mixed thread
+ancestry stays notification-only. Rich presentation changes human projections;
+protocol envelopes and signed carriers remain unchanged. RC2 requires renewed
+protected proof and a bounded local two-channel canary before live qualification.
+
 ## Identity and cursor model
 
 ```mermaid

@@ -53,7 +53,6 @@ from src.agentbus_participation_api_service import (
 )
 from src.agentbus_participation_store_service import ParticipationStore
 from src.agentbus_participation_store_service import StoppedMessageSession as StoppedMessageSession
-from src.agentbus_presentation_service import visible_text
 from src.agentbus_reply_policy_service import validate_reply
 from src.agentbus_request_limits_service import RequestBodyLimit
 from src.agentbus_send_policy_service import SessionAuthorityError as SessionAuthorityError
@@ -555,17 +554,8 @@ class SlackPoster:
         if self.store is not None:
             from src.agentbus_channel_api_service import provider_message
             message = provider_message(self.store, self.channel, message)
-        label = f"{message.sender} → {message.recipient} · {message.kind} · {message.audience}"
-        if message.repo:
-            label += f" · {message.repo}"
-        blocks: list[dict[str, object]] = [
-            {"type": "context", "elements": [{"type": "plain_text", "text": label, "emoji": False}]}
-        ]
-        if message_id is not None:
-            blocks[0]["block_id"] = LOCATOR_PREFIX + message_id
-        display = visible_text(message.text)
-        blocks.extend({"type": "section", "text": {"type": "plain_text", "text": display[i:i + 3000], "emoji": False}}
-                      for i in range(0, len(display), 3000))
+        from src.agentbus_presentation_service import message_blocks
+        blocks = message_blocks(message, locator=LOCATOR_PREFIX+message_id if message_id is not None else None)
         payload = {"channel": self.channel, "text": encode_envelope(message), "blocks": blocks,
                    "parse": "none", "mrkdwn": False, "unfurl_links": False, "unfurl_media": False}
         if message.thread_ts:
@@ -660,7 +650,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
         async with delivery_lifespan(app, settings, http_client, socket_factory):
             yield
 
-    app = FastAPI(title="AgentBus", version="0.9.1rc1", lifespan=lifespan,
+    app = FastAPI(title="AgentBus", version="0.9.1rc2", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     app.add_middleware(RequestBodyLimit)

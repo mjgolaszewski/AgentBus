@@ -223,7 +223,7 @@ def test_slack_commands_resolve_only_invoking_channel_members(channel_service):
     for action in ('status','metrics','pause','resume','checkpoint','send','wake'):
         text=action+' '+b[2]['session_id']+(' no' if action in ('send','wake') else '')
         result=execute_command({**base,'text':text},settings,app.state.store,None)
-        assert result=='Unknown session ID. Use /agentbus roster.'
+        assert result=='Unknown session or identity. Use /agentbus roster.'
     assert b[2]['session_id'] not in execute_command({**base,'text':'status '+b[2]['session_id'][-6:]},settings,app.state.store,None)
 
 

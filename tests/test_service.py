@@ -53,7 +53,7 @@ class FakeSocket:
 def settings(tmp_path):
     return Settings(api_token="local-test-secret", slack_bot_token="xoxb-test-secret",
                     slack_app_token="xapp-test-secret", slack_channel=CHANNEL,
-                    db_path=tmp_path / "state/messages.sqlite3")
+                    slack_operator_user_ids=frozenset({"U123"}), db_path=tmp_path / "state/messages.sqlite3")
 
 
 @pytest.fixture
@@ -714,7 +714,7 @@ def test_temporary_policy_override_requires_operator_and_exact_session_ack(servi
                        json={"revision": updated["revision"]}).status_code == 200
 
 
-def test_send_roundtrip_and_plain_text_blocks_preserve_mentions_and_unicode(service):
+def test_send_roundtrip_and_rich_blocks_escape_mentions_preserve_wire_and_unicode(service):
     client, app, requests = service
     app.state.store.append(CHANNEL, "1699999999.000001",
                            SendMessage(sender="agentbus:agent-a", recipient="agentbus:agent-b", text="Thread root"))
@@ -733,7 +733,8 @@ def test_send_roundtrip_and_plain_text_blocks_preserve_mentions_and_unicode(serv
     assert payload["thread_ts"] == body["thread_ts"]
     assert payload["parse"] == "none" and payload["mrkdwn"] is False
     assert payload["unfurl_links"] is False and payload["unfurl_media"] is False
-    assert payload["blocks"][1]["text"] == {"type": "plain_text", "text": text, "emoji": False}
+    from src.agentbus_presentation_service import slack_escape
+    assert payload["blocks"][1]["text"] == {"type":"mrkdwn", "text":slack_escape(text), "verbatim":True}
     assert "<" not in payload["text"] and "https://" not in payload["text"] and "&" not in payload["text"]
     assert json.loads(payload["text"]) == {
         "agentbus": 2, **body, "audience": "direct", "reply_to_cursor": None,
@@ -998,10 +999,9 @@ def test_failed_durable_ingestion_is_not_acknowledged(settings, monkeypatch, cap
     receiver = SlackReceiver(store, CHANNEL, BOT_ID)
     socket = FakeSocket(settings, receiver)
 
-    def fail(*args):
-        raise sqlite3.OperationalError("secret database path")
-
-    monkeypatch.setattr(store, "append", fail)
+    with store._db:
+        store._db.execute("""CREATE TRIGGER reject_slack_insert BEFORE INSERT ON messages
+            BEGIN SELECT RAISE(ABORT, 'secret database path'); END""")
     socket.emit(event())
     assert socket.acknowledgements == []
     assert "secret database path" not in caplog.text
@@ -1382,3 +1382,28 @@ def test_v1_envelopes_remain_compatible_and_new_human_messages_are_unrouted():
     assert message.audience == "broadcast"
     _, human = normalize_event(event("plain Slack text"), CHANNEL, BOT_ID)
     assert human.audience == "unrouted"
+
+
+def test_operator_status_dashboard_is_complete_read_only_and_not_agent_visible(service):
+    client,app,_=service
+    from starlette.requests import Request
+
+    from src.agentbus_status_api_service import api_status
+    app.state.settings=replace(app.state.settings,operator_token='private-operator-token')
+    def status(token):
+        return api_status(Request({'type':'http','app':app,'headers':[(b'authorization',('Bearer '+token).encode())]}))
+    before=app.state.store._db.total_changes
+    operator=status('private-operator-token')
+    assert operator['version']==app.version
+    assert operator['runtime']['python']
+    assert operator['slack_connected'] is True
+    assert operator['channels'][0]['channel']==CHANNEL
+    assert operator['channels'][0]['enabled'] is True
+    assert operator['federation']['configured'] is False
+    assert operator['federation']['remote_health']=='not_observed'
+    assert app.state.store._db.total_changes==before
+    agent=status('local-test-secret')
+    assert set(agent)=={'status','slack_connected'}
+    encoded=json.dumps(operator)
+    for secret in ('private-operator-token','xoxb-test-secret','xapp-test-secret',str(app.state.settings.db_path)):
+        assert secret not in encoded

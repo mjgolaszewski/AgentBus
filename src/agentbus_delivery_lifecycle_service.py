@@ -41,7 +41,9 @@ class DeliveryTransport:
             if bridge.channel not in settings.channels:
                 raise ValueError("Federation channel is not configured")
             bind_ordinary_delivery(bridge, self.store, bridge.channel)
-        self.receiver = SlackReceiver(self.store, settings.channels, bot_id, settings, bridge)
+        from src.agentbus_status_api_service import operator_dashboard
+        self.receiver = SlackReceiver(self.store, settings.channels, bot_id, settings, bridge,
+                                      dashboard=lambda: operator_dashboard(self.app))
         self.socket = self.socket_factory(settings, self.receiver)
         try:
             await asyncio.to_thread(self.socket.connect)
@@ -82,6 +84,7 @@ async def delivery_lifespan(app, settings, http_client, socket_factory):
     poster = next(iter(posters.values()))
     transport = DeliveryTransport(app, store, settings, client, poster, socket_factory)
     task = None
+    app.state.runtime_started = time.monotonic()
     app.state.store, app.state.poster = store, poster
     app.state.posters = posters
     app.state.socket, app.state.federation_bridge = None, None

@@ -499,6 +499,9 @@ gates:
         expected_nodes_mode: exact
         artifact_binding: *id042
     negative_controls:
+    - {id: ambiguous-current-identity-has-no-effects, mutation: {path: src/agentbus_slack_command_service.py, search: 'if len(matches) != 1:', replace: 'if False:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_slack_commands::test_ambiguous_identity_fragment_has_no_message_or_control_effect']}}
+    - {id: human-reply-requires-operator-allowlist, mutation: {path: src/agentbus_slack_reply_service.py, search: 'or not message.thread_ts or message.sender.removeprefix(''slack:'') not in operator_user_ids', replace: or not message.thread_ts}, oracle: {kind: test_node_failure, node_ids: ['tests.test_slack_commands::test_regular_reply_authorization_empty_allowlist_foreign_parent_and_atomic_failure']}}
+    - {id: global-health-requires-operator, mutation: {path: src/agentbus_status_api_service.py, search: '    if _operator(request):', replace: '    if True:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_service::test_operator_status_dashboard_is_complete_read_only_and_not_agent_visible']}}
     - {id: trusted-frame-recipient-is-channel-bound, mutation: {path: src/agentbus_channel_ingress_service.py, search: 'require_target(store,channel,message,bridge)', replace: 'None'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_channel_isolation::test_trusted_slack_frames_cannot_forge_local_channel_membership']}}
     - {id: channel-inbox-assertion-is-required, mutation: {path: src/agentbus_channel_api_service.py, search: assertion!=principal.inbox_id, replace: 'False'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_channel_isolation::test_read_reply_claim_and_scope_assertions_cannot_cross_channels']}}
     - {id: channel-public-cursor-hides-global-activity, mutation: {path: src/agentbus_channel_api_service.py, search: 'result[''cursor'']=store.channels.public_cursor(channel,message.cursor)', replace: 'result[''cursor'']=message.cursor'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_channel_isolation::test_read_reply_claim_and_scope_assertions_cannot_cross_channels']}}
@@ -587,7 +590,7 @@ gates:
     - {id: unused-import-is-rejected, mutation: {path: *id043, search: import argparse, replace: 'import argparse
 
           import definitely_unused_agentbus_symbol'}, oracle: {kind: *id059, exit_codes: [1], stream: stdout, regex: F401|imported but unused}}
-    - {id: version-drift-is-rejected-at-source-boundary, mutation: {path: *id002, search: version = "0.9.1rc1", replace: version = "9.9.9"}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: project version must match}}
+    - {id: version-drift-is-rejected-at-source-boundary, mutation: {path: *id002, search: version = "0.9.1rc2", replace: version = "9.9.9"}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: project version must match}}
   python314-compatibility:
     invocation: {argv: [python3, *id037, python314-compatibility, --junit, .artifacts/junit/python314-compatibility.xml], cwd: ., env: {}, required_env: []}
     evidence:

@@ -343,6 +343,7 @@ def test_duplicate_provider_thread_checks_all_observed_ancestry(tmp_path):
     from src.agentbus_slack_reply_service import route_human_reply
 
     store = MessageStore(tmp_path / 'human.sqlite3')
+    store.channels.configure((CHANNEL,))
     try:
         enroll_for_thread(store, 'agentbus:flower', 'human-qualification-session-secret')
         key, _, _ = accepted(store)
@@ -350,14 +351,14 @@ def test_duplicate_provider_thread_checks_all_observed_ancestry(tmp_path):
         store.local_delivery.complete(CHANNEL, key, '101.000001')
         original = SendMessage(sender='slack:U123', audience='unrouted', thread_ts='100.000001', text='reply')
         original._sender_assurance = 'slack-human'
-        assert route_human_reply(store, CHANNEL, original).audience == 'direct'
+        assert route_human_reply(store, CHANNEL, original, operator_user_ids=frozenset({'U123'})).audience == 'direct'
         duplicate = SendMessage(sender='slack:U123', audience='unrouted', thread_ts='101.000001', text='reply')
         duplicate._sender_assurance = 'slack-human'
-        assert route_human_reply(store, CHANNEL, duplicate).audience == 'direct'
+        assert route_human_reply(store, CHANNEL, duplicate, operator_user_ids=frozenset({'U123'})).audience == 'direct'
         store.append(CHANNEL, '101.000002', SendMessage(sender='agentbus:other',
                      thread_ts='101.000001', text='another agent'))
-        assert route_human_reply(store, CHANNEL, duplicate).audience == 'unrouted'
-        assert route_human_reply(store, CHANNEL, original).audience == 'unrouted'
+        assert route_human_reply(store, CHANNEL, duplicate, operator_user_ids=frozenset({'U123'})).audience == 'unrouted'
+        assert route_human_reply(store, CHANNEL, original, operator_user_ids=frozenset({'U123'})).audience == 'unrouted'
     finally:
         store.close()
 
