@@ -75,6 +75,9 @@ async def delivery_lifespan(app, settings, http_client, socket_factory):
     try:
         check_startup(settings.db_path)
         store = MessageStore(settings.db_path)
+        store.local_delivery.configure(settings.local_delivery_outstanding_limit,
+                                       settings.local_delivery_retained_limit,
+                                       settings.local_delivery_observation_limit)
         store.channels.configure(settings.channels)
     except BaseException:
         lease.__exit__(None, None, None)

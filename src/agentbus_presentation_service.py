@@ -63,6 +63,13 @@ def health_text(snapshot: dict) -> str:
         lines.append(f"`{channel['channel']}` · {'🟢 enabled' if channel['enabled'] else '⚪ disabled / retained'} · messages `{channel['messages']}` · local high-water `{channel['high_water_cursor']}` · sessions `{sum(channel['sessions'].values())}`\nDelivery custody: {delivery}")
     if snapshot['channel_details_truncated']:
         lines.append('Additional retained channel details omitted from this bounded dashboard.')
+    if capacity := snapshot.get('local_delivery_capacity'):
+        lines.append(f"📊 *Local custody:* outstanding `{capacity['outstanding']}/{capacity['outstanding_limit']}` · "
+                     f"retained requests `{capacity['retained_requests']}/{capacity['retained_request_limit']}` · "
+                     f"provider observations `{capacity['provider_observations']}/{capacity['provider_observation_limit']}`")
+        if capacity['warnings']:
+            lines.append('🟡 Capacity at or above 80%: ' + ', '.join(capacity['warnings']) +
+                         '. Operator capacity planning required; retained request identities do not expire.')
     state='⚪ disabled' if not federation['configured'] else '🟢 initialized' if federation['initialized'] else '🟡 configured / awaiting transport'
     lines.extend([f"🌐 *Federation:* {state} · bridge {federation['channel'] or 'none'} · pinned origins {', '.join(federation['origins']) or 'none'}",
                   f"🟡 Remote health: not observed · checkpoints `{federation['checkpoints']}` · retained obligations `{sum(federation['custody'].values())}`",

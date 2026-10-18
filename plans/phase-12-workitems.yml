@@ -140,3 +140,15 @@ workitems:
   - Expiry capacity altered proof cross-channel replay stopped or rotated credentials and partial persistence fail closed; legacy file grants remain supported
   - Final protected subject archive isolated install and bounded live approval flow precede publication or deployment claims
   acceptance_evidence: [contract-test, test]
+
+- id: P12-P1-11
+  priority: P1
+  status: IN_PROGRESS
+  summary: deliver Local delivery admission separated from retained idempotency history
+  acceptance:
+  - Submitted history never consumes the unresolved delivery budget; unknown blocked uncertain and federated states remain unresolved
+  - Exact authenticated UUID fingerprint and retained result precede all capacity checks; conflicts and restart recovery remain stable
+  - Independent finite outstanding retained-request and observation limits validate before startup and expose operator-only usage and warnings
+  - Existing over-capacity custody is preserved without deletion or silent request expiry; retained-history exhaustion still requires operator capacity planning
+  - Supported archival lifecycle remains a disclosed limitation until independently implemented and proved; no unlimited storage or retention-completion claim
+  acceptance_evidence: [contract-test, test, runtime-smoke]

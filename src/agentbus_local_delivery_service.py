@@ -16,7 +16,17 @@ if TYPE_CHECKING:
 LOCATOR_PREFIX = 'agentbus-local-'
 LOCAL_REFERENCE_PREFIX = 'local:'
 MAX_LOCAL_OBLIGATIONS = 1024
+MAX_LOCAL_RETAINED_REQUESTS = 65536
+MAX_LOCAL_OBSERVATIONS = 131072
 MAX_LOCAL_PAYLOAD_BYTES = 48000
+
+
+def validate_limits(outstanding: int, retained: int, observations: int) -> None:
+    if (any(type(value) is not int for value in (outstanding, retained, observations))
+            or not 1 <= outstanding <= retained <= 1000000
+            or not retained <= observations <= 2000000):
+        raise ValueError('Local delivery limits require 1 <= outstanding <= retained <= 1000000 '
+                         'and retained <= observations <= 2000000')
 
 
 class LocalDeliveryRejected(ValueError):
@@ -57,6 +67,7 @@ def _locator_key(blocks: object) -> str | None:
 class LocalDeliveryStore:
     def __init__(self, owner: MessageStore):
         self.owner = owner
+        self.configure(MAX_LOCAL_OBLIGATIONS, MAX_LOCAL_RETAINED_REQUESTS, MAX_LOCAL_OBSERVATIONS)
         with owner._lock, owner._db:
             if not owner._db.in_transaction:
                 owner._db.execute('BEGIN IMMEDIATE')
@@ -74,6 +85,29 @@ class LocalDeliveryStore:
                 channel TEXT NOT NULL, provider_ref TEXT NOT NULL,
                 local_cursor INTEGER NOT NULL REFERENCES messages(cursor),
                 PRIMARY KEY(channel, provider_ref))''')
+            owner._db.execute("CREATE INDEX IF NOT EXISTS local_delivery_unresolved ON "
+                              "local_delivery_obligations(state) WHERE state!='submitted'")
+
+    def configure(self, outstanding: int, retained: int, observations: int) -> None:
+        validate_limits(outstanding, retained, observations)
+        self.outstanding_limit, self.retained_limit, self.observation_limit = outstanding, retained, observations
+
+    def capacity(self) -> dict:
+        """Operator-only aggregate; submitted receipts remain durable retry history."""
+        with self.owner._lock:
+            db = self.owner._db
+            result = {'outstanding': db.execute("SELECT count(*) FROM local_delivery_obligations WHERE state!='submitted'").fetchone()[0],
+                    'outstanding_limit': self.outstanding_limit,
+                    'retained_requests': db.execute('SELECT count(*) FROM local_delivery_obligations').fetchone()[0],
+                    'retained_request_limit': self.retained_limit,
+                    'provider_observations': db.execute('SELECT count(*) FROM local_delivery_observations').fetchone()[0],
+                    'provider_observation_limit': self.observation_limit}
+            warnings = [name for name, used, limit in (
+                ('outstanding', result['outstanding'], self.outstanding_limit),
+                ('retained_requests', result['retained_requests'], self.retained_limit),
+                ('provider_observations', result['provider_observations'], self.observation_limit))
+                if used * 5 >= limit * 4]
+            return {**result, 'warnings': warnings}
 
     def accept(self, channel: str, key: str, request_hash: str, message: SendMessage,
                principal: str, *, bridge=None) -> Message:
@@ -93,8 +127,13 @@ class LocalDeliveryStore:
                 if existing is None:
                     raise ValueError('accepted local custody lost its message')
                 return existing
-            if store._db.execute('SELECT count(*) FROM local_delivery_obligations').fetchone()[0] >= MAX_LOCAL_OBLIGATIONS:
-                raise LocalDeliveryRejected(503, 'Local custody capacity requires operator archival')
+            capacity = self.capacity()
+            if capacity['outstanding'] >= self.outstanding_limit:
+                raise LocalDeliveryRejected(503, 'Local outstanding delivery capacity exhausted')
+            if capacity['retained_requests'] >= self.retained_limit:
+                raise LocalDeliveryRejected(503, 'Local retained request capacity requires operator archival')
+            if capacity['provider_observations'] >= self.observation_limit:
+                raise LocalDeliveryRejected(503, 'Local provider observation capacity requires operator archival')
             sender, recipient = route_parts(message.sender), route_parts(message.recipient)
             local_prefix = bridge.identity.route_prefix if bridge is not None else sender[0] if sender else None
             destination = None
@@ -233,7 +272,7 @@ class LocalDeliveryStore:
         if occupied is not None and occupied[0] != cursor:
             raise ValueError('provider timestamp collision')
         if existing is None:
-            if store._db.execute('SELECT count(*) FROM local_delivery_observations').fetchone()[0] >= 8192:
+            if store._db.execute('SELECT count(*) FROM local_delivery_observations').fetchone()[0] >= self.observation_limit:
                 raise ValueError('local provider observation capacity exhausted')
             store._db.execute('INSERT INTO local_delivery_observations VALUES (?,?,?)', (channel, provider_ref, cursor))
 

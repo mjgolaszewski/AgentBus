@@ -589,3 +589,156 @@ def test_history_locator_must_retain_context_block_type(tmp_path):
         assert store.message(CHANNEL, original.cursor).slack_ts == ''
     finally:
         store.close()
+
+
+def test_completed_history_does_not_exhaust_outstanding_budget_after_restart(tmp_path, monkeypatch):
+    """Reproduce the production stall through real acceptance and completion."""
+    from src.agentbus_send_rate_service import SendRateStore
+
+    monkeypatch.setattr(SendRateStore, 'MAX_SENDS', 2048)
+    path = tmp_path / 'completed.sqlite3'
+    store = MessageStore(path)
+    store.local_delivery.configure(1, 1100, 1100)
+    first = None
+    try:
+        for number in range(1025):
+            item = accepted(store)
+            first = first or item
+            store.local_delivery.complete(CHANNEL, item[0], f'{number + 100}.000001')
+        assert store.local_delivery.capacity()['outstanding'] == 0
+    finally:
+        store.close()
+    store = MessageStore(path)
+    store.local_delivery.configure(1, 1100, 1100)
+    try:
+        key, message, original = first
+        retry = store.local_delivery.accept(CHANNEL, key, fingerprint(message.model_dump()), message, 'test-principal')
+        assert retry.cursor == original.cursor and retry.slack_ts == '100.000001'
+        with pytest.raises(LocalDeliveryRejected) as conflict:
+            store.local_delivery.accept(CHANNEL, key, 'different-body', message, 'test-principal')
+        assert conflict.value.status == 409
+        accepted(store)
+        assert store.local_delivery.capacity()['retained_requests'] == 1026
+        with pytest.raises(LocalDeliveryRejected, match='outstanding'):
+            accepted(store)
+        assert len(store.read(CHANNEL, limit=2000).messages) == 1026
+    finally:
+        store.close()
+
+
+@pytest.mark.parametrize('state', ['pending', 'submitting', 'uncertain', 'blocked', 'federated', 'unknown'])
+def test_every_unresolved_state_counts_against_outstanding_budget(tmp_path, state):
+    store = MessageStore(tmp_path / 'unresolved.sqlite3')
+    store.local_delivery.configure(1, 2, 2)
+    try:
+        key, message, original = accepted(store)
+        with store._db:
+            store._db.execute('UPDATE local_delivery_obligations SET state=?', (state,))
+        assert store.local_delivery.accept(CHANNEL, key, fingerprint(message.model_dump()), message, 'test-principal').cursor == original.cursor
+        with pytest.raises(LocalDeliveryRejected, match='outstanding'):
+            accepted(store)
+        assert store._db.execute('SELECT count(*) FROM messages').fetchone()[0] == 1
+    finally:
+        store.close()
+
+
+def test_retained_history_limit_preserves_existing_retry_and_conflict(tmp_path):
+    store = MessageStore(tmp_path / 'retained.sqlite3')
+    store.local_delivery.configure(1, 1, 2)
+    try:
+        key, message, original = accepted(store)
+        store.local_delivery.complete(CHANNEL, key, '100.000001')
+        with pytest.raises(LocalDeliveryRejected, match='retained request'):
+            accepted(store)
+        assert store.local_delivery.accept(CHANNEL, key, fingerprint(message.model_dump()), message, 'test-principal').cursor == original.cursor
+        with pytest.raises(LocalDeliveryRejected) as conflict:
+            store.local_delivery.accept(CHANNEL, key, 'different-body', message, 'test-principal')
+        assert conflict.value.status == 409
+        assert store.local_delivery.capacity()['outstanding'] == 0
+    finally:
+        store.close()
+
+
+def test_observation_limit_is_independent_and_never_discards_retry_history(tmp_path):
+    store = MessageStore(tmp_path / 'observations.sqlite3')
+    store.local_delivery.configure(1, 2, 2)
+    try:
+        key, message, original = accepted(store)
+        store.local_delivery.complete(CHANNEL, key, '100.000001')
+        store.local_delivery.complete(CHANNEL, key, '101.000001')
+        with pytest.raises(LocalDeliveryRejected, match='observation'):
+            accepted(store)
+        assert store.local_delivery.accept(CHANNEL, key, fingerprint(message.model_dump()), message, 'test-principal').cursor == original.cursor
+        with pytest.raises(ValueError, match='observation capacity'):
+            store.local_delivery.complete(CHANNEL, key, '102.000001')
+        assert store.local_delivery.observation_cursor(CHANNEL, '100.000001') == original.cursor
+        assert store.local_delivery.capacity()['provider_observations'] == 2
+    finally:
+        store.close()
+
+
+@pytest.mark.parametrize('limits', [(0, 1, 1), (2, 1, 2), (1, 2, 1), (True, 2, 2), (1, 1000001, 2000000), (1, 1, 2000001)])
+def test_delivery_limits_reject_invalid_operator_configuration(limits, tmp_path):
+    with pytest.raises(ValueError, match='Local delivery limits'):
+        Settings(api_token='test', slack_bot_token='xoxb-test', slack_app_token='xapp-test',
+                 slack_channel=CHANNEL, db_path=tmp_path / 'unused.sqlite3',
+                 local_delivery_outstanding_limit=limits[0], local_delivery_retained_limit=limits[1],
+                 local_delivery_observation_limit=limits[2])
+
+
+def test_over_capacity_configuration_retains_retries_and_state_progress(tmp_path):
+    store = MessageStore(tmp_path / 'over-capacity.sqlite3')
+    try:
+        old = accepted(store)
+        key, message, original = accepted(store)
+        store.local_delivery.configure(1, 1, 1)
+        assert set(store.local_delivery.capacity()['warnings']) == {'outstanding', 'retained_requests'}
+        assert store.local_delivery.accept(CHANNEL, key, fingerprint(message.model_dump()), message, 'test-principal').cursor == original.cursor
+        store.local_delivery.complete(CHANNEL, old[0], '100.000001')
+        store.local_delivery.complete(CHANNEL, old[0], '100.000001')
+        assert store.local_delivery.capacity()['retained_requests'] == 2
+        with pytest.raises(LocalDeliveryRejected):
+            accepted(store)
+        assert store._db.execute('SELECT count(*) FROM messages').fetchone()[0] == 2
+    finally:
+        store.close()
+
+
+@pytest.mark.parametrize('raw', ['-1', '0', 'unbounded', '1.5', '99999999', ''])
+def test_operator_delivery_environment_rejects_malformed_or_unbounded_limits(monkeypatch, raw):
+    monkeypatch.setenv('AGENTBUS_API_TOKEN', 'a' * 32)
+    monkeypatch.setenv('AGENTBUS_SLACK_BOT_TOKEN', 'xoxb-test')
+    monkeypatch.setenv('AGENTBUS_SLACK_APP_TOKEN', 'xapp-test')
+    monkeypatch.delenv('AGENTBUS_SLACK_CHANNELS', raising=False)
+    monkeypatch.setenv('AGENTBUS_SLACK_CHANNEL', CHANNEL)
+    monkeypatch.setenv('AGENTBUS_LOCAL_DELIVERY_OUTSTANDING_LIMIT', raw)
+    with pytest.raises(ValueError):
+        Settings.from_env()
+
+
+def test_delivery_environment_limits_are_applied_to_running_store(tmp_path, monkeypatch):
+    monkeypatch.setenv('AGENTBUS_API_TOKEN', 'a' * 32)
+    monkeypatch.setenv('AGENTBUS_SLACK_BOT_TOKEN', 'xoxb-test')
+    monkeypatch.setenv('AGENTBUS_SLACK_APP_TOKEN', 'xapp-test')
+    monkeypatch.delenv('AGENTBUS_SLACK_CHANNELS', raising=False)
+    monkeypatch.setenv('AGENTBUS_SLACK_CHANNEL', CHANNEL)
+    monkeypatch.setenv('AGENTBUS_DB_PATH', str(tmp_path / 'configured.sqlite3'))
+    for name, value in [('OUTSTANDING', 2), ('RETAINED', 3), ('OBSERVATION', 4)]:
+        monkeypatch.setenv('AGENTBUS_LOCAL_DELIVERY_' + name + '_LIMIT', str(value))
+    settings = Settings.from_env()
+    def respond(request):
+        return httpx.Response(200, json={'ok': True, 'bot_id': BOT_ID})
+    http = httpx.AsyncClient(transport=httpx.MockTransport(respond))
+    try:
+        with TestClient(create_app(settings, http_client=http, socket_factory=FakeSocket)) as client:
+            store = client.app.state.store
+            capacity = store.local_delivery.capacity()
+            assert (capacity['outstanding_limit'], capacity['retained_request_limit'],
+                    capacity['provider_observation_limit']) == (2, 3, 4)
+            accepted(store)
+            accepted(store)
+            assert 'outstanding' in store.local_delivery.capacity()['warnings']
+            with pytest.raises(LocalDeliveryRejected, match='outstanding'):
+                accepted(store)
+    finally:
+        asyncio.run(http.aclose())

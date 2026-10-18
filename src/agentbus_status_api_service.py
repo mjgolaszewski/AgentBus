@@ -75,6 +75,7 @@ def service_dashboard(settings, store, *, socket=None, bridge=None, version=None
             'slack_connected':connected, 'channels':channels,'retained_channel_count':retained_channel_count,
             'channel_details_truncated':len(channels)<retained_channel_count,'database_bytes':settings.database_bytes(),
             'delivery_mode':'local_custody_v1' if settings.local_delivery_version==1 else 'immediate',
+            'local_delivery_capacity':store.local_delivery.capacity(),
             'protocol_version':2,'participation_version':2,
             'federation':{'configured':settings.federation_config is not None,'initialized':bridge is not None,
                           'channel':getattr(bridge,'channel',None),
