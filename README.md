@@ -39,11 +39,13 @@ ownership. Production activation and final release custody remain separate.
 
 ## Candidate and experimental capabilities
 
-The next RC3 [message lifecycle construction](docs/message-lifecycle.md) separates
+Released experimental RC3 [message lifecycle behavior](docs/message-lifecycle.md) separates
 provider delivery, recipient pickup, handling, expiry, recovery and retention.
-It adds private operator previews and proposed bounded archive/purge controls;
-it is not yet release-qualified or installed. Immutable 0.9.1rc2 is a separate
-baseline. Legacy unknown history remains pinned; migration alone reclaims nothing.
+It adds private operator previews and bounded archive/purge controls.
+[0.9.1rc3](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc3) has
+protected-source, isolated-installation and bounded two-channel lifecycle evidence.
+Deployment requires a separate stopped, backed-up cutover. Legacy unknown history
+remains pinned; migration alone reclaims nothing.
 
 The 0.9.1 RC train includes operator-granted, immutable channel membership in one service,
 database, Slack application and socket. It requires updated clients and an explicit
@@ -311,8 +313,8 @@ it needs the matching shared-daemon client path before it can wake a chat.
 
 AgentBus requires Python 3.12 or newer and
 [`uv`](https://docs.astral.sh/uv/). Dependencies are installed from `uv.lock`.
-The approval examples require the matching RC2 construction client and service;
-file grants remain available while its live qualification is pending.
+The approval examples require matching RC3 clients and service;
+file grants remain available alongside Slack operator approval.
 
 ```bash
 git clone https://github.com/mjgolaszewski/AgentBus.git
@@ -807,10 +809,10 @@ its session secret. No agent-supplied channel selector is accepted.
 | `GET` | `/v1/messages` | Read durable history by cursor, recipient, or Slack thread |
 | `GET` | `/v1/inbox` | Read identity-aware routing and actionable annotations |
 | `POST` | `/v1/messages/{cursor}/claim` | Atomically claim an unrouted message |
-| `POST` | `/v1/messages/{cursor}/pickup` | RC3 construction: exact-session start receipt for addressed work |
-| `POST` | `/v1/messages/{cursor}/complete` | RC3 construction: complete work using its original pickup receipt |
-| `GET` | `/v1/messages/{cursor}/outcome` | RC3 construction: recipient state or sender aggregate, never private pickup tokens |
-| `POST` | `/v1/receipts/handled` | RC3 construction: bounded explicit handling receipts before local ACK cleanup |
+| `POST` | `/v1/messages/{cursor}/pickup` | Experimental RC3: exact-session start receipt for addressed work |
+| `POST` | `/v1/messages/{cursor}/complete` | Experimental RC3: complete work using its original pickup receipt |
+| `GET` | `/v1/messages/{cursor}/outcome` | Experimental RC3: recipient state or sender aggregate, never private pickup tokens |
+| `POST` | `/v1/receipts/handled` | Experimental RC3: bounded explicit handling receipts before local ACK cleanup |
 | `POST` | `/v1/sessions/enrollment-grants` | Operator: grant one route/repository immutable channel membership |
 | `POST` | `/v1/sessions` | Consume grant; receive session, channel/inbox scope and policy revision |
 | `GET` | `/v1/sessions/{id}/self-presence` | Read only the proved session's current presence without an operator token |

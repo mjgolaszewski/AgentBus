@@ -1,8 +1,10 @@
-# Message lifecycle construction
+# Experimental message lifecycle
 
-This is the **unqualified RC3 construction**, not the behavior of immutable
-0.9.1rc2. Canonical protected-source proof, archive installation, a fresh
-populated-store migration review and bounded live checks are still required.
+This is **experimental behavior released in 0.9.1rc3**, not the behavior of
+immutable 0.9.1rc2. The exact release has protected-source proof, isolated archive
+installation, populated-store copy verification and a bounded two-channel canary.
+See the [release record](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc3).
+Each deployment still requires its own stopped, backed-up migration and client drain.
 The [versioned contract](../contracts/messages/v1/message-lifecycle.contract.yml)
 defines the candidate. Protocol-2 Slack envelopes remain unchanged.
 
@@ -28,6 +30,9 @@ sender sees aggregate target states without private pickup tokens.
 Delivery v2 requires a service-issued channel/inbox epoch. The client privately
 stages its original payload, fingerprint, scope, UUID and epoch before sending.
 An uncertain response never permits changing that UUID or replacing its epoch.
+An explicit `--message-id` recovers an existing private stage; without its original
+stage and epoch, the client refuses before posting. Let the CLI stage a new UUID
+for new work rather than inventing a retry identity.
 Known accepted requests can replay through their declared replay window even
 after their admission epoch closes. New requests using a closed epoch fail;
 expired requests return HTTP 410 and must not be recreated automatically.
@@ -76,7 +81,10 @@ Allowlisted Slack operators get private, channel-scoped controls:
 
 The last three commands preview effects. Append `CONFIRM` to apply a bounded
 batch with a durable operation receipt. Settle distinguishes unclaimed expiry,
-running-work recovery and shared unread expiry. Archive publishes a bounded,
+running-work recovery and shared unread expiry. Outcome queries are read-only:
+`deadline_elapsed` and `lease_elapsed` expose elapsed conditions; explicit
+settlement materializes `expired_unclaimed` and `recovery_required`. Reading does
+not settle, renew a lease or acknowledge work. Archive publishes a bounded,
 compressed, digest-verified payload in the same SQLite database. Purge removes
 only eligible closed history after replay and retention windows, while checking
 claims, ancestry, custody, provider references and federation pins. Unknown

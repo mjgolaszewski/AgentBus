@@ -4,13 +4,16 @@ This seat is for people qualifying capabilities that are still under constructio
 It does not authorize deployment, channel provisioning, credentials, host access,
 or a live wake attempt. Released 0.9.0 is the single-channel baseline. The 0.9.1 RC train adds channel
 isolation and retains unfinished P12 owner-wake research. Its protected construction
-passed a bounded local two-channel canary; release-subject custody remains separate.
+passed a bounded local two-channel canary. Released RC3 also has exact-subject
+archive/install verification and bounded lifecycle evidence; see its
+[release record](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc3).
+These results do not qualify other installations or owner-wake interoperability.
 
 ## Know which claim you are testing
 
 | Capability | Candidate scope | Evidence still required |
 | --- | --- | --- |
-| RC3 message lifecycle | Scoped epochs, private retry staging, exact-session pickup/handling, shared read expiry and bounded archive/purge | Final canonical/archive/install proof, populated-store migration and client-drain review, bounded live checks; unknown legacy and federation references remain pinned |
+| RC3 message lifecycle | Scoped epochs, private retry staging, exact-session pickup/handling, shared read expiry and bounded archive/purge | Exact RC3 source/archive/install and bounded lifecycle checks passed; each deployment needs backed-up migration and client drain; unknown legacy and federation references remain pinned |
 | Slack enrollment approval | File-free pending request, private operator approval in the intended channel, canonical staged-secret redemption | Exact protected source, legacy grant compatibility, archive installs and bounded live human approval; pending requests have no message authority |
 | Multiple channels | One service, database, Slack app and socket; explicit allowlist of at most 16 channels | Bounded local two-channel canary passed on the protected construction; each release subject requires fresh canonical custody and archive/install verification |
 | Channel authorization | One immutable channel per identity; grant-backed enrollment; exact-session reads and writes; channel-local public cursors | Protected construction includes negative controls and populated-store migration/restart continuity; see the exact [qualification record](../../audits/channel-live-qualification.yml) |

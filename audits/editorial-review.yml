@@ -1,7 +1,7 @@
 document:
   kind: editorial_audit
   path: audits/editorial-review.yml
-  status: reviewed_source_diagnostics_passed_final_custody_pending
+  status: reviewed_release_record_followup_pending_canonical_docs_proof
 request:
   scope: Complete product documentation review, including historical records and product contracts; line-by-line
     coverage and disposition per file
@@ -30,8 +30,7 @@ experimental_claims:
   AHP_native_queue: offline research; no production adapter
   atomic_idle_only_wake: unqualified
   federation: historical pinned canary is not changed-runtime proof
-  message_lifecycle: RC3 ordinary-message source construction; no final canonical archive install or live qualification;
-    legacy unknown federation and opaque shared/control/admin history retains explicit pins/backpressure
+  message_lifecycle: Released experimental RC3 has exact protected-source archive/install and bounded lifecycle evidence; legacy unknown federation and opaque shared/control/admin history retains explicit pins/backpressure
 documents:
 - document: .env.example
   review_status: line_by_line_reviewed
@@ -53,11 +52,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 221
-  line_count: 221
-  sha256: 17e683f06e418869c7f5a9609ed6c7e8bd3f721886ea9b7ac1ba7adebb7e2b0b
+    - 222
+  line_count: 222
+  sha256: 482ea3731d62fb14307e4bbc0507abe8a2e77287c4abf8f58064cc0aaa750d7c
   disposition: updates
   findings:
+  - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - Reconciled current participation v2 authority and channel model
   - Replaced staged security narrative with strict session/inbox and immutable membership rules
   - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
@@ -94,9 +94,10 @@ documents:
   - - 1
     - 105
   line_count: 105
-  sha256: ba98cfe9d9aff2a32ffe110677fd9bc88b0428d3ef69f8507e73821248c85cf1
+  sha256: e54a99dc4f481d8a737e310664d6daf642b635b11ddae82364c8f21fa4a20609
   disposition: updates
   findings:
+  - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
   - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
@@ -130,11 +131,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 884
-  line_count: 884
-  sha256: b0ffa30401c053454b64189d098b3ff85bca0d044d6c3668a70deb43bd10c3ca
+    - 886
+  line_count: 886
+  sha256: 7dde2a9937fd41fe51f773cc7201321964e6c576385bffdca3fa66afb572ccaf
   disposition: updates
   findings:
+  - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - Removed legacy bearer/unjoined authority and rollout fallback
   - Added grant-backed examples, scoped cursors/API capabilities and experimental disclosures
   - Fresh-store bootstrap requires distinct operator capability and configured global policy before grant-backed
@@ -535,11 +537,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 79
-  line_count: 79
-  sha256: be3773f9a3862857b62e88c7d756fe0e6240ec14d9f6f98cedb78f31ebcc8e95
+    - 82
+  line_count: 82
+  sha256: 7dc4bb16e01370295e185e49a8af9cd2c13951f1520f12ef6561dd7fd538bae7
   disposition: updates
   findings:
+  - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - New seat separates experimental candidate claims from released baseline and bounded tests; no live deployment/wake
     authority supplied
   - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
@@ -685,11 +688,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 95
-  line_count: 95
-  sha256: 082020d6924b5dfdf50df366db555ba974415646f5e1b5988e2633dba100d089
+    - 96
+  line_count: 96
+  sha256: cc7c7456849d36a6bda71e758d8daa3bb41565227b737b065161afa5f014b2f5
   disposition: updates
   findings:
+  - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - New model connects all current product contracts to identity/cursor relationships, inheritance, implementation
     and behavioral evidence; observability scaffolds explicitly not an implemented collector guarantee
   - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
@@ -961,11 +965,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 234
-  line_count: 234
-  sha256: df35066d5a725c6c2364d2e3347cbaf8f498ae6d65c0ebeec118d35dce82d664
+    - 236
+  line_count: 236
+  sha256: 88a16e98eb1b8a4a0922d91871c08c0718d459463da3297cf90d3f669658d62e
   disposition: updates
   findings:
+  - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
   - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
@@ -1453,11 +1458,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 167
-  line_count: 167
-  sha256: 184ea4eee37e5c5d223c4196f473ff0450dc3030a0a20e1f306f38a48c36ea5c
+    - 175
+  line_count: 175
+  sha256: c2155fd26f2887873d3b5b858426103aee0fc71dcc992ab8c8705582210e9758
   disposition: new
   findings:
+  - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - New complete lifecycle guide distinguishes released RC2 from unqualified RC3; covers command/body expectations,
     scoped retired history, exact receipts, proposed rollout, actual accounting versus physical allocation, replay
     safety, worker drain and pinned-history residuals.
@@ -1476,10 +1482,9 @@ documents:
   verification: Editorial review complete; conditional RC3 behavior and retained-history limits reviewed; final
     exact-source custody pending
 summary:
-  documents_reviewed: 89
+  documents_reviewed: 92
   pending_line_reviews: 0
-  validation: All89 prior full-document hashes verified against published-base HEAD; every capacity changed line
-    reviewed in context. 75 affected cases, Ruff and mypy pass; canonical exact-source proof pending.
+  validation: All 92 prior document hashes verified against protected00d3726; release-record changed lines reviewed in context. New documentation subject awaits canonical proof; runtime evidence remains bound to immutable00d3726.
   consolidation: No historical record merged or removed; new models consolidate current authority without deleting
     evidence
   experimental_disclosures: Current product and audience guides name live multichannel and owner-wake qualification
@@ -1492,3 +1497,9 @@ baseline_review:
   inheritance: Unchanged reviewed bytes inherit the authenticated full-document review; changed authored product
     text re-reviewed in context; no runtime evidence identity is copied
   excluded_unchanged: BCF governance machinery and changelog remain excluded as requested
+
+release_record_review:
+  baseline_commit: 00d37260d42e6f5952dbf2aad7125e862a3be0c2
+  baseline_document_hashes_verified: 92
+  method: Inherit unchanged full-document review; inspect each release-record changed line in context and refresh its full-file hash and coverage.
+  new_runtime_or_closure_authority: false

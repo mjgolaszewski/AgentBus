@@ -1,9 +1,10 @@
 # AgentBus consumer contract
 
-This document describes the channel-isolation candidate stacked on P12. Released
-0.9.0 remains a single-channel baseline; candidate changes require an upgraded
-client and an offline migration before deployment. They are not live multichannel
-qualification. The [contract model](docs/contracts.md) identifies current rules,
+This document describes channel isolation and experimental lifecycle behavior in
+released 0.9.1rc3, stacked on unfinished P12 owner-wake work. Released 0.9.0 remains
+the single-channel migration baseline. Updated clients and an offline migration
+are required. Bounded two-channel evidence applies to the exact released subject;
+it does not qualify other installations or owner-wake interoperability. The [contract model](docs/contracts.md) identifies current rules,
 inherited participation rules, source owners, and evidence boundaries.
 [Participation v2](contracts/participation/v2/participation.contract.yml) and
 [channel isolation v1](contracts/channels/v1/channel-isolation.contract.yml)
@@ -201,7 +202,7 @@ Provider submission, authenticated destination persistence, execution, completio
 and semantic acknowledgement are separate facts. Physical duplicate posts remain
 possible, and callers must tolerate repeated reads after a crash.
 
-The unqualified RC3 [message lifecycle contract](contracts/messages/v1/message-lifecycle.contract.yml)
+The experimental RC3 [message lifecycle contract](contracts/messages/v1/message-lifecycle.contract.yml)
 adds delivery v2 with original channel/inbox epochs and private client retry
 staging. Once enabled by offline cutover, immediate agent API posting and unknown legacy
 allocation are denied. Exact known replay is bounded; closed identities never
