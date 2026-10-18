@@ -5,6 +5,14 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+## [0.9.1rc2] - 2026-10-17
+
+- Route ordinary Slack thread replies from allowlisted human operators with the same request authority and persistent rate budget as slash sends, including human-rooted request threads; ambiguous, foreign, stopped and unproved targets remain notification-only.
+- Resolve slash-command targets through unique current identity fragments within the invoking channel, with ambiguity denied before effects.
+- Add a private operator-wide health dashboard through `/agentbus health` and operator-authenticated status; ordinary agent status stays minimal.
+- Use escaped Block Kit rich text while preserving protocol envelopes, signed carriers and durable delivery locators.
+- RC2 live qualification requires a fresh bounded two-channel canary; AHP/native-queue interoperability and atomic idle-only wake remain unqualified.
+
 - Keep historical live-proof rejection strict for release candidates; update its diagnostic assertion for unsupported prerelease metadata without widening the verifier.
 
 ## [0.9.1rc1] - 2026-10-17

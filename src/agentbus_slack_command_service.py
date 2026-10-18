@@ -9,31 +9,30 @@ from src.agentbus_send_rate_service import SendRateExceeded
 
 SESSION_ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 SUFFIX = re.compile(r"[0-9a-f]{6,12}")
-HELP = ("/agentbus help | roster | status ID | metrics ID | send ID MESSAGE | wake ID MESSAGE | "
+HELP = ("/agentbus help | health | roster | status ID | metrics ID | send ID MESSAGE | wake ID MESSAGE | "
         "checkpoint ID | pause ID | resume ID | retire ID CONFIRM. "
-        "ID is a unique last 6–12 hex characters or a full session UUID.")
+        "ID is a unique current identity fragment, last 6–12 hex characters, or full session UUID.")
 
 
 def resolve_session(store, reference: str, channel: str | None = None) -> str:
+    """Resolve only the invoking channel's sessions; never guess across identities."""
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}", reference):
+        raise ValueError("Use a current identity fragment, session suffix, or full session UUID.")
+    reference = reference.casefold()
+    sessions = store.participation.roster(include_stopped=True, channel=channel)
     if SESSION_ID.fullmatch(reference):
-        presence = store.participation.presence(reference)
-        if channel is not None and presence.get("channel") != channel:
-            raise KeyError(reference)
-        return reference
-    if not SUFFIX.fullmatch(reference):
-        raise ValueError("Use at least six hexadecimal suffix characters or a full session UUID.")
-    with store._lock:
-        rows = store._db.execute(
-            "SELECT session_id FROM participation_sessions WHERE session_id LIKE ?",
-            (f"%{reference}",),
-        ).fetchall()
-    if channel is not None:
-        rows = [row for row in rows if store.participation.presence(row["session_id"]).get("channel") == channel]
-    if not rows:
+        matches = [item for item in sessions if item['session_id'] == reference]
+    else:
+        exact = [item for item in sessions if item['route'].casefold() == reference]
+        matches = exact or [item for item in sessions if reference in item['route'].casefold()
+                            or (SUFFIX.fullmatch(reference) and item['session_id'].endswith(reference))]
+    if not matches:
+        if re.fullmatch(r"[0-9a-f]{1,5}", reference):
+            raise ValueError("No identity matches. Use at least six hexadecimal suffix characters or a full session UUID.")
         raise KeyError(reference)
-    if len(rows) != 1:
-        raise ValueError("Session suffix is ambiguous; use more characters or the full ID.")
-    return rows[0]["session_id"]
+    if len(matches) != 1:
+        raise ValueError("Agent identity or session reference is ambiguous; use the full session UUID.")
+    return matches[0]['session_id']
 
 
 def short_session(session_id: str, all_ids: list[str]) -> str:
@@ -44,7 +43,7 @@ def short_session(session_id: str, all_ids: list[str]) -> str:
     return session_id
 
 
-def execute_command(payload: dict, settings, store, web_client) -> str:
+def execute_command(payload: dict, settings, store, web_client, *, dashboard=None) -> str:
     """Authorize by Slack's verified Socket Mode user ID and exact session ID."""
     channel = payload.get("channel_id")
     if payload.get("command") != "/agentbus" or not isinstance(channel, str) or channel not in settings.channels:
@@ -59,6 +58,10 @@ def execute_command(payload: dict, settings, store, web_client) -> str:
     if not parts or parts[0] == "help":
         return HELP
     action = parts[0]
+    if action == "health" and len(parts) == 1:
+        from src.agentbus_presentation_service import health_text
+        from src.agentbus_status_api_service import service_dashboard
+        return health_text(dashboard() if dashboard is not None else service_dashboard(settings, store))
     if action == "roster" and len(parts) == 1:
         sessions = store.participation.roster(include_stopped=True, channel=channel)
         if not sessions:
@@ -75,7 +78,7 @@ def execute_command(payload: dict, settings, store, web_client) -> str:
         session_id = resolve_session(store, parts[1], channel)
         presence = store.participation.presence(session_id)
     except KeyError:
-        return "Unknown session ID. Use /agentbus roster."
+        return "Unknown session or identity. Use /agentbus roster."
     except ValueError as exc:
         return str(exc)
     if action == "status" and len(parts) == 2:
@@ -146,7 +149,7 @@ def execute_command(payload: dict, settings, store, web_client) -> str:
     if action in {"send", "wake"} and len(parts) == 3:
         if presence["state"] == "stopped":
             return "This session is retired."
-        from src.agentbus_presentation_service import visible_text
+        from src.agentbus_presentation_service import message_blocks
         from src.agentbus_service import SendMessage, encode_envelope
         try:
             message = SendMessage(sender=f"slack:{user}", recipient=presence["route"],
@@ -155,17 +158,11 @@ def execute_command(payload: dict, settings, store, web_client) -> str:
             store.send_rate.reserve(f"slack:{user}")
         except (ValueError, SendRateExceeded) as exc:
             return str(exc)
-        display = visible_text(parts[2])
-        blocks: list[dict[str, object]] = [
-            {"type": "context", "elements": [{"type": "plain_text",
-             "text": f"slack:{user} → {presence['route']} · request · direct"}]},
-        ]
-        blocks.extend({"type": "section", "text": {"type": "plain_text", "text": display[i:i + 3000]}}
-                      for i in range(0, len(display), 3000))
+        blocks = message_blocks(message)
         response = web_client.chat_postMessage(
             channel=channel, text=encode_envelope(message),
             blocks=blocks,
-            parse="none", unfurl_links=False, unfurl_media=False,
+            parse="none", mrkdwn=False, unfurl_links=False, unfurl_media=False,
         )
         if not response.get("ok") or response.get("channel") != channel:
             return "Slack delivery is uncertain; inspect the channel before retrying."

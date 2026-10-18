@@ -10,7 +10,7 @@ from decimal import Decimal, InvalidOperation
 import httpx
 
 from src.agentbus_federation_bridge_service import ProviderCarrierRejected, ProviderUnavailable
-from src.agentbus_presentation_service import visible_text
+from src.agentbus_presentation_service import section_blocks, visible_text
 
 MAX_PROVIDER_RESPONSE_BYTES = 8_388_608
 
@@ -101,7 +101,7 @@ class SlackFederationProvider:
             destination = visible_text(str(frame.get('destination_instance_id', 'unknown')))[:80]
             message = visible_text(str(frame.get('origin_message_id', 'unknown')))[:128]
             summary = f'AgentBus {kind}: {origin} → {destination}\nID {message}'
-        blocks = [{'type': 'section', 'text': {'type': 'plain_text', 'text': summary, 'emoji': False}}]
+        blocks = section_blocks(summary)
         body = {'channel': self.channel, 'text': text, 'blocks': blocks,
             'parse': 'none', 'mrkdwn': False, 'unfurl_links': False, 'unfurl_media': False}
         if thread is not None:

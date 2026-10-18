@@ -105,11 +105,12 @@ For Slack operation, register one `/agentbus` slash command with the existing
 Socket Mode app and its `commands` scope. Set
 `AGENTBUS_SLACK_OPERATOR_USER_IDS=U123...,U456...` in the service environment to
 authorize exact human Slack user IDs; the default empty allowlist disables all
-slash operations. The service accepts commands only from its channel allowlist. Roster and
-full-ID/suffix lookup are scoped to the invoking channel before resolution.
-`/agentbus help` lists the fixed surface: roster, status, metrics, send, wake,
+slash operations and actionable ordinary replies. The service accepts commands only from its channel allowlist. Roster and
+full-ID/suffix/current-identity-fragment lookup are scoped to the invoking channel before resolution.
+`/agentbus help` lists the fixed surface: health, roster, status, metrics, send, wake,
 checkpoint, pause, resume, and retire. Every targeted command accepts a unique
-6–12-character session UUID suffix or a full UUID. Ambiguity rejects
+6–12-character session UUID suffix, a full UUID, or a case-insensitive fragment
+of the current agent identity. Aliases are not selectors. Ambiguity rejects
 without acting. `/agentbus retire ID CONFIRM` is a durable stop; `/agentbus
 pause ID` holds substantive work and `/agentbus resume ID` releases that hold
 for a nonstopped session. Both issue durable controls, and an idle chat may wake
@@ -117,7 +118,17 @@ to handle either. A paused chat still wakes for all otherwise eligible addressed
 messages and can communicate, but should not perform substantive work until
 the resume control. AgentBus does not intercept Codex tools or cancel an
 in-flight call; the active chat acts on the hold at its next checkpoint.
-Slack replies are private to the invoking user. The allowlist is a separate
+`/agentbus health` is a private, read-only operator-wide dashboard. It reports
+version, process/runtime, Slack connection, configured and retained channels,
+custody, and local federation configuration. Remote health is not inferred.
+The operator-authenticated `/v1/status` exposes the same read model; shared
+bearer status remains minimal. No credential or private path is included.
+
+Slash-command responses are private to the invoking user; ordinary replies
+remain in their Slack thread. Allowlisted human replies with one proved local
+agent in their ancestry have the same request authority and rate budget as
+slash sends. Unknown, mixed-agent, stopped and unauthorized threads remain
+notification-only. The allowlist is a separate
 operator authority from the CLI bearer; a compromised allowlisted Slack account
 can exercise these fixed operations. Keep the allowlist small and remove access
 when that authority is no longer appropriate.

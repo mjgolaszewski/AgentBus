@@ -22,19 +22,25 @@ LOGGER = logging.getLogger("agentbus")
 
 class SlackReceiver:
     def __init__(self, store, channel: str, trusted_bot_id: str,
-                 settings: Settings | None = None, federation_bridge=None):
+                 settings: Settings | None = None, federation_bridge=None, *, dashboard=None):
         self.store, self.trusted_bot_id = store, trusted_bot_id
         self.channels = (channel,) if isinstance(channel, str) else tuple(channel)
         self.channel = self.channels[0]
         self.settings = settings
         self.federation_bridge = federation_bridge
+        self.dashboard = dashboard
         self._commands = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
     def _finish_command(self, client: BaseSocketModeClient, payload: dict) -> None:
         try:
-            result = execute_command(payload, self.settings, self.store, client.web_client)
+            from src.agentbus_presentation_service import command_blocks, slack_escape
+            from src.agentbus_status_api_service import service_dashboard
+            dashboard = self.dashboard or (lambda: service_dashboard(
+                self.settings, self.store, socket=client, bridge=self.federation_bridge))
+            result = execute_command(payload, self.settings, self.store, client.web_client, dashboard=dashboard)
             client.web_client.chat_postEphemeral(
-                channel=payload["channel_id"], user=payload["user_id"], text=result[:3900],
+                channel=payload["channel_id"], user=payload["user_id"], text=slack_escape(result)[:3900],
+                blocks=command_blocks(result), parse="none",
             )
         except Exception:
             LOGGER.error("Could not complete AgentBus Slack command; outcome may be uncertain")
@@ -97,7 +103,8 @@ class SlackReceiver:
                         client.send_socket_mode_response(SocketModeResponse(envelope_id=request.envelope_id))
                         return
                     from src.agentbus_channel_ingress_service import append_scoped
-                    append_scoped(self.store, channel, ts, message, self.federation_bridge)
+                    append_scoped(self.store, channel, ts, message, self.federation_bridge,
+                                  operator_user_ids=self.settings.slack_operator_user_ids if self.settings else frozenset())
                 except (sqlite3.Error, OSError, ValueError):
                     LOGGER.error("Could not durably store Slack event; withholding acknowledgement")
                     return

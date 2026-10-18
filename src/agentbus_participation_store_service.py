@@ -499,13 +499,14 @@ class ParticipationStore:
     def roster(self, *, include_stopped: bool = False, channel: str | None = None) -> list[dict]:
         """List service-joined sessions, projecting each session's current presence."""
         with self._lock:
-            rows = self._db.execute("""
+            scope = "" if channel is None else " AND s.chat_id IN (SELECT chat_id FROM chat_channels WHERE channel = ?)"
+            parameters = (include_stopped,) if channel is None else (include_stopped, channel)
+            rows = self._db.execute(f"""
                 SELECT s.session_id, c.display_name FROM participation_sessions AS s
                 JOIN chat_identities AS c ON c.chat_id = s.chat_id
-                WHERE (? OR s.state != 'stopped') ORDER BY c.current_route, s.joined_at
-            """, (include_stopped,)).fetchall()
-            result = [dict(self.presence(row["session_id"]), display_name=row["display_name"]) for row in rows]
-            return result if channel is None else [item for item in result if item.get("channel") == channel]
+                WHERE (? OR s.state != 'stopped'){scope} ORDER BY c.current_route, s.joined_at
+            """, parameters).fetchall()
+            return [dict(self.presence(row["session_id"]), display_name=row["display_name"]) for row in rows]
 
     def presence(self, session_id: str, *, observed_at: datetime | None = None) -> dict:
         """Project participation from target contact; an operator read writes nothing."""

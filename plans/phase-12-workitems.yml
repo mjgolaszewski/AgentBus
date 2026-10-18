@@ -22,7 +22,8 @@ workitems:
   status: IN_PROGRESS
   summary: deliver Conditional admission contract and deterministic conformance matrix
   acceptance:
-  - Design requirements and existing adapter controls pass; actual AHP protocol conformance remains pending an identified disposable owning host
+  - Design requirements and existing adapter controls pass; actual AHP protocol conformance remains pending an identified
+    disposable owning host
   acceptance_evidence:
   - test
   - contract-test
@@ -58,7 +59,8 @@ workitems:
   status: IN_PROGRESS
   summary: deliver Operator-granted enrollment and strict session authorization
   acceptance:
-  - Operator-granted enrollment and strict session authorization is implemented with the negative controls in the channel-isolation contract
+  - Operator-granted enrollment and strict session authorization is implemented with the negative controls in the channel-isolation
+    contract
   acceptance_evidence:
   - test
   - contract-test
@@ -94,19 +96,35 @@ workitems:
   status: TODO
   summary: deliver Canonical proof archive isolated install and bounded canary prerequisites
   acceptance:
-  - Canonical proof archive isolated install and bounded canary prerequisites is implemented with the negative controls in the channel-isolation
-    contract
+  - Canonical proof archive isolated install and bounded canary prerequisites is implemented with the negative controls in
+    the channel-isolation contract
   acceptance_evidence:
   - test
   - contract-test
 - id: P12-P1-08
   priority: P1
   status: IN_PROGRESS
-  summary: deliver Complete product editorial audit with line coverage dispositions current contract model and Experimenters seat
+  summary: deliver Complete product editorial audit with line coverage dispositions current contract model and Experimenters
+    seat
   acceptance:
-  - Every included document has exact reviewed line coverage content hash findings and disposition; no pending document remains at editorial completion
-  - Current authority references models and examples match participation v2 and channel isolation without rewriting historical evidence
+  - Every included document has exact reviewed line coverage content hash findings and disposition; no pending document remains
+    at editorial completion
+  - Current authority references models and examples match participation v2 and channel isolation without rewriting historical
+    evidence
   - Experimental capability references disclose qualification limits and link Experimenters guidance
   - BCF machinery and changelog remain outside editorial scope
   acceptance_evidence:
   - contract-test
+- id: P12-P1-09
+  priority: P1
+  status: IN_PROGRESS
+  summary: deliver RC2 Slack reply parity identity fragments private health dashboard and rich presentation
+  acceptance:
+  - Verified human reply routing preserves session/channel proof and rejects ambiguous thread ownership
+  - Partial current-identity lookup is unique and scoped before all effects; UUID compatibility retained
+  - Authorized private health dashboard reports actual version/runtime/channel/federation state without secrets or inferred
+    remote health
+  - Rich Slack display preserves protocol2 carrier and echo locators without mentions/unfurls
+  acceptance_evidence:
+  - contract-test
+  - test

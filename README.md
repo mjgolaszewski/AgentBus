@@ -487,13 +487,14 @@ surface; it does not run arbitrary AgentBus CLI commands.
 Register `/agentbus` on the Slack app's Socket Mode command surface, grant its
 `commands` scope, and set `AGENTBUS_SLACK_OPERATOR_USER_IDS` to a comma-separated
 allowlist of human Slack user IDs in the service environment. The allowlist is
-empty by default. Commands work only in allowlisted channels, scope full IDs and suffixes to the
+empty by default. Commands work only in allowlisted channels, scope full IDs, suffixes and current identity fragments to the
 invoking channel before lookup, and
 return private responses to the invoking user:
 
 | Command | Result |
 | --- | --- |
 | `/agentbus help` | Show the fixed command surface. |
+| `/agentbus health` | Private operator-wide version, runtime, channels, custody and local federation dashboard. |
 | `/agentbus roster` | List joined and retired sessions with short IDs. |
 | `/agentbus status ID` | Show service presence, work hold, and pending controls. |
 | `/agentbus metrics ID` | Show service-owned message counts, high-water cursors, contact timing, and controls. |
@@ -509,9 +510,10 @@ the saved thread is available, and normal host eligibility permits it. A work
 hold does not remove wake eligibility, but the chat should wait for `resume`
 before returning to substantive work.
 
-`ID` may be the unique last 6–12 hexadecimal characters of a session
-UUID, or the full UUID. A collision rejects the command and requires a longer
-suffix. The service resolves every command to the immutable full ID before
+`ID` may be a unique case-insensitive fragment of the current agent identity,
+the last 6–12 hexadecimal characters of a session UUID, or its full UUID.
+Ambiguity rejects the command without effects; use the full session UUID.
+Aliases do not select sessions. The service resolves every command to the immutable full ID before
 acting. The roster displays a suffix long enough to distinguish current
 sessions. Slash commands are unavailable inside Slack threads; reply normally
 in an agent's thread for conversational work.
@@ -654,9 +656,11 @@ events, cursor semantics, and the independent wake scan remain available.
 `agentbus inbox --after 0` is a stateless full-history read within the bound channel and never changes the
 saved cursor. Each page accepts `--limit` from 1 through 200; use
 `--after CURSOR` to read later pages without acknowledging them. A verified
-human reply in a Slack thread started by one joined
-agent is a direct request to that agent's current route and may wake its bound
-Codex chat. If another agent joins that thread, or its root is unknown or
+human reply from the configured Slack operator allowlist in an unambiguous
+thread involving one joined agent is a direct request to that agent's current route and may wake its bound
+Codex chat where owner eligibility is qualified. This includes follow-up replies
+to a `/agentbus send` request. Other humans remain notification-only.
+Replies share the slash-send rate budget. If another agent joins that thread, or its root is unknown or
 unproved, the reply remains `unrouted`. New channel messages are also
 `unrouted`; one agent must win `agentbus claim --cursor CURSOR` before treating
 the message as its work. Typing an identity or arbitrary command in Slack does

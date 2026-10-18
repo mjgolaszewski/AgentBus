@@ -18,14 +18,28 @@ model:
     owner: ParticipationStore
     stable_key: chat_id
     cardinality: one_immutable_channel_per_chat
-    inherited_membership: [session, current_route, reserved_aliases]
+    inherited_membership:
+    - session
+    - current_route
+    - reserved_aliases
   principal:
     owner: ChannelPrincipal
-    fields: [chat_id, session_id, route, channel, inbox_id]
+    fields:
+    - chat_id
+    - session_id
+    - route
+    - channel
+    - inbox_id
     resolution: exact_secret_then_enabled_channel_then_inbox_assertion_before_resource_lookup
   enrollment_grant:
     owner: ChannelStore_and_grant_consumption_transaction
-    fields: [channel, route, repo, optional_chat_id, expires_at, token_hash]
+    fields:
+    - channel
+    - route
+    - repo
+    - optional_chat_id
+    - expires_at
+    - token_hash
     lifetime_seconds: 600
     retry: same_staged_secret_returns_original_receipt
   public_position:
@@ -34,29 +48,74 @@ model:
     internal_reference: messages_cursor_private_and_unchanged
 inheritance:
   precedence: v2_and_channel_contract_override_conflicting_v1_authorization_only
-  retained: [policy_resolution, exact_revision_ack, durable_controls, stop_receipts, presence, cadence, alias_attribution, rotation, work_hold, presentation_cleanup]
+  retained:
+  - policy_resolution
+  - exact_revision_ack
+  - durable_controls
+  - stop_receipts
+  - presence
+  - cadence
+  - alias_attribution
+  - rotation
+  - work_hold
+  - presentation_cleanup
   replaced_invariants:
     INV-017: no_legacy_compatibility_authority_or_upgrade_notice_path
     INV-021: all_new_enrollment_requires_operator_grant
     INV-023: historical_legacy_rows_retained_but_no_new_unjoined_API_sends
     INV-027: exact_session_and_inbox_required_for_all_agent_reads_and_writes
     INV-030: per_session_send_limit_and_existing_allocation_bounds_preserved_without_unjoined_tier
+    INV-031: allowlisted_verified_human_replies_require_one_current_local_agent_in_durable_proved_ancestry;
+      human_rooted_slash_send_threads_allowed; unknown_mixed_stopped_foreign_or_unproved_threads_notification_only
     INV-032: explicit_destination_within_membership_or_existing_approved_federation_channel
-    INV-036: suffix_and_full_ID_lookup_scoped_before_resolution_to_invoking_channel
+    INV-036: allowlisted_human_commands_resolve_channel_first_exact_session_UUID_unique_UUID_suffix_or_unique_current_identity_fragment;
+      ambiguity_denies_without_effect
   replaced_sections:
     scope_compatibility: protocol2_wire_and_paths_preserved_but_legacy_authorization_removed
     scope_migration_assumptions: explicit_offline_channel_migration_and_matching_client_required
     message_principal: immutable_channel_and_inbox_in_exact_session_principal
     join_and_resume: operator_grant_before_new_identity_and_exact_policy_ack_before_activation
     security_expansion: strict_session_channel_contract_without_bearer_only_fallback
-    Slack_operator_commands: allowlisted_invoking_channel_only
+    Slack_operator_commands: allowlisted_invoking_channel_for_targets; health_is_private_global_read_only_human_operator_view
   superseded_proof_expectations:
     PO-25: unsupported_client_fails_closed_instead_of_retaining_legacy_message_access
     PO-32: first_join_uses_grant_and_recovers_lost_response_with_same_secret
     PO-36: missing_or_foreign_proof_denies_all_message_operations
     PO-41: no_unjoined_destination_compatibility
-    PO-45: suffix_and_full_ID_resolve_only_within_invoking_channel
+    PO-45: suffix_full_ID_and_unique_current_identity_fragment_resolve_only_within_invoking_channel
 experimental_boundary:
   multichannel: candidate_until_final_canonical_and_two_channel_live_evidence
   AHP_or_native_queue: research_only_no_production_adapter
   atomic_idle_only_wake: unqualified
+slack_interaction:
+  identity_resolution:
+    scope: invoking_channel_before_any_target_resolution
+    accepted:
+    - full_session_UUID
+    - unique_6_to_12_hex_session_suffix
+    - unique_case_insensitive_current_identity_substring
+    ambiguity: no_post_control_or_other_mutation; require_full_session_UUID
+    aliases: current_identity_only; retained_aliases_do_not_select_a_different_session
+  human_replies:
+    authorization: same_exact_human_operator_allowlist_as_slash_send; empty_disables_routing
+    ancestry: single_current_enrolled_nonstopped_local_agent; human_rooted_direct_requests_supported
+    authority: direct_request_only; no_control_tool_host_or_membership_authority
+    quota: same_persistent_per_human_send_bucket_as_slash_send
+    transaction: provider_dedup_before_quota; quota_and_append_atomic; failed_append_rolls_back
+    denied: retained_unrouted; provider_retries_never_upgrade_prior_notification
+  health:
+    audience: allowlisted_human_operator_only; private_ephemeral_response
+    scope: global_read_only_dashboard; no_global_agent_view
+    contents: version_runtime_socket_channels_custody_and_local_federation_configuration
+    exclusions: credentials_private_paths_key_material_remote_health_or_wake_guarantees
+    bounds: at_most_64_channel_details; retained_count_and_truncation_disclosed
+  presentation:
+    projection_only: true
+    wire_envelope: 2
+    rich_text: Slack_Block_Kit_mrkdwn_for_human_projection; escaped_control_markup; literal_machine_envelope_retained
+    safety:
+    - no_automatic_mentions
+    - no_link_or_media_unfurls
+    - bounded_block_text
+    - durable_echo_locator_preserved
+    plain_text_fallback: retained_for_command_responses_and_accessibility
