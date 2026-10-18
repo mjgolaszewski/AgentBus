@@ -85,6 +85,10 @@ floors prevent reuse or recreation of retired history.
 Scoped history pages explicitly flag retired gaps. A known retired position
 returns HTTP 410 rather than looking like newly available work; its public
 position is never allocated again.
+External JSON wake intents are not database foreign keys. Running or uncertain
+recipient work stays pinned. If terminal history referenced by a delayed local
+intent is retired, HTTP 410 leaves the intent, uncertain attempt, spool and ACK
+unchanged and reports notification-only; retirement never authorizes a new turn.
 
 There is no generic cache flush: authoritative retry guards, custody, receipts,
 credentials, bindings and wake intents are not caches. These controls do not
@@ -97,6 +101,20 @@ counts, reports storage headroom, and warns at 80% utilization.
 service-wide WAL maintenance across the one database. It does not delete message
 or receipt rows, run a vacuum, acknowledge work or change channel membership.
 An active reader/writer can defer maintenance without losing custody.
+
+Operator archive commands have exactly 32 MiB of separate maintenance headroom
+above the ordinary message budget. New sends cannot use it. Preview and retained
+operation results expose the pre-operation physical/reusable/WAL footprint and
+archive admission ceiling. Each transaction reserves its entire bounded batch
+of at most 100 payloads before changing custody. This permits cleanup when
+ordinary admission is exhausted; it is not an OS allocation guarantee.
+
+If a reader pins WAL, custody remains intact and new admission stays blocked.
+Release that reader through its owner, run the nonblocking checkpoint, then
+repeat archive/purge batches as eligible. At the maintenance ceiling, archive
+fails without partial retirement. There is no unlimited fallback: inspect pinned
+obligations and arrange operator capacity recovery before retrying. No implicit
+vacuum or deletion occurs.
 
 ## Offline cutover
 

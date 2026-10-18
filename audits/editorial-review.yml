@@ -954,9 +954,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 227
-  line_count: 227
-  sha256: 458a92ba7e3dcab92a7b6bb4e6bd6bad27f237912320650fcdb474844d784abf
+    - 229
+  line_count: 229
+  sha256: 2d5617a1f550bfba901620c4d13c6e861fdb66f98c397da6b17656374217560d
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
@@ -979,6 +979,8 @@ documents:
     absence of hidden-command disclosure or private narrative identifiers.
   - 'Reviewed expired-lease recovery wording: completion ownership is not new execution authority; uncertain host
     attempts remain notification-only with evidence preserved.'
+  - 'Reviewed maintenance recovery and external-wake retirement clarification in context: finite archive-only headroom,
+    ordinary admission separation, bounded refusal and preserved uncertain intent evidence.'
   verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
     qualification remain pending
   baseline_review_sha256: a26359db528ecae6e82564456c8a5a60f9f5c21fa861d5ad7097f8cc44a0bbab
@@ -1410,9 +1412,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 96
-  line_count: 96
-  sha256: 571fcbb86672a4f4c2763494c625361ed03a96431611abe073ae95c029b724b5
+    - 98
+  line_count: 98
+  sha256: f6d5680f6cbc62618b2177d2a926b91a30f39db36318764d6d105f09742f0eff
   disposition: new
   findings:
   - New governed ordinary-message lifecycle contract models exact scopes, replay epochs, independent transport/recipient/shared
@@ -1423,15 +1425,17 @@ documents:
     separate from historical proof.'
   - 'Reviewed expired-lease recovery wording: completion ownership is not new execution authority; uncertain host
     attempts remain notification-only with evidence preserved.'
+  - 'Reviewed maintenance recovery and external-wake retirement clarification in context: finite archive-only headroom,
+    ordinary admission separation, bounded refusal and preserved uncertain intent evidence.'
   verification: Editorial review complete; conditional RC3 behavior and retained-history limits reviewed; final
     exact-source custody pending
 - document: docs/message-lifecycle.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 137
-  line_count: 137
-  sha256: 065129444a2c7b5db7186281dbb7f3e2e3d3442b7cd58feb61c156213ae115ae
+    - 155
+  line_count: 155
+  sha256: 4547e04a5fb733f60e262d4637686a109f2a18c9abb061a0bbf002bd19a56949
   disposition: new
   findings:
   - New complete lifecycle guide distinguishes released RC2 from unqualified RC3; covers command/body expectations,
@@ -1442,6 +1446,8 @@ documents:
     separate from historical proof.'
   - 'Reviewed expired-lease recovery wording: completion ownership is not new execution authority; uncertain host
     attempts remain notification-only with evidence preserved.'
+  - 'Reviewed maintenance recovery and external-wake retirement clarification in context: finite archive-only headroom,
+    ordinary admission separation, bounded refusal and preserved uncertain intent evidence.'
   verification: Editorial review complete; conditional RC3 behavior and retained-history limits reviewed; final
     exact-source custody pending
 summary:

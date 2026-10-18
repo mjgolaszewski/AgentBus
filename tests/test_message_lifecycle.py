@@ -804,3 +804,64 @@ def test_retired_history_is_explicit_and_channel_scoped_at_http_boundary(lifecyc
         assert client.get("/v1/messages?after=1", headers=headers("sender")).json()["retired_history"] is False
     finally:
         client.close()
+
+
+def test_archive_recovers_exhausted_admission_budget_with_reader_pinned_wal(lifecycle):
+    import sqlite3
+    from dataclasses import replace
+
+    store, p = lifecycle
+    for index in range(180):
+        body = SendMessage(sender=p['sender'].route, recipient=p['recipient'].route,
+                           kind='request', text=f'{index}:' + 'x' * 5900)
+        body._sender_assurance = 'session'
+        store.append('C111', str(uuid4()), body)
+    store.lifecycle.settle(200)
+    store.retention.checkpoint()
+    budget = store.retention.storage()['accounted_bytes'] - 256 * 1024
+    assert budget >= 1048576
+    store.lifecycle.policy = replace(store.lifecycle.policy, storage_bytes=budget)
+    assert store.retention.storage()['accounted_bytes'] > budget
+    reader = sqlite3.connect(store._db.execute('PRAGMA database_list').fetchone()[2])
+    try:
+        reader.execute('BEGIN')
+        reader.execute('SELECT count(*) FROM messages').fetchone()
+        with pytest.raises(LifecycleRejected):
+            store.retention.reserve_storage(100)
+        result = store.retention.archive('C111', actor='operator', request_key='full-archive',
+                                         apply=True, instant=200)
+        assert result['eligible'] == 100
+        assert store.retention.checkpoint()['status'] == 'deferred'
+        assert store._db.execute('SELECT count(*) FROM lifecycle_archive').fetchone()[0] == 100
+        with pytest.raises(LifecycleRejected):
+            store.retention.reserve_storage(100)
+        assert store.message('C111', 1).text.startswith('0:')
+    finally:
+        reader.close()
+    assert store.retention.checkpoint()['status'] == 'completed'
+    assert store.retention.storage()['accounted_bytes'] < budget
+    store.retention.reserve_storage(100)
+
+
+def test_archive_maintenance_bound_refuses_without_partial_retirement(lifecycle):
+    from dataclasses import replace
+
+    store, p = lifecycle
+    m = message(store, p['sender'], p['recipient'])
+    store.lifecycle.settle(200)
+    store.lifecycle.policy = replace(store.lifecycle.policy, storage_bytes=1048576)
+    with store._db:
+        store._db.execute('CREATE TABLE maintenance_pressure(payload BLOB)')
+        store._db.execute('INSERT INTO maintenance_pressure VALUES (zeroblob(?))', (35 * 1024 * 1024,))
+    store.retention.checkpoint()
+    preview = store.retention.archive('C111', actor='operator', instant=200)
+    status = preview['storage_before']
+    assert status['archive_maintenance_bytes'] == 32 * 1024 * 1024
+    assert status['accounted_bytes'] > status['archive_limit_bytes']
+    with pytest.raises(LifecycleRejected) as full:
+        store.retention.archive('C111', actor='operator', request_key='bounded-maintenance',
+                                apply=True, instant=200)
+    assert full.value.status == 503
+    assert store.message('C111', m.cursor).text == m.text
+    assert store._db.execute('SELECT count(*) FROM lifecycle_archive').fetchone()[0] == 0
+    assert store._db.execute("SELECT 1 FROM lifecycle_operations WHERE request_key='bounded-maintenance'").fetchone() is None

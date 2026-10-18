@@ -814,3 +814,29 @@ def test_expired_lease_never_restarts_uncertain_host_attempt(setup, monkeypatch)
     assert profile.get('ack_cursor', 0) == 0
     with pytest.raises(ClientError, match='no turn submitted'):
         pickup_wake_refs(values, profile, ['MESSAGE:1'], api_call=observed)
+
+
+def test_retired_cursor_preserves_uncertain_external_wake_intent(setup, monkeypatch):
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, 'thread-one', lambda: host)
+    wake.set_enabled(values, identity, True)
+    put(path, profile, message(1))
+    host.failure = TurnStartUncertain('prior outcome unknown')
+    assert wake.run_once(values, identity, live=True, host_factory=lambda: host)['status'] == 'uncertain'
+    state_path = wake._state_path(values, profile['chat_id'])
+    before = json.loads(state_path.read_text())
+    spool = path.with_name(path.name + '.poll.json').read_bytes()
+    profile['message_lifecycle_version'] = 1
+    profile['participation']['session_secret'] = 'session-proof'
+    def retired(_values, target, payload=None, **_kwargs):
+        assert target.endswith('/outcome')
+        raise ClientError('Message history was explicitly retired', status=410)
+    monkeypatch.setattr(wake, 'api', retired)
+    host.calls.clear()
+    result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
+    assert result['status'] == 'notification_only'
+    after = json.loads(state_path.read_text())
+    assert after['last_attempt'] == before['last_attempt']
+    assert after['wake_intent'] == before['wake_intent']
+    assert host.calls == [] and path.with_name(path.name + '.poll.json').read_bytes() == spool
+    assert profile.get('ack_cursor', 0) == 0

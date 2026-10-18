@@ -83,7 +83,8 @@ def health_text(snapshot: dict) -> str:
         lines.append('Additional retained channel details omitted from this bounded dashboard.')
     if storage := snapshot.get('lifecycle_storage'):
         lines.append(f"💾 *Lifecycle admission budget:* `{storage['accounted_bytes']}/{storage['limit_bytes']}` bytes · occupied SQLite pages + WAL/SHM; archives included\n"
-                     f"Physical allocation `{storage['physical_bytes']}` bytes · reusable database pages `{storage['reusable_bytes']}` bytes")
+                     f"Physical allocation `{storage['physical_bytes']}` bytes · reusable database pages `{storage['reusable_bytes']}` bytes\n"
+                     f"Operator archive-only maintenance headroom `{storage['archive_maintenance_bytes']}` bytes; maximum accounted archive footprint `{storage['archive_limit_bytes']}` bytes")
         if storage['accounted_bytes'] * 5 >= storage['limit_bytes'] * 4:
             lines.append('🟡 Lifecycle storage at or above 80%; inspect retention before admission runs out of headroom.')
     if policy := snapshot.get('lifecycle_policy'):

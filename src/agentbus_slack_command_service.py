@@ -91,6 +91,7 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
         storage = store.retention.storage()
         return (f"*💾 Service-wide storage*\nPhysical allocation `{storage['physical_bytes']}` bytes\n"
                 f"Reusable database pages `{storage['reusable_bytes']}` bytes\n"
+                f"Archive-only maintenance headroom `{storage['archive_maintenance_bytes']}` bytes; accounted archive limit `{storage['archive_limit_bytes']}` bytes\n"
                 'Checkpoint maintenance is service-wide, nonblocking and preserves custody. '
                 'Use `/agentbus storage checkpoint CONFIRM` to apply; no generic cache flush is available.')
     if action == "lifecycle":

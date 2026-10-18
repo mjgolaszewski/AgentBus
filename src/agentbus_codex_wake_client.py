@@ -490,7 +490,7 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
                 refs = filter_wake_refs(values, profile, refs, state, api_call=api)
                 _save(path, state)
             except ClientError as exc:
-                return finish({'status':'notification_only', 'reason':str(exc), 'eligible':refs})
+                return {'status':'notification_only', 'reason':str(exc), 'eligible':refs}
         if not refs:
             if live and state.get('lifecycle_recovery_required'):
                 return finish({'status':'notification_only', 'reason':'expired_work_lease_requires_owner_recovery', 'eligible':[]})

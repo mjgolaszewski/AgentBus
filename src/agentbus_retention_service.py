@@ -12,6 +12,7 @@ from src.agentbus_message_lifecycle_service import LifecycleRejected
 from src.agentbus_transaction_service import atomic
 
 MAX_PAYLOAD = 65536
+ARCHIVE_MAINTENANCE_BYTES = 32 * 1024 * 1024
 
 
 class RetentionStore:
@@ -58,6 +59,8 @@ class RetentionStore:
             return {'accounted_bytes':allocated - reusable + sidecars,
                     'physical_bytes':allocated + sidecars, 'reusable_bytes':reusable,
                     'limit_bytes':self.owner.lifecycle.policy.storage_bytes,
+                    'archive_maintenance_bytes':ARCHIVE_MAINTENANCE_BYTES,
+                    'archive_limit_bytes':self.owner.lifecycle.policy.storage_bytes + ARCHIVE_MAINTENANCE_BYTES,
                     'page_size':page_size}
 
     def checkpoint(self):
@@ -79,13 +82,14 @@ class RetentionStore:
             finally:
                 self.owner._db.execute(f'PRAGMA busy_timeout={previous}')
 
-    def reserve_storage(self, payload_bytes):
+    def reserve_storage(self, payload_bytes, *, maintenance=False, records=1):
         if not self.owner.lifecycle.enabled:
             return
         status = self.storage()
         # Reserve index/WAL headroom before accepting a new durable payload.
-        required = 2 * payload_bytes + 16 * status['page_size']
-        if status['accounted_bytes'] + required > status['limit_bytes']:
+        required = 2 * payload_bytes + 16 * status['page_size'] * records
+        limit = status['archive_limit_bytes'] if maintenance else status['limit_bytes']
+        if status['accounted_bytes'] + required > limit:
             raise LifecycleRejected(503, 'Lifecycle storage capacity requires operator retention or capacity recovery')
 
     def payload(self, channel, cursor, raw):
@@ -147,13 +151,15 @@ class RetentionStore:
                     return json.loads(prior['result'])
             current = lifecycle.now(instant)
             rows = self._eligible(channel, current)
-            result = {'channel':channel, 'applied':apply, 'eligible':len(rows), 'batch_limit':100}
+            result = {'channel':channel, 'applied':apply, 'eligible':len(rows), 'batch_limit':100,
+                      'storage_before':self.storage()}
             if apply:
-                for row in rows:
-                    raw = row['payload'].encode('utf-8')
-                    if not 1 <= len(raw) <= MAX_PAYLOAD:
-                        raise ValueError('Payload exceeds archive byte bound')
-                    self.reserve_storage(len(raw))
+                payloads = [(row, row['payload'].encode('utf-8')) for row in rows]
+                if any(not 1 <= len(raw) <= MAX_PAYLOAD for _, raw in payloads):
+                    raise ValueError('Payload exceeds archive byte bound')
+                if payloads:
+                    self.reserve_storage(sum(len(raw) for _, raw in payloads), maintenance=True, records=len(payloads))
+                for row, raw in payloads:
                     self.owner._db.execute('INSERT INTO lifecycle_archive VALUES (?,?,?,?,?,?)',
                         (row['cursor'], channel, zlib.compress(raw), hashlib.sha256(raw).hexdigest(), len(raw), current))
                     self.owner._db.execute("UPDATE messages SET payload='null' WHERE cursor=?", (row['cursor'],))
