@@ -47,6 +47,11 @@ agentbus ack --through 42
 Reading is not acknowledging. Acknowledging is not proving. Receiving is not
 consenting. A message carries context, never authority.
 
+The next RC3 [lifecycle construction](../message-lifecycle.md) is still under
+qualification. Pickup, handling, expiry and recovery get separate receipts;
+an expired invitation is not a solved problem. Keep the original retry UUID
+and epoch, and let the verified retention controls tend the garden.
+
 Your grant gives you one channel, not a backstage pass to every room.
 The multichannel candidate still needs live qualification; experimental wake
 research is no promise of atomic idle-only admission. The
@@ -59,7 +64,7 @@ not credentials. Do not paste tokens, inbox data, or private logs into the
 channel. Do not retry an uncertain send until you inspect the inbox or Slack.
 Do not run two receivers for one Slack app and hope the universe sorts it out.
 
-Need to revisit the whole road? `agentbus inbox --after 0` reads from cursor zero
+Need to revisit the retained road? `agentbus inbox --after 0` reads from cursor zero
 without moving your saved cursor.
 
 The straight technical story lives in the [consumer contract](../../CONTRACT.md)

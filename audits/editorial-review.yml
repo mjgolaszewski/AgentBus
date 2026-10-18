@@ -1,7 +1,7 @@
 document:
   kind: editorial_audit
   path: audits/editorial-review.yml
-  status: reviewed_local_validation_passed
+  status: reviewed_source_diagnostics_passed_final_custody_pending
 request:
   scope: Complete product documentation review, including historical records and product contracts; line-by-line
     coverage and disposition per file
@@ -10,8 +10,8 @@ request:
   - BCF-owned governance machinery, generated projections, runtime, schemas and workflows
   - Executable source/tests and opaque input pin manifests are implementation/evidence data, not prose documentation;
     signed YAML canary records are included and retained byte-for-byte
-  - 'AGENTS.md AGENTS.yml CLAUDE.md governance-profile.yml and schemas: BCF policy/schema machinery excluded;
-    application architecture-boundaries.yml and product plans/logs included'
+  - 'AGENTS.md AGENTS.yml CLAUDE.md governance-profile.yml and schemas: BCF policy/schema machinery excluded; application
+    architecture-boundaries.yml and product plans/logs included'
   - Binary illustrations are retained assets; their textual presentation and alt text are reviewed in Markdown.
     This audit excludes itself from content hashing to avoid a recursive digest.
   history_policy: Preserve original private narrative snapshots and immutable signed machine evidence; anonymize
@@ -25,11 +25,13 @@ request:
   completion_rule: No document marked reviewed without full line inspection; pending rows mean audit incomplete.
     Re-review modified bytes and refresh hashes before final candidate.
 experimental_claims:
-  multichannel: Historical bounded local two-channel RC1 evidence retained; RC2 requires fresh final-subject
-    proof and renewed bounded local canary
+  multichannel: Historical bounded two-channel evidence remains subject-specific; changed RC3 runtime requires final
+    custody and bounded live verification
   AHP_native_queue: offline research; no production adapter
   atomic_idle_only_wake: unqualified
   federation: historical pinned canary is not changed-runtime proof
+  message_lifecycle: RC3 ordinary-message source construction; no final canonical archive install or live qualification;
+    legacy unknown federation and opaque shared/control/admin history retains explicit pins/backpressure
 documents:
 - document: .env.example
   review_status: line_by_line_reviewed
@@ -51,18 +53,28 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 209
-  line_count: 209
-  sha256: 05f60f0ce4ab07f0985ffb3960a1f87d881e4ff9201dc90fc8d3b0bded5fd746
+    - 221
+  line_count: 221
+  sha256: 17e683f06e418869c7f5a9609ed6c7e8bd3f721886ea9b7ac1ba7adebb7e2b0b
   disposition: updates
   findings:
   - Reconciled current participation v2 authority and channel model
   - Replaced staged security narrative with strict session/inbox and immutable membership rules
-  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity,
-    scoped unique current identities, private operator health, unchanged wire and experimental wake boundaries'
+  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
+    unique current identities, private operator health, unchanged wire and experimental wake boundaries'
   - Normative join distinguishes unjoined UUID preservation, secret-bound approval, expiry and immutable membership
     without claiming live proof; all changed lines inspected against hash-matched previous full-document review
-  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
+  - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
+    pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
+    absence of hidden-command disclosure or private narrative identifiers.
+  - 'Re-reviewed lifecycle references in context: no perpetual-history or wake promise; expired read work is not
+    ACKed, retired gaps are explicit, staged retry identities remain bound, and current-source qualification is
+    separate from historical proof.'
+  verification: Editorial review complete; conditional RC3 behavior and retained-history limits reviewed; final
+    exact-source custody pending
+  baseline_review_sha256: 05f60f0ce4ab07f0985ffb3960a1f87d881e4ff9201dc90fc8d3b0bded5fd746
+  review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
+    in surrounding context
 - document: CONTRIBUTING.md
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -82,7 +94,7 @@ documents:
   - - 1
     - 105
   line_count: 105
-  sha256: bdaf73c69ddbbc3ba02acc02ebdf2d1b7ea6620fc06ea11d2d329df4a5ff5701
+  sha256: 12235f50797257698452728dbb6c84f640748c466a0af57a42c669ad407a4a8f
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
@@ -99,32 +111,46 @@ documents:
   - Reviewed stable admission/replay decision and residual retention limitation; no execution transcript added.
     Hash-matched prior full review inherited; all changed lines reviewed in context.
   - Removed obsolete RC1 current-train reminder; historical proof remains in phase logs and immutable audit.
-  verification: 75 affected behavioral checks plus Ruff and mypy pass; canonical exact-source proof pending
+  - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
+    pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
+    absence of hidden-command disclosure or private narrative identifiers.
+  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
+    qualification remain pending
+  baseline_review_sha256: bdaf73c69ddbbc3ba02acc02ebdf2d1b7ea6620fc06ea11d2d329df4a5ff5701
+  review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
+    in surrounding context
 - document: README.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 874
-  line_count: 874
-  sha256: 3f622f18a857df3aa1577067c3b1225254922bad7fa895cabc9117afdc155b58
+    - 884
+  line_count: 884
+  sha256: b0ffa30401c053454b64189d098b3ff85bca0d044d6c3668a70deb43bd10c3ca
   disposition: updates
   findings:
   - Removed legacy bearer/unjoined authority and rollout fallback
   - Added grant-backed examples, scoped cursors/API capabilities and experimental disclosures
   - Fresh-store bootstrap requires distinct operator capability and configured global policy before grant-backed
     joining; existing migration preserves policy
-  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
-    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
+    channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   - Anonymized local route examples and exported local-prefix configuration agree
-  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity,
-    scoped unique current identities, private operator health, unchanged wire and experimental wake boundaries'
+  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
+    unique current identities, private operator health, unchanged wire and experimental wake boundaries'
   - 'RC2 follow-up changed lines inspected in full against hash-matched prior complete review: one shared announcement/poll
     payload with channel-local receipts, explicit answers, mobile numeric/status formatting and retained qualification
     boundaries'
-  - Quick start and command reference cover file-free pending approval, bounded waiting, exact policy ACK and
-    retained file workflow; expired replacement preserves private stage; all changed lines inspected against
-    hash-matched previous full-document review
-  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
+  - Quick start and command reference cover file-free pending approval, bounded waiting, exact policy ACK and retained
+    file workflow; expired replacement preserves private stage; all changed lines inspected against hash-matched
+    previous full-document review
+  - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
+    pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
+    absence of hidden-command disclosure or private narrative identifiers.
+  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
+    qualification remain pending
+  baseline_review_sha256: 3f622f18a857df3aa1577067c3b1225254922bad7fa895cabc9117afdc155b58
+  review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
+    in surrounding context
 - document: SECURITY.md
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -182,8 +208,8 @@ documents:
   disposition: updates
   findings:
   - Retained historical evidence with original exact subject limits; no candidate proof applicability inferred
-  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
-    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
+    channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: audits/owner-wake-qualification.yml
   review_status: line_by_line_reviewed
@@ -194,8 +220,8 @@ documents:
   sha256: 81d8fe1942e11d842bc3370856714712ee205a9b21a7ac22442aa54f93487eaf
   disposition: retained
   findings:
-  - Pinned offline reducer/schema and backend-outcome research clearly excludes host negotiation and atomic
-    admission; runtime_changes:false describes research slice only, not subsequent channel implementation
+  - Pinned offline reducer/schema and backend-outcome research clearly excludes host negotiation and atomic admission;
+    runtime_changes:false describes research slice only, not subsequent channel implementation
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: audits/p09-p0-baseline.yml
   review_status: line_by_line_reviewed
@@ -206,8 +232,8 @@ documents:
   sha256: 01129c750340df35165727411b696e84a7d616786267ec3c02f00ea106f39002
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: audits/p09-p0-mapping.yml
   review_status: line_by_line_reviewed
@@ -218,8 +244,8 @@ documents:
   sha256: 44282fd11744eee27bd7894d1dbd33ce73b022e7f7aebebe71395ed4257bdd55
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: audits/p10-security-claim-mapping.yml
   review_status: line_by_line_reviewed
@@ -230,8 +256,8 @@ documents:
   sha256: 321f1289c0d92e0b50cf3e5ebe135439209cc36d4c03b4f6a622e847ab056019
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: audits/p11-provider-canary-00eecbe.yml
   review_status: line_by_line_reviewed
@@ -265,8 +291,8 @@ documents:
   disposition: updates
   findings:
   - Retained historical evidence with original exact subject limits; no candidate proof applicability inferred
-  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
-    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
+    channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: audits/p11-recovery-mapping.yml
   review_status: line_by_line_reviewed
@@ -277,8 +303,8 @@ documents:
   sha256: c5f6235c383914d49a31b62d4014d730a685f69227eb7e13f6c8f70b927a2ce4
   disposition: retained
   findings:
-  - Historical recovery-stage blocked/pending labels preserved; later provider corpus/phase evidence describes
-    completion on its own subjects, not current candidate certification
+  - Historical recovery-stage blocked/pending labels preserved; later provider corpus/phase evidence describes completion
+    on its own subjects, not current candidate certification
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: contracts/channels/v1/channel-isolation.contract.yml
   review_status: line_by_line_reviewed
@@ -286,13 +312,20 @@ documents:
   - - 1
     - 68
   line_count: 68
-  sha256: e2bf5a3d06dc136d64c99ba147d9cfdb096bc0b610f1067614d0cef61e6a89c7
+  sha256: f3eb01d2018f9e0209d5c679f2c5ea2827e1e020a2ca52b9adfe12f47811cf36
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
-  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity,
-    scoped unique current identities, private operator health, unchanged wire and experimental wake boundaries'
-  verification: 172_focused_cases_pass; final_canonical_and_renewed_live_canary_pending
+  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
+    unique current identities, private operator health, unchanged wire and experimental wake boundaries'
+  - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
+    pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
+    absence of hidden-command disclosure or private narrative identifiers.
+  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
+    qualification remain pending
+  baseline_review_sha256: e2bf5a3d06dc136d64c99ba147d9cfdb096bc0b610f1067614d0cef61e6a89c7
+  review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
+    in surrounding context
 - document: contracts/codex-wake/v1/codex-wake.contract.yml
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -359,21 +392,28 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 158
-  line_count: 158
-  sha256: 5929f568c6211d741da96bfaf00e26c0503248246baafcaf326d5e4a1ea3d28c
+    - 159
+  line_count: 159
+  sha256: 071114ad55dbac9840d40552a74834b6b81c633ba8766c1e7721a88051be79d2
   disposition: updates
   findings:
   - Expanded model with owner cardinality principal grant/public-position fields and explicit inheritance/overrides
-  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity,
-    scoped unique current identities, private operator health, unchanged wire and experimental wake boundaries'
+  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
+    unique current identities, private operator health, unchanged wire and experimental wake boundaries'
   - 'RC2 follow-up changed lines inspected in full against hash-matched prior complete review: one shared announcement/poll
     payload with channel-local receipts, explicit answers, mobile numeric/status formatting and retained qualification
     boundaries'
-  - Approval request model names owner, immutable subject, digest, actor, channel, expiry, quota, canonical
-    transaction and single-session recovery; pending status has no authority; all changed lines inspected against
-    hash-matched previous full-document review
-  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
+  - Approval request model names owner, immutable subject, digest, actor, channel, expiry, quota, canonical transaction
+    and single-session recovery; pending status has no authority; all changed lines inspected against hash-matched
+    previous full-document review
+  - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
+    pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
+    absence of hidden-command disclosure or private narrative identifiers.
+  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
+    qualification remain pending
+  baseline_review_sha256: 5929f568c6211d741da96bfaf00e26c0503248246baafcaf326d5e4a1ea3d28c
+  review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
+    in surrounding context
 - document: docs/OPERATIONS.md
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -389,13 +429,20 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 61
-  line_count: 61
-  sha256: 979139bcdd5985f40003294e4f96d73d4531dc44ccc11eccd034593329b7024f
+    - 65
+  line_count: 65
+  sha256: 15106e941642c513a31806d62c7446cab5d7b264c0faaac4eea4562429e005c8
   disposition: updates
   findings:
   - Added Experimenters seat and current contract model; corrected v1 authority
-  verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
+  - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
+    pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
+    absence of hidden-command disclosure or private narrative identifiers.
+  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
+    qualification remain pending
+  baseline_review_sha256: 979139bcdd5985f40003294e4f96d73d4531dc44ccc11eccd034593329b7024f
+  review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
+    in surrounding context
 - document: docs/adoption-measurements.md
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -412,102 +459,138 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 149
-  line_count: 149
-  sha256: 59b0bb8f7a390c38fef936d2a0f5ed62d01f24bd154ab80a2aba76fcb234f7b4
+    - 150
+  line_count: 150
+  sha256: 11e972fe653bbe1b69944ee1fbb93d384506628eff443c561854af95b94d04b4
   disposition: updates
   findings:
   - Added principal/public-position semantic owners and channel boundaries
   - Corrected full-history bearer authority; separated wake research from guarantees
-  - One new service owner and additive SQLite table reuse the existing enrollment endpoint and grant writer;
-    no new broker, channel selector or raw credential transport; all changed lines inspected against hash-matched
-    previous full-document review
-  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
+  - One new service owner and additive SQLite table reuse the existing enrollment endpoint and grant writer; no
+    new broker, channel selector or raw credential transport; all changed lines inspected against hash-matched previous
+    full-document review
+  - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
+    pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
+    absence of hidden-command disclosure or private narrative identifiers.
+  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
+    qualification remain pending
+  baseline_review_sha256: 59b0bb8f7a390c38fef936d2a0f5ed62d01f24bd154ab80a2aba76fcb234f7b4
+  review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
+    in surrounding context
 - document: docs/audiences/adapter-users.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 158
-  line_count: 158
-  sha256: bfe45f0a27bfd0efe9784c28a185c2b994bd5c539e090aff0be2b37ed1b447c5
+    - 164
+  line_count: 164
+  sha256: 3ad5b209d1a5476a35adaffc618a84e5c2d53d3f80cf22b76b8b8d6241dbdace
   disposition: updates
   findings:
   - Corrected grant prerequisite; disclosed unqualified AHP/native queue and atomic idle-only wake
-  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity,
-    scoped unique current identities, private operator health, unchanged wire and experimental wake boundaries'
-  - Optional Slack approval removes file handoff without granting host authority; actual owning-host and live
-    approval qualification remain separate; changed lines inspected against hash-matched prior complete review
-  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
+  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
+    unique current identities, private operator health, unchanged wire and experimental wake boundaries'
+  - Optional Slack approval removes file handoff without granting host authority; actual owning-host and live approval
+    qualification remain separate; changed lines inspected against hash-matched prior complete review
+  - 'Re-reviewed lifecycle references in context: no perpetual-history or wake promise; expired read work is not
+    ACKed, retired gaps are explicit, staged retry identities remain bound, and current-source qualification is
+    separate from historical proof.'
+  verification: Editorial review complete; conditional RC3 behavior and retained-history limits reviewed; final
+    exact-source custody pending
+  baseline_review_sha256: bfe45f0a27bfd0efe9784c28a185c2b994bd5c539e090aff0be2b37ed1b447c5
 - document: docs/audiences/agents.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 85
-  line_count: 85
-  sha256: 6c319a4dab9df02880d1684779cf795d87feb5ba0e8692a075524597e3b81ab3
+    - 95
+  line_count: 95
+  sha256: 8090c072371c5443e4045b917e3be8235da3485668b1f505f472ab737da9230d
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
-  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
-    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
+    channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   - Anonymized local route examples and exported local-prefix configuration agree
   - 'RC2 follow-up changed lines inspected in full against hash-matched prior complete review: one shared announcement/poll
     payload with channel-local receipts, explicit answers, mobile numeric/status formatting and retained qualification
     boundaries'
-  - Agent instructions preserve staged secret and profile UUID across wait/retry and distinguish confirmed
-    expiry from uncertain response; policy ACK remains explicit; all changed lines inspected against hash-matched
-    previous full-document review
-  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
+  - Agent instructions preserve staged secret and profile UUID across wait/retry and distinguish confirmed expiry
+    from uncertain response; policy ACK remains explicit; all changed lines inspected against hash-matched previous
+    full-document review
+  - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
+    pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
+    absence of hidden-command disclosure or private narrative identifiers.
+  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
+    qualification remain pending
+  baseline_review_sha256: 6c319a4dab9df02880d1684779cf795d87feb5ba0e8692a075524597e3b81ab3
+  review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
+    in surrounding context
 - document: docs/audiences/experimenters.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 72
-  line_count: 72
-  sha256: 1809808cec7adc66afd739fb70197089e2d0b0e9532a8afe24428fd894fbc51d
+    - 79
+  line_count: 79
+  sha256: be3773f9a3862857b62e88c7d756fe0e6240ec14d9f6f98cedb78f31ebcc8e95
   disposition: updates
   findings:
   - New seat separates experimental candidate claims from released baseline and bounded tests; no live deployment/wake
     authority supplied
-  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
-    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
-  - New approval row explicitly requires protected subject, archive installs and bounded human approval before
-    qualification; all changed lines inspected against hash-matched previous full-document review
-  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
+    channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - New approval row explicitly requires protected subject, archive installs and bounded human approval before qualification;
+    all changed lines inspected against hash-matched previous full-document review
+  - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
+    pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
+    absence of hidden-command disclosure or private narrative identifiers.
+  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
+    qualification remain pending
+  baseline_review_sha256: 1809808cec7adc66afd739fb70197089e2d0b0e9532a8afe24428fd894fbc51d
+  review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
+    in surrounding context
 - document: docs/audiences/hippiebots.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 71
-  line_count: 71
-  sha256: d03230a8f0d475c672276f27358f4efb140499bfeb237e7440a77ef6bdb2f3ed
+    - 76
+  line_count: 76
+  sha256: 7f215a85e9784d1ed5081a8ae4843120042956d5bed8926edd283c55a49c12dc
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
-  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
-    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
+    channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   - Anonymized local route examples and exported local-prefix configuration agree
-  - Existing file-grant example is explicitly an alternative to the RC2 Slack approval construction; changed
-    lines inspected against hash-matched prior complete review
-  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
+  - Existing file-grant example is explicitly an alternative to the RC2 Slack approval construction; changed lines
+    inspected against hash-matched prior complete review
+  - 'Re-reviewed lifecycle references in context: no perpetual-history or wake promise; expired read work is not
+    ACKed, retired gaps are explicit, staged retry identities remain bound, and current-source qualification is
+    separate from historical proof.'
+  verification: Editorial review complete; conditional RC3 behavior and retained-history limits reviewed; final
+    exact-source custody pending
+  baseline_review_sha256: d03230a8f0d475c672276f27358f4efb140499bfeb237e7440a77ef6bdb2f3ed
 - document: docs/audiences/humans.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 67
-  line_count: 67
-  sha256: 1e52cccde37d00a65c3735d5589934bcad6a1e60f2c01fedeb4d51ce7ca898d4
+    - 73
+  line_count: 73
+  sha256: 7b67a8e3b9e5ed46795be81e320aa964956b777178f8e7e40bb184bfa9acb968
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
-  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
-    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
-  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity,
-    scoped unique current identities, private operator health, unchanged wire and experimental wake boundaries'
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
+    channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
+    unique current identities, private operator health, unchanged wire and experimental wake boundaries'
   - 'RC2 follow-up changed lines inspected in full against hash-matched prior complete review: one shared announcement/poll
     payload with channel-local receipts, explicit answers, mobile numeric/status formatting and retained qualification
     boundaries'
-  verification: 116_behavioral_architecture_cases_and_focused_presentation_CLI_checks_pass; final_exact_subject_and_live_additions_pending
+  - 'Re-reviewed lifecycle references in context: no perpetual-history or wake promise; expired read work is not
+    ACKed, retired gaps are explicit, staged retry identities remain bound, and current-source qualification is
+    separate from historical proof.'
+  verification: Editorial review complete; conditional RC3 behavior and retained-history limits reviewed; final
+    exact-source custody pending
+  baseline_review_sha256: 1e52cccde37d00a65c3735d5589934bcad6a1e60f2c01fedeb4d51ce7ca898d4
 - document: docs/audiences/maintainers.md
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -518,16 +601,16 @@ documents:
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
-  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
-    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
+    channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: docs/audiences/operators.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 253
-  line_count: 253
-  sha256: 68ec03eb900a0ea5c572c8902fc9f160f04cc1f3deb9228fdb1758490ff7173a
+    - 267
+  line_count: 267
+  sha256: 876705fdbe658b38cf24fa74b3bfcf80545b950c1bfe94cdedf6721cacf60a94
   disposition: updates
   findings:
   - Replaced unrestricted join/automatic migration with explicit grants and offline migration
@@ -543,68 +626,99 @@ documents:
     hash-matched previous full-document review
   - Reviewed every added configuration bound, private warning and capacity-planning instruction; no installed-state
     or archive-completion claim. Hash-matched prior full review inherited; all changed lines reviewed in context.
-  verification: 75 affected behavioral checks plus Ruff and mypy pass; canonical exact-source proof pending
+  - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
+    pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
+    absence of hidden-command disclosure or private narrative identifiers.
+  - 'Re-reviewed lifecycle references in context: no perpetual-history or wake promise; expired read work is not
+    ACKed, retired gaps are explicit, staged retry identities remain bound, and current-source qualification is
+    separate from historical proof.'
+  verification: Editorial review complete; conditional RC3 behavior and retained-history limits reviewed; final
+    exact-source custody pending
+  baseline_review_sha256: 68ec03eb900a0ea5c572c8902fc9f160f04cc1f3deb9228fdb1758490ff7173a
+  review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
+    in surrounding context
 - document: docs/audiences/security-reviewers.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 42
-  line_count: 42
-  sha256: 7d79ae024c04717f6ae6966d6d49035d037df41d5357d7b4a14dcb8f375682d7
+    - 51
+  line_count: 51
+  sha256: ccbc92fc172dfe5e72897a458d5db514202a9e8f03a58c3712d206ae228f4729
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
-  verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
+  - 'Re-reviewed lifecycle references in context: no perpetual-history or wake promise; expired read work is not
+    ACKed, retired gaps are explicit, staged retry identities remain bound, and current-source qualification is
+    separate from historical proof.'
+  verification: Editorial review complete; conditional RC3 behavior and retained-history limits reviewed; final
+    exact-source custody pending
+  baseline_review_sha256: 7d79ae024c04717f6ae6966d6d49035d037df41d5357d7b4a14dcb8f375682d7
 - document: docs/channel-migration.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 83
-  line_count: 83
-  sha256: ab001381e23e1bd7cbb3387a5d88b4262a7d65b866e33b2ee698c261537ebe5b
+    - 88
+  line_count: 88
+  sha256: d415b49b0d9ff0b29e06d8ac883bdede7c736df7309cdac0ccb610d4e12d33d2
   disposition: updates
   findings:
   - New offline dry-run/apply, client migration, custody-preserving forward repair and separate canary prerequisites;
     no automatic startup migration claimed
-  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
-    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
-  - Migration instructions distinguish file-free approval and private file grants for eligible unjoined UUIDs;
-    neither can transfer an enrolled identity; changed lines inspected against hash-matched prior complete
-    review
-  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
+    channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - Migration instructions distinguish file-free approval and private file grants for eligible unjoined UUIDs; neither
+    can transfer an enrolled identity; changed lines inspected against hash-matched prior complete review
+  - 'Re-reviewed lifecycle references in context: no perpetual-history or wake promise; expired read work is not
+    ACKed, retired gaps are explicit, staged retry identities remain bound, and current-source qualification is
+    separate from historical proof.'
+  verification: Editorial review complete; conditional RC3 behavior and retained-history limits reviewed; final
+    exact-source custody pending
+  baseline_review_sha256: ab001381e23e1bd7cbb3387a5d88b4262a7d65b866e33b2ee698c261537ebe5b
 - document: docs/contracts.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 91
-  line_count: 91
-  sha256: f2dc99332aee8d484d7d9cfad6d10cb9f98c9300363dd5996d122fa38c4db72b
+    - 95
+  line_count: 95
+  sha256: 082020d6924b5dfdf50df366db555ba974415646f5e1b5988e2633dba100d089
   disposition: updates
   findings:
   - New model connects all current product contracts to identity/cursor relationships, inheritance, implementation
     and behavioral evidence; observability scaffolds explicitly not an implemented collector guarantee
-  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
-    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
-  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity,
-    scoped unique current identities, private operator health, unchanged wire and experimental wake boundaries'
-  - Current participation v2 model and implementation/proof table map the new approval owner and canonical
-    grant consumption without creating legacy bearer authority; all changed lines inspected against hash-matched
-    previous full-document review
-  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
+    channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
+    unique current identities, private operator health, unchanged wire and experimental wake boundaries'
+  - Current participation v2 model and implementation/proof table map the new approval owner and canonical grant
+    consumption without creating legacy bearer authority; all changed lines inspected against hash-matched previous
+    full-document review
+  - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
+    pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
+    absence of hidden-command disclosure or private narrative identifiers.
+  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
+    qualification remain pending
+  baseline_review_sha256: f2dc99332aee8d484d7d9cfad6d10cb9f98c9300363dd5996d122fa38c4db72b
+  review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
+    in surrounding context
 - document: docs/federation.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 390
-  line_count: 390
-  sha256: ffbd0c63f1aa8fcad9ad4c2b61f68698b9b1e0c11450f354091b85f33c01b540
+    - 396
+  line_count: 396
+  sha256: 1c62af1fd06a62d81faa8837525d4d6a48eda367c00e8c850232174efac90fdf
   disposition: updates
   findings:
   - Marked historical deployment observation in past tense
   - Added candidate-only bridge channel containment and exact-source applicability limits
-  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
-    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
-  verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
+    channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - 'Re-reviewed lifecycle references in context: no perpetual-history or wake promise; expired read work is not
+    ACKed, retired gaps are explicit, staged retry identities remain bound, and current-source qualification is
+    separate from historical proof.'
+  verification: Editorial review complete; conditional RC3 behavior and retained-history limits reviewed; final
+    exact-source custody pending
+  baseline_review_sha256: ffbd0c63f1aa8fcad9ad4c2b61f68698b9b1e0c11450f354091b85f33c01b540
 - document: docs/governance-model.md
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -625,8 +739,8 @@ documents:
   sha256: 61dae3d8b1e28bbd845099b1435769997fb07e777172bced3c79e850f3533c7a
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-02-log.yml
   review_status: line_by_line_reviewed
@@ -637,8 +751,8 @@ documents:
   sha256: 0a1c7a7015333250f7f6d5a46e0c06230663ae112a3464308c68a5a2ed28c0c4
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-03-log.yml
   review_status: line_by_line_reviewed
@@ -649,8 +763,8 @@ documents:
   sha256: 542659e4c91302ee4d816e87b3f5aee1038ed5486dd3cce3d81921e47ec6e745
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-04-hotfix01.yml
   review_status: line_by_line_reviewed
@@ -661,8 +775,8 @@ documents:
   sha256: b30a5b7d5321139915d7568ee04f25ec127fe421310a3f2d4fcfbe8501e8db7c
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-04-log.yml
   review_status: line_by_line_reviewed
@@ -673,8 +787,8 @@ documents:
   sha256: 35e792dc28d8882d1b798a78cad20cf4a4805f28b910df86a7a57ac23fbdeb16
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-05-log.yml
   review_status: line_by_line_reviewed
@@ -685,8 +799,8 @@ documents:
   sha256: ed4a6e26362e1fc646e24e6d4a9f5629636fb887801ed5e8d5d6270f51ab9db5
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-06-log.yml
   review_status: line_by_line_reviewed
@@ -697,8 +811,8 @@ documents:
   sha256: 250825255386a73c80bd035739236e20fa22c2ecaa91ca0844b495612b0710f3
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-07-hotfix01.yml
   review_status: line_by_line_reviewed
@@ -709,8 +823,8 @@ documents:
   sha256: f140190ccdf9d10cf29059b1832aae0ca025a41f31b3dc5743357081e12c53bd
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-07-hotfix02.yml
   review_status: line_by_line_reviewed
@@ -721,8 +835,8 @@ documents:
   sha256: 2f6c32135389074f1e983cb3716a392b03604cb7bcf6231a549127dbb1c199ba
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-07-hotfix03.yml
   review_status: line_by_line_reviewed
@@ -733,8 +847,8 @@ documents:
   sha256: 534afac17be546790d3939c5e3ab6d03a83666c86efd1236f6d84e3bacd85895
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-07-hotfix04.yml
   review_status: line_by_line_reviewed
@@ -745,8 +859,8 @@ documents:
   sha256: 7906ab56645a16070f0d1b5fe3bc1428036f0d96c571e42b74ac39920a5bea08
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-07-hotfix05.yml
   review_status: line_by_line_reviewed
@@ -757,8 +871,8 @@ documents:
   sha256: 4c53be2e3ddb44fa284f2f05b6d5164e93743dff7078a40b00a28ee996fddcd7
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-07-hotfix06.yml
   review_status: line_by_line_reviewed
@@ -769,8 +883,8 @@ documents:
   sha256: 3999b1861ec4d3724671e1af9ca045ddc8f6a23d3e335a019b8935acdbc1c9b3
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-07-log.yml
   review_status: line_by_line_reviewed
@@ -781,8 +895,8 @@ documents:
   sha256: 6202ea23216381231d853cc462314a84bd13bdbc97aa18a440c1a93a6b2c05b6
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-08-log.yml
   review_status: line_by_line_reviewed
@@ -793,8 +907,8 @@ documents:
   sha256: e26929465ccf94fd66ecb94f79071898f998ec418b10568830349da97e8ec310
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-09-log.yml
   review_status: line_by_line_reviewed
@@ -805,8 +919,8 @@ documents:
   sha256: a60168afbcb1b3435de9ca2b1988d3e279c4f1391bb81ebcd334359613cf3b70
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-10-log.yml
   review_status: line_by_line_reviewed
@@ -829,20 +943,20 @@ documents:
   sha256: 489f96a6dd5a499466d7d7ea454e7085584cff494f77f7e2ec91ea817a785286
   disposition: updates
   findings:
-  - Historical working log mixes earlier pending state with later protected construction closure; retained
-    sequence and failed windows, current release/qualification status belongs to MEMORY and P12
-  - Previous17-file editorial link validation was not a complete line-by-line review; this audit supersedes
-    that review scope without altering its recorded result
-  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
-    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - Historical working log mixes earlier pending state with later protected construction closure; retained sequence
+    and failed windows, current release/qualification status belongs to MEMORY and P12
+  - Previous17-file editorial link validation was not a complete line-by-line review; this audit supersedes that
+    review scope without altering its recorded result
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
+    channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-12-log.yml
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 214
-  line_count: 214
-  sha256: a26359db528ecae6e82564456c8a5a60f9f5c21fa861d5ad7097f8cc44a0bbab
+    - 232
+  line_count: 232
+  sha256: 90d67e0fdb3c2afd7cdabd5547c94481c8b5ae897c5739d1450e932eaabdb2e7
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
@@ -860,7 +974,18 @@ documents:
   - Reviewed incident reproduction, custody preservation, source-specific RC2 live proof and candidate local-test
     scope; canonical proof remains pending. Hash-matched prior full review inherited; all changed lines reviewed
     in context.
-  verification: 75 affected behavioral checks plus Ruff and mypy pass; canonical exact-source proof pending
+  - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
+    pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
+    absence of hidden-command disclosure or private narrative identifiers.
+  - 'Reviewed expired-lease recovery wording: completion ownership is not new execution authority; uncertain host
+    attempts remain notification-only with evidence preserved.'
+  - 'Reviewed maintenance recovery and external-wake retirement clarification in context: finite archive-only headroom,
+    ordinary admission separation, bounded refusal and preserved uncertain intent evidence.'
+  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
+    qualification remain pending
+  baseline_review_sha256: a26359db528ecae6e82564456c8a5a60f9f5c21fa861d5ad7097f8cc44a0bbab
+  review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
+    in surrounding context
 - document: plans/build-plan.yml
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -872,13 +997,13 @@ documents:
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
-  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity,
-    scoped unique current identities, private operator health, unchanged wire and experimental wake boundaries'
+  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
+    unique current identities, private operator health, unchanged wire and experimental wake boundaries'
   - 'RC2 follow-up changed lines inspected in full against hash-matched prior complete review: one shared announcement/poll
     payload with channel-local receipts, explicit answers, mobile numeric/status formatting and retained qualification
     boundaries'
-  - File-free approval joins the current RC2 tranche while preserving channel membership, staged proof and
-    file grants; all changed lines inspected against hash-matched previous full-document review
+  - File-free approval joins the current RC2 tranche while preserving channel membership, staged proof and file
+    grants; all changed lines inspected against hash-matched previous full-document review
   verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: plans/phase-01-plan.yml
   review_status: line_by_line_reviewed
@@ -889,8 +1014,8 @@ documents:
   sha256: 75045bf133c357c800cb673cad84a433690f15a2c89699cd9ad795ddeff4bc0a
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-01-workitems.yml
   review_status: line_by_line_reviewed
@@ -901,8 +1026,8 @@ documents:
   sha256: 4b23d9a52aad722957a1d0822d320367c1c66abd9870070210341d9a3fe67820
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-02-plan.yml
   review_status: line_by_line_reviewed
@@ -913,10 +1038,10 @@ documents:
   sha256: 62946f74f3f2b246dbd9783e6f125f704a9ba778ae9bec6bda4bc2e7af678183
   disposition: updates
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
-  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
-    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
+    channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-02-workitems.yml
   review_status: line_by_line_reviewed
@@ -927,8 +1052,8 @@ documents:
   sha256: 1d71bf911185ede7f4acfe48f1f419f71a385a16cc4e7863d5398c7a6ed89b26
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-03-plan.yml
   review_status: line_by_line_reviewed
@@ -939,8 +1064,8 @@ documents:
   sha256: 8758f51b632270e46231e8085d5fc6175f66912c35273bfe1e53ed8b0b29e5dd
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-03-workitems.yml
   review_status: line_by_line_reviewed
@@ -951,8 +1076,8 @@ documents:
   sha256: cb17ff6f26aff10d51f01c93b5480ed14f96592ec201d04f7c646bce92ad2c5f
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-04-plan.yml
   review_status: line_by_line_reviewed
@@ -963,8 +1088,8 @@ documents:
   sha256: 5edc1515b9ded25407f8eaffe00ecc503ac42a20a33d4326ea4fa901d8fc3bd4
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-04-workitems.yml
   review_status: line_by_line_reviewed
@@ -975,8 +1100,8 @@ documents:
   sha256: 6a2ad1d13fb8b71e44fd67b45c94a921470f5b7f8f9b94d41a94a7ed6ec7a9cd
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-05-plan.yml
   review_status: line_by_line_reviewed
@@ -987,8 +1112,8 @@ documents:
   sha256: 1086744fa884a34b67666eff8cef881d3ff5cdccd94312e70e7dff507e23f193
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-05-workitems.yml
   review_status: line_by_line_reviewed
@@ -999,8 +1124,8 @@ documents:
   sha256: 8c0a57a7835f5b9026dbbafb08a1fc3d57a79cf16617a59b8d294b483f8a06dc
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-06-plan.yml
   review_status: line_by_line_reviewed
@@ -1011,8 +1136,8 @@ documents:
   sha256: 392e7fc9a0f3bb74e1670e2aad856a46cf60f42a2125a1878ca771be0dd152f9
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-06-workitems.yml
   review_status: line_by_line_reviewed
@@ -1023,8 +1148,8 @@ documents:
   sha256: 30e7f7de03fd4789e6b4f2a08b3e458b8568aa501b63acb04471b21433eeae0a
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-07-plan.yml
   review_status: line_by_line_reviewed
@@ -1035,8 +1160,8 @@ documents:
   sha256: 3bc41c488911eb6edb54a08bf4673f1b0d6e70a796e49e15982121ade2bc641e
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-07-workitems.yml
   review_status: line_by_line_reviewed
@@ -1047,8 +1172,8 @@ documents:
   sha256: fe3f4cad670f997edfc499393dc3ccca4e3b4e93e54feda9a54b16f38500c559
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-08-plan.yml
   review_status: line_by_line_reviewed
@@ -1059,8 +1184,8 @@ documents:
   sha256: fbc15644f33de5cd76d1194a09047f41b558546bd88041dbb9212565f15e7d1e
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-08-workitems.yml
   review_status: line_by_line_reviewed
@@ -1071,8 +1196,8 @@ documents:
   sha256: fef2416e427ac4495cd78893c39b596fbfc53b5bf61b3c8fd28c6f9fd1e0fbbf
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-09-plan.yml
   review_status: line_by_line_reviewed
@@ -1083,8 +1208,8 @@ documents:
   sha256: 697d246ee8c046a207a15c43977dd0370c8b6d016b5b2c1ca24ea22b96bb208b
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-09-workitems.yml
   review_status: line_by_line_reviewed
@@ -1095,10 +1220,10 @@ documents:
   sha256: 4339f70f655cbfde1f7a845911a161b80860d89283d14829db37f9a67221cbb4
   disposition: retained
   findings:
-  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
-    and active P12 artifacts
-  - Authored historical BCF2.3.2 DONE is not computed closure; P10 log records later authenticated BCF2.3.4
-    P09 closure
+  - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md and
+    active P12 artifacts
+  - Authored historical BCF2.3.2 DONE is not computed closure; P10 log records later authenticated BCF2.3.4 P09
+    closure
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-10-plan.yml
   review_status: line_by_line_reviewed
@@ -1152,9 +1277,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 52
-  line_count: 52
-  sha256: 1a74d3ad86a09733c42278950b71bc2fb45f6a42707e3ad9be5d0b829d9be91a
+    - 53
+  line_count: 53
+  sha256: 661dc33bcd685a567df0e79bc15b6632ec6f4d3ed2ca92f5b72b2bf5c5b6050d
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
@@ -1163,14 +1288,21 @@ documents:
     authority added; all changed lines inspected against hash-matched previous full-document review
   - Reviewed bounded corrective deliverable stacked in active P12; no activation or closure claim. Hash-matched
     prior full review inherited; all changed lines reviewed in context.
-  verification: 75 affected behavioral checks plus Ruff and mypy pass; canonical exact-source proof pending
+  - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
+    pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
+    absence of hidden-command disclosure or private narrative identifiers.
+  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
+    qualification remain pending
+  baseline_review_sha256: 1a74d3ad86a09733c42278950b71bc2fb45f6a42707e3ad9be5d0b829d9be91a
+  review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
+    in surrounding context
 - document: plans/phase-12-workitems.yml
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 154
-  line_count: 154
-  sha256: b6873711e82eaca543ff16690e03799e72904de8e98e94332d8cebdfc7e71e56
+    - 167
+  line_count: 167
+  sha256: 71f85dfe3184a668962a01906a891e7a2a573e7ef3e53e1f6617241a4ea84180
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
@@ -1185,7 +1317,14 @@ documents:
     review
   - Reviewed P12-P1-11 acceptance against exact phase deliverable, replay/storage limits and disclosed archival
     residual. Hash-matched prior full review inherited; all changed lines reviewed in context.
-  verification: 75 affected behavioral checks plus Ruff and mypy pass; canonical exact-source proof pending
+  - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
+    pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
+    absence of hidden-command disclosure or private narrative identifiers.
+  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
+    qualification remain pending
+  baseline_review_sha256: b6873711e82eaca543ff16690e03799e72904de8e98e94332d8cebdfc7e71e56
+  review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
+    in surrounding context
 - document: plans/phase-history.yml
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -1209,13 +1348,13 @@ documents:
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
-  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
-    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
+    channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   - 'RC2 follow-up changed lines inspected in full against hash-matched prior complete review: one shared announcement/poll
     payload with channel-local receipts, explicit answers, mobile numeric/status formatting and retained qualification
     boundaries'
-  - RC2 scope includes Slack enrollment approval; P12 lifecycle and inherited open records remain intact; all
-    changed lines inspected against hash-matched previous full-document review
+  - RC2 scope includes Slack enrollment approval; P12 lifecycle and inherited open records remain intact; all changed
+    lines inspected against hash-matched previous full-document review
   verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: plans/product-spec.yml
   review_status: line_by_line_reviewed
@@ -1223,19 +1362,26 @@ documents:
   - - 1
     - 40
   line_count: 40
-  sha256: 900524366089fac821799101042b69d08cdfc5bc52746473a4ea4927497e1e7b
+  sha256: 72f070000611819a76e19154acc73b62e98fbe57b4e8db0deee9b12e83d884eb
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
-  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity,
-    scoped unique current identities, private operator health, unchanged wire and experimental wake boundaries'
+  - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
+    unique current identities, private operator health, unchanged wire and experimental wake boundaries'
   - 'RC2 follow-up changed lines inspected in full against hash-matched prior complete review: one shared announcement/poll
     payload with channel-local receipts, explicit answers, mobile numeric/status formatting and retained qualification
     boundaries'
-  - Approved staged proof removes manual grant handoff while preserving no preapproval authority and immutable
-    channel membership; all changed lines inspected against hash-matched previous full-document review
-  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
+  - Approved staged proof removes manual grant handoff while preserving no preapproval authority and immutable channel
+    membership; all changed lines inspected against hash-matched previous full-document review
+  - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
+    pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
+    absence of hidden-command disclosure or private narrative identifiers.
+  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
+    qualification remain pending
+  baseline_review_sha256: 900524366089fac821799101042b69d08cdfc5bc52746473a4ea4927497e1e7b
+  review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
+    in surrounding context
 - document: LICENSE
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -1256,12 +1402,54 @@ documents:
   sha256: ed581a6f4330ddea58685efb788b4166e47c2ee4b5c11daf9948b3d41ae2962e
   disposition: new
   findings:
-  - Redacted bounded canary record retains exact protected source and limits; no installation/channel/session
-    identifiers or raw provider payloads
+  - Redacted bounded canary record retains exact protected source and limits; no installation/channel/session identifiers
+    or raw provider payloads
   - Three probe-oracle failures and supplemental recovery disclosed; four exact test sessions retired; no wake/federation
     qualification claim
   verification: original private receipts and independent custodian continuity record inspected; fresh release-subject
     proof pending
+- document: contracts/messages/v1/message-lifecycle.contract.yml
+  review_status: line_by_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 98
+  line_count: 98
+  sha256: f6d5680f6cbc62618b2177d2a926b91a30f39db36318764d6d105f09742f0eff
+  disposition: new
+  findings:
+  - New governed ordinary-message lifecycle contract models exact scopes, replay epochs, independent transport/recipient/shared
+    read states, approved candidate defaults, bounded retention, safe operator controls and explicit unsupported
+    retirement/owner guarantees.
+  - 'Re-reviewed lifecycle references in context: no perpetual-history or wake promise; expired read work is not
+    ACKed, retired gaps are explicit, staged retry identities remain bound, and current-source qualification is
+    separate from historical proof.'
+  - 'Reviewed expired-lease recovery wording: completion ownership is not new execution authority; uncertain host
+    attempts remain notification-only with evidence preserved.'
+  - 'Reviewed maintenance recovery and external-wake retirement clarification in context: finite archive-only headroom,
+    ordinary admission separation, bounded refusal and preserved uncertain intent evidence.'
+  verification: Editorial review complete; conditional RC3 behavior and retained-history limits reviewed; final
+    exact-source custody pending
+- document: docs/message-lifecycle.md
+  review_status: line_by_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 155
+  line_count: 155
+  sha256: 4547e04a5fb733f60e262d4637686a109f2a18c9abb061a0bbf002bd19a56949
+  disposition: new
+  findings:
+  - New complete lifecycle guide distinguishes released RC2 from unqualified RC3; covers command/body expectations,
+    scoped retired history, exact receipts, proposed rollout, actual accounting versus physical allocation, replay
+    safety, worker drain and pinned-history residuals.
+  - 'Re-reviewed lifecycle references in context: no perpetual-history or wake promise; expired read work is not
+    ACKed, retired gaps are explicit, staged retry identities remain bound, and current-source qualification is
+    separate from historical proof.'
+  - 'Reviewed expired-lease recovery wording: completion ownership is not new execution authority; uncertain host
+    attempts remain notification-only with evidence preserved.'
+  - 'Reviewed maintenance recovery and external-wake retirement clarification in context: finite archive-only headroom,
+    ordinary admission separation, bounded refusal and preserved uncertain intent evidence.'
+  verification: Editorial review complete; conditional RC3 behavior and retained-history limits reviewed; final
+    exact-source custody pending
 summary:
   documents_reviewed: 89
   pending_line_reviews: 0
@@ -1271,3 +1459,11 @@ summary:
     evidence
   experimental_disclosures: Current product and audience guides name live multichannel and owner-wake qualification
     limits; historical snapshots retain original source scope
+baseline_review:
+  commit: 8fa47290970fc828e71880a8a71b5e356e33ab46
+  audit_sha256: 68962cefe014f923f1617818dbe2a0ed4723a42775115838cd5b81bb5d7350b8
+  all_prior_document_hashes_verified: true
+  prior_document_count: 90
+  inheritance: Unchanged reviewed bytes inherit the authenticated full-document review; changed authored product
+    text re-reviewed in context; no runtime evidence identity is copied
+  excluded_unchanged: BCF governance machinery and changelog remain excluded as requested

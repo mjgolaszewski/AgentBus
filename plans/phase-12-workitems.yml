@@ -152,3 +152,16 @@ workitems:
   - Existing over-capacity custody is preserved without deletion or silent request expiry; retained-history exhaustion still requires operator capacity planning
   - Supported archival lifecycle remains a disclosed limitation until independently implemented and proved; no unlimited storage or retention-completion claim
   acceptance_evidence: [contract-test, test, runtime-smoke]
+
+- id: P12-P1-12
+  priority: P1
+  status: IN_PROGRESS
+  summary: deliver Versioned local message lifecycle pickup return and bounded retention
+  acceptance:
+  - Exact session channel recipient pickup ACK and unclaimed expiry settle atomically with one sender-visible canonical outcome and no bounce messages
+  - Persisted service channel epoch and request UUID survive uncertain outcomes; closed epochs never allocate and legacy unknown UUIDs freeze at explicit cutover
+  - Picked-up running or uncertain work is recovery-required rather than false returned; STOP and safety controls are never ordinary expiring messages
+  - Bounded digest-verified archive and reference-safe retention preserve active custody claims ancestry federation mappings public cursors and restart recovery
+  - Offline dry-run migration verified backup legacy classification clock policy rollback limits and old-client rejection are proved before custodian deployment
+  - Exact protected main archive isolated install and bounded authorized live lifecycle evidence precede release and upgrade claims
+  acceptance_evidence: [contract-test, test, runtime-smoke]

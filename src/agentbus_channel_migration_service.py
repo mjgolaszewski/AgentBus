@@ -78,7 +78,13 @@ def check_startup(path):
     try:
         tables={row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
         populated=any(db.execute(f'SELECT 1 FROM {table} LIMIT 1').fetchone() for table in ('messages','chat_identities') if table in tables)
-        configured='bus_channels' in tables and db.execute('SELECT 1 FROM bus_channels LIMIT 1').fetchone()
+        lifecycle='lifecycle_channels' in tables
+        if lifecycle:
+            marker=db.execute("SELECT value FROM metadata WHERE key='message_lifecycle_version'").fetchone()
+            if marker is None or marker[0]!='1':
+                raise ValueError('Unsupported or incomplete lifecycle migration')
+        registry='lifecycle_channels' if lifecycle else 'bus_channels'
+        configured=registry in tables and db.execute(f'SELECT 1 FROM {registry} LIMIT 1').fetchone()
         if populated and not configured:
             raise ValueError('Legacy database requires explicit offline channel migration before service startup')
     finally:

@@ -60,6 +60,81 @@ def test_local_acceptance_survives_slack_outage_and_deduplicates_request(tmp_pat
         asyncio.run(http.aclose())
 
 
+def test_lifecycle_http_cutover_epoch_retry_and_old_client_fence(tmp_path, monkeypatch):
+    from src.agentbus_message_lifecycle_service import LifecyclePolicy
+    clock = [100.0]
+    monkeypatch.setattr('src.agentbus_message_lifecycle_service.time.time', lambda: clock[0])
+    settings = Settings(api_token='local-test-secret', slack_bot_token='xoxb-test',
+        slack_app_token='xapp-test', slack_channel=CHANNEL, db_path=tmp_path / 'lifecycle.sqlite3',
+        local_delivery_version=1)
+    def respond(request):
+        if request.url.path == '/api/auth.test':
+            return httpx.Response(200, json={'ok':True, 'bot_id':BOT_ID})
+        raise httpx.ConnectError('offline', request=request)
+    http = httpx.AsyncClient(transport=httpx.MockTransport(respond))
+    app = create_app(settings, http_client=http, socket_factory=FakeSocket)
+    try:
+        with TestClient(app) as client:
+            store = app.state.store
+            secret = 'lifecycle-http-session-secret-at-least-32'
+            enroll_for_thread(store, 'agentbus:flower', secret)
+            enroll_for_thread(store, 'agentbus:other', 'lifecycle-other-session-secret-at-least-32')
+            store.lifecycle.activate_fresh(LifecyclePolicy(epoch_seconds=10))
+            headers = {**AUTH, 'X-AgentBus-Session-Token':secret,
+                'X-AgentBus-Inbox-ID':store.channels.inbox_id(CHANNEL)}
+            info = client.get('/v1/info', headers=headers)
+            assert info.status_code == 200 and info.headers['X-AgentBus-Delivery-Version'] == '2'
+            epoch = info.json()['lifecycle']['request_epoch']
+            body = {'sender':'agentbus:flower', 'recipient':'agentbus:other', 'text':'original'}
+            assert client.get('/v1/messages', headers=headers).status_code == 426
+            capable = {**headers, 'X-AgentBus-Lifecycle-Version':'1'}
+            assert client.post('/v1/messages', headers=capable, json=body).status_code == 426
+            key = str(uuid4())
+            versioned = {**capable, 'X-AgentBus-Delivery-Version':'2',
+                'Idempotency-Key':key, 'X-AgentBus-Request-Epoch':epoch}
+            first = client.post('/v1/messages', headers=versioned, json=body)
+            assert first.status_code == 202, first.text
+            cursor = first.json()['cursor']
+            recipient_secret = 'lifecycle-other-session-secret-at-least-32'
+            recipient = store.channels.principal(recipient_secret, 'agentbus:other')
+            recipient_headers = {**capable, 'X-AgentBus-Session-Token':recipient_secret}
+            receipt = {'session_id':recipient.session_id, 'receipt_id':str(uuid4())}
+            assert client.post(f'/v1/messages/{cursor}/pickup', headers=capable, json=receipt).status_code == 403
+            picked = client.post(f'/v1/messages/{cursor}/pickup', headers=recipient_headers, json=receipt)
+            assert picked.status_code == 200 and picked.json()['state'] == 'picked_up'
+            outcome = client.get(f'/v1/messages/{cursor}/outcome', headers=capable)
+            assert outcome.json()['recipients'] == {'picked_up':1}
+            assert receipt['receipt_id'] not in outcome.text and recipient.session_id not in outcome.text
+            batch = client.post('/v1/receipts/handled', headers=recipient_headers, json={
+                'session_id':recipient.session_id, 'receipts':[{'cursor':cursor, 'receipt_id':receipt['receipt_id']}]})
+            assert batch.status_code == 200, batch.text
+            assert batch.json()['handled'] == 1 and batch.json()['expired_unclaimed'] == 0
+            stop, _ = store.controls.issue_stop(routes=['agentbus:other'], reason='test receipt recovery', actor='operator')
+            store.controls.deliver(recipient.session_id, recipient_secret)
+            store.controls.acknowledge_stop(stop, recipient.session_id, recipient_secret)
+            assert client.post(f'/v1/messages/{cursor}/pickup', headers=recipient_headers, json=receipt).status_code == 423
+            completed = client.post(f'/v1/messages/{cursor}/complete', headers=recipient_headers, json=receipt)
+            assert completed.status_code == 200 and completed.json()['state'] == 'handled'
+            assert client.post(f'/v1/messages/{cursor}/complete', headers=recipient_headers, json=receipt).json() == completed.json()
+            clock[0] = 111
+            retry = client.post('/v1/messages', headers=versioned, json=body)
+            assert retry.status_code == 202 and retry.json()['cursor'] == first.json()['cursor']
+            assert client.post('/v1/messages', headers={**versioned, 'Idempotency-Key':str(uuid4())}, json=body).status_code == 410
+            assert client.post('/v1/messages', headers=versioned, json={**body, 'text':'changed'}).status_code == 409
+            legacy = {**capable, 'X-AgentBus-Delivery-Version':'1', 'Idempotency-Key':str(uuid4())}
+            assert client.post('/v1/messages', headers=legacy, json=body).status_code == 426
+            assert store._db.execute('SELECT count(*) FROM local_delivery_obligations').fetchone()[0] == 1
+        clock[0] = 100  # Clock rollback across an actual service close/reopen cannot reopen a rejected epoch.
+        restarted = create_app(settings, http_client=http, socket_factory=FakeSocket)
+        with TestClient(restarted) as client:
+            assert client.post('/v1/messages', headers=versioned, json=body).status_code == 202
+            rejected = client.post('/v1/messages', headers={**versioned, 'Idempotency-Key':str(uuid4())}, json=body)
+            assert rejected.status_code == 410
+            assert restarted.state.store._db.execute('SELECT count(*) FROM local_delivery_obligations').fetchone()[0] == 1
+    finally:
+        asyncio.run(http.aclose())
+
+
 def accepted(store, key=None):
     message = SendMessage(sender='agentbus:flower', recipient='agentbus:other', text='local')
     message._sender_assurance = 'session'

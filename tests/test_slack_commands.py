@@ -64,6 +64,68 @@ def command(settings, store, web, text, *, user="U123", channel="C123456"):
                             "user_id": user, "text": text}, settings, store, web)
 
 
+def test_mah_is_hidden_private_authorized_and_has_no_effects(enrolled):
+    settings, store, _, web = enrolled
+    before = store._db.total_changes
+    assert 'not enabled' in command(settings, store, web, 'mah', user='U999')
+    assert 'configured channel' in command(settings, store, web, 'mah', channel='COTHER')
+    result = command(settings, store, web, 'mah')
+    assert '*🌿 MAH!' in result and len(result.splitlines()) > 1
+    assert '/agentbus mah' not in command(settings, store, web, 'help')
+    assert store._db.total_changes == before
+    assert web.posts == [] and web.ephemeral == []
+
+
+def test_rich_help_roster_and_storage_maintenance_preserve_authority_and_custody(enrolled):
+    settings, store, session_id, web = enrolled
+    guide = command(settings, store, web, 'help')
+    assert '*Inspect*' in guide and '*Lifecycle*' in guide and '*Storage*' in guide
+    assert '`/agentbus storage checkpoint CONFIRM`' in guide
+    roster = command(settings, store, web, 'roster')
+    assert '*👥 Channel roster*' in roster and '`1` sessions' in roster
+    assert '*agentbus:flower*' in roster and f'`{session_id[-6:]}`' in roster
+    before = store._db.total_changes
+    assert 'not enabled' in command(settings, store, web, 'storage', user='U999')
+    assert 'Physical allocation' in command(settings, store, web, 'storage')
+    assert 'No message, receipt, retry identity or credential rows were deleted' in command(settings, store, web, 'storage checkpoint CONFIRM')
+    assert store._db.total_changes == before and web.posts == []
+
+
+def test_lifecycle_health_discloses_policy_pins_and_shared_history(enrolled):
+    settings, store, _, web = enrolled
+    store.lifecycle.activate_fresh()
+    result = command(settings, store, web, 'health')
+    for label in ('unclaimed','picked up','handled','expired unclaimed','recovery required',
+                  'Broadcast / poll receipts','Pinned shared history','Physical allocation','reusable database pages',
+                  'pickup `86400s`','retention `2592000s`','retirement unqualified'):
+        assert label in result
+    assert 'local_custody_v2' in result
+
+
+def test_unauthorized_slash_has_no_receipt_or_storage_effect(enrolled):
+    settings, store, _, web = enrolled
+    receiver = SlackReceiver(store, settings.channels, 'B123', settings)
+    socket = FakeSocket(web)
+    before = store._db.total_changes
+    receiver(socket, SocketModeRequest(type='slash_commands', envelope_id='denied-before-custody', payload={
+        'command':'/agentbus','channel_id':settings.slack_channel,'user_id':'U999',
+        'trigger_id':'unauthorized-trigger','text':'health'}))
+    receiver._commands.shutdown(wait=True)
+    assert store._db.total_changes == before and web.posts == []
+    assert 'not enabled' in socket.acks[0].payload['text']
+
+
+def test_slash_send_checks_storage_before_any_provider_post(enrolled):
+    settings, store, _, web = enrolled
+    store.lifecycle.activate_fresh()
+    with store._db:
+        store._db.execute('CREATE TABLE storage_pressure (data BLOB)')
+        store._db.execute('INSERT INTO storage_pressure VALUES (zeroblob(2097152))')
+    store.lifecycle.policy = replace(store.lifecycle.policy, storage_bytes=1048576)
+    assert 'storage capacity' in command(settings, store, web, 'send flower no premature post')
+    assert web.posts == []
+
+
 def test_pause_resume_are_idempotent_and_preserve_participation(enrolled):
     settings, store, session_id, web = enrolled
     short = session_id[-6:]
@@ -303,6 +365,7 @@ def test_health_is_private_operator_only_and_does_not_need_a_target(enrolled):
     assert '🟡 unknown' in result.lower()  # A direct unit call cannot observe a socket.
     assert '*Channels:* `1` enabled' in result
     assert '*Storage:* `' in result
+    assert 'retention policy: not enabled' in result
     assert 'protocol `2`' in result
     assert settings.slack_bot_token not in result and str(settings.db_path) not in result
     assert web.posts==[]

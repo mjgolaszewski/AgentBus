@@ -25,7 +25,10 @@ def _candidate(event: dict, _identity: str) -> tuple[int, str] | None:
         return None
     if message.get("sender_assurance") not in {"session", "slack-human"}:
         return None
-    if message.get("action_reason") == "claimed by this identity":
+    lifecycle = message.get('lifecycle')
+    if isinstance(lifecycle, dict) and lifecycle.get('state') != 'unclaimed':
+        return None
+    if message.get("action_reason") == "claimed by this identity" and message.get('actionable') is True:
         return 4, f"MESSAGE:{event_id}"
     if message.get("audience") in {"direct", "informational"} and message.get("actionable") is True:
         return (2 if message.get("kind") == "blocker" else 3), f"MESSAGE:{event_id}"

@@ -145,6 +145,16 @@ def checked_profile(values: dict[str, str], identity: str) -> tuple[dict, dict]:
             profile.get("inbox_id") != info["inbox_id"] or profile.get("channel") != info["channel"] or
             profile.get("service_url") != values.get("AGENTBUS_URL")):
         raise ClientError("Profile channel scope differs; operator enrollment is required; no automatic switch.")
+    lifecycle = info.get('lifecycle')
+    if profile.get('message_lifecycle_version') == 1 and 'message-lifecycle-v1' not in info.get('features', []):
+        raise ClientError('Lifecycle capability disappeared; no fallback to legacy message authority')
+    if 'message-lifecycle-v1' in info.get('features', []):
+        if not isinstance(lifecycle, dict) or lifecycle.get('version') != 1:
+            raise ClientError('Lifecycle capability is inconsistent; no message authority granted')
+        first_lifecycle = profile.get('message_lifecycle_version') != 1
+        profile['message_lifecycle_version'] = 1
+        if first_lifecycle:
+            save_profile(values, profile)
     profile["scope_verified"] = True
     if profile.get("rename_source"):
         from src.agentbus_rename_client import recover_rename_state
@@ -432,14 +442,18 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
             raise ClientError("Acknowledgements are monotonic and cannot move backward.")
         if ns.through > int(profile["observed_cursor"]):
             raise ClientError("Cannot acknowledge beyond the highest cursor observed by this chat.")
-        profile["ack_cursor"] = ns.through
+        from src.agentbus_lifecycle_client import acknowledge_handled
+        handling = acknowledge_handled(values, profile, ns.through, api_call=api)
+        acknowledged = handling['through']
+        profile["ack_cursor"] = acknowledged
         save_profile(values, profile)
         from src.agentbus_poll_client import retire_acknowledged_messages
 
         retired = retire_acknowledged_messages(
-            identity_path(values, identity).resolve(), profile, ns.through
+            identity_path(values, identity).resolve(), profile, acknowledged
         )
-        result = {"identity": identity, "ack_cursor": ns.through,
+        result = {"identity": identity, "ack_cursor": acknowledged,
+                  **({'lifecycle':handling} if profile.get('message_lifecycle_version') == 1 else {}),
                   "presentation_messages_retired": retired}
     elif ns.command == "rebind":
         identity = resolve_identity(ns.identity)
@@ -473,6 +487,23 @@ def cli_serve(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> 
 
 def cli_lifecycle(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
     return _execute_command(ns, project, values)
+
+
+def cli_lifecycle_message(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    from src.agentbus_lifecycle_client import message_command
+    identity = resolve_identity(ns.identity)
+    profile = load_profile(values, identity, save_migration=False)
+    print(json.dumps(message_command(ns, values, profile, api_call=api), indent=2))
+    return 0
+
+
+def cli_message_status(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    from src.agentbus_scope_client import scoped_api
+    if ns.cursor < 1:
+        raise ClientError('Message cursor must be positive')
+    profile = load_profile(values, resolve_identity(ns.identity), save_migration=False)
+    print(json.dumps(scoped_api(values, f'/v1/messages/{ns.cursor}/outcome', profile, api_call=api), indent=2))
+    return 0
 
 
 def cli_send(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
@@ -623,6 +654,9 @@ def cli_codex_wake(ns: argparse.Namespace, project: Path, values: dict[str, str]
 
 # BCF inventories this closed population, and main dispatches through it.
 CLI_OPERATIONS = {
+    'pickup': cli_lifecycle_message,
+    'complete': cli_lifecycle_message,
+    'message-status': cli_message_status,
     "serve": cli_serve,
     "start": cli_lifecycle,
     "stop": cli_lifecycle,

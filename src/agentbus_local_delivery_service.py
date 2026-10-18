@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from src.agentbus_message_assurance_service import route_parts
+from src.agentbus_participation_store_service import StoppedMessageSession
 
 if TYPE_CHECKING:
     from src.agentbus_service import Message, MessageStore, SendMessage
@@ -87,6 +88,7 @@ class LocalDeliveryStore:
                 PRIMARY KEY(channel, provider_ref))''')
             owner._db.execute("CREATE INDEX IF NOT EXISTS local_delivery_unresolved ON "
                               "local_delivery_obligations(state) WHERE state!='submitted'")
+            owner._db.execute('CREATE INDEX IF NOT EXISTS local_observation_cursor ON local_delivery_observations(channel,local_cursor)')
 
     def configure(self, outstanding: int, retained: int, observations: int) -> None:
         validate_limits(outstanding, retained, observations)
@@ -96,7 +98,7 @@ class LocalDeliveryStore:
         """Operator-only aggregate; submitted receipts remain durable retry history."""
         with self.owner._lock:
             db = self.owner._db
-            result = {'outstanding': db.execute("SELECT count(*) FROM local_delivery_obligations WHERE state!='submitted'").fetchone()[0],
+            result = {'outstanding': db.execute("SELECT count(*) FROM local_delivery_obligations WHERE state NOT IN ('submitted','expired_unsubmitted')").fetchone()[0],
                     'outstanding_limit': self.outstanding_limit,
                     'retained_requests': db.execute('SELECT count(*) FROM local_delivery_obligations').fetchone()[0],
                     'retained_request_limit': self.retained_limit,
@@ -110,23 +112,39 @@ class LocalDeliveryStore:
             return {**result, 'warnings': warnings}
 
     def accept(self, channel: str, key: str, request_hash: str, message: SendMessage,
-               principal: str, *, bridge=None) -> Message:
+               principal: str, *, bridge=None, epoch=None, session_token=None) -> Message:
         store = self.owner
         request_hash = fingerprint({'principal': principal, 'request': request_hash})
         if len(message.model_dump_json().encode()) > MAX_LOCAL_PAYLOAD_BYTES:
             raise LocalDeliveryRejected(422, 'Local custody payload exceeds its byte limit')
         with store._lock, store._db:
             store._db.execute('BEGIN IMMEDIATE')
+            if session_token is not None:
+                try:
+                    scope = store.channels.principal(session_token, message.sender)
+                except StoppedMessageSession:
+                    raise
+                except PermissionError:
+                    raise LocalDeliveryRejected(403, 'Matching session scope required') from None
+                if scope.channel != channel or principal != f'session:{scope.session_id}':
+                    raise LocalDeliveryRejected(403, 'Matching session scope required')
             prior = store._db.execute(
                 'SELECT * FROM local_delivery_obligations WHERE channel=? AND request_id=?',
                 (channel, key)).fetchone()
             if prior is not None:
                 if prior['request_hash'] != request_hash:
                     raise LocalDeliveryRejected(409, 'Idempotency-Key already binds another request')
+                store.lifecycle.validate_request(channel, key, epoch, existing=True)
                 existing = store.message(channel, prior['local_cursor'])
                 if existing is None:
                     raise ValueError('accepted local custody lost its message')
                 return existing
+            store.lifecycle.validate_request(channel, key, epoch)
+            parent = message.reply_to_cursor
+            if parent is None and message.thread_ts is not None:
+                threaded = store.message_by_ts(channel, message.thread_ts)
+                parent = threaded.cursor if threaded is not None else None
+            store.lifecycle.require_live_parent(channel, parent, message.sender)
             capacity = self.capacity()
             if capacity['outstanding'] >= self.outstanding_limit:
                 raise LocalDeliveryRejected(503, 'Local outstanding delivery capacity exhausted')
@@ -151,14 +169,15 @@ class LocalDeliveryStore:
                     raise LocalDeliveryRejected(422, 'Remote ancestry requires a versioned origin-parent mapping')
             store.send_rate._reserve(principal)
             accepted = store._append(channel, LOCAL_REFERENCE_PREFIX + key, message)
+            store.lifecycle.bind_request(channel, key, epoch, accepted.cursor)
             store._db.execute('''INSERT INTO local_delivery_obligations
                 (channel,request_id,request_hash,local_cursor,state) VALUES (?,?,?,?,?)''',
                 (channel, key, request_hash, accepted.cursor, 'federated' if destination else 'pending'))
             if destination is not None:
                 if bridge.bindings[destination].ordinary_version == 3:
                     from src.agentbus_federation_ordinary_service import outgoing_parent
-                    parent = outgoing_parent(store, channel, message, bridge.identity.instance_id, destination)
-                    bridge.enqueue_ordinary(key, destination, message, parent)
+                    origin_parent = outgoing_parent(store, channel, message, bridge.identity.instance_id, destination)
+                    bridge.enqueue_ordinary(key, destination, message, origin_parent)
                 else:
                     bridge.enqueue(key, destination, message.model_dump_json())
                 obligation = store.federation.obligation(bridge.identity.instance_id, key, destination)
@@ -191,7 +210,7 @@ class LocalDeliveryStore:
             return [dict(row) for row in self.owner._db.execute("""
                 SELECT o.*,m.payload,m.received_at FROM local_delivery_obligations o
                 JOIN messages m ON m.cursor=o.local_cursor
-                WHERE o.channel=? AND o.state IN ('uncertain','submitting','blocked') AND o.next_attempt<=?
+                WHERE o.channel=? AND o.state IN ('uncertain','submitting','blocked','expired_uncertain') AND o.next_attempt<=?
                 ORDER BY CASE WHEN o.state='blocked' OR o.attempts>=8 THEN 1 ELSE 0 END,o.local_cursor LIMIT 100""",
                 (channel, instant))]
 
@@ -211,16 +230,21 @@ class LocalDeliveryStore:
         with self.owner._lock, self.owner._db:
             self.owner._db.executemany("""UPDATE local_delivery_obligations
                 SET next_attempt=MAX(next_attempt,?) WHERE channel=? AND request_id=?
-                AND state IN ('uncertain','submitting','blocked','federated')""",
+                AND state IN ('uncertain','submitting','blocked','federated','expired_uncertain')""",
                 [(instant + 60, row['channel'], row['request_id']) for row in rows])
 
     def reserve(self, channel: str, key: str, *, now: float | None = None) -> bool:
         instant = time.time() if now is None else now
         with self.owner._lock, self.owner._db:
-            row = self.owner._db.execute('''SELECT attempts,next_attempt,state
+            row = self.owner._db.execute('''SELECT attempts,next_attempt,state,local_cursor
                 FROM local_delivery_obligations WHERE channel=? AND request_id=?''', (channel, key)).fetchone()
             if (row is None or row['state'] not in {'pending', 'uncertain', 'submitting'}
                     or row['attempts'] >= 8 or row['next_attempt'] > instant):
+                return False
+            self.owner.lifecycle.settle(instant, channel=channel)
+            if self.owner.lifecycle.all_targets_expired(channel, row['local_cursor']):
+                self.owner._db.execute('UPDATE local_delivery_obligations SET state=? WHERE channel=? AND request_id=?',
+                    ('expired_uncertain' if row['attempts'] else 'expired_unsubmitted', channel, key))
                 return False
             self.owner._db.execute('''UPDATE local_delivery_obligations
                 SET attempts=attempts+1,state='submitting',next_attempt=? WHERE channel=? AND request_id=?''',
@@ -281,12 +305,13 @@ class LocalDeliveryStore:
         if key is None:
             return False
         with self.owner._lock:
-            row = self.owner._db.execute('''SELECT m.payload FROM local_delivery_obligations o
+            row = self.owner._db.execute('''SELECT m.payload,m.channel,m.cursor FROM local_delivery_obligations o
                 JOIN messages m ON m.cursor=o.local_cursor WHERE o.channel=? AND o.request_id=?''',
                 (channel, key)).fetchone()
             if row is None:
                 return False
-            if fingerprint(json.loads(row['payload'])) != fingerprint(message.model_dump()):
+            raw = self.owner.retention.payload(channel, row['cursor'], row['payload'])
+            if fingerprint(json.loads(raw)) != fingerprint(message.model_dump()):
                 raise ValueError('provider echo conflicts with accepted local content')
             self.complete(channel, key, provider_ref)
             return True
@@ -301,12 +326,12 @@ class LocalDeliveryStore:
         if key is None:
             return False
         with self.owner._lock:
-            row = self.owner._db.execute("""SELECT m.payload FROM local_delivery_obligations o
+            row = self.owner._db.execute("""SELECT m.payload,m.channel,m.cursor FROM local_delivery_obligations o
                 JOIN messages m ON m.cursor=o.local_cursor WHERE o.channel=? AND o.request_id=?""",
                 (channel, key)).fetchone()
             if row is None:
                 return False
-            expected = SendMessage.model_validate_json(row['payload'])
+            expected = SendMessage.model_validate_json(self.owner.retention.payload(channel, row['cursor'], row['payload']))
             from src.agentbus_channel_api_service import provider_message
             wire = provider_message(self.owner, channel, expected)
             if text != encode_envelope(wire):

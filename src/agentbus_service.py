@@ -19,6 +19,7 @@ import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError, model_validator
 
+from src.agentbus_announcement_lifecycle_service import AnnouncementLifecycle
 from src.agentbus_channel_api_service import api_inbox, api_info, api_read, claim_message
 from src.agentbus_channel_store_service import ChannelStore
 from src.agentbus_claim_recovery_service import ClaimRecoveryStore
@@ -28,7 +29,9 @@ from src.agentbus_delivery_lifecycle_service import delivery_lifespan
 from src.agentbus_federation_api_service import FederationAcceptance, api_federation_enqueue
 from src.agentbus_federation_service import FederationStore
 from src.agentbus_federation_slack_service import SlackFederationProvider, bounded_response, validate_carrier_echo
+from src.agentbus_lifecycle_api_service import api_complete, api_handled_batch, api_outcome, api_pickup
 from src.agentbus_local_delivery_service import LOCAL_REFERENCE_PREFIX, LOCATOR_PREFIX, LocalDeliveryStore
+from src.agentbus_message_lifecycle_service import MessageLifecycleStore
 from src.agentbus_participation_api_service import (
     api_claim_recovery,
     api_control_ack,
@@ -55,6 +58,7 @@ from src.agentbus_participation_store_service import ParticipationStore
 from src.agentbus_participation_store_service import StoppedMessageSession as StoppedMessageSession
 from src.agentbus_reply_policy_service import validate_reply
 from src.agentbus_request_limits_service import RequestBodyLimit
+from src.agentbus_retention_service import RetentionStore
 from src.agentbus_send_policy_service import SessionAuthorityError as SessionAuthorityError
 from src.agentbus_send_policy_service import validate_new_send as validate_new_send
 from src.agentbus_send_rate_service import SendRateExceeded as SendRateExceeded
@@ -63,6 +67,7 @@ from src.agentbus_settings_service import Settings
 from src.agentbus_slack_socket_service import SlackReceiver as SlackReceiver
 from src.agentbus_slack_socket_service import build_socket
 from src.agentbus_status_api_service import api_health, api_status, authenticate_status
+from src.agentbus_transaction_service import atomic
 
 LOGGER = logging.getLogger("agentbus")
 IDENTIFIER = r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$"
@@ -134,17 +139,20 @@ class MessagePage(BaseModel):
     messages: list[Message]
     next_cursor: int
     has_more: bool
+    retired_history: bool | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class InboxMessage(Message):
     actionable: bool
     action_reason: str
+    lifecycle: dict | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class InboxPage(BaseModel):
     messages: list[InboxMessage]
     next_cursor: int
     has_more: bool
+    retired_history: bool | None = Field(default=None, exclude_if=lambda value: value is None)
     upgrade_notice: str | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
@@ -166,6 +174,7 @@ class Info(BaseModel):
     channel: str
     high_water_cursor: int
     features: list[str]
+    lifecycle: dict | None = Field(default=None, exclude_if=lambda value: value is None)
     upgrade_notice: str | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
@@ -178,6 +187,7 @@ class MessageStore:
         os.close(descriptor)
         self._lock = threading.RLock()
         self._db = sqlite3.connect(path, check_same_thread=False, timeout=5)
+        self._db.create_function('agentbus_message_lifecycle_v1', 0, lambda: 1, deterministic=True)
         self._db.row_factory = sqlite3.Row
         path.chmod(0o600)
         self._db.execute("PRAGMA foreign_keys=ON")
@@ -264,6 +274,12 @@ class MessageStore:
         self.local_delivery = LocalDeliveryStore(self)
         self.channels = ChannelStore(self)
         self.participation.channels = self.channels
+        self.lifecycle = MessageLifecycleStore(self)
+        self.retention = RetentionStore(self)
+        self.announcements = AnnouncementLifecycle(self)
+        self.controls.lifecycle = self.announcements
+        self.participation.announcements = self.announcements
+        self.claim_recovery.lifecycle = self.lifecycle
 
     def first_legacy_notice(self, channel: str, identity: str) -> bool:
         """Return an onboarding notice once per legacy inbox identity."""
@@ -280,9 +296,8 @@ class MessageStore:
             )
             return inserted.rowcount == 1
 
-    @staticmethod
-    def _message(row: sqlite3.Row) -> Message:
-        return Message(**json.loads(row["payload"]), cursor=row["cursor"],
+    def _message(self, row: sqlite3.Row) -> Message:
+        return Message(**json.loads(self.retention.payload(row['channel'], row['cursor'], row["payload"])), cursor=row["cursor"],
                        slack_ts=("" if row["slack_ts"].startswith(LOCAL_REFERENCE_PREFIX) else row["slack_ts"]), received_at=row["received_at"],
                        sender_assurance=row["sender_assurance"])
 
@@ -291,23 +306,29 @@ class MessageStore:
             return self._append(channel, slack_ts, message)
 
     def _append(self, channel: str, slack_ts: str, message: SendMessage) -> Message:
-        self._db.execute("""
+        if self.lifecycle.enabled and not self._db.execute(
+                'SELECT 1 FROM messages WHERE channel=? AND slack_ts=?', (channel, slack_ts)).fetchone():
+            self.retention.reserve_storage(len(message.model_dump_json().encode('utf-8')))
+        inserted = self._db.execute("""
             INSERT OR IGNORE INTO messages
-                (channel, slack_ts, thread_ts, recipient, audience, received_at, payload, sender_assurance)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (channel, slack_ts, thread_ts, recipient, audience, received_at, payload, sender_assurance, sender)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (channel, slack_ts, message.thread_ts, message.recipient,
               message.audience, datetime.now(timezone.utc).isoformat(),
-              message.model_dump_json(), message._sender_assurance))
+              message.model_dump_json(), message._sender_assurance, message.sender))
         if message._sender_assurance in {"session", "slack-human"}:
             self._db.execute(
-                "UPDATE messages SET sender_assurance = ?, payload = ?, recipient = ?, audience = ?, thread_ts = ? "
+                "UPDATE messages SET sender_assurance = ?, payload = ?, recipient = ?, audience = ?, thread_ts = ?, sender = ? "
                 "WHERE channel = ? AND slack_ts = ? AND sender_assurance = 'legacy'",
                 (message._sender_assurance, message.model_dump_json(), message.recipient,
-                 message.audience, message.thread_ts, channel, slack_ts),
+                 message.audience, message.thread_ts, message.sender, channel, slack_ts),
             )
         row = self._db.execute("SELECT * FROM messages WHERE channel = ? AND slack_ts = ?",
                                (channel, slack_ts)).fetchone()
         self.channels.allocate(channel, row["cursor"])
+        if inserted.rowcount:
+            self.lifecycle.register(channel, row["cursor"], message, ttl=getattr(message, "_pickup_ttl", None))
+            self.retention.reserve_storage(0)
         return self._message(row)
 
     def claim_slash_command(self, command_id: str) -> bool:
@@ -356,8 +377,10 @@ class MessageStore:
                                    (channel, cursor)).fetchone()
         return self._message(row) if row else None
 
-    def claim(self, channel: str, cursor: int, identity: str) -> Claim:
-        with self._lock, self._db:
+    def claim(self, channel: str, cursor: int, identity: str, *, session_token=None) -> Claim:
+        with self._lock, atomic(self._db):
+            if session_token is not None and self.channels.principal(session_token, identity).channel != channel:
+                raise PermissionError('Matching session scope required')
             message = self.message(channel, cursor)
             if message is None:
                 raise KeyError(cursor)
@@ -368,6 +391,8 @@ class MessageStore:
                              (channel, cursor, identity, now))
             row = self._db.execute("SELECT cursor, identity, claimed_at FROM claims WHERE channel = ? AND cursor = ?",
                                    (channel, cursor)).fetchone()
+            if self.participation.same_chat(identity, row['identity']):
+                self.lifecycle.claim_target(channel, cursor, identity)
         return Claim(**dict(row))
 
     def claimant(self, channel: str, cursor: int) -> str | None:
@@ -455,7 +480,8 @@ class MessageStore:
                       else f"addressed to {message.recipient}" if message.audience == "direct"
                       else "informational" if message.audience == "informational"
                       else "unrouted; claim before replying")
-            visible.append(InboxMessage(**message.model_dump(), actionable=actionable,
+            actionable, lifecycle = self.lifecycle.inbox_projection(channel, message.cursor, identity, actionable)
+            visible.append(InboxMessage(**message.model_dump(), actionable=actionable, lifecycle=lifecycle,
                                         action_reason=reason))
         has_more = len(visible) > limit
         shown = visible[:limit]
@@ -619,6 +645,10 @@ API_OPERATIONS: dict[str, Callable[..., object]] = {
     "info": api_info,
     "inbox": api_inbox,
     "claim": api_claim,
+    "pickup": api_pickup,
+    "complete": api_complete,
+    "outcome": api_outcome,
+    "handled_batch": api_handled_batch,
     "policy_set": api_policy_set,
     "policy_effective": api_policy_effective,
     "session_enroll": api_session_enroll,
@@ -650,7 +680,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
         async with delivery_lifespan(app, settings, http_client, socket_factory):
             yield
 
-    app = FastAPI(title="AgentBus", version="0.9.1rc2", lifespan=lifespan,
+    app = FastAPI(title="AgentBus", version="0.9.1rc3", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     app.add_middleware(RequestBodyLimit)
@@ -669,6 +699,10 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                       dependencies=auth, response_model=InboxPage)
     app.add_api_route("/v1/messages/{cursor}/claim", API_OPERATIONS["claim"], methods=["POST"],
                       dependencies=auth, response_model=Claim)
+    app.add_api_route('/v1/messages/{cursor}/pickup', API_OPERATIONS['pickup'], methods=['POST'], dependencies=auth)
+    app.add_api_route('/v1/messages/{cursor}/complete', API_OPERATIONS['complete'], methods=['POST'], dependencies=auth)
+    app.add_api_route('/v1/messages/{cursor}/outcome', API_OPERATIONS['outcome'], methods=['GET'], dependencies=auth)
+    app.add_api_route('/v1/receipts/handled', API_OPERATIONS['handled_batch'], methods=['POST'], dependencies=auth)
     app.add_api_route("/v1/messages/{cursor}/claim-recovery", API_OPERATIONS["claim_recovery"],
                       methods=["POST"], dependencies=[Depends(authenticate_operator)])
     app.add_api_route("/v1/policy/revisions", API_OPERATIONS["policy_set"], methods=["POST"],

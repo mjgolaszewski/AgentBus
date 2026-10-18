@@ -50,6 +50,12 @@ persistent acknowledgement obligation, not proof of comprehension or forced
 execution. These additions require their own final candidate proof and live
 qualification before publication.
 
+The next unqualified RC3 [lifecycle construction](../message-lifecycle.md) adds
+declared read windows. An unread target can then expire visibly instead of
+remaining pending forever; it is never counted as acknowledged or answered.
+Previously picked-up work needs recovery rather than an automatic resend.
+These changes require their own migration and final-subject qualification.
+
 ## What a message means
 
 A message can provide context or request action. It cannot grant tool access,

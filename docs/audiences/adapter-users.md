@@ -84,7 +84,13 @@ does not start workers, refresh check-in, consume work, or open a turn. The
 roster remains an operator view of multiple sessions.
 Operators can run `agentbus roster --json` with their separate credential.
 
-The worker starts a turn for any verified message addressed to the chat's
+The unqualified RC3 [lifecycle construction](../message-lifecycle.md) additionally
+revalidates cached work against current scoped outcomes and records pickup
+before a host submission. Expired/handled work cannot become a fresh wake;
+unknown outcomes stay notification-only. This does not qualify owner interop
+or atomic admission, and host completion still does not acknowledge the message.
+
+The worker starts a turn for an eligible verified message addressed to the chat's
 exact route, including one labelled informational, regardless of whether its
 kind is request, reply, status, or note.
 Claimed work and required controls or policy changes can also wake it. Send
@@ -120,7 +126,7 @@ and unqualified; notification-only owners cannot use these as launch authority.
 | Own wake status | A joined chat can see its session and this host's wake readiness without an operator token or a model turn. |
 | Local roster view | Operators can list service-joined sessions and see which have a binding on this host. A blank local link does not establish that no other host has one. |
 | Addressed wake-up | Every verified message to the chat's exact route, including named informational messages, is eligible for the authorized host to resume an idle thread. Claimed work and required controls or policy changes can too. Current VS Code chats remain notification-only. |
-| Independent wake scan | A private cursor pages the authenticated service inbox even when the local presentation queue is full. It never acknowledges messages; full history in the bound channel remains readable with `agentbus inbox --after 0`. |
+| Independent wake scan | A private cursor pages the authenticated service inbox even when the local presentation queue is full. It never acknowledges messages; retained history in the bound channel remains readable with `agentbus inbox --after 0`. |
 | Slack thread reply | A verified allowlisted operator reply in a joined agent's unambiguous thread, including a slash-send thread, becomes a direct request. It shares slash-send quota and can wake only qualified owners; other humans, mixed-agent and unknown threads remain unrouted. |
 | Quiet checks | A live-wakable idle chat makes no routine in-chat polls; the worker watches without creating turns for empty or unchanged checks. A resumed chat reads and acknowledges its own authoritative events. |
 | Careful retry | One bounded follow-up is possible after a host-observed completed, interrupted, or failed turn with pending work. An interrupted-turn prompt asks the chat to inspect earlier side effects first; accepted starts count toward ordinary rate limits even when they fail, while required governance events retain priority. |

@@ -152,6 +152,18 @@ custody, and local federation configuration. Remote health is not inferred.
 The operator-authenticated `/v1/status` exposes the same read model; shared
 bearer status remains minimal. No credential or private path is included.
 
+The next unqualified RC3 construction adds rich help/roster, a copyable
+`/agentbus approve REQUEST_UUID` line per enrollment and distinct lifecycle
+states in health. `/agentbus lifecycle` inspects the invoking channel;
+`lifecycle settle`, `lifecycle archive` and `lifecycle purge` preview a bounded
+batch, with `CONFIRM` required to apply. These controls preserve safety, replay,
+custody and receipt boundaries; there is no generic destructive cache flush.
+Read the [lifecycle migration guide](../message-lifecycle.md) before cutover.
+`/agentbus storage` inspects service-wide allocation and reusable pages;
+`/agentbus storage checkpoint CONFIRM` performs nonblocking WAL maintenance
+without deleting custody or running a vacuum. This explicit physical-maintenance
+scope spans the one database; it does not change agent membership or access.
+
 The construction candidate separates unresolved local deliveries from retained
 request history. `AGENTBUS_LOCAL_DELIVERY_OUTSTANDING_LIMIT` defaults to 1,024;
 submitted records do not consume this budget. Unknown, blocked, uncertain and
@@ -166,9 +178,11 @@ custody limits or constitute a global database disk quota.
 Private health/status shows each utilization and limit, warning at 80%.
 Investigate unresolved delivery failures and provision approved storage/capacity
 before exhaustion. The separate history limit still eventually backpressures:
-there is no supported automatic archive/retention lifecycle yet. Request UUIDs,
+the admission-only baseline has no supported archive/retention lifecycle.
+RC3's experimental retention requires explicit offline migration and qualified
+operator application; legacy unknown rows stay pinned. Request UUIDs,
 fingerprints and results never silently expire. Do not delete submitted rows to
-make room; an old exact authenticated retry must return its retained result,
+make room; an exact authenticated retry within its applicable replay window must return its retained result,
 and changed content must conflict. Existing over-capacity data remains intact;
 new allocation is denied, while existing retries and updates that need no new
 bounded allocation remain available. This candidate is not installed merely

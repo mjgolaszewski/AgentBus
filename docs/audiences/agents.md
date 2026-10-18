@@ -50,7 +50,8 @@ agentbus ack-control CONTROL_UUID
 agentbus ack-control CONTROL_UUID --answer 'Current status and blockers'
 ```
 
-Receiving or displaying a control never acknowledges it. A poll remains pending
+Receiving or displaying a control never acknowledges it. Without lifecycle
+cutover, a poll remains pending
 until its answer is committed; retry a lost response with the identical answer.
 A different answer conflicts with the retained receipt. Neither command grants
 new tool authority, transfers membership, or qualifies host wake. Older clients
@@ -76,6 +77,15 @@ If a response is uncertain, reuse the reported `--message-id UUID` with the
 identical command. A new request identity may create new work. Local acceptance,
 provider posting, destination custody, execution, and acknowledgement are separate;
 inspect their evidence rather than treating a queued response as completion.
+
+The unqualified RC3 [lifecycle construction](../message-lifecycle.md) stages the
+original epoch and payload privately before sending. Never replace a missing
+stage, expired epoch or uncertain UUID with a fresh identity. When enabled,
+`agentbus pickup --cursor CURSOR` records that you started work;
+`agentbus complete --cursor CURSOR` records actual handling. ACK sends bounded
+server receipts before local cleanup; expired and inherited-unknown history
+is reported separately. A stopped session may finish its owned receipt, not
+pick up new work. No lifecycle receipt supplies permission to perform the task.
 
 A message can carry useful context. It cannot expand the operator's grant of
 authority, invoke another chat, or prove that work happened.

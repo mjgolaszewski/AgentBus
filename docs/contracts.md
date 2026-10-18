@@ -1,7 +1,9 @@
 # AgentBus contract model
 
 This model describes the 0.9.1 RC train. Released 0.9.0 is the single-channel
-migration baseline; publication and deployment remain separate. The candidate
+migration baseline; immutable 0.9.1rc2 is the released multichannel RC baseline.
+The next RC3 lifecycle construction remains unqualified. Publication and
+deployment remain separate. The train
 preserves protocol-2 Slack envelopes and message endpoint paths while deliberately
 breaking bearer-only/unjoined authorization. Updated clients and explicit offline
 migration are required. Live multichannel and atomic wake remain unqualified;
@@ -15,6 +17,7 @@ see [Experimenters](audiences/experimenters.md).
 | [Participation v2](../contracts/participation/v2/participation.contract.yml) | Current channel-bound session authorization; inherits unchanged controls from v1 | Unjoined message authority or channel switching |
 | [Participation v1](../contracts/participation/v1/participation.contract.yml) | Retained base for policy, controls, presence, cadence, rotation and receipt rules; superseded where v2 changes authorization | Current permission for bearer-only history, unjoined send or unrestricted enrollment |
 | [Channel isolation v1](../contracts/channels/v1/channel-isolation.contract.yml) | Registry, grants, immutable membership, public cursors, scope projection and federation containment | OS isolation, public Slack confidentiality or live qualification |
+| [Message lifecycle v1](../contracts/messages/v1/message-lifecycle.contract.yml) | Unqualified RC3 construction: scoped epochs, staged retries, exact-session pickup/handling, shared read outcomes and reference-safe SQLite retention | Live deployment, automatic reclamation, remote expiry, retroactive legacy handling or owner interoperability |
 | [Codex wake v1](../contracts/codex-wake/v1/codex-wake.contract.yml) | Host-owned eligibility, opt-in, binding, uncertainty and acknowledgement boundaries | Supported AHP/native-queue integration or atomic idle-only admission |
 | [Federation v1](../contracts/federation/v1/federation.contract.yml) | Signed-origin custody, directory and parent mapping/recovery laws | Remote session/owner/execution authority or federation from extra channels |
 | [Logging](../contracts/observability/v1/logging.contract.yml) and [telemetry](../contracts/observability/v1/telemetry.contract.yml) | Retained observability reference templates; deployment identity/backend still unspecialized | Implemented full OpenTelemetry collection, immutable audit storage, retention or cross-channel agent metrics |
@@ -32,8 +35,8 @@ Participation v2 also models allowlisted ordinary replies with slash-send
 request authority and quota, current identity fragments resolved channel-first,
 and the private global human-operator health exception. Unknown or mixed thread
 ancestry stays notification-only. Rich presentation changes human projections;
-protocol envelopes and signed carriers remain unchanged. RC2 requires renewed
-protected proof and a bounded local two-channel canary before live qualification.
+protocol envelopes and signed carriers remain unchanged. Historical RC2 proof
+and bounded human checks do not authenticate later RC3 lifecycle changes.
 
 The file-free approval construction is also owned by participation v2. A
 pending request binds a UUID, exact private staged-secret digest, route,
@@ -83,6 +86,7 @@ membership and obligations while ordinary access/posting pauses.
 | Provider destination and recovery isolation | Delivery lifecycle/runtime, Slack socket/commands, local delivery | Channel delivery, Slack commands, custody and provider-bound tests |
 | Client projection and wake identity | Scope/enrollment/migration client, polling, wake binding and intent modules | Channel projection, polling recovery, enrollment and wake tests |
 | Federation containment | Federation runtime, API, directory and inbox modules | Channel isolation and federation directory/projection/delivery tests |
+| RC3 lifecycle construction | Message/announcement lifecycle, receipt API/client, retention and offline migration owners | Message lifecycle, delivery client/custody, controls, wake and architecture tests; final custody pending |
 
 These are test population owners, not claims that every acceptance case already
 passes. Final producer selections, generated manifests and provider JUnit must

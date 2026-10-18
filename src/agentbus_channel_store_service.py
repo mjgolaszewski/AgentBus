@@ -148,9 +148,10 @@ class ChannelStore:
 
     def high_water(self, channel):
         with self.owner._lock:
-            return self.owner._db.execute('SELECT COALESCE(MAX(position),0) FROM channel_positions WHERE channel=?', (channel,)).fetchone()[0]
+            row = self.owner._db.execute('SELECT next_position-1 FROM bus_channels WHERE channel=?', (channel,)).fetchone()
+            return row[0] if row else 0
 
-    def principal(self, secret, route=None, *, allow_joining=False):
+    def principal(self, secret, route=None, *, allow_joining=False, receipt_recovery=False):
         with self.owner._lock:
             import hashlib
 
@@ -162,9 +163,9 @@ class ChannelStore:
                 (hashlib.sha256(secret.encode()).hexdigest(),)).fetchone()
             if row is None:
                 raise PermissionError('Matching session authority required')
-            if row['state']=='stopped':
+            if row['state']=='stopped' and not receipt_recovery:
                 raise StoppedMessageSession('Session is stopped')
-            if row['state'] not in ({'joining','active','overdue','stopping'} if allow_joining else {'active','overdue','stopping'}):
+            if not receipt_recovery and row['state'] not in ({'joining','active','overdue','stopping'} if allow_joining else {'active','overdue','stopping'}):
                 raise PermissionError('Matching session authority required')
             if route is not None and route not in self.owner.participation.routes_for(row['current_route']):
                 raise PermissionError('Matching session authority required')

@@ -439,6 +439,7 @@ def test_slack_approval_real_api_has_no_authority_before_human_approval(channel_
     assert 'not enabled' in execute_command({**payload, 'user_id': 'U2'}, settings, app.state.store, object())
     listing = execute_command({**payload, 'text': 'enrollments'}, settings, app.state.store, object())
     assert body['route'] in listing and body['profile_chat_id'] in listing
+    assert listing.splitlines()[-1] == f"`/agentbus approve {body['approval_request_id']}`"
     assert body['session_secret'] not in listing
     assert 'approved in this channel' in execute_command(payload, settings, app.state.store, object())
     assert 'unavailable' in execute_command({**payload, 'channel_id': 'C111'}, settings, app.state.store, object())

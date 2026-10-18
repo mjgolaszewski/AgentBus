@@ -65,8 +65,9 @@ def service_dashboard(settings, store, *, socket=None, bridge=None, version=None
                 'WHERE c.channel=? GROUP BY s.state', (channel,)).fetchall())
             channels.append({'channel':channel, 'enabled':channel in settings.channels, 'inbox_id':row['inbox_id'],
                              'messages':store._db.execute('SELECT count(*) FROM messages WHERE channel=?',(channel,)).fetchone()[0],
-                             'high_water_cursor':store._db.execute('SELECT COALESCE(max(position),0) FROM channel_positions WHERE channel=?',(channel,)).fetchone()[0],
-                             'sessions':sessions,'delivery':states})
+                             'high_water_cursor':store.channels.high_water(channel),
+                             'sessions':sessions,'delivery':states,
+                             'lifecycle':store.lifecycle.status(channel)})
         custody = dict(store._db.execute('SELECT state,count(*) FROM bridge_obligations GROUP BY state').fetchall())
         checkpoints = store._db.execute('SELECT count(*) FROM federation_checkpoints').fetchone()[0]
     return {'version':version, 'runtime':{'python':platform.python_version(),
@@ -74,8 +75,12 @@ def service_dashboard(settings, store, *, socket=None, bridge=None, version=None
             'uptime_seconds':max(0, int(time.monotonic()-started_at)) if started_at is not None else None},
             'slack_connected':connected, 'channels':channels,'retained_channel_count':retained_channel_count,
             'channel_details_truncated':len(channels)<retained_channel_count,'database_bytes':settings.database_bytes(),
-            'delivery_mode':'local_custody_v1' if settings.local_delivery_version==1 else 'immediate',
+            'delivery_mode':'local_custody_v2' if store.lifecycle.enabled else 'local_custody_v1' if settings.local_delivery_version==1 else 'immediate',
             'local_delivery_capacity':store.local_delivery.capacity(),
+            'lifecycle_storage':store.retention.storage() if store.lifecycle.enabled else None,
+            'storage_maintenance':store.retention.last_checkpoint,
+            'lifecycle_policy':vars(store.lifecycle.policy) if store.lifecycle.enabled else None,
+            'announcement_capacity':store.announcements.capacity() if store.lifecycle.enabled else None,
             'protocol_version':2,'participation_version':2,
             'federation':{'configured':settings.federation_config is not None,'initialized':bridge is not None,
                           'channel':getattr(bridge,'channel',None),

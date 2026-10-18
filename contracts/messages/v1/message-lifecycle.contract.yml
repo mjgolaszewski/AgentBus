@@ -1,0 +1,98 @@
+document:
+  kind: message_lifecycle_contract
+  version: 1.0.0
+  status: active
+  path: contracts/messages/v1/message-lifecycle.contract.yml
+contract:
+  id: message-lifecycle-v1
+  status: construction_unqualified
+  wire_protocol: 2
+  local_delivery_version: 2
+  authority: local_service_SQLite_transaction_and_exact_session_channel_principal
+  exclusions:
+  - no_remote_expiry_inferred_from_missing_provider_or_destination_receipt
+  - no_AHP_native_queue_or_atomic_idle_admission_qualification
+  - no_expiry_of_STOP_safety_controls_or_assumption_that_running_work_did_not_execute
+  - legacy_unknown_pickup_state_requires_explicit_migration_classification
+defaults:
+  status: custodian_reviewed_ordinary_request_defaults_not_live_configuration
+  policy:
+    pickup_seconds: 86400
+    work_lease_seconds: 86400
+    epoch_seconds: 86400
+    replay_seconds: 604800
+    archive_seconds: 604800
+    retention_seconds: 2592000
+    storage_bytes: 1073741824
+request_identity:
+  tuple: [service_inbox, channel_epoch, session_principal, canonical_UUID, canonical_fingerprint]
+  epoch: opaque_service_issued_bound_to_channel_and_inbox_persisted_before_submission
+  client: stage_payload_fingerprint_and_original_epoch_privately_before_first_message_submission
+  retry: never_replace_epoch_or_UUID_after_uncertain_outcome
+  closed_epoch: explicit_expired_response_never_new_allocation
+  legacy_cutover: known_exact_legacy_requests_only_during_declared_replay_window_unknown_UUID_never_allocates
+  conflicts: changed_fingerprint_or_principal_fails_closed_before_capacity_or_provider_work
+interfaces:
+  capability: message-lifecycle-v1
+  message_client_header: X-AgentBus-Lifecycle-Version=1
+  delivery_headers: X-AgentBus-Delivery-Version=2_and_X-AgentBus-Request-Epoch_with_original_Idempotency-Key
+  pickup_and_complete_body: {session_id: exact_session_UUID, receipt_id: original_pickup_UUID}
+  handled_batch_body: {session_id: exact_session_UUID, receipts: one_to_200_distinct_cursor_and_receipt_UUID_pairs}
+  outcome: recipient_state_or_sender_aggregate_without_private_pickup_receipts
+  history: channel_scoped_retired_gap_flag_and_HTTP410_for_known_retired_positions
+  immediate_human_Slack_posts: verified_operator_preflight_before_provider_effect; provider_and_local_persistence_uncertainty_remain_distinct
+states:
+  transport: [accepted, pending, submitting, uncertain, blocked, submitted, expired_unsubmitted, expired_uncertain]
+  recipient: [unclaimed, picked_up, handled, expired_unclaimed, recovery_required]
+  unclaimed_expiry: atomic_with_pickup_and_ACK_one_terminal_sender_visible_outcome
+  picked_up_deadline: recovery_required_not_automatic_return_or_resend
+  recovery_wake: notification_only_no_automatic_host_submission_or_lease_renewal
+  return: canonical_queryable_outcome_not_a_recursive_ordinary_message
+  late_transition: no_resurrection_of_expired_or_handled_target
+  observation_is_not_pickup: [inbox_read, polling, presentation_cleanup, provider_submission, wake_queue_acceptance]
+  shared_payload: broadcasts_and_polls_keep_fixed_target_snapshot_with_independent_receipts_and_outcomes
+  shared_read_states: [unread, read_acknowledged, expired_unread]
+  shared_legacy: no_retroactive_read_deadlines_or_acknowledgements
+  shared_retention_residual: opaque_Slack_request_replay_keys_and_shared_control_payloads_remain_pinned_under_independent_finite_caps_until_retirement_is_qualified
+  shared_limits: {retained_payloads: 65536, lifecycle_target_receipts: 131072}
+retention:
+  hot: unresolved_and_replay_applicable_data
+  archive: compressed_bounded_payload_in_existing_SQLite_with_digest_and_atomic_publication
+  purge: after_declared_retention_and_closed_replay_window_only_when_reference_closure_allows
+  reference_closure: [claims, ancestry, channel_positions, provider_observations, local_custody, federation_mappings, recipient_work]
+  metadata: stable_public_cursor_high_water_and_ingress_retirement_floor_prevent_reuse_or_old_provider_reallocation
+  read: archive_lookup_is_channel_scoped_bounded_and_digest_verified_expired_history_is_explicit
+  storage: occupied_database_pages_plus_WAL_SHM_with_in_database_archives_included_and_independent_finite_admission_limits
+  storage_residuals: [not_an_OS_quota, safety_receipt_and_admin_overhead_remains_writable, external_backups_and_client_stages_need_separate_capacity]
+  archive_maintenance: {additional_bytes: 33554432, ordinary_admission: prohibited, batch_payloads: 100, reservation: whole_batch_before_mutation, bound_exhaustion: fail_closed_without_partial_retirement}
+  external_wake_intents: not_database_FKs_retired_cursor_410_preserves_uncertain_attempt_intent_spool_and_ACK_notification_only
+  maintenance: nonblocking_checkpoint_at_admission_pressure_reuses_freelist_pages_without_implicit_vacuum_or_custody_deletion
+  pressure: warning_before_exhaustion_then_fail_closed_no_silent_deletion_of_unknown_custody
+operator_controls:
+  authorization: existing_privileged_operator_authority_only
+  inspection: distinct_transport_recipient_retention_counts_without_implied_ACK
+  reconciliation: explicit_idempotent_settle_due_deadlines_no_blind_provider_retry
+  archive_and_purge: bounded_dry_run_before_apply_with_reference_closure_and_audit_receipt
+  cache_flush: only_declared_rebuildable_projections_never_authoritative_custody_or_receipts
+  protected_state: [request_identity, replay_guards, pickup_receipts, semantic_ACKs, wake_intents, credentials, bindings]
+  scope: explicit_channel_for_mutations_no_implicit_global_flush
+  unknown_cache: reject_unsupported_cache_names_rather_than_delete_arbitrary_paths
+migration:
+  mode: offline_dry_run_then_apply_with_stopped_service_lease_and_verified_backup
+  preserve: [identities, channel_inbox_bindings, public_positions, sessions, secrets, ACK_state, provider_refs, uncertain_custody, federation_keys_and_checkpoints]
+  legacy_unknown: pin_until_explicit_operator_classification_no_retroactive_handled_or_unclaimed_assumption
+  compatibility: old_binary_must_refuse_lifecycle_migrated_schema_and_old_clients_cannot_allocate_legacy_requests
+  rollback: before_new_writes_restore_verified_backup_after_new_writes_repair_forward
+acceptance:
+- pickup_expiry_ACK_claim_and_duplicate_submission_races_are_atomic
+- restart_and_lost_response_preserve_original_epoch_and_request_identity
+- foreign_stale_forged_epochs_and_changed_profiles_spools_archives_fail_closed
+- old_legacy_replay_never_turns_into_new_allocation
+- uncertain_provider_outcomes_are_not_false_clean_returns
+- running_work_and_safety_controls_do_not_expire_as_unclaimed
+- shared_control_target_outcomes_never_copy_payload_or_fake_read_ACK
+- interrupted_archive_or_restore_keeps_source_or_verified_archive_and_all_references
+- cold_payload_reads_are_bounded_channel_scoped_and_digest_verified
+- retention_reclaims_eligible_completed_history_with_no_reference_or_cursor_reuse
+- storage_pressure_remains_bounded_and_operator_visible
+- canonical_protected_exact_main_archive_install_and_authorized_live_canary_required

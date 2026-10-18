@@ -23,6 +23,7 @@ from src.agentbus_participation_service import (
 from src.agentbus_transaction_service import atomic
 
 if TYPE_CHECKING:
+    from src.agentbus_announcement_lifecycle_service import AnnouncementLifecycle
     from src.agentbus_channel_store_service import ChannelStore
 
 
@@ -42,6 +43,7 @@ class ParticipationStore:
     def __init__(self, db: sqlite3.Connection, lock: threading.RLock):
         self._db = db
         self._lock = lock
+        self.announcements: AnnouncementLifecycle | None = None
         db.row_factory = sqlite3.Row
         with lock, db:
             db.execute("""
@@ -524,6 +526,8 @@ class ParticipationStore:
                 SELECT control_id, state FROM control_targets
                 WHERE session_id = ? AND state != 'effective' ORDER BY control_id
             """, (session_id,)).fetchall()
+            if self.announcements is not None:
+                outstanding = [item for item in outstanding if self.announcements.pending(item['control_id'], session_id)]
         last_contact = datetime.fromisoformat(row["last_client_contact_at"])
         expected = last_contact + timedelta(seconds=policy.control_check_max_seconds)
         overdue_from = expected + timedelta(seconds=float(policy.values["overdue_grace_seconds"] or 0))

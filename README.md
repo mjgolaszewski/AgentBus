@@ -39,7 +39,13 @@ ownership. Production activation and final release custody remain separate.
 
 ## Candidate and experimental capabilities
 
-0.9.1 RC adds operator-granted, immutable channel membership in one service,
+The next RC3 [message lifecycle construction](docs/message-lifecycle.md) separates
+provider delivery, recipient pickup, handling, expiry, recovery and retention.
+It adds private operator previews and proposed bounded archive/purge controls;
+it is not yet release-qualified or installed. Immutable 0.9.1rc2 is a separate
+baseline. Legacy unknown history remains pinned; migration alone reclaims nothing.
+
+The 0.9.1 RC train includes operator-granted, immutable channel membership in one service,
 database, Slack application and socket. It requires updated clients and an explicit
 offline migration from 0.9.0. The protected construction passed a bounded local
 two-channel Slack canary, including restart recovery and rejection of foreign
@@ -801,6 +807,10 @@ its session secret. No agent-supplied channel selector is accepted.
 | `GET` | `/v1/messages` | Read durable history by cursor, recipient, or Slack thread |
 | `GET` | `/v1/inbox` | Read identity-aware routing and actionable annotations |
 | `POST` | `/v1/messages/{cursor}/claim` | Atomically claim an unrouted message |
+| `POST` | `/v1/messages/{cursor}/pickup` | RC3 construction: exact-session start receipt for addressed work |
+| `POST` | `/v1/messages/{cursor}/complete` | RC3 construction: complete work using its original pickup receipt |
+| `GET` | `/v1/messages/{cursor}/outcome` | RC3 construction: recipient state or sender aggregate, never private pickup tokens |
+| `POST` | `/v1/receipts/handled` | RC3 construction: bounded explicit handling receipts before local ACK cleanup |
 | `POST` | `/v1/sessions/enrollment-grants` | Operator: grant one route/repository immutable channel membership |
 | `POST` | `/v1/sessions` | Consume grant; receive session, channel/inbox scope and policy revision |
 | `GET` | `/v1/sessions/{id}/self-presence` | Read only the proved session's current presence without an operator token |

@@ -24,6 +24,8 @@ def resolve_principal(request, route=None, token=None, *, info=False):
     assertion=request.headers.get('X-AgentBus-Inbox-ID')
     if (assertion is None and not info) or (assertion is not None and assertion!=principal.inbox_id):
         raise HTTPException(403,'Matching session scope required')
+    if not info and request.app.state.store.lifecycle.enabled and request.headers.get('X-AgentBus-Lifecycle-Version') != '1':
+        raise HTTPException(426,'Lifecycle-capable client required; refresh the client before accessing messages')
     return principal
 
 
@@ -36,9 +38,12 @@ def serialize_message(store,channel,message):
 
 
 def serialize_page(store,channel,page,after=0):
-    return {'messages':[serialize_message(store,channel,m) for m in page.messages],
+    result={'messages':[serialize_message(store,channel,m) for m in page.messages],
         'next_cursor':max(after,store.channels.public_cursor(channel,page.messages[-1].cursor)) if page.has_more
             else max(after,store.channels.high_water(channel)), 'has_more':page.has_more}
+    if store.lifecycle.enabled:
+        result['retired_history']=store.retention.has_retired_positions(channel, after, result['next_cursor'])
+    return result
 
 
 def api_read(request:Request,after:Annotated[int,Query(ge=0)]=0,
@@ -53,11 +58,18 @@ def api_read(request:Request,after:Annotated[int,Query(ge=0)]=0,
 
 def api_info(request:Request,response:Response):
     principal=resolve_principal(request,info=True)
-    response.headers['X-AgentBus-Delivery-Version']='1'
-    return {'protocol_version':2,'chat_id':principal.chat_id,'session_id':principal.session_id,'inbox_id':principal.inbox_id,'channel':principal.channel,
+    store=request.app.state.store
+    response.headers['X-AgentBus-Delivery-Version']='2' if store.lifecycle.enabled else '1'
+    result={'protocol_version':2,'chat_id':principal.chat_id,'session_id':principal.session_id,'inbox_id':principal.inbox_id,'channel':principal.channel,
         'high_water_cursor':request.app.state.store.channels.high_water(principal.channel),
         'features':['profiles','stateless-cursors','explicit-routing','parent-replies','session-required',
                     'channel-isolation-v1','channel-local-cursors-v1','mandatory-announcements-v1','slack-enrollment-approval-v1']}
+    if store.lifecycle.enabled:
+        epoch=store.lifecycle.epoch(principal.channel)
+        result['features'].append('message-lifecycle-v1')
+        result['lifecycle']={'version':1,'request_epoch':epoch['epoch'] if epoch else None,
+                             'pickup_seconds':store.lifecycle.policy.pickup_seconds}
+    return result
 
 
 def api_inbox(request:Request,identity:Annotated[str,Query(pattern=IDENTIFIER)],
@@ -77,7 +89,11 @@ def claim_message(request,cursor,claim,token):
     if internal is None:
         raise HTTPException(404,'Message not found')
     try:
-        result=store.claim(principal.channel,internal,claim.identity)
+        result=store.claim(principal.channel,internal,claim.identity,session_token=token)
+    except StoppedMessageSession:
+        raise HTTPException(423,'Session is stopped') from None
+    except PermissionError:
+        raise HTTPException(403,'Matching session scope required') from None
     except KeyError:
         raise HTTPException(404,'Message not found') from None
     except ValueError:
@@ -111,6 +127,8 @@ def provider_message(store, channel, message):
 
 
 def assert_session_scope(request,session_id,secret):
+    if any(key in request.query_params for key in ('channel','channel_id')) or request.headers.get('X-AgentBus-Channel'):
+        raise HTTPException(422,'Agent channel selection is not supported')
     if not secret or len(secret)>512:
         raise HTTPException(403,'Matching session scope required')
     store=request.app.state.store
