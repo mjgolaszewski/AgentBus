@@ -156,7 +156,7 @@ def test_public_api_operation_inventory_owns_registered_routes(settings):
         for route in app.routes
         for method in getattr(route, "methods", set())
     }
-    assert set(API_OPERATIONS) == {"enrollment_grant", "federation_enqueue", "health", "status", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "rotation_grant", "session_rotate_secret", "session_presence", "session_self_presence", "session_roster", "session_policy_ack", "session_policy_explain", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename"}
+    assert set(API_OPERATIONS) == {"enrollment_grant", "federation_enqueue", "health", "status", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "rotation_grant", "session_rotate_secret", "session_presence", "session_self_presence", "session_roster", "session_policy_ack", "session_policy_explain", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename", "pickup", "complete", "outcome", "handled_batch"}
     assert routes[("GET", "/healthz")] is API_OPERATIONS["health"]
     assert routes[("GET", "/v1/status")] is API_OPERATIONS["status"]
     assert routes[("POST", "/v1/messages")] is API_OPERATIONS["send"]
@@ -164,6 +164,10 @@ def test_public_api_operation_inventory_owns_registered_routes(settings):
     assert routes[("GET", "/v1/info")] is API_OPERATIONS["info"]
     assert routes[("GET", "/v1/inbox")] is API_OPERATIONS["inbox"]
     assert routes[("POST", "/v1/messages/{cursor}/claim")] is API_OPERATIONS["claim"]
+    assert routes[("POST", "/v1/messages/{cursor}/pickup")] is API_OPERATIONS["pickup"]
+    assert routes[("POST", "/v1/messages/{cursor}/complete")] is API_OPERATIONS["complete"]
+    assert routes[("GET", "/v1/messages/{cursor}/outcome")] is API_OPERATIONS["outcome"]
+    assert routes[("POST", "/v1/receipts/handled")] is API_OPERATIONS["handled_batch"]
     assert routes[("POST", "/v1/messages/{cursor}/claim-recovery")] is API_OPERATIONS["claim_recovery"]
     assert routes[("POST", "/v1/policy/revisions")] is API_OPERATIONS["policy_set"]
     assert routes[("GET", "/v1/policy/effective")] is API_OPERATIONS["policy_effective"]
