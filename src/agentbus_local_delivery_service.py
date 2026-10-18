@@ -30,6 +30,10 @@ def validate_limits(outstanding: int, retained: int, observations: int) -> None:
                          'and retained <= observations <= 2000000')
 
 
+class UnretainedDeliveryEcho(ValueError):
+    """A recognized delivery locator cannot create custody without its accepted request."""
+
+
 class LocalDeliveryRejected(ValueError):
     def __init__(self, status: int, reason: str):
         self.status = status
@@ -318,7 +322,7 @@ class LocalDeliveryStore:
 
 
     def accept_event_echo(self, channel: str, provider_ref: str, text: object,
-                          blocks: object, thread_ts: object = None) -> bool:
+                          blocks: object, thread_ts: object = None, *, require_retained: bool = False) -> bool:
         """Caller proves the bot; exact stored wire content proves the local obligation."""
         from src.agentbus_service import SendMessage, encode_envelope
 
@@ -330,6 +334,8 @@ class LocalDeliveryStore:
                 JOIN messages m ON m.cursor=o.local_cursor WHERE o.channel=? AND o.request_id=?""",
                 (channel, key)).fetchone()
             if row is None:
+                if require_retained:
+                    raise UnretainedDeliveryEcho('Delivery locator has no retained accepted request')
                 return False
             expected = SendMessage.model_validate_json(self.owner.retention.payload(channel, row['cursor'], row['payload']))
             from src.agentbus_channel_api_service import provider_message

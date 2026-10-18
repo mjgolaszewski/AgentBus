@@ -865,3 +865,151 @@ def test_archive_maintenance_bound_refuses_without_partial_retirement(lifecycle)
     assert store.message('C111', m.cursor).text == m.text
     assert store._db.execute('SELECT count(*) FROM lifecycle_archive').fetchone()[0] == 0
     assert store._db.execute("SELECT 1 FROM lifecycle_operations WHERE request_key='bounded-maintenance'").fetchone() is None
+
+
+@pytest.mark.parametrize('provider_refs', [('105.000001',), ('105.000001', '106.500001')])
+def test_purge_waits_until_all_delayed_provider_refs_are_covered(lifecycle, provider_refs):
+    from src.agentbus_channel_ingress_service import append_scoped
+    from src.agentbus_local_delivery_service import fingerprint
+
+    store, p = lifecycle
+    body = SendMessage(sender=p['sender'].route, recipient=p['recipient'].route,
+                       text='delayed provider retirement', kind='request')
+    body._sender_assurance = 'session'
+    key = str(uuid4())
+    epoch = store.lifecycle.epoch('C111', 100)['epoch']
+    accepted = store.local_delivery.accept('C111', key, fingerprint(body.model_dump()), body,
+                                          'original-session', epoch=epoch)
+    for reference in provider_refs:
+        store.local_delivery.complete('C111', key, reference)
+    store.lifecycle.settle(111)
+    store.retention.archive('C111', actor='operator', request_key='delayed-archive', apply=True, instant=200)
+    assert store.retention.purge('C111', actor='operator', instant=221)['eligible'] == 0
+    early = store.retention.purge('C111', actor='operator', request_key='deferred-retirement',
+                                  apply=True, instant=221)
+    assert early['eligible'] == 0 and store.message('C111', accepted.cursor) is not None
+    assert store.local_delivery.capacity()['retained_requests'] == 1
+    retired = store.retention.purge('C111', actor='operator', request_key='covered-retirement',
+                                    apply=True, instant=228)
+    assert retired['eligible'] == 1 and store.message('C111', accepted.cursor) is None
+    for reference in provider_refs:
+        assert not store.retention.accepts_ingress('C111', reference)
+        assert store.retention.accepts_ingress('C222', reference)
+        assert append_scoped(store, 'C111', reference, body) is None
+    assert store.channels.high_water('C111') == 1 and store.channels.high_water('C222') == 0
+    assert store.retention.purge('C111', actor='operator', request_key='deferred-retirement',
+                                 apply=True, instant=228) == early
+    assert store._db.execute('PRAGMA foreign_key_check').fetchall() == []
+
+
+@pytest.mark.parametrize('restart', [False, True])
+def test_retired_delivery_locator_cannot_reallocate_late_unknown_alias(lifecycle, restart):
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    from slack_sdk.socket_mode.request import SocketModeRequest
+
+    from src.agentbus_local_delivery_service import LOCATOR_PREFIX, fingerprint
+    from src.agentbus_service import SlackReceiver, encode_envelope
+
+    store, p = lifecycle
+    body = SendMessage(sender=p['sender'].route, recipient=p['recipient'].route,
+                       text='late alias of retired request', kind='request')
+    body._sender_assurance = 'session'
+    key = str(uuid4())
+    epoch = store.lifecycle.epoch('C111', 100)['epoch']
+    store.local_delivery.accept('C111', key, fingerprint(body.model_dump()), body,
+                                'original-session', epoch=epoch)
+    store.local_delivery.complete('C111', key, '105.000001')
+    store.lifecycle.settle(111)
+    store.retention.archive('C111', actor='operator', request_key='socket-archive', apply=True, instant=200)
+    assert store.retention.purge('C111', actor='operator', request_key='socket-purge',
+                                  apply=True, instant=228)['eligible'] == 1
+    floor = store._db.execute('SELECT provider_floor FROM lifecycle_ingress WHERE channel=?', ('C111',)).fetchone()[0]
+    if restart:
+        path = store._db.execute('PRAGMA database_list').fetchone()[2]
+        store.close()
+        store = MessageStore(Path(path))
+        store.channels.configure(('C111', 'C222'))
+    blocks = [{'type':'context', 'block_id':LOCATOR_PREFIX + key, 'elements':[]}]
+    assert store.local_delivery.accept_event_echo('C111', '120.000001', encode_envelope(body), blocks) is False
+    responses = []
+    receiver = SlackReceiver(store, ('C111','C222'), 'B123')
+    try:
+        receiver(SimpleNamespace(send_socket_mode_response=responses.append), SocketModeRequest(
+            type='events_api', envelope_id='retired-alias', payload={'event':{
+                'type':'message', 'bot_id':'B123', 'channel':'C111', 'ts':'120.000001',
+                'text':encode_envelope(body), 'blocks':blocks}}))
+        assert len(responses) == 1  # Transport acknowledgement is not semantic delivery or handling.
+        assert store._db.execute('SELECT count(*) FROM messages').fetchone()[0] == 0
+        assert store.channels.high_water('C111') == 1
+        assert store.local_delivery.capacity()['retained_requests'] == 0
+        assert store._db.execute('SELECT provider_floor FROM lifecycle_ingress WHERE channel=?', ('C111',)).fetchone()[0] == floor
+    finally:
+        receiver._commands.shutdown(wait=True)
+        if restart:
+            store.close()
+
+
+def test_new_provider_alias_after_preview_repins_purge(lifecycle):
+    from src.agentbus_local_delivery_service import fingerprint
+
+    store, p = lifecycle
+    body = SendMessage(sender=p['sender'].route, recipient=p['recipient'].route,
+                       text='recompute provider alias eligibility', kind='request')
+    body._sender_assurance = 'session'
+    key = str(uuid4())
+    epoch = store.lifecycle.epoch('C111', 100)['epoch']
+    accepted = store.local_delivery.accept('C111', key, fingerprint(body.model_dump()), body,
+                                          'original-session', epoch=epoch)
+    store.local_delivery.complete('C111', key, '105.000001')
+    store.lifecycle.settle(111)
+    store.retention.archive('C111', actor='operator', request_key='repin-archive', apply=True, instant=200)
+    assert store.retention.purge('C111', actor='operator', instant=226)['eligible'] == 1
+    store.local_delivery.complete('C111', key, '110.000001')
+    assert store.retention.purge('C111', actor='operator', request_key='repinned-purge',
+                                  apply=True, instant=226)['eligible'] == 0
+    assert store.message('C111', accepted.cursor).text == body.text
+    assert store.retention.purge('C111', actor='operator', request_key='repin-now-covered',
+                                  apply=True, instant=231)['eligible'] == 1
+    assert not store.retention.accepts_ingress('C111', '105.000001')
+    assert not store.retention.accepts_ingress('C111', '110.000001')
+
+
+def test_provider_alias_and_purge_serialize_without_reallocating_custody(lifecycle):
+    from threading import Barrier
+
+    from src.agentbus_local_delivery_service import fingerprint
+
+    store, p = lifecycle
+    body = SendMessage(sender=p['sender'].route, recipient=p['recipient'].route,
+                       text='provider alias purge race', kind='request')
+    body._sender_assurance = 'session'
+    key = str(uuid4())
+    epoch = store.lifecycle.epoch('C111', 100)['epoch']
+    store.local_delivery.accept('C111', key, fingerprint(body.model_dump()), body,
+                                'original-session', epoch=epoch)
+    store.local_delivery.complete('C111', key, '105.000001')
+    store.lifecycle.settle(111)
+    store.retention.archive('C111', actor='operator', request_key='race-archive', apply=True, instant=200)
+    barrier = Barrier(2)
+    def observe():
+        barrier.wait()
+        try:
+            store.local_delivery.complete('C111', key, '110.000001')
+            return 'stored'
+        except ValueError as exc:
+            assert str(exc) == 'unknown local delivery'
+            return 'already_retired'
+    def retire():
+        barrier.wait()
+        return store.retention.purge('C111', actor='operator', request_key='racing-purge',
+                                     apply=True, instant=226)['eligible']
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        observed = pool.submit(observe)
+        retired = pool.submit(retire)
+        outcome = observed.result(), retired.result()
+    assert outcome in {('stored', 0), ('already_retired', 1)}
+    assert store.local_delivery.capacity()['retained_requests'] == (1 if outcome[0] == 'stored' else 0)
+    assert store.channels.high_water('C111') == 1
+    assert store._db.execute('PRAGMA foreign_key_check').fetchall() == []
