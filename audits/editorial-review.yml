@@ -963,7 +963,7 @@ documents:
   - - 1
     - 234
   line_count: 234
-  sha256: 422933fce84768bfd49107dc4069de56a1350208a9ad9fec47d306732336993c
+  sha256: df35066d5a725c6c2364d2e3347cbaf8f498ae6d65c0ebeec118d35dce82d664
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
