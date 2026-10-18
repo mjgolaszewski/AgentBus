@@ -748,7 +748,7 @@ documents:
   - - 1
     - 158
   line_count: 158
-  sha256: 50ccdf16ded5f0c11776b249f07aa1af568a1d92e4ea616103839bee290961b4
+  sha256: 489f96a6dd5a499466d7d7ea454e7085584cff494f77f7e2ec91ea817a785286
   disposition: updates
   findings:
   - Historical working log mixes earlier pending state with later protected construction closure; retained
@@ -764,7 +764,7 @@ documents:
   - - 1
     - 189
   line_count: 189
-  sha256: 167d919f3a3b679eedcefcd60e9ec675addd5d55f66429511cc965b0f0e3a8c1
+  sha256: ce267eeef2fcdd04cddd8c7304f1a9c6bb273a1b4fb20d09de5685551a964172
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
