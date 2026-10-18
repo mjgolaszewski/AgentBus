@@ -954,9 +954,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 226
-  line_count: 226
-  sha256: 96c00e9c605d083e37b3c95a01837e7d9d67d6380005c7684e3b3673021796d7
+    - 227
+  line_count: 227
+  sha256: 458a92ba7e3dcab92a7b6bb4e6bd6bad27f237912320650fcdb474844d784abf
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
