@@ -111,10 +111,15 @@ class RetentionStore:
                 raise ValueError('Archived payload is not a message')
             return result
 
+    def _provider_refs(self, row):
+        return [row['slack_ts'], *(item[0] for item in self.owner._db.execute(
+            'SELECT provider_ref FROM local_delivery_observations WHERE channel=? AND local_cursor=?',
+            (row['channel'], row['cursor'])))]
+
     def _eligible(self, channel, current, *, purge=False):
         # Legacy and federated custody stay pinned; no remote expiry is inferred.
         field = 'purge_after' if purge else 'archive_after'
-        return self.owner._db.execute(f'''SELECT m.* FROM messages m
+        rows = self.owner._db.execute(f'''SELECT m.* FROM messages m
             JOIN lifecycle_payloads p ON p.cursor=m.cursor
             WHERE m.channel=? AND p.legacy_unknown=0 AND p.{field}<=?
             AND NOT EXISTS (SELECT 1 FROM lifecycle_targets t WHERE t.cursor=m.cursor
@@ -131,6 +136,11 @@ class RetentionStore:
                     (SELECT provider_ref FROM local_delivery_observations o WHERE o.channel=m.channel AND o.local_cursor=m.cursor)))
             AND m.payload {'=' if purge else '!='} 'null'
             ORDER BY m.cursor LIMIT 100''', (channel, current, current)).fetchall()
+        if purge:
+            cutoff = Decimal(str(max(0, current-self.owner.lifecycle.policy.retention_seconds)))
+            rows = [row for row in rows if all(Decimal(ref) <= cutoff for ref in self._provider_refs(row)
+                    if re.fullmatch(r'[0-9]{1,20}\.[0-9]{1,20}', ref))]
+        return rows
 
     def archive(self, channel, *, actor, request_key=None, apply=False, instant=None):
         lifecycle = self.owner.lifecycle
@@ -213,9 +223,7 @@ class RetentionStore:
                                                       (channel, row['cursor'])).fetchone()
                     if position is None:
                         raise ValueError('Retirement requires its original channel-local position')
-                    refs = [row['slack_ts'], *(item[0] for item in self.owner._db.execute(
-                        'SELECT provider_ref FROM local_delivery_observations WHERE channel=? AND local_cursor=?',
-                        (channel, row['cursor'])))]
+                    refs = self._provider_refs(row)
                     floor = max([Decimal('0'), *(min(Decimal(ref), Decimal(str(max(0, current-lifecycle.policy.retention_seconds))))
                         for ref in refs if re.fullmatch(r'[0-9]{1,20}\.[0-9]{1,20}', ref))])
                     old = self.owner._db.execute('SELECT provider_floor FROM lifecycle_ingress WHERE channel=?', (channel,)).fetchone()

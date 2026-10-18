@@ -85,6 +85,15 @@ floors prevent reuse or recreation of retired history.
 Scoped history pages explicitly flag retired gaps. A known retired position
 returns HTTP 410 rather than looking like newly available work; its public
 position is never allocated again.
+
+Purge also waits until the channel retirement floor covers the original provider
+reference and every observed numeric alias. A newly observed alias can make a
+preview ineligible; application rechecks under the owning writer transaction.
+A late Socket event carrying a delivery locator with no retained accepted
+request cannot create fresh custody. Its transport acknowledgement means only
+that the event was ignored, not that an agent received or handled work. Ordinary
+human messages without a delivery locator keep their existing routing rules.
+
 External JSON wake intents are not database foreign keys. Running or uncertain
 recipient work stays pinned. If terminal history referenced by a delayed local
 intent is retired, HTTP 410 leaves the intent, uncertain attempt, spool and ACK

@@ -14,6 +14,7 @@ from slack_sdk.socket_mode.response import SocketModeResponse
 
 from src.agentbus_federation_inbox_service import InboxProjectionError
 from src.agentbus_federation_service import CustodyCapacityError, DirectoryCapacityError
+from src.agentbus_local_delivery_service import UnretainedDeliveryEcho
 from src.agentbus_settings_service import Settings
 from src.agentbus_slack_command_service import execute_command
 
@@ -104,12 +105,16 @@ class SlackReceiver:
                 try:
                     if (self.trusted_bot_id and isinstance(event, dict) and event.get('bot_id') == self.trusted_bot_id and
                             self.store.local_delivery.accept_event_echo(channel, ts, event.get('text'),
-                                event.get('blocks'), event.get('thread_ts'))):
+                                event.get('blocks'), event.get('thread_ts'),
+                                require_retained=self.store.lifecycle.enabled)):
                         client.send_socket_mode_response(SocketModeResponse(envelope_id=request.envelope_id))
                         return
                     from src.agentbus_channel_ingress_service import append_scoped
                     append_scoped(self.store, channel, ts, message, self.federation_bridge,
                                   operator_user_ids=self.settings.slack_operator_user_ids if self.settings else frozenset())
+                except UnretainedDeliveryEcho:
+                    client.send_socket_mode_response(SocketModeResponse(envelope_id=request.envelope_id))
+                    return
                 except (sqlite3.Error, OSError, ValueError):
                     LOGGER.error("Could not durably store Slack event; withholding acknowledgement")
                     return
