@@ -1401,6 +1401,9 @@ def test_operator_status_dashboard_is_complete_read_only_and_not_agent_visible(s
     assert operator['channels'][0]['enabled'] is True
     assert operator['federation']['configured'] is False
     assert operator['federation']['remote_health']=='not_observed'
+    assert operator['local_delivery_capacity']['outstanding_limit'] == 1024
+    assert operator['local_delivery_capacity']['retained_request_limit'] == 65536
+    assert operator['local_delivery_capacity']['warnings'] == []
     assert app.state.store._db.total_changes==before
     agent=status('local-test-secret')
     assert set(agent)=={'status','slack_connected'}

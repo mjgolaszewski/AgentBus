@@ -31,6 +31,7 @@ delivery_contract:
   - Canonical proof archive isolated install and bounded canary prerequisites
   - Complete product editorial audit with line coverage dispositions current contract model and Experimenters seat
   - File-free Slack enrollment approval with immutable staged proof and canonical grant custody
+  - Local delivery admission separated from retained idempotency history
   parallelizable_workstreams:
   - id: P12-WS1
     name: owner_protocol_qualification

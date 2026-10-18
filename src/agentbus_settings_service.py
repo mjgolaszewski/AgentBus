@@ -21,12 +21,18 @@ class Settings:
     federation_config: Path | None = None
     local_delivery_version: int | None = None
     slack_channels: tuple[str, ...] = ()
+    local_delivery_outstanding_limit: int = 1024
+    local_delivery_retained_limit: int = 65536
+    local_delivery_observation_limit: int = 131072
 
     @property
     def channels(self) -> tuple[str, ...]:
         return self.slack_channels or (self.slack_channel,)
 
     def __post_init__(self):
+        from src.agentbus_local_delivery_service import validate_limits
+        validate_limits(self.local_delivery_outstanding_limit, self.local_delivery_retained_limit,
+                        self.local_delivery_observation_limit)
         if self.local_delivery_version is not None and (type(self.local_delivery_version) is not int or self.local_delivery_version != 1):
             raise ValueError('Unsupported local delivery version')
 
@@ -70,10 +76,20 @@ class Settings:
         delivery_version = os.environ.get('AGENTBUS_LOCAL_DELIVERY_VERSION', '').strip()
         if delivery_version not in {'', '1'}:
             raise ValueError('AGENTBUS_LOCAL_DELIVERY_VERSION must be 1 when set')
+        limits = {}
+        for suffix, default in [('outstanding', 1024), ('retained', 65536), ('observation', 131072)]:
+            name = 'AGENTBUS_LOCAL_DELIVERY_' + suffix.upper() + '_LIMIT'
+            raw = os.environ.get(name, str(default)).strip()
+            if not re.fullmatch(r'[0-9]{1,7}', raw):
+                raise ValueError(name + ' must be a bounded positive integer')
+            limits['local_delivery_' + suffix + '_limit'] = int(raw)
         return cls(api_token=values["api_token"], slack_bot_token=values["slack_bot_token"],
                    slack_app_token=values["slack_app_token"],
                    slack_channel=channels[0] if len(channels)==1 else "",
                    slack_channels=channels if multiple is not None else (),
                    db_path=db_path.expanduser(), operator_token=operator_token,
                    slack_operator_user_ids=users, local_delivery_version=1 if delivery_version else None,
-                   federation_config=Path(federation_config).expanduser() if federation_config else None)
+                   federation_config=Path(federation_config).expanduser() if federation_config else None,
+                   local_delivery_outstanding_limit=limits['local_delivery_outstanding_limit'],
+                   local_delivery_retained_limit=limits['local_delivery_retained_limit'],
+                   local_delivery_observation_limit=limits['local_delivery_observation_limit'])

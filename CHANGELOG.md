@@ -5,6 +5,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Separate outstanding local delivery admission from retained idempotency history, with finite operator-configured request/observation limits and private utilization warnings; retain all retry identities and explicitly disclose the unfinished archive lifecycle.
+
 ## [0.9.1rc2] - 2026-10-17
 
 - Add file-free enrollment requests approved privately by allowlisted Slack operators in the intended channel; retain canonical grant custody, staged-secret recovery, immutable membership and file-grant compatibility.
