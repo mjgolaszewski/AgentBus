@@ -349,3 +349,190 @@ def test_federation_invalid_message_retains_validation_status(channel_service):
         'message':{'sender':a[0], 'text':''}})
     assert response.status_code == 422
     assert app.state.store._db.execute('SELECT count(*) FROM federation_origin_messages').fetchone()[0] == 0
+
+
+def test_slack_approval_binds_staged_secret_profile_and_channel_across_restart(tmp_path):
+    import uuid
+
+    from src.agentbus_service import MessageStore
+    path = tmp_path / 'approval.sqlite3'
+    store = MessageStore(path)
+    store.channels.configure(('C111', 'C222'))
+    store.participation.set_policy(scope='global', scope_key='*', actor='operator', values={
+        'initial_interval_seconds': 60, 'backoff_factor': 2, 'max_interval_seconds': 1920,
+        'control_check_max_seconds': 60, 'jitter_fraction': 0, 'overdue_grace_seconds': 120,
+        'presentation_budget_bytes': None,
+    })
+    request_id = str(uuid.uuid4())
+    chat_id = str(uuid.uuid4())
+    args = dict(request_id=request_id, repo='agentbus', route='home:agentbus:approval',
+                display_name='Approval', session_secret='s' * 32, chat_id=chat_id)
+    assert store.channels.request_enrollment(**args) is None
+    assert store.channels.request_enrollment(**args) is None
+    assert store._db.execute('SELECT count(*) FROM participation_sessions').fetchone()[0] == 0
+    listed = store.channels.pending_enrollments()
+    assert len(listed) == 1 and listed[0]['request_id'] == request_id
+    assert 'secret' not in str(listed) and 's' * 32 not in str(listed)
+    for change in ({'session_secret': 'x' * 32}, {'route': 'home:agentbus:other'}, {'chat_id': str(uuid.uuid4())}):
+        with pytest.raises(PermissionError):
+            store.channels.request_enrollment(**{**args, **change})
+    store.channels.approve_enrollment(request_id, channel='C111', actor='slack:U1')
+    store.channels.approve_enrollment(request_id, channel='C111', actor='slack:U1')
+    with pytest.raises(PermissionError):
+        store.channels.approve_enrollment(request_id, channel='C222', actor='slack:U1')
+    store.close()
+    store = MessageStore(path)
+    store.channels.configure(('C111', 'C222'))
+    result = store.channels.request_enrollment(**args)
+    assert result[0] == chat_id
+    assert store.channels.channel_for_chat(chat_id) == 'C111'
+    assert store.channels.request_enrollment(**args) == result
+    assert store._db.execute('SELECT count(*) FROM participation_sessions').fetchone()[0] == 1
+    assert store._db.execute('SELECT count(*) FROM channel_enrollment_grants').fetchone()[0] == 1
+    assert store.participation.session_state(result[1])['state'] == 'joining'
+    assert store.channels.pending_enrollments() == []
+    store.close()
+
+
+def test_expired_or_disabled_approval_grants_no_session_authority(tmp_path, monkeypatch):
+    import uuid
+
+    from src import agentbus_enrollment_approval_service as approval
+    from src.agentbus_service import MessageStore
+    store = MessageStore(tmp_path / 'approval.sqlite3')
+    store.channels.configure(('C111', 'C222'))
+    now = [1000.0]
+    monkeypatch.setattr(approval.time, 'time', lambda: now[0])
+    args = dict(request_id=str(uuid.uuid4()), repo='agentbus', route='home:agentbus:approval',
+                display_name='Approval', session_secret='s' * 32, chat_id=str(uuid.uuid4()))
+    store.channels.request_enrollment(**args)
+    store.channels.approve_enrollment(args['request_id'], channel='C111', actor='slack:U1')
+    store.channels.configure(('C222',))
+    with pytest.raises(PermissionError):
+        store.channels.request_enrollment(**args)
+    now[0] += 601
+    with pytest.raises(PermissionError):
+        store.channels.request_enrollment(**args)
+    assert store.channels.pending_enrollments() == []
+    assert store._db.execute('SELECT count(*) FROM participation_sessions').fetchone()[0] == 0
+    store.close()
+
+
+def test_slack_approval_real_api_has_no_authority_before_human_approval(channel_service):
+    import uuid
+    from dataclasses import replace
+
+    from src.agentbus_slack_command_service import execute_command
+    client, app, posted, a, _a2, b, bearer, _operator = channel_service
+    settings = replace(app.state.settings, slack_operator_user_ids=frozenset({'U1'}))
+    body = dict(repo='agentbus', route='home:agentbus:approved', display_name='Approved',
+                session_secret='approval-secret-with-at-least-32-characters',
+                approval_request_id=str(uuid.uuid4()), profile_chat_id=str(uuid.uuid4()))
+    assert client.post('/v1/sessions', json=body).status_code == 401
+    staged = client.post('/v1/sessions', headers=bearer, json=body)
+    assert staged.status_code == 202 and set(staged.json()) == {'status', 'request_id'}
+    assert client.post('/v1/sessions', headers=bearer, json={**body, 'channel': 'C111'}).status_code == 422
+    assert client.post('/v1/sessions', headers=bearer, json={**body, 'session_secret': 'x' * 32}).status_code == 403
+    assert client.get('/v1/inbox?identity='+body['route'], headers=bearer).status_code == 403
+    payload = {'command': '/agentbus', 'channel_id': 'C222', 'user_id': 'U1',
+               'text': 'approve ' + body['approval_request_id']}
+    assert 'not enabled' in execute_command({**payload, 'user_id': 'U2'}, settings, app.state.store, object())
+    listing = execute_command({**payload, 'text': 'enrollments'}, settings, app.state.store, object())
+    assert body['route'] in listing and body['profile_chat_id'] in listing
+    assert body['session_secret'] not in listing
+    assert 'approved in this channel' in execute_command(payload, settings, app.state.store, object())
+    assert 'unavailable' in execute_command({**payload, 'channel_id': 'C111'}, settings, app.state.store, object())
+    assert body['route'] not in execute_command({**payload, 'channel_id': 'C111', 'text': 'enrollments'}, settings, app.state.store, object())
+    joined = client.post('/v1/sessions', headers=bearer, json=body)
+    assert joined.status_code == 201, joined.text
+    receipt = joined.json()
+    assert receipt['chat_id'] == body['profile_chat_id'] and receipt['channel'] == 'C222'
+    retry = client.post('/v1/sessions', headers=bearer, json=body)
+    assert retry.status_code == 201 and retry.json()['session_id'] == receipt['session_id']
+    headers = {**bearer, 'X-AgentBus-Session-Token': body['session_secret'], 'X-AgentBus-Inbox-ID': receipt['inbox_id']}
+    assert client.get('/v1/messages', headers=headers).status_code == 403
+    assert client.post(f"/v1/sessions/{receipt['session_id']}/policy-ack", headers=headers,
+                       json={'revision': receipt['revision']}).status_code == 200
+    assert client.post('/v1/messages', headers=headers,
+                       json={'sender': body['route'], 'recipient': a[0], 'text': 'foreign'}).status_code == 403
+    assert client.get('/v1/inbox?identity='+b[0], headers=b[1]).status_code == 200
+    assert posted == []
+
+
+def test_approval_consumption_failure_rolls_back_grant_session_and_request(channel_service):
+    import sqlite3
+    import uuid
+    _client, app, _posted, _a, _a2, _b, _bearer, _operator = channel_service
+    store = app.state.store
+    args = dict(request_id=str(uuid.uuid4()), chat_id=str(uuid.uuid4()), repo='agentbus',
+                route='home:agentbus:rollback', display_name='Rollback', session_secret='rollback-secret-'.ljust(40, 'x'))
+    store.channels.request_enrollment(**args)
+    store.channels.approve_enrollment(args['request_id'], channel='C111', actor='slack:U1')
+    before = {table: store._db.execute('SELECT count(*) FROM '+table).fetchone()[0]
+              for table in ('participation_sessions', 'chat_identities', 'channel_enrollment_grants')}
+    store._db.execute("CREATE TRIGGER reject_approval BEFORE UPDATE OF consumed_session ON channel_enrollment_requests BEGIN SELECT RAISE(ABORT,'injected failure'); END")
+    store._db.commit()
+    with pytest.raises((PermissionError, sqlite3.IntegrityError)):
+        store.channels.request_enrollment(**args)
+    assert before == {table: store._db.execute('SELECT count(*) FROM '+table).fetchone()[0] for table in before}
+    assert store._db.execute('SELECT consumed_session FROM channel_enrollment_requests WHERE request_id=?', (args['request_id'],)).fetchone()[0] is None
+    store._db.execute('DROP TRIGGER reject_approval')
+    store._db.commit()
+    result = store.channels.request_enrollment(**args)
+    assert store.channels.request_enrollment(**args) == result
+
+
+def test_concurrent_approval_redemption_retains_one_session_and_no_scope_transfer(channel_service):
+    import uuid
+    from concurrent.futures import ThreadPoolExecutor
+    _client, app, _posted, _a, _a2, _b, _bearer, _operator = channel_service
+    store = app.state.store
+    args = dict(request_id=str(uuid.uuid4()), chat_id=str(uuid.uuid4()), repo='agentbus',
+                route='home:agentbus:concurrent', display_name='Concurrent', session_secret='concurrent-secret-'.ljust(40, 'x'))
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        assert list(pool.map(lambda _: store.channels.request_enrollment(**args), range(4))) == [None] * 4
+    def approve(channel):
+        try:
+            store.channels.approve_enrollment(args['request_id'], channel=channel, actor='slack:U1')
+            return channel
+        except PermissionError:
+            return None
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        approvals = list(pool.map(approve, ('C111', 'C222')))
+    winners = [value for value in approvals if value is not None]
+    assert len(winners) == 1
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        results = list(pool.map(lambda _: store.channels.request_enrollment(**args), range(4)))
+    assert len(set(results)) == 1
+    assert store.channels.channel_for_chat(results[0][0]) == winners[0]
+    assert store._db.execute('SELECT count(*) FROM participation_sessions WHERE chat_id=?', (args['chat_id'],)).fetchone()[0] == 1
+    with pytest.raises(PermissionError):
+        store.channels.approve_enrollment(args['request_id'], channel='C111' if winners[0] == 'C222' else 'C222', actor='slack:U1')
+    with pytest.raises(PermissionError):
+        store.channels.request_enrollment(**{**args, 'request_id': str(uuid.uuid4())})
+
+
+def test_approval_capacity_and_expiry_remain_bounded(tmp_path, monkeypatch):
+    import uuid
+
+    from src import agentbus_enrollment_approval_service as approval
+    from src.agentbus_service import MessageStore
+    store = MessageStore(tmp_path / 'capacity.sqlite3')
+    store.channels.configure(('C111',))
+    monkeypatch.setattr(approval, 'MAX_REQUESTS', 1)
+    now = [1000.0]
+    monkeypatch.setattr(approval.time, 'time', lambda: now[0])
+    first = dict(request_id=str(uuid.uuid4()), chat_id=str(uuid.uuid4()), repo='agentbus',
+                 route='home:agentbus:first', display_name='First', session_secret='f' * 32)
+    store.channels.request_enrollment(**first)
+    second = {**first, 'request_id': str(uuid.uuid4()), 'chat_id': str(uuid.uuid4()),
+              'route': 'home:agentbus:second', 'session_secret': 's' * 32}
+    with pytest.raises(ValueError, match='capacity'):
+        store.channels.request_enrollment(**second)
+    now[0] += 601
+    with pytest.raises(PermissionError):
+        store.channels.approve_enrollment(first['request_id'], channel='C111', actor='slack:U1')
+    store.channels.request_enrollment(**second)
+    assert [row['request_id'] for row in store.channels.pending_enrollments()] == [second['request_id']]
+    assert store._db.execute('SELECT count(*) FROM channel_enrollment_requests').fetchone()[0] == 1
+    store.close()

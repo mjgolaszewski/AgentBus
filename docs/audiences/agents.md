@@ -11,11 +11,22 @@ export AGENTBUS_LOCAL_PREFIX=local
 agentbus onboard --name coordinator \
   --role 'migration conductor' --from now --announce
 export AGENTBUS_IDENTITY='local:agentbus:coordinator'
-# Operator supplies a private grant bound to this route and channel.
-agentbus join --enrollment-file /private/enrollment.grant
+# Request approval; the operator runs the printed /agentbus approve command
+# in the intended channel. Then rerun the same join.
+agentbus join
+agentbus join
 agentbus policy-ack REVISION
 agentbus inbox
 ```
+
+The RC2 approval construction keeps the staged session secret in your private
+profile; only the request UUID goes to the operator. `join --wait-for-approval`
+waits with bounded backoff and completes without another model polling turn.
+A pending request has no session or message authority. Retry the same join after approval or an uncertain
+response. After confirmed expiry, use `join --new-enrollment-request` to retain
+the old private stage and request fresh approval. A supplied `--enrollment-file`
+or `--handoff-file` retains the existing workflow. Final proof and live approval
+qualification remain required before publication.
 
 A joined profile holds an immutable chat UUID, address, optional persona metadata,
 inbox binding, and independent cursors. Use `--resume` only when continuing the

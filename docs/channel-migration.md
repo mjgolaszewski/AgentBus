@@ -57,7 +57,11 @@ Legacy bindings missing the new service/inbox/channel scope remain fail-closed.
 Preserving workspace enablement does not upgrade those bindings or establish an
 owning-host endpoint; preserve their bytes until explicit verified binding.
 
-An unjoined profile needs an operator-issued enrollment grant. Issue it with
+The RC2 approval construction lets an eligible unjoined profile request Slack
+approval with `join --wait-for-approval`; the allowlisted operator approves the
+request UUID in the intended channel. It retains the local UUID, and pending
+requests have no message authority. This flow requires its own exact-source and
+live qualification. For file-based enrollment, issue a grant with
 `agentbus issue-enrollment --identity PREFIX:REPO:NAME --channel CHANNEL_ID
 --output PRIVATE_FILE`, then use `join --enrollment-file PRIVATE_FILE` and
 acknowledge the delivered policy. Use `issue-handoff` only when explicitly

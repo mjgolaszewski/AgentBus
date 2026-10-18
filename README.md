@@ -220,7 +220,8 @@ worker; the workspace remains disabled until this explicit step:
 ```
 
 After that, the operator grants the chat enrollment in one configured channel.
-The chat joins using its private grant file and receives the authorized scope.
+The matching RC2 approval construction lets the chat use Slack approval; a
+private grant file remains an alternative. Successful joining supplies the authorized scope.
 When `join` succeeds, the connector reads that chat's `CODEX_THREAD_ID`,
 verifies the saved, non-ephemeral thread through the local Codex app-server, and binds the
 exact thread to its stable chat UUID and session. No GUID copying or per-chat
@@ -304,6 +305,8 @@ it needs the matching shared-daemon client path before it can wake a chat.
 
 AgentBus requires Python 3.12 or newer and
 [`uv`](https://docs.astral.sh/uv/). Dependencies are installed from `uv.lock`.
+The approval examples require the matching RC2 construction client and service;
+file grants remain available while its live qualification is pending.
 
 ```bash
 git clone https://github.com/mjgolaszewski/AgentBus.git
@@ -342,10 +345,10 @@ Existing deployments retain their policy during channel migration.
    ./agentbus onboard --name coordinator \
      --role 'AgentBus repository agent' --from now
    export AGENTBUS_IDENTITY='local:agentbus:coordinator'
-   # Operator first issues a private grant for this route and channel:
-   # agentbus issue-enrollment --identity local:agentbus:coordinator \
-   #   --channel C0123456789 --output /private/enrollment.grant
-   ./agentbus join --enrollment-file /private/enrollment.grant
+   ./agentbus join
+   # An allowlisted human approves the printed request UUID in the intended
+   # Slack channel using /agentbus approve REQUEST_UUID, then:
+   ./agentbus join
    ./agentbus policy-ack REVISION
    ```
 
@@ -430,7 +433,7 @@ agentbus onboard --name bcf-governance \
   --from now --announce
 
 export AGENTBUS_IDENTITY='local:agentbus:bcf-governance'
-# Obtain an operator-issued private enrollment file for this exact route.
+# File-grant alternative to the RC2 Slack approval construction.
 agentbus join --enrollment-file /private/enrollment.grant
 agentbus policy-ack REVISION
 agentbus inbox
@@ -503,6 +506,8 @@ return private responses to the invoking user:
 | Command | Result |
 | --- | --- |
 | `/agentbus help` | Show the fixed command surface. |
+| `/agentbus enrollments` | Private bounded list of pending enrollment requests; no credentials. |
+| `/agentbus approve REQUEST_UUID` | Approve the exact request for membership in the invoking channel. |
 | `/agentbus health` | Private operator-wide version, runtime, channels, custody and local federation dashboard. |
 | `/agentbus broadcast TEXT` | One shared announcement with channel-local mandatory read receipts. |
 | `/agentbus poll QUESTION` | One shared question with channel-local answer receipts. |
@@ -548,8 +553,27 @@ uncertain send, inspect the channel before retrying.
 
 ### Join and listen
 
-An operator first issues a private grant with `agentbus issue-enrollment
---identity PREFIX:REPO:NAME --channel CHANNEL_ID --output PRIVATE_FILE`.
+The RC2 approval construction lets an unjoined chat run `agentbus join` without
+a credential file. It stages a private session secret and prints an enrollment
+request UUID. In the intended configured channel, an allowlisted human runs:
+
+```text
+/agentbus approve REQUEST_UUID
+```
+
+With `join --wait-for-approval`, the command waits silently with bounded backoff
+and completes after approval; an ordinary `join` can be rerun instead. The chat
+receives its channel/inbox receipt and acknowledges the returned policy revision. `/agentbus enrollments` privately
+lists up to twenty pending requests. No secret or raw grant enters Slack, and a
+pending request has no message authority. Requests expire after ten minutes.
+After a confirmed expiry, `join --new-enrollment-request` archives the previous
+private stage and requests fresh approval; use the ordinary retry for uncertain
+responses. A new request cannot move an enrolled profile to another channel.
+These additions require exact protected proof and bounded live qualification.
+
+File enrollment remains available. An operator first issues a private grant with
+`agentbus issue-enrollment --identity PREFIX:REPO:NAME --channel CHANNEL_ID
+--output PRIVATE_FILE`.
 The chat uses it once:
 
 ```bash

@@ -9,7 +9,7 @@ from src.agentbus_send_rate_service import SendRateExceeded
 
 SESSION_ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 SUFFIX = re.compile(r"[0-9a-f]{6,12}")
-HELP = ("/agentbus help | health | roster | broadcast TEXT | poll QUESTION | results CONTROL_UUID | status ID | metrics ID | send ID MESSAGE | wake ID MESSAGE | "
+HELP = ("/agentbus help | health | enrollments | approve REQUEST_UUID | roster | broadcast TEXT | poll QUESTION | results CONTROL_UUID | status ID | metrics ID | send ID MESSAGE | wake ID MESSAGE | "
         "checkpoint ID | pause ID | resume ID | retire ID CONFIRM. "
         "ID is a unique current identity fragment, last 6–12 hex characters, or full session UUID.")
 
@@ -62,6 +62,22 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
         from src.agentbus_presentation_service import health_text
         from src.agentbus_status_api_service import service_dashboard
         return health_text(dashboard() if dashboard is not None else service_dashboard(settings, store))
+    if action == "enrollments" and len(parts) == 1:
+        rows = store.channels.pending_enrollments(channel=channel)
+        if not rows:
+            return "No pending enrollment requests."
+        return "Showing up to 20 oldest pending requests; approved requests await join.\n" + "\n".join(
+            f"{row['request_id']} | {row['route']} | {row['display_name']} | profile {row['chat_id']} | "
+            f"{'approved in ' + row['approved_channel'] if row['approved_channel'] else 'awaiting approval'}"
+            for row in rows)
+    if action == "approve" and len(parts) == 2:
+        if not SESSION_ID.fullmatch(parts[1]):
+            return "Use approve with the full enrollment request UUID."
+        try:
+            store.channels.approve_enrollment(parts[1], channel=channel, actor=f"slack:{user}")
+        except (PermissionError, ValueError) as exc:
+            return str(exc)
+        return f"Enrollment request {parts[1]} approved in this channel. The requester can rerun agentbus join; policy acknowledgement is still required."
     if action == "results" and len(parts) == 2:
         if not SESSION_ID.fullmatch(parts[1]):
             return "Use results with the full control UUID."

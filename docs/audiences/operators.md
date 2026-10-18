@@ -46,6 +46,32 @@ An existing deployment keeps its policy and receipts during offline migration;
 do not replace them with this example. New multichannel activation and experimental
 wake still require the separate qualification described below.
 
+## Approve a chat in Slack
+
+The RC2 approval construction removes the credential-file handoff for ordinary
+joining. Configure the existing exact human-user allowlist once. The chat runs
+`agentbus join` and gives you its request UUID, route and local profile UUID.
+Use `/agentbus enrollments` to inspect pending requests privately, then run
+`/agentbus approve REQUEST_UUID` in the intended channel. Verify the request
+against the actual requesting chat; a route label does not prove repository
+ownership.
+
+The channel where you approve fixes membership. The agent cannot supply a
+channel selector, approve itself, or reuse an approval to acquire another scope.
+The chat may leave `join --wait-for-approval` running with bounded backoff or
+rerun its original join with the same private staged secret, then acknowledge
+policy. No operator token, session secret or raw grant needs to enter Slack.
+Requests expire after ten minutes; a new request needs fresh approval. The
+service retains at most 8,192 request receipts and admits at most thirty new
+requests per minute across the installation. The private list shows up to twenty
+oldest pending requests that are unassigned or approved in the invoking channel;
+approved requests remain listed until the chat retries.
+
+Private file grants remain supported for automation or installations without
+Slack operator commands. Approval is a construction capability until its exact
+source and bounded live flow are qualified. Keep the existing backup and repair
+forward rules when installing its additive request table.
+
 ## The shape of the deployment
 
 ```text
@@ -76,7 +102,8 @@ bearer alone cannot read history or send. Exact active session proof and inbox
 scope authorize every ordinary agent operation. Acknowledged stopped sessions
 retain only exact-session control and receipt recovery.
 
-Keep `AGENTBUS_OPERATOR_TOKEN` in the operator's own shell. Onboarding is local;
+For file-based enrollment, keep `AGENTBUS_OPERATOR_TOKEN` in the operator's own
+shell. Onboarding is local;
 issue a private enrollment grant with `agentbus issue-enrollment --identity
 PREFIX:REPO:NAME --channel CHANNEL_ID --output PRIVATE_FILE`. The chat runs
 `agentbus join --identity PREFIX:REPO:NAME --enrollment-file PRIVATE_FILE`, then
@@ -107,10 +134,11 @@ Socket Mode app and its `commands` scope. Set
 authorize exact human Slack user IDs; the default empty allowlist disables all
 slash operations and actionable ordinary replies. The service accepts commands only from its channel allowlist. Roster and
 full-ID/suffix/current-identity-fragment lookup are scoped to the invoking channel before resolution.
-`/agentbus help` lists the fixed surface: health, roster, status, metrics, send, wake,
-checkpoint, pause, resume, and retire. Every targeted command accepts a unique
+`/agentbus help` lists the fixed surface: health, enrollments, approve, broadcast, poll, results, roster, status, metrics, send, wake,
+checkpoint, pause, resume, and retire. Session-targeting commands accept a unique
 6–12-character session UUID suffix, a full UUID, or a case-insensitive fragment
-of the current agent identity. Aliases are not selectors. Ambiguity rejects
+of the current agent identity. Approval and results use their full request/control
+UUIDs. Aliases are not selectors. Ambiguity rejects
 without acting. `/agentbus retire ID CONFIRM` is a durable stop; `/agentbus
 pause ID` holds substantive work and `/agentbus resume ID` releases that hold
 for a nonstopped session. Both issue durable controls, and an idle chat may wake

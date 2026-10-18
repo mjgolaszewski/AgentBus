@@ -42,6 +42,12 @@ model:
     - token_hash
     lifetime_seconds: 600
     retry: same_staged_secret_returns_original_receipt
+  enrollment_approval_request:
+    owner: agentbus_enrollment_approval_service
+    stable_key: request_UUID_plus_exact_staged_secret_digest
+    fields: [request_id, repo, route, display_name, profile_chat_UUID, secret_digest, expires_at, approved_channel, approved_actor, consumed_session]
+    authority: pending_request_has_none; Slack_allowlisted_human_binds_channel; canonical_grant_owner_finalizes_once
+    recovery: same_request_subject_and_secret_return_original_session; no_credential_in_Slack
   public_position:
     owner: ChannelStore
     key: channel_plus_public_position
@@ -134,3 +140,19 @@ mandatory_announcements:
   limits: text_1_to_1000_characters; answer_1_to_2000_characters
   status: private_channel_scoped_Slack_results_up_to_8_targets; existing_privileged_control_status_for_full_report
   exclusions: no_forced_model_turn; no_proof_of_comprehension; offline_sessions_remain_pending; no_remote_fanout
+
+slack_enrollment_approval:
+  status: construction_unqualified_until_exact_subject_proof_and_bounded_live_validation
+  agent_command: join_without_grant_file_stages_private_secret_and_random_request_UUID
+  http_path: existing_POST_sessions; approval_request_ID_and_profile_UUID_without_channel_selector
+  pending: HTTP_202_no_session_or_message_authority; retry_same_private_staged_secret_and_immutable_subject
+  operator_commands: enrollments_lists_unassigned_and_same_channel_pending_privately; approve_REQUEST_UUID_in_intended_configured_channel
+  waiting: optional_foreground_wait_up_to_600_seconds; backoff_2_4_8_16_then_30_seconds; no_background_or_model_turn_authority
+  authority: exact_existing_Slack_operator_allowlist; approval_channel_is_invocation_channel
+  completion: canonical_internal_grant_and_enrollment_in_same_transaction; raw_grant_never_returned_or_persisted
+  replay: exact_secret_returns_original_session; altered_subject_or_secret_or_channel_denied
+  limits: request_lifetime_600_seconds; at_most_8192_retained_requests; 30_new_requests_per_minute_aggregate; expired_unconsumed_requests_pruned
+  receipts: canonical_session_channel_inbox_and_policy_revision; explicit_policy_ACK_required
+  compatibility: private_file_grants_remain_supported; old_servers_deny_unknown_approval_fields_without_fallback
+  migration: additive_table_only; existing_identity_credentials_and_grants_unchanged; no_membership_transfer
+  excluded: no_automatic_approval; no_grants_from_bearer_or_route_labels; no_operator_credential_in_agent_chat

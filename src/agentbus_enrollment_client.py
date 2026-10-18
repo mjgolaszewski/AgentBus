@@ -7,6 +7,7 @@ import os
 import re
 import secrets
 import sys
+import time
 import uuid
 from pathlib import Path
 
@@ -52,21 +53,55 @@ def enrollment_command(ns, project, values, api):
         if profile.get("participation"):
             raise ClientError("This profile already has a participation session.")
         pending = profile.get("participation_pending")
+        grant_file = getattr(ns, "enrollment_file", None) or ns.handoff_file
+        if getattr(ns, "new_enrollment_request", False):
+            if grant_file or (pending is not None and "approval_request_id" not in pending):
+                raise ClientError("A new approval request cannot discard a staged file grant.")
+            if pending is not None:
+                archive = identity_path(values, identity).parent / ".enrollment-recovery" / f"{identity}-{pending['approval_request_id']}.json"
+                if archive.exists() or archive.is_symlink():
+                    raise ClientError("Prior approval recovery file already exists; retain the staged request.")
+                atomic_json(archive, pending)
+                pending = None
         if pending is None:
             pending = {"session_secret": secrets.token_urlsafe(32)}
-            grant_file = getattr(ns, "enrollment_file", None) or ns.handoff_file
             if grant_file is None:
-                raise ClientError("Join requires an operator-issued --enrollment-file")
-            from src.agentbus_rotation_client import _private_token
-            pending["enrollment_token"] = _private_token(Path(grant_file))
+                if profile.get("service_url") != values["AGENTBUS_URL"]:
+                    raise ClientError("Enrollment service differs from the local profile; no automatic rebinding.")
+                pending.update(approval_request_id=str(uuid.uuid4()), service_url=values["AGENTBUS_URL"])
+            else:
+                from src.agentbus_rotation_client import _private_token
+                pending["enrollment_token"] = _private_token(Path(grant_file))
             profile["participation_pending"] = pending
             save_profile(values, profile)
-        result = api(values, "/v1/sessions", {
-            "repo": profile["repo"], "route": identity,
-            "display_name": profile["display_name"],
-            "session_secret": pending["session_secret"],
-            "enrollment_token": pending.get("enrollment_token") or pending.get("handoff_token"),
-        })
+        payload = {"repo": profile["repo"], "route": identity,
+                   "display_name": profile["display_name"], "session_secret": pending["session_secret"]}
+        if "approval_request_id" in pending:
+            if pending.get("service_url") != values["AGENTBUS_URL"] or grant_file:
+                raise ClientError("Pending approval scope or enrollment mode differs; retain recovery state.")
+            payload.update(approval_request_id=pending["approval_request_id"], profile_chat_id=profile["chat_id"])
+        else:
+            payload["enrollment_token"] = pending.get("enrollment_token") or pending.get("handoff_token")
+        result = api(values, "/v1/sessions", payload)
+        if result.get("status") == "approval_required":
+            if result.get("request_id") != pending.get("approval_request_id"):
+                raise ClientError("Enrollment request receipt differs; retain staged recovery state.")
+            print(f"Enrollment approval required for {identity} (profile {profile['chat_id']}).\n"
+                  f"In the intended Slack channel, an allowlisted operator runs:\n"
+                  f"/agentbus approve {result['request_id']}\n"
+                  f"Then rerun agentbus join --identity {identity}, or leave --wait-for-approval running. Approval expires after ten minutes. "
+                  "No credential file or operator token is needed in this chat.", flush=True)
+            if getattr(ns, "wait_for_approval", False):
+                deadline = time.monotonic() + 600
+                delay = 2.0
+                while result.get("status") == "approval_required" and time.monotonic() < deadline:
+                    time.sleep(min(delay, max(0, deadline - time.monotonic())))
+                    result = api(values, "/v1/sessions", payload)
+                    delay = min(30.0, delay * 2)
+            if result.get("status") == "approval_required":
+                return 0
+        if "approval_request_id" in pending and result.get("chat_id") != profile["chat_id"]:
+            raise ClientError("Approved profile identity differs; enrollment is not committed locally.")
         if ns.handoff_file and result["chat_id"] != profile["chat_id"]:
             raise ClientError("Service chat ID differs from the local profile; join is not committed.")
         if profile.get("channel") is not None and (profile["channel"] != result["channel"] or profile["inbox_id"] != result["inbox_id"]):

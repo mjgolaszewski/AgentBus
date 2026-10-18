@@ -47,8 +47,13 @@ This can take up to the configured turn timeout.
 
 ## Invite a chat in
 
-The chat creates a local persona. The operator issues a ten-minute private
-enrollment grant for its exact route, repository and channel. The chat runs
+The RC2 enrollment approval construction lets the chat run
+`agentbus join --wait-for-approval` while an allowlisted human approves the
+printed request UUID in the intended channel. This preserves the eligible local
+profile UUID without sharing a credential file; pending requests confer no
+message or host authority. Its final source and live approval require qualification.
+For file-based enrollment, the operator issues a ten-minute private grant for the
+exact route, repository and channel. The chat runs
 `agentbus join --enrollment-file PRIVATE_FILE`, then acknowledges the policy.
 The receipt binds its durable UUID, session and immutable channel/inbox scope. A profile that has
 already joined keeps its UUID. An explicit handoff remains available only

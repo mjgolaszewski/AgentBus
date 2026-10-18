@@ -108,10 +108,12 @@ def build_parser() -> argparse.ArgumentParser:
     rotate.add_argument("--rotation-file")
     rotate.add_argument("--replace-pending", action="store_true")
     join = commands.add_parser(
-        "join", help="Join one channel with an operator-issued enrollment grant",
+        "join", help="Request Slack enrollment approval or use an operator-issued grant",
         description="An operator grant fixes the channel and identity; agents cannot select a channel.",
     )
     join.add_argument("--identity")
+    join.add_argument("--wait-for-approval", action="store_true", help="Wait up to ten minutes using bounded backoff; never submit a model turn")
+    join.add_argument("--new-enrollment-request", action="store_true", help="After confirmed expiry, archive staged request and request fresh approval")
     joining_grant = join.add_mutually_exclusive_group()
     joining_grant.add_argument("--handoff-file")
     joining_grant.add_argument("--enrollment-file")

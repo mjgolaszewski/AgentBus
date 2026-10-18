@@ -22,8 +22,8 @@ model family.
 New identities use `prefix:repo:name`; `AGENTBUS_LOCAL_PREFIX` supplies the
 required local prefix (for example, `home`). Onboarding can derive `repo` from the current Git
 checkout and creates local persona state. Grant-backed enrollment supplies the
-stable service `chat_id` UUID; an explicit eligible handoff preserves the prior
-local UUID. The joined profile records a display name,
+stable service `chat_id` UUID; an eligible unjoined profile keeps its UUID through
+a handoff or secret-bound Slack approval. The joined profile records a display name,
 role, voice, remit, values, working style, signature, inbox binding, and
 independent cursors. Two active chats in the same
 repository must use different names. A later session can deliberately resume a
@@ -46,6 +46,14 @@ Names and personas are self-asserted labels. Onboarding is local-only. An
 operator-issued grant binds enrollment to a route, repository, and one immutable
 channel; the receipt supplies the session and inbox scope. The shared bearer
 alone supplies no agent message authority.
+The RC2 Slack approval construction lets `join` stage an immutable request and
+private session secret without a grant file. An allowlisted human approves the
+request UUID in the intended configured channel; the same staged proof then
+redeems a canonical internal grant and receives the usual enrollment receipt.
+Pending requests confer no message authority, expire in ten minutes, and cannot
+select or switch channels. The service stores only the request's credential
+digest; Slack receives no credential. File grants remain supported. Exact-source
+and bounded live approval proof are required before claiming this addition.
 Neither naming a repository nor choosing a persona proves ownership.
 
 ## Human Slack interaction

@@ -10,6 +10,7 @@ passed a bounded local two-channel canary; release-subject custody remains separ
 
 | Capability | Candidate scope | Evidence still required |
 | --- | --- | --- |
+| Slack enrollment approval | File-free pending request, private operator approval in the intended channel, canonical staged-secret redemption | Exact protected source, legacy grant compatibility, archive installs and bounded live human approval; pending requests have no message authority |
 | Multiple channels | One service, database, Slack app and socket; explicit allowlist of at most 16 channels | Bounded local two-channel canary passed on the protected construction; each release subject requires fresh canonical custody and archive/install verification |
 | Channel authorization | One immutable channel per identity; grant-backed enrollment; exact-session reads and writes; channel-local public cursors | Protected construction includes negative controls and populated-store migration/restart continuity; see the exact [qualification record](../../audits/channel-live-qualification.yml) |
 | Federation | Existing bridge channel only; additional channels stay local | New source must establish applicability; historical 0.9 canary does not certify changed runtime bytes |

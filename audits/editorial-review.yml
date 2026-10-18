@@ -49,16 +49,18 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 201
-  line_count: 201
-  sha256: 3ba9c1edea632f01432abb89f48566dc76cc6a314a58617f1811cb082286d15d
+    - 209
+  line_count: 209
+  sha256: 05f60f0ce4ab07f0985ffb3960a1f87d881e4ff9201dc90fc8d3b0bded5fd746
   disposition: updates
   findings:
   - Reconciled current participation v2 authority and channel model
   - Replaced staged security narrative with strict session/inbox and immutable membership rules
   - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity,
     scoped unique current identities, private operator health, unchanged wire and experimental wake boundaries'
-  verification: 172_focused_cases_pass; final_canonical_and_renewed_live_canary_pending
+  - Normative join distinguishes unjoined UUID preservation, secret-bound approval, expiry and immutable membership
+    without claiming live proof; all changed lines inspected against hash-matched previous full-document review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: CONTRIBUTING.md
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -78,7 +80,7 @@ documents:
   - - 1
     - 105
   line_count: 105
-  sha256: 593112d609db59b4de7d686242c120ae4f9cc780c2131312ce4955c8d9dcea7c
+  sha256: bcd48bd2767704b5d792bd2e38f6e78f90665318dfe021948c75d88718091945
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
@@ -90,14 +92,16 @@ documents:
   - 'RC2 follow-up changed lines inspected in full against hash-matched prior complete review: one shared announcement/poll
     payload with channel-local receipts, explicit answers, mobile numeric/status formatting and retained qualification
     boundaries'
-  verification: 116_behavioral_architecture_cases_and_focused_presentation_CLI_checks_pass; final_exact_subject_and_live_additions_pending
+  - Stable file-free approval decision is compact and contains no credentials or live qualification claim;
+    all changed lines inspected against hash-matched previous full-document review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: README.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 850
-  line_count: 850
-  sha256: 3b8c8cfb9cd92ac5ba637a391ab86c61de6f25cfa827ffb6006e35d85cd8943e
+    - 874
+  line_count: 874
+  sha256: 3f622f18a857df3aa1577067c3b1225254922bad7fa895cabc9117afdc155b58
   disposition: updates
   findings:
   - Removed legacy bearer/unjoined authority and rollout fallback
@@ -112,7 +116,10 @@ documents:
   - 'RC2 follow-up changed lines inspected in full against hash-matched prior complete review: one shared announcement/poll
     payload with channel-local receipts, explicit answers, mobile numeric/status formatting and retained qualification
     boundaries'
-  verification: 116_behavioral_architecture_cases_and_focused_presentation_CLI_checks_pass; final_exact_subject_and_live_additions_pending
+  - Quick start and command reference cover file-free pending approval, bounded waiting, exact policy ACK and
+    retained file workflow; expired replacement preserves private stage; all changed lines inspected against
+    hash-matched previous full-document review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: SECURITY.md
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -344,9 +351,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 136
-  line_count: 136
-  sha256: 16fae36473698a112530bbd140d943205f2280372da09bf17e5c954370d48898
+    - 158
+  line_count: 158
+  sha256: 5929f568c6211d741da96bfaf00e26c0503248246baafcaf326d5e4a1ea3d28c
   disposition: updates
   findings:
   - Expanded model with owner cardinality principal grant/public-position fields and explicit inheritance/overrides
@@ -355,7 +362,10 @@ documents:
   - 'RC2 follow-up changed lines inspected in full against hash-matched prior complete review: one shared announcement/poll
     payload with channel-local receipts, explicit answers, mobile numeric/status formatting and retained qualification
     boundaries'
-  verification: 116_behavioral_architecture_cases_and_focused_presentation_CLI_checks_pass; final_exact_subject_and_live_additions_pending
+  - Approval request model names owner, immutable subject, digest, actor, channel, expiry, quota, canonical
+    transaction and single-session recovery; pending status has no authority; all changed lines inspected against
+    hash-matched previous full-document review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: docs/OPERATIONS.md
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -394,34 +404,39 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 140
-  line_count: 140
-  sha256: 6b2b76cc8fa2af7d70bf5f023e29892ac0a41bb3c8b919eb1b2003f64a93b1bc
+    - 149
+  line_count: 149
+  sha256: 59b0bb8f7a390c38fef936d2a0f5ed62d01f24bd154ab80a2aba76fcb234f7b4
   disposition: updates
   findings:
   - Added principal/public-position semantic owners and channel boundaries
   - Corrected full-history bearer authority; separated wake research from guarantees
-  verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
+  - One new service owner and additive SQLite table reuse the existing enrollment endpoint and grant writer;
+    no new broker, channel selector or raw credential transport; all changed lines inspected against hash-matched
+    previous full-document review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: docs/audiences/adapter-users.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 153
-  line_count: 153
-  sha256: 3c0804ac6df8d3f0a20b42018121e47261ad694a434235dbaa43ebeb6958cca5
+    - 158
+  line_count: 158
+  sha256: bfe45f0a27bfd0efe9784c28a185c2b994bd5c539e090aff0be2b37ed1b447c5
   disposition: updates
   findings:
   - Corrected grant prerequisite; disclosed unqualified AHP/native queue and atomic idle-only wake
   - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity,
     scoped unique current identities, private operator health, unchanged wire and experimental wake boundaries'
-  verification: 172_focused_cases_pass; final_canonical_and_renewed_live_canary_pending
+  - Optional Slack approval removes file handoff without granting host authority; actual owning-host and live
+    approval qualification remain separate; changed lines inspected against hash-matched prior complete review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: docs/audiences/agents.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 74
-  line_count: 74
-  sha256: f0b4551c5ab7a17eae59a320f401f46f76832ceae7723ae48a829df35250c50d
+    - 85
+  line_count: 85
+  sha256: 6c319a4dab9df02880d1684779cf795d87feb5ba0e8692a075524597e3b81ab3
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
@@ -431,35 +446,42 @@ documents:
   - 'RC2 follow-up changed lines inspected in full against hash-matched prior complete review: one shared announcement/poll
     payload with channel-local receipts, explicit answers, mobile numeric/status formatting and retained qualification
     boundaries'
-  verification: 116_behavioral_architecture_cases_and_focused_presentation_CLI_checks_pass; final_exact_subject_and_live_additions_pending
+  - Agent instructions preserve staged secret and profile UUID across wait/retry and distinguish confirmed
+    expiry from uncertain response; policy ACK remains explicit; all changed lines inspected against hash-matched
+    previous full-document review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: docs/audiences/experimenters.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 71
-  line_count: 71
-  sha256: 580c16ba7890cacbb9debe3623b35125f533aa08d9566afd39a9c18a84308860
+    - 72
+  line_count: 72
+  sha256: 1809808cec7adc66afd739fb70197089e2d0b0e9532a8afe24428fd894fbc51d
   disposition: updates
   findings:
   - New seat separates experimental candidate claims from released baseline and bounded tests; no live deployment/wake
     authority supplied
   - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
     bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
-  verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
+  - New approval row explicitly requires protected subject, archive installs and bounded human approval before
+    qualification; all changed lines inspected against hash-matched previous full-document review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: docs/audiences/hippiebots.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
     - 71
   line_count: 71
-  sha256: 6ce30297c3f3cb1b3fa4462c0c8206273f37145c9d444be10b04671d41a2ff25
+  sha256: d03230a8f0d475c672276f27358f4efb140499bfeb237e7440a77ef6bdb2f3ed
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
   - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
     bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   - Anonymized local route examples and exported local-prefix configuration agree
-  verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
+  - Existing file-grant example is explicitly an alternative to the RC2 Slack approval construction; changed
+    lines inspected against hash-matched prior complete review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: docs/audiences/humans.md
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -495,9 +517,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 203
-  line_count: 203
-  sha256: 96b57ea3232b2924236d7548264767bd7008e5ce6c1e54636c0f5ccda0643a78
+    - 231
+  line_count: 231
+  sha256: 65b354eaa37d84eae4296ba3805c02891ec0a1cbe405b9bcf41af798be2db12a
   disposition: updates
   findings:
   - Replaced unrestricted join/automatic migration with explicit grants and offline migration
@@ -508,7 +530,10 @@ documents:
     bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity,
     scoped unique current identities, private operator health, unchanged wire and experimental wake boundaries'
-  verification: 172_focused_cases_pass; final_canonical_and_renewed_live_canary_pending
+  - Exact allowlisted human approval selects invoking channel; pending list hides other-channel approvals;
+    request/control UUIDs are distinct from session fragments; file automation remains supported; all changed
+    lines inspected against hash-matched previous full-document review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: docs/audiences/security-reviewers.md
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -524,23 +549,26 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 79
-  line_count: 79
-  sha256: 3743d4f659ad19648dba7cfe6e0cc78e8f77724f10b542de2ff7757083109880
+    - 83
+  line_count: 83
+  sha256: ab001381e23e1bd7cbb3387a5d88b4262a7d65b866e33b2ee698c261537ebe5b
   disposition: updates
   findings:
   - New offline dry-run/apply, client migration, custody-preserving forward repair and separate canary prerequisites;
     no automatic startup migration claimed
   - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
     bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
-  verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
+  - Migration instructions distinguish file-free approval and private file grants for eligible unjoined UUIDs;
+    neither can transfer an enrolled identity; changed lines inspected against hash-matched prior complete
+    review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: docs/contracts.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 82
-  line_count: 82
-  sha256: 724d15053863b6aaadbba06ca060cf76bea9fbc71c910e5923ae2ae0e5cef9b3
+    - 91
+  line_count: 91
+  sha256: f2dc99332aee8d484d7d9cfad6d10cb9f98c9300363dd5996d122fa38c4db72b
   disposition: updates
   findings:
   - New model connects all current product contracts to identity/cursor relationships, inheritance, implementation
@@ -549,7 +577,10 @@ documents:
     bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity,
     scoped unique current identities, private operator health, unchanged wire and experimental wake boundaries'
-  verification: 172_focused_cases_pass; final_canonical_and_renewed_live_canary_pending
+  - Current participation v2 model and implementation/proof table map the new approval owner and canonical
+    grant consumption without creating legacy bearer authority; all changed lines inspected against hash-matched
+    previous full-document review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: docs/federation.md
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -799,9 +830,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 203
-  line_count: 203
-  sha256: 9874bc1939547745340980dee9f30fff0e1c5d938698d140ecace6b889928292
+    - 209
+  line_count: 209
+  sha256: 1856c7852c0a9349a485acac3142f26c4865270728fcdc741f8e753ed784d1ec
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
@@ -813,14 +844,17 @@ documents:
   - 'RC2 follow-up changed lines inspected in full against hash-matched prior complete review: one shared announcement/poll
     payload with channel-local receipts, explicit answers, mobile numeric/status formatting and retained qualification
     boundaries'
-  verification: 116_behavioral_architecture_cases_and_focused_presentation_CLI_checks_pass; final_exact_subject_and_live_additions_pending
+  - Pre-edit boundary, initial negative controls, fixed architecture assignment, 121-case slice, 64 legacy
+    cases and separate protected predecessor are recorded with local retention limits; all changed lines inspected
+    against hash-matched previous full-document review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: plans/build-plan.yml
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 99
-  line_count: 99
-  sha256: 661ad09a115d5eb2cf79fca8f604b3b370445a42e2c1729e7a3c2d42892df732
+    - 100
+  line_count: 100
+  sha256: db8277b7062355217f26b9900b45472d0e1c0ead35c1cfe843732f8cb9d2a415
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
@@ -830,7 +864,9 @@ documents:
   - 'RC2 follow-up changed lines inspected in full against hash-matched prior complete review: one shared announcement/poll
     payload with channel-local receipts, explicit answers, mobile numeric/status formatting and retained qualification
     boundaries'
-  verification: 116_behavioral_architecture_cases_and_focused_presentation_CLI_checks_pass; final_exact_subject_and_live_additions_pending
+  - File-free approval joins the current RC2 tranche while preserving channel membership, staged proof and
+    file grants; all changed lines inspected against hash-matched previous full-document review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: plans/phase-01-plan.yml
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -1103,21 +1139,23 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 50
-  line_count: 50
-  sha256: 5673e54b9472968836e16e98110d425ef2585be7bef6d8e8afba44d86c9764cc
+    - 51
+  line_count: 51
+  sha256: 299051f207d575daf189edfde56923004f932f0062bfeb4469b49b7b118b33cf
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
-  verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
+  - The active P12 delivery contract explicitly includes file-free Slack approval; no lifecycle closure or
+    deployment authority added; all changed lines inspected against hash-matched previous full-document review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: plans/phase-12-workitems.yml
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 131
-  line_count: 131
-  sha256: 6549748e1d8884d33f2e94a3838053997a5a0e3e09bfc273ca26041af5aa0533
+    - 142
+  line_count: 142
+  sha256: ae599565fbcf25dae0ccc055b7915fccdb7373d70c96c3c1d47bc6d3c89d2378
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
@@ -1127,7 +1165,10 @@ documents:
   - 'RC2 follow-up changed lines inspected in full against hash-matched prior complete review: one shared announcement/poll
     payload with channel-local receipts, explicit answers, mobile numeric/status formatting and retained qualification
     boundaries'
-  verification: 116_behavioral_architecture_cases_and_focused_presentation_CLI_checks_pass; final_exact_subject_and_live_additions_pending
+  - Independent P12-P1-10 acceptance covers pending denial, exact proof recovery, expiry/capacity/replay/rollback,
+    legacy compatibility and final proof; all changed lines inspected against hash-matched previous full-document
+    review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: plans/phase-history.yml
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -1146,7 +1187,7 @@ documents:
   - - 1
     - 103
   line_count: 103
-  sha256: 7074b1e3e1fab714063fd1ad20640dca11792cf82ded059ce6785a44a968be8f
+  sha256: 615741bd6e3e35ec3ebae64da43ea00744ca1df47ec68f8440cb4934f26c064d
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
@@ -1156,14 +1197,16 @@ documents:
   - 'RC2 follow-up changed lines inspected in full against hash-matched prior complete review: one shared announcement/poll
     payload with channel-local receipts, explicit answers, mobile numeric/status formatting and retained qualification
     boundaries'
-  verification: 116_behavioral_architecture_cases_and_focused_presentation_CLI_checks_pass; final_exact_subject_and_live_additions_pending
+  - RC2 scope includes Slack enrollment approval; P12 lifecycle and inherited open records remain intact; all
+    changed lines inspected against hash-matched previous full-document review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: plans/product-spec.yml
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
     - 40
   line_count: 40
-  sha256: d5bfe51c80b471e2eb577a78574d3e2d949ead25a9962ee55dfb8aaf68f88b42
+  sha256: 900524366089fac821799101042b69d08cdfc5bc52746473a4ea4927497e1e7b
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
@@ -1173,7 +1216,9 @@ documents:
   - 'RC2 follow-up changed lines inspected in full against hash-matched prior complete review: one shared announcement/poll
     payload with channel-local receipts, explicit answers, mobile numeric/status formatting and retained qualification
     boundaries'
-  verification: 116_behavioral_architecture_cases_and_focused_presentation_CLI_checks_pass; final_exact_subject_and_live_additions_pending
+  - Approved staged proof removes manual grant handoff while preserving no preapproval authority and immutable
+    channel membership; all changed lines inspected against hash-matched previous full-document review
+  verification: 121_slice_and_64_legacy_checks_pass; final_canonical_archive_and_live_approval_pending
 - document: LICENSE
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -1203,8 +1248,8 @@ documents:
 summary:
   documents_reviewed: 89
   pending_line_reviews: 0
-  validation: Prior full-document hashes verified against exact main; all follow-up changed lines inspected
-    in context; local behavioral and architecture controls pass; final canonical and live additions proof pending
+  validation: Hash-matched complete prior review plus every approval changed line inspected in context; 121
+    slice and 64 legacy checks pass; final exact-source and live approval proof pending
   consolidation: No historical record merged or removed; new models consolidate current authority without deleting
     evidence
   experimental_disclosures: Current product and audience guides name live multichannel and owner-wake qualification

@@ -39,6 +39,8 @@ class ChannelStore:
                 repo TEXT NOT NULL, route TEXT NOT NULL, chat_id TEXT,
                 expires_at REAL NOT NULL, actor TEXT NOT NULL, consumed_session TEXT,
                 consumed_secret TEXT)''')
+            from src.agentbus_enrollment_approval_service import initialize
+            initialize(self)
 
     @staticmethod
     def validate_channels(channels):
@@ -184,3 +186,15 @@ class ChannelStore:
     def enroll(self, token, **kwargs):
         from src.agentbus_channel_grants_service import enroll
         return enroll(self, token, **kwargs)
+
+    def request_enrollment(self, **kwargs):
+        from src.agentbus_enrollment_approval_service import request_enrollment
+        return request_enrollment(self, **kwargs)
+
+    def approve_enrollment(self, request_id, **kwargs):
+        from src.agentbus_enrollment_approval_service import approve_enrollment
+        return approve_enrollment(self, request_id, **kwargs)
+
+    def pending_enrollments(self, *, channel=None):
+        from src.agentbus_enrollment_approval_service import pending_enrollments
+        return pending_enrollments(self, channel=channel)

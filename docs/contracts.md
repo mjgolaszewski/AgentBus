@@ -35,6 +35,14 @@ ancestry stays notification-only. Rich presentation changes human projections;
 protocol envelopes and signed carriers remain unchanged. RC2 requires renewed
 protected proof and a bounded local two-channel canary before live qualification.
 
+The file-free approval construction is also owned by participation v2. A
+pending request binds a UUID, exact private staged-secret digest, route,
+repository, display name and existing local profile UUID. It grants no session.
+An allowlisted human binds one configured channel through `/agentbus approve`;
+redemption delegates the existing grant and enrollment owners within one SQLite
+transaction. Repeating the same proof recovers the session; changing the subject,
+secret or approved channel fails closed. File grants remain supported.
+
 ## Identity and cursor model
 
 ```mermaid
@@ -69,6 +77,7 @@ membership and obligations while ordinary access/posting pauses.
 | Rule family | Application owners | Behavioral populations |
 | --- | --- | --- |
 | Registry, binding and migration | `agentbus_channel_store_service`, `agentbus_channel_migration_service` | `test_channel_isolation`, `test_channel_migration` |
+| Slack approval requests | `agentbus_enrollment_approval_service`, enrollment client, participation API and Slack commands | Channel isolation, launcher, architecture and legacy grant tests |
 | Grant consumption and exact principal | `agentbus_channel_grants_service`, `agentbus_channel_api_service`, participation API/store | Channel isolation, participation, rotation and service tests |
 | Public cursor translation and scoped sends/replies/claims | Channel API, delivery API, ingress, reply policy | Channel isolation, service, claim recovery, local delivery tests |
 | Provider destination and recovery isolation | Delivery lifecycle/runtime, Slack socket/commands, local delivery | Channel delivery, Slack commands, custody and provider-bound tests |
