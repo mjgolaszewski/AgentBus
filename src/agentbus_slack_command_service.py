@@ -9,7 +9,7 @@ from src.agentbus_send_rate_service import SendRateExceeded
 
 SESSION_ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 SUFFIX = re.compile(r"[0-9a-f]{6,12}")
-HELP = ("/agentbus help | health | roster | status ID | metrics ID | send ID MESSAGE | wake ID MESSAGE | "
+HELP = ("/agentbus help | health | roster | broadcast TEXT | poll QUESTION | results CONTROL_UUID | status ID | metrics ID | send ID MESSAGE | wake ID MESSAGE | "
         "checkpoint ID | pause ID | resume ID | retire ID CONFIRM. "
         "ID is a unique current identity fragment, last 6–12 hex characters, or full session UUID.")
 
@@ -62,6 +62,35 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
         from src.agentbus_presentation_service import health_text
         from src.agentbus_status_api_service import service_dashboard
         return health_text(dashboard() if dashboard is not None else service_dashboard(settings, store))
+    if action == "results" and len(parts) == 2:
+        if not SESSION_ID.fullmatch(parts[1]):
+            return "Use results with the full control UUID."
+        rows = store.controls.status(parts[1], channel=channel)
+        if not rows:
+            return "No announcement results in this channel."
+        completed = sum(row["state"] == "effective" for row in rows)
+        lines = [f"{parts[1]}: {completed}/{len(rows)} acknowledged."]
+        for row in rows[:8]:
+            lines.append(f"{row['session_id']} | {row['state']}" +
+                         (f" | {row['answer']}" if row['answer'] is not None else ""))
+        if len(rows) > 8:
+            lines.append(f"{len(rows) - 8} further receipts; use operator control-status for the full report.")
+        return "\n".join(lines)
+    if action in {"broadcast", "poll"}:
+        text = raw.strip().partition(" ")[2].strip()
+        request_key = payload.get("trigger_id")
+        if not text or len(text) > 1000 or not isinstance(request_key, str) or not request_key:
+            return "Use broadcast TEXT or poll QUESTION (1–1000 characters); a verified Slack request identity is required."
+        targets = [item["session_id"] for item in store.participation.roster(include_stopped=False, channel=channel)]
+        if not targets:
+            return "No joined sessions in this channel."
+        try:
+            control_id, retained = store.controls.issue_auxiliary(
+                kind=action, routes=None, session_ids=targets, reason=text,
+                actor=f"slack:{user}:{channel}", request_key=request_key)
+        except ValueError as exc:
+            return str(exc)
+        return f"{action.title()} {control_id}: {len(retained)} session(s); explicit {'answer' if action == 'poll' else 'read acknowledgement'} required."
     if action == "roster" and len(parts) == 1:
         sessions = store.participation.roster(include_stopped=True, channel=channel)
         if not sessions:

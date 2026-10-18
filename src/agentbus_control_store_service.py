@@ -68,8 +68,9 @@ class ControlStore:
                         reason: str, actor: str,
                         session_ids: list[str] | None = None,
                         override_values: dict[str, int | float | None] | None = None,
-                        duration_seconds: int | None = None) -> tuple[str, list[str]]:
-        if kind not in {"nudge", "checkpoint_request", "temporary_policy_override", "pause_work", "resume_work"}:
+                        duration_seconds: int | None = None,
+                        request_key: str | None = None) -> tuple[str, list[str]]:
+        if kind not in {"nudge", "checkpoint_request", "temporary_policy_override", "pause_work", "resume_work", "broadcast", "poll"}:
             raise ValueError("unsupported auxiliary control kind")
         if kind == "temporary_policy_override":
             if not override_values or isinstance(duration_seconds, bool) or not isinstance(duration_seconds, int) or not 1 <= duration_seconds <= 86400:
@@ -77,20 +78,32 @@ class ControlStore:
         elif override_values is not None or duration_seconds is not None:
             raise ValueError("only temporary policy overrides accept values and duration")
         return self._issue(kind, routes=routes, session_ids=session_ids, reason=reason, actor=actor,
-                           override_values=override_values, duration_seconds=duration_seconds)
+                           override_values=override_values, duration_seconds=duration_seconds, request_key=request_key)
 
     def _issue(self, kind: str, *, routes: list[str] | None,
                reason: str, actor: str,
                session_ids: list[str] | None = None,
                override_values: dict[str, int | float | None] | None = None,
-               duration_seconds: int | None = None) -> tuple[str, list[str]]:
+               duration_seconds: int | None = None,
+               request_key: str | None = None) -> tuple[str, list[str]]:
         if not reason.strip() or not actor.strip():
             raise ValueError("stop reason and actor are required")
         if routes is not None and not routes:
             raise ValueError("explicit stop target list must not be empty")
         if session_ids is not None and not session_ids:
             raise ValueError("explicit session target list must not be empty")
+        if kind in {"broadcast", "poll"} and len(reason) > 1000:
+            raise ValueError("announcement text exceeds 1000 characters")
+        if request_key is not None and (kind not in {"broadcast", "poll"} or not 1 <= len(request_key) <= 500):
+            raise ValueError("request key is only supported for bounded announcements")
+        control_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"agentbus:announcement:{actor}:{request_key}")) if request_key else str(uuid.uuid4())
         with self._lock, self._db:
+            existing = self._db.execute("SELECT kind, reason, actor FROM operator_controls WHERE control_id = ?", (control_id,)).fetchone()
+            if existing is not None:
+                if (existing["kind"], existing["reason"], existing["actor"]) != (kind, reason, actor):
+                    raise ValueError("announcement request differs from retained request")
+                retained = self._db.execute("SELECT session_id FROM control_targets WHERE control_id = ? ORDER BY session_id", (control_id,)).fetchall()
+                return control_id, [row["session_id"] for row in retained]
             if session_ids is not None:
                 targets = sorted(set(session_ids))
                 rows = self._db.execute(
@@ -122,7 +135,6 @@ class ControlStore:
                     ).fetchall()
                     targets.extend(row["session_id"] for row in rows)
                 targets = sorted(set(targets))
-            control_id = str(uuid.uuid4())
             issued = datetime.now(timezone.utc)
             expires_at = None
             if override_values is not None:
@@ -198,7 +210,8 @@ class ControlStore:
 
     def acknowledge_control(self, control_id: str, session_id: str, session_secret: str,
                             report: dict | None = None,
-                            expected_kind: str | None = None) -> tuple[str, str]:
+                            expected_kind: str | None = None,
+                            answer: str | None = None) -> tuple[str, str]:
         with self._lock, self._db:
             self._participation.authorize_session(session_id, session_secret)
             target = self._db.execute(
@@ -213,13 +226,18 @@ class ControlStore:
             kind = target["kind"]
             if expected_kind is not None and kind != expected_kind:
                 raise ValueError("control has a different kind")
+            if kind == "poll":
+                if report is not None or not isinstance(answer, str) or not answer.strip() or len(answer) > 2000:
+                    raise ValueError("poll requires an answer of 1..2000 characters and no checkpoint report")
+            elif answer is not None:
+                raise ValueError("only poll controls accept an answer")
             if kind == "checkpoint_request" and report is None:
                 raise ValueError("checkpoint report is required")
             if kind != "checkpoint_request" and report is not None:
                 raise ValueError("this control does not accept a checkpoint report")
-            report_json = json.dumps(report, sort_keys=True) if report is not None else None
+            report_json = json.dumps({"answer": answer} if kind == "poll" else report, sort_keys=True) if report is not None or kind == "poll" else None
             if target["state"] in {"acknowledged", "effective"} and target["report_json"] != report_json:
-                raise ValueError("checkpoint report differs from committed acknowledgement")
+                raise ValueError("control acknowledgement differs from committed receipt")
             receipt = target["receipt"] or str(uuid.uuid5(
                 uuid.NAMESPACE_URL, f"agentbus:control-ack:{control_id}:{session_id}"
             ))
@@ -274,12 +292,16 @@ class ControlStore:
                 (applied, control_id, session_id),
             )
 
-    def status(self, control_id: str) -> list[dict]:
+    def status(self, control_id: str, *, channel: str | None = None) -> list[dict]:
         with self._lock:
             rows = self._db.execute(
                 "SELECT t.*, c.kind, c.reason, c.actor, c.issued_at, c.expires_at FROM control_targets AS t "
                 "JOIN operator_controls AS c USING(control_id) "
-                "WHERE t.control_id = ? ORDER BY t.session_id", (control_id,)
+                + ("JOIN participation_sessions AS s ON s.session_id = t.session_id "
+                   "JOIN chat_channels AS b ON b.chat_id = s.chat_id " if channel is not None else "")
+                + "WHERE t.control_id = ? "
+                + ("AND b.channel = ? " if channel is not None else "")
+                + "ORDER BY t.session_id", (control_id, channel) if channel is not None else (control_id,)
             ).fetchall()
             return [
                 {**{key: row[key] for key in (
@@ -287,6 +309,7 @@ class ControlStore:
                     "delivered_at", "acknowledged_at", "effective_at", "receipt",
                 )}, "override_active": row["expires_at"] is not None and
                     datetime.fromisoformat(row["expires_at"]) > datetime.now(timezone.utc),
-                 "report": json.loads(row["report_json"]) if row["report_json"] else None}
+                 "answer": json.loads(row["report_json"])["answer"] if row["kind"] == "poll" and row["report_json"] else None,
+                 "report": json.loads(row["report_json"]) if row["report_json"] and row["kind"] != "poll" else None}
                 for row in rows
             ]

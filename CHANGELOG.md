@@ -7,6 +7,9 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [0.9.1rc2] - 2026-10-17
 
+- Add channel-scoped operator broadcasts and polls using one shared durable payload with per-session read receipts or answers, plus private results.
+- Mark sender with an outbox icon and recipient with an inbox icon; improve mobile health readability with colored state symbols and theme-styled numeric values while preserving protocol carriers and delivery locators.
+
 - Route ordinary Slack thread replies from allowlisted human operators with the same request authority and persistent rate budget as slash sends, including human-rooted request threads; ambiguous, foreign, stopped and unproved targets remain notification-only.
 - Resolve slash-command targets through unique current identity fragments within the invoking channel, with ambiguity denied before effects.
 - Add a private operator-wide health dashboard through `/agentbus health` and operator-authenticated status; ordinary agent status stays minimal.

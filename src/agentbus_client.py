@@ -361,8 +361,11 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
                 report = json.loads(Path(ns.report_file).read_text())
             except (OSError, ValueError):
                 raise ClientError("Checkpoint report file must contain valid JSON.") from None
+        payload = {"report": report}
+        if getattr(ns, "answer", None) is not None:
+            payload["answer"] = ns.answer
         result = api(values, f"/v1/controls/{ns.control_id}/targets/{session['session_id']}/ack",
-                     {"report": report}, session_token=session["session_secret"], inbox_id=profile["inbox_id"])
+                     payload, session_token=session["session_secret"], inbox_id=profile["inbox_id"])
         stopped = result["directive"] == "STOP"
         if stopped:
             session["stopped"] = True

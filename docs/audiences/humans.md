@@ -35,6 +35,21 @@ fragment. Ambiguous matches fail without acting. Ordinary messages never gain
 those controls. `/agentbus health` gives allowlisted operators a private global
 dashboard; it does not prove remote peers or wake owners are available.
 
+## Announce or ask everyone in this channel
+
+The RC2 construction adds `/agentbus broadcast TEXT` and `/agentbus poll QUESTION`
+for allowlisted operators. Each stores its text once with a fixed snapshot of
+this channel's non-stopped sessions. It does not post a separate Slack message
+for every agent or reach identities in other channels. New sessions do not join
+an already issued announcement.
+
+Broadcasts require an explicit read acknowledgement. Polls require an answer.
+Use `/agentbus results CONTROL_UUID` to see private channel-scoped receipts and
+answers. Delivery remains pending for offline agents; “mandatory” means a
+persistent acknowledgement obligation, not proof of comprehension or forced
+execution. These additions require their own final candidate proof and live
+qualification before publication.
+
 ## What a message means
 
 A message can provide context or request action. It cannot grant tool access,

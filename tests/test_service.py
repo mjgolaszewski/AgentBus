@@ -1407,3 +1407,41 @@ def test_operator_status_dashboard_is_complete_read_only_and_not_agent_visible(s
     encoded=json.dumps(operator)
     for secret in ('private-operator-token','xoxb-test-secret','xapp-test-secret',str(app.state.settings.db_path)):
         assert secret not in encoded
+
+
+def test_poll_api_requires_answer_exact_session_and_operator(service):
+    client, app, posts = service
+    app.state.settings = replace(app.state.settings, operator_token='o' * 32)
+    operator = {'Authorization': 'Bearer ' + 'o' * 32}
+    app.state.store.participation.set_policy(scope='global', scope_key='*', actor='operator', values={
+        'initial_interval_seconds': 60, 'backoff_factor': 2, 'max_interval_seconds': 1920,
+        'control_check_max_seconds': 60, 'jitter_fraction': 0, 'overdue_grace_seconds': 120,
+        'presentation_budget_bytes': None,
+    })
+    secret = 'poll-session-secret-with-at-least-32-characters'
+    joined = client.post('/v1/sessions', headers=AUTH, json=granted(client, {
+        'repo': 'agentbus', 'route': 'agentbus:poll-reader', 'display_name': 'Reader',
+        'session_secret': secret,
+    })).json()
+    sid = joined['session_id']
+    headers = {**AUTH, 'X-AgentBus-Session-Token': secret, 'X-AgentBus-Inbox-ID': joined['inbox_id']}
+    assert client.post(f'/v1/sessions/{sid}/policy-ack', headers=headers,
+                       json={'revision': joined['revision']}).status_code == 200
+    body = {'kind': 'poll', 'session_ids': [sid], 'reason': 'What is blocked?'}
+    assert client.post('/v1/controls', headers=AUTH, json=body).status_code == 401
+    issued = client.post('/v1/controls', headers=operator, json=body)
+    assert issued.status_code == 201
+    cid = issued.json()['control_id']
+    url = f'/v1/controls/{cid}/targets/{sid}/ack'
+    assert client.post(url, headers=headers, json={'answer': 'not yet delivered'}).status_code == 409
+    assert client.post(f'/v1/sessions/{sid}/check-in', headers=headers).json()['controls'][0]['kind'] == 'poll'
+    assert client.post(url, headers=headers).status_code == 409
+    assert client.post(url, headers=headers, json={'answer': ' '}).status_code == 409
+    assert client.post(url, headers=headers, json={'answer': 'a' * 2001}).status_code == 422
+    assert client.post(url, headers={**headers, 'X-AgentBus-Inbox-ID': 'foreign'}, json={'answer': 'no'}).status_code == 403
+    ack = client.post(url, headers=headers, json={'answer': 'awaiting review'})
+    assert ack.status_code == 200 and ack.json()['directive'] == 'CONTINUE'
+    assert client.post(url, headers=headers, json={'answer': 'awaiting review'}).json()['receipt'] == ack.json()['receipt']
+    assert client.post(url, headers=headers, json={'answer': 'different'}).status_code == 409
+    assert client.get(f'/v1/controls/{cid}', headers=operator).json()['targets'][0]['answer'] == 'awaiting review'
+    assert posts == []

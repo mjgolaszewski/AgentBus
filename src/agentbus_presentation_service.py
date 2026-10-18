@@ -35,7 +35,7 @@ def section_blocks(value: str) -> list[dict[str, object]]:
 
 
 def message_blocks(message, *, locator: str | None = None) -> list[dict[str, object]]:
-    label=f'`{message.sender}` → `{message.recipient}` · {message.kind} · {message.audience}'
+    label=f'📤 `{message.sender}` → 📥 `{message.recipient}` · {message.kind} · {message.audience}'
     if message.repo:
         label+=f' · {message.repo}'
     context: dict[str, object]={'type':'context','elements':[{'type':'mrkdwn','text':slack_escape(label),'verbatim':True}]}
@@ -52,20 +52,20 @@ def health_text(snapshot: dict) -> str:
     runtime=snapshot['runtime']
     federation=snapshot['federation']
     connected=snapshot['slack_connected']
-    slack='unknown' if connected is None else 'connected' if connected else 'disconnected'
+    slack='🟡 unknown' if connected is None else '🟢 connected' if connected else '🔴 disconnected'
     uptime=runtime['uptime_seconds']
-    lines=['*AgentBus health*',f"*Version:* `{snapshot['version']}` · protocol {snapshot['protocol_version']} · participation {snapshot['participation_version']}",
-           f"*Runtime:* {runtime['implementation']} Python {runtime['python']} · {runtime['platform']} · PID {runtime['pid']}",
-           f"*Uptime:* {str(uptime)+'s' if uptime is not None else 'unknown'} · Slack {slack} · delivery {snapshot['delivery_mode']}",
-           f"*Channels:* {sum(c['enabled'] for c in snapshot['channels'])} enabled · {snapshot['retained_channel_count']} retained"]
+    lines=['*🩺 AgentBus health*',f"📦 *Version:* `{snapshot['version']}` · protocol `{snapshot['protocol_version']}` · participation `{snapshot['participation_version']}`",
+           f"🖥️ *Runtime:* {runtime['implementation']} Python `{runtime['python']}` · {runtime['platform']} · PID `{runtime['pid']}`",
+           f"⏱️ *Uptime:* `{str(uptime)+'s' if uptime is not None else 'unknown'}` · Slack {slack} · delivery {snapshot['delivery_mode']}",
+           f"📬 *Channels:* `{sum(c['enabled'] for c in snapshot['channels'])}` enabled · `{snapshot['retained_channel_count']}` retained"]
     for channel in snapshot['channels']:
         delivery=', '.join(f'{key}:{value}' for key,value in sorted(channel['delivery'].items())) or 'none'
-        lines.append(f"`{channel['channel']}` · {'enabled' if channel['enabled'] else 'disabled / retained'} · messages {channel['messages']} · local high-water {channel['high_water_cursor']} · sessions {sum(channel['sessions'].values())}\nDelivery custody: {delivery}")
+        lines.append(f"`{channel['channel']}` · {'🟢 enabled' if channel['enabled'] else '⚪ disabled / retained'} · messages `{channel['messages']}` · local high-water `{channel['high_water_cursor']}` · sessions `{sum(channel['sessions'].values())}`\nDelivery custody: {delivery}")
     if snapshot['channel_details_truncated']:
         lines.append('Additional retained channel details omitted from this bounded dashboard.')
-    state='disabled' if not federation['configured'] else 'initialized' if federation['initialized'] else 'configured / awaiting transport'
-    lines.extend([f"*Federation:* {state} · bridge {federation['channel'] or 'none'} · pinned origins {', '.join(federation['origins']) or 'none'}",
-                  f"Remote health: not observed · checkpoints {federation['checkpoints']} · retained obligations {sum(federation['custody'].values())}",
-                  f"*Storage:* {snapshot['database_bytes']} bytes including WAL sidecars",
+    state='⚪ disabled' if not federation['configured'] else '🟢 initialized' if federation['initialized'] else '🟡 configured / awaiting transport'
+    lines.extend([f"🌐 *Federation:* {state} · bridge {federation['channel'] or 'none'} · pinned origins {', '.join(federation['origins']) or 'none'}",
+                  f"🟡 Remote health: not observed · checkpoints `{federation['checkpoints']}` · retained obligations `{sum(federation['custody'].values())}`",
+                  f"💾 *Storage:* `{snapshot['database_bytes']}` bytes including WAL sidecars",
                   'Provider delivery, destination custody and semantic ACK are distinct. Owner interoperability and atomic idle-only wake remain unqualified.'])
     return '\n'.join(lines)
