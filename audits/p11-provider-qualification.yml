@@ -13,7 +13,7 @@ baseline:
   implementation_main_truth: github-actions://mjgolaszewski/AgentBus/runs/38993263023/attempts/1/bcf-governance-truth
   implementation_truth_sha256: 02c638fc44b6e20b61e6b66bf034f840f6506cbfa27121c29a9024da40db62bf
 provider:
-  arrangement: operator-approved public channel C0C4GDC7Q4D; distinct home, moranwm and home-latejoin
+  arrangement: operator-approved public channel CHANNEL_A_REDACTED; distinct home, installation-b and installation-c
     publishers and local signing keys
   audience: public; no content confidentiality guarantee
   scopes: existing authenticated chat:write and channel history observed; dedicated late app also permits

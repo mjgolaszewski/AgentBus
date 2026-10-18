@@ -232,7 +232,8 @@ def test_release_metadata_applicability_rejects_other_runtime_changes(monkeypatc
 
 
 def test_current_channel_runtime_cannot_inherit_historical_live_qualification(historical_runtime, monkeypatch):
-    # Exercise the actual candidate as well as the isolated historical model.
+    # The prerelease is outside the historical 0.8 -> 0.9 metadata allowlist.
+    # Keep rejection strict; never broaden historical live-proof applicability.
     monkeypatch.setattr(Path, 'read_bytes', historical_runtime)
-    with pytest.raises(ValueError, match='does not qualify changed runtime bytes'):
+    with pytest.raises(ValueError, match='mixed or unsupported release metadata'):
         verify_evidence(qualified_evidence())

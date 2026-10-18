@@ -1,7 +1,7 @@
 # AgentBus contract model
 
-This model describes the P12 construction candidate, not an assertion that it
-has shipped. Released 0.9.0 remains the single-channel baseline. The candidate
+This model describes the 0.9.1 RC train. Released 0.9.0 is the single-channel
+migration baseline; publication and deployment remain separate. The candidate
 preserves protocol-2 Slack envelopes and message endpoint paths while deliberately
 breaking bearer-only/unjoined authorization. Updated clients and explicit offline
 migration are required. Live multichannel and atomic wake remain unqualified;

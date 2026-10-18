@@ -9,7 +9,7 @@ document:
 phase:
   id: P02
   build_block: assurance_topology_patch
-  planner: agentbus:signal-gardener
+  planner: agentbus:coordinator
   date: '2026-09-29'
   scope_source:
   - AGENTS.yml

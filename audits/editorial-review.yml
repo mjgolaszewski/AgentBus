@@ -8,14 +8,14 @@ request:
   excluded:
   - CHANGELOG.md (explicit user exclusion)
   - BCF-owned governance machinery, generated projections, runtime, schemas and workflows
-  - Executable source/tests and opaque input pin manifests are implementation/evidence data, not prose
-    documentation; signed YAML canary records are included and retained byte-for-byte
+  - Executable source/tests and opaque input pin manifests are implementation/evidence data, not prose documentation;
+    signed YAML canary records are included and retained byte-for-byte
   - 'AGENTS.md AGENTS.yml CLAUDE.md governance-profile.yml and schemas: BCF policy/schema machinery excluded;
     application architecture-boundaries.yml and product plans/logs included'
-  - Binary illustrations are retained assets; their textual presentation and alt text are reviewed in
-    Markdown. This audit excludes itself from content hashing to avoid a recursive digest.
-  history_policy: Preserve exact historical evidence; correct current-authority claims at current owners,
-    do not rewrite old outcomes
+  - Binary illustrations are retained assets; their textual presentation and alt text are reviewed in Markdown.
+    This audit excludes itself from content hashing to avoid a recursive digest.
+  history_policy: Preserve original private narrative snapshots and immutable signed machine evidence; anonymize
+    public prose without changing or relabelling historical outcomes
   dispositions:
   - updates
   - merged
@@ -25,7 +25,8 @@ request:
   completion_rule: No document marked reviewed without full line inspection; pending rows mean audit incomplete.
     Re-review modified bytes and refresh hashes before final candidate.
 experimental_claims:
-  multichannel: candidate; final canonical and live two-channel qualification pending
+  multichannel: bounded local two-channel canary passed on protected abec71e; release subject requires fresh
+    canonical custody and isolated archive install
   AHP_native_queue: offline research; no production adapter
   atomic_idle_only_wake: unqualified
   federation: historical pinned canary is not changed-runtime proof
@@ -36,12 +37,13 @@ documents:
   - - 1
     - 42
   line_count: 42
-  sha256: 12c66cebcf19524105a7df7658200ab8088cb9b766f1ad65bdbff18fec13d1e2
+  sha256: 70e09433752fc5a0be46e9fd1b5ace26c07ed84d46ecdba5fea95d3c4545e4e7
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
   - Fresh-store bootstrap requires distinct operator capability and configured global policy before grant-backed
     joining; existing migration preserves policy
+  - Anonymized local route examples and exported local-prefix configuration agree
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: CONTRACT.md
   review_status: line_by_line_reviewed
@@ -65,34 +67,39 @@ documents:
   disposition: updates
   findings:
   - Compatibility/test and no-secrets instructions remain valid; generated machinery ownership preserved
-  - Historical positive verifier cases use exact local Git release inputs; current runtime rejection is
-    explicit, no live proof reuse
+  - Historical positive verifier cases use exact local Git release inputs; current runtime rejection is explicit,
+    no live proof reuse
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: MEMORY.yml
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 103
-  line_count: 103
-  sha256: 084aac3943f7f16d89c2b817ba5a5348b74b94dd0c8ec58a0e2e9e2f2d640325
+    - 104
+  line_count: 104
+  sha256: 648df71353a04521c5d32384267a05bf0b2c43f872a2d035fd652c26b98e45fa
   disposition: updates
   findings:
-  - Reviewed full authority/model and qualification wording; retained constraints or corrected current
-    candidate scope
+  - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
+    scope
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
+    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: README.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 824
-  line_count: 824
-  sha256: f918ee95c4fad7ab8da5b3debf1f35594f04e22ef4758a7ae96e3eaef1acac33
+    - 825
+  line_count: 825
+  sha256: 292620748c9017fb6634b9674547e759683f9534bedecc38cd1646dc0dae958e
   disposition: updates
   findings:
   - Removed legacy bearer/unjoined authority and rollout fallback
   - Added grant-backed examples, scoped cursors/API capabilities and experimental disclosures
   - Fresh-store bootstrap requires distinct operator capability and configured global policy before grant-backed
     joining; existing migration preserves policy
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
+    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - Anonymized local route examples and exported local-prefix configuration agree
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: SECURITY.md
   review_status: line_by_line_reviewed
@@ -126,8 +133,8 @@ documents:
   sha256: 6776a3d816f485e7437d45ed0eb8b1a9dff56c60846f76c127ad033fbc7acf65
   disposition: retained
   findings:
-  - Reviewed full authority/model and qualification wording; retained constraints or corrected current
-    candidate scope
+  - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
+    scope
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: audits/README.md
   review_status: line_by_line_reviewed
@@ -138,20 +145,21 @@ documents:
   sha256: 8574defb82a880789be05a319ad0913fc55499ecfe81e11768252d9599c5a714
   disposition: retained
   findings:
-  - Reviewed full authority/model and qualification wording; retained constraints or corrected current
-    candidate scope
+  - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
+    scope
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: audits/channel-isolation-call-paths.yml
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 168
-  line_count: 168
-  sha256: 6100c3abf8f2f38143c430c8805137a4fe8f678ebd8d860eb6540c4021813308
+    - 160
+  line_count: 160
+  sha256: e263d2416f2a0bcbaf2d95a2aea712d2c998044fbef139b5aef0b934ecd31b97
   disposition: updates
   findings:
-  - Retained historical evidence with original exact subject limits; no candidate proof applicability
-    inferred
+  - Retained historical evidence with original exact subject limits; no candidate proof applicability inferred
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
+    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: audits/owner-wake-qualification.yml
   review_status: line_by_line_reviewed
@@ -210,8 +218,7 @@ documents:
   sha256: e1cf79c6642c658916870ff2d78adf202e98cf157fce031819f4c372ca0afc2e
   disposition: retained
   findings:
-  - Retained historical evidence with original exact subject limits; no candidate proof applicability
-    inferred
+  - Retained historical evidence with original exact subject limits; no candidate proof applicability inferred
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: audits/p11-provider-canary-07b9ecb.yml
   review_status: line_by_line_reviewed
@@ -222,8 +229,7 @@ documents:
   sha256: 5ba9fdfa7155871748c735c978971de1d422704d9dc87453cb122bc042eec7b2
   disposition: retained
   findings:
-  - Retained historical evidence with original exact subject limits; no candidate proof applicability
-    inferred
+  - Retained historical evidence with original exact subject limits; no candidate proof applicability inferred
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: audits/p11-provider-qualification.yml
   review_status: line_by_line_reviewed
@@ -231,11 +237,12 @@ documents:
   - - 1
     - 104
   line_count: 104
-  sha256: 2b7d918b3a81f10719c4f0eb48e788ca94fcf6591fe1d71768a6ae2f00048fa7
-  disposition: retained
+  sha256: 4c3fe8dd11aa004faa0c6ea597c6aba1c1cb591a82758a9826d8c2f7ed04df89
+  disposition: updates
   findings:
-  - Retained historical evidence with original exact subject limits; no candidate proof applicability
-    inferred
+  - Retained historical evidence with original exact subject limits; no candidate proof applicability inferred
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
+    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: audits/p11-recovery-mapping.yml
   review_status: line_by_line_reviewed
@@ -269,8 +276,8 @@ documents:
   sha256: a1bbae93813fd1b7e1c392b00fee8ff5e0dfd270f417d3c6b9458aeeb85b5f86
   disposition: updates
   findings:
-  - Added channel scope and experimental qualification boundary, replaced obsolete unrestricted joining
-    statement; retained standalone host lifecycle and no-blind-retry rules
+  - Added channel scope and experimental qualification boundary, replaced obsolete unrestricted joining statement;
+    retained standalone host lifecycle and no-blind-retry rules
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: contracts/federation/v1/federation.contract.yml
   review_status: line_by_line_reviewed
@@ -361,8 +368,8 @@ documents:
   sha256: 97358c68ab81ecb0dbce959df711b3df4dea3cb9b6dc4b3710a250ee5447000e
   disposition: retained
   findings:
-  - Historical BCF2.1 timings/version/source identities already explicitly historical; retained numerical
-    observations, not current performance or runtime authority
+  - Historical BCF2.1 timings/version/source identities already explicitly historical; retained numerical observations,
+    not current performance or runtime authority
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: docs/architecture.md
   review_status: line_by_line_reviewed
@@ -393,10 +400,13 @@ documents:
   - - 1
     - 56
   line_count: 56
-  sha256: 48e715a0df53ba4f114d53a2a5d9826d6dd714956e84e88ce52d70d85ff690a9
+  sha256: 74c1ee82df4bb43ff33ffcb72b1743ac63f7bff61c9682a4d88a7f500ff0b939
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
+    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - Anonymized local route examples and exported local-prefix configuration agree
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: docs/audiences/experimenters.md
   review_status: line_by_line_reviewed
@@ -404,11 +414,13 @@ documents:
   - - 1
     - 71
   line_count: 71
-  sha256: b6575f034a6a92e296a02cb48bd0c3e1f2cbf0ea7cb6b7e6fdf30d1d620a25c3
-  disposition: new
+  sha256: 580c16ba7890cacbb9debe3623b35125f533aa08d9566afd39a9c18a84308860
+  disposition: updates
   findings:
-  - New seat separates experimental candidate claims from released baseline and bounded tests; no live
-    deployment/wake authority supplied
+  - New seat separates experimental candidate claims from released baseline and bounded tests; no live deployment/wake
+    authority supplied
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
+    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: docs/audiences/hippiebots.md
   review_status: line_by_line_reviewed
@@ -416,10 +428,13 @@ documents:
   - - 1
     - 71
   line_count: 71
-  sha256: c92645cc900c3de6db454b1efe2de7d4610c96d3d2274b6d89a9a0b09e03f3c0
+  sha256: 6ce30297c3f3cb1b3fa4462c0c8206273f37145c9d444be10b04671d41a2ff25
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
+    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - Anonymized local route examples and exported local-prefix configuration agree
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: docs/audiences/humans.md
   review_status: line_by_line_reviewed
@@ -427,21 +442,25 @@ documents:
   - - 1
     - 46
   line_count: 46
-  sha256: 8cab55ffbefab8ac2acfbbb64298e59754a6cea7e70116b18f7add2e2e24863d
+  sha256: 49293f44e73c578d2546a337003d4edbf49e7d2c1043085d55b94de54d152831
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
+    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: docs/audiences/maintainers.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 32
-  line_count: 32
-  sha256: b87c2e8f65bd0452dbe1f82184dafe5f5ae19d17ce2ee592324faf7762312335
+    - 33
+  line_count: 33
+  sha256: fb0ceda5d0a7dd05441f2c795891c330c32c8cf7c0a27f2be813f48703cd6603
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
+    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: docs/audiences/operators.md
   review_status: line_by_line_reviewed
@@ -449,13 +468,15 @@ documents:
   - - 1
     - 192
   line_count: 192
-  sha256: d11afaab6a8911b6ac3d06e1d95ebb89b5ab512df9a44a35a50c5f9be7cd6633
+  sha256: 8e0b83ff3a4dfd4265619b69e0acf1ac610b12657ef2a159a955b2303a8e93e2
   disposition: updates
   findings:
   - Replaced unrestricted join/automatic migration with explicit grants and offline migration
   - Scoped Slack suffix lookup; prohibited membership-moving rebind
   - Fresh-store bootstrap requires distinct operator capability and configured global policy before grant-backed
     joining; existing migration preserves policy
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
+    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: docs/audiences/security-reviewers.md
   review_status: line_by_line_reviewed
@@ -472,13 +493,15 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 78
-  line_count: 78
-  sha256: 01dca1f0cbc1e31b8dd2cab784db3f58a96e1c56f137b6c57b0b0b5b070007ee
-  disposition: new
+    - 79
+  line_count: 79
+  sha256: 3743d4f659ad19648dba7cfe6e0cc78e8f77724f10b542de2ff7757083109880
+  disposition: updates
   findings:
-  - New offline dry-run/apply, client migration, custody-preserving forward repair and separate canary
-    prerequisites; no automatic startup migration claimed
+  - New offline dry-run/apply, client migration, custody-preserving forward repair and separate canary prerequisites;
+    no automatic startup migration claimed
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
+    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: docs/contracts.md
   review_status: line_by_line_reviewed
@@ -486,23 +509,27 @@ documents:
   - - 1
     - 73
   line_count: 73
-  sha256: be92b24e2db344ad8218f64d1b50710cd8eb25439b2afdb628a3af0084f9f508
-  disposition: new
+  sha256: fbf80b91053329fd0e8dae3fe7f7aa9399b1d26d597c4c89fdd0d83c7d7d9ed3
+  disposition: updates
   findings:
   - New model connects all current product contracts to identity/cursor relationships, inheritance, implementation
     and behavioral evidence; observability scaffolds explicitly not an implemented collector guarantee
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
+    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: docs/federation.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 389
-  line_count: 389
-  sha256: e66be3e78e3fdc2704a559bcb7648b7a1c911452c6ac89214c5fe78bb6400e8f
+    - 390
+  line_count: 390
+  sha256: ffbd0c63f1aa8fcad9ad4c2b61f68698b9b1e0c11450f354091b85f33c01b540
   disposition: updates
   findings:
   - Marked historical deployment observation in past tense
   - Added candidate-only bridge channel containment and exact-source applicability limits
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
+    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: docs/governance-model.md
   review_status: line_by_line_reviewed
@@ -716,8 +743,8 @@ documents:
   sha256: 0b4a0e7ed809fb290d786a6343e62d0dfc354de9ad7fdb3d0a2f71aa1cf17aa2
   disposition: retained
   findings:
-  - Reviewed full authority/model and qualification wording; retained constraints or corrected current
-    candidate scope
+  - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
+    scope
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-11-log.yml
   review_status: line_by_line_reviewed
@@ -725,25 +752,29 @@ documents:
   - - 1
     - 158
   line_count: 158
-  sha256: 65c7c16ed7cf799757a69989e72e5cdbb7ec935c381aa0397edbd2a2cfd6d120
-  disposition: retained
+  sha256: 489f96a6dd5a499466d7d7ea454e7085584cff494f77f7e2ec91ea817a785286
+  disposition: updates
   findings:
   - Historical working log mixes earlier pending state with later protected construction closure; retained
     sequence and failed windows, current release/qualification status belongs to MEMORY and P12
   - Previous17-file editorial link validation was not a complete line-by-line review; this audit supersedes
     that review scope without altering its recorded result
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
+    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: phases/phase-12-log.yml
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 186
-  line_count: 186
-  sha256: 870410c448e1edd38e9de2cc25dbe86686f56bf795ac3f5057fc204e6bfbe95f
+    - 190
+  line_count: 190
+  sha256: c1e66190af1cd4334058bbf802fe8df255a88b0acd0ed88f3b16d1ffb95f7f12
   disposition: updates
   findings:
-  - Reviewed full authority/model and qualification wording; retained constraints or corrected current
-    candidate scope
+  - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
+    scope
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
+    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/build-plan.yml
   review_status: line_by_line_reviewed
@@ -754,8 +785,8 @@ documents:
   sha256: 1a2dd1d69f0bbb6aa74eb753b07ee6bf0233f113bc4b34b56fa9bbe0d4b29ce8
   disposition: updates
   findings:
-  - Reviewed full authority/model and qualification wording; retained constraints or corrected current
-    candidate scope
+  - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
+    scope
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-01-plan.yml
   review_status: line_by_line_reviewed
@@ -787,11 +818,13 @@ documents:
   - - 1
     - 37
   line_count: 37
-  sha256: 269ea61a4d7874dca02fd9a9dc72475c313a7a974b5da8e36d75a73bd148da9f
-  disposition: retained
+  sha256: 62946f74f3f2b246dbd9783e6f125f704a9ba778ae9bec6bda4bc2e7af678183
+  disposition: updates
   findings:
   - Retained historical subject/version/acceptance record; current candidate authority is docs/contracts.md
     and active P12 artifacts
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
+    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-02-workitems.yml
   review_status: line_by_line_reviewed
@@ -984,8 +1017,8 @@ documents:
   sha256: 91e84809d92ed198451a852565a788dffdc91c46c2769d87b998e0aff96e82b5
   disposition: retained
   findings:
-  - Reviewed full authority/model and qualification wording; retained constraints or corrected current
-    candidate scope
+  - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
+    scope
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-10-workitems.yml
   review_status: line_by_line_reviewed
@@ -996,8 +1029,8 @@ documents:
   sha256: 30178c82dfe2c0f633788741f4ce89def90e663f9dfb7da53cf4d46ec6bdc44a
   disposition: retained
   findings:
-  - Reviewed full authority/model and qualification wording; retained constraints or corrected current
-    candidate scope
+  - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
+    scope
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-11-plan.yml
   review_status: line_by_line_reviewed
@@ -1008,8 +1041,8 @@ documents:
   sha256: 51dedd97c8061cbee5ec13bf7b2d34a9a93ecf430789dbfd1a4f5d3bbbfb3a4f
   disposition: retained
   findings:
-  - Reviewed full authority/model and qualification wording; retained constraints or corrected current
-    candidate scope
+  - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
+    scope
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-11-workitems.yml
   review_status: line_by_line_reviewed
@@ -1020,8 +1053,8 @@ documents:
   sha256: 20ea2210239998e8080949fd1d9f808b4ce1eba3f06d8b18486f8d530998fb3f
   disposition: retained
   findings:
-  - Reviewed full authority/model and qualification wording; retained constraints or corrected current
-    candidate scope
+  - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
+    scope
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-12-plan.yml
   review_status: line_by_line_reviewed
@@ -1032,8 +1065,8 @@ documents:
   sha256: 5673e54b9472968836e16e98110d425ef2585be7bef6d8e8afba44d86c9764cc
   disposition: updates
   findings:
-  - Reviewed full authority/model and qualification wording; retained constraints or corrected current
-    candidate scope
+  - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
+    scope
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-12-workitems.yml
   review_status: line_by_line_reviewed
@@ -1044,8 +1077,8 @@ documents:
   sha256: 7cad925e09f01f39cfecec0ac5daf2e1e4e050abfd2748c61e53b1c6939e2944
   disposition: updates
   findings:
-  - Reviewed full authority/model and qualification wording; retained constraints or corrected current
-    candidate scope
+  - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
+    scope
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-history.yml
   review_status: line_by_line_reviewed
@@ -1056,20 +1089,22 @@ documents:
   sha256: 453d26d074d0a1f1fa14d382a33a6c1036aa667b63bbc37cfb14c7f18bf45784
   disposition: retained
   findings:
-  - Reviewed full authority/model and qualification wording; retained constraints or corrected current
-    candidate scope
+  - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
+    scope
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/phase-ledger.yml
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 102
-  line_count: 102
-  sha256: 7127a8a8fefbea9e65cda246894f8f40bc2c85f823a2759b754119b55850cafd
+    - 103
+  line_count: 103
+  sha256: e13442251ea3686b1880ff4a45334d7a48556edea35f5ad819533669f1a5509c
   disposition: updates
   findings:
-  - Reviewed full authority/model and qualification wording; retained constraints or corrected current
-    candidate scope
+  - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
+    scope
+  - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
+    bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: plans/product-spec.yml
   review_status: line_by_line_reviewed
@@ -1080,8 +1115,8 @@ documents:
   sha256: fb43258e9c9f24ad8d8dac2ffb8f9eab5d5347f5492f2cde9b50164fa44c7905
   disposition: updates
   findings:
-  - Reviewed full authority/model and qualification wording; retained constraints or corrected current
-    candidate scope
+  - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
+    scope
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: LICENSE
   review_status: line_by_line_reviewed
@@ -1094,12 +1129,27 @@ documents:
   findings:
   - MIT grant attribution conditions and disclaimer retained unchanged
   verification: retained_legal_text
+- document: audits/channel-live-qualification.yml
+  review_status: line_by_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 57
+  line_count: 57
+  sha256: ed581a6f4330ddea58685efb788b4166e47c2ee4b5c11daf9948b3d41ae2962e
+  disposition: new
+  findings:
+  - Redacted bounded canary record retains exact protected source and limits; no installation/channel/session
+    identifiers or raw provider payloads
+  - Three probe-oracle failures and supplemental recovery disclosed; four exact test sessions retired; no wake/federation
+    qualification claim
+  verification: original private receipts and independent custodian continuity record inspected; fresh release-subject
+    proof pending
 summary:
   documents_reviewed: 89
   pending_line_reviews: 0
-  validation: governance_yaml_pass; 20 Markdown documents zero missing local link targets; four contract
-    model cases pass; final exact candidate proof remains construction work
-  consolidation: No historical record merged or removed; new models consolidate current authority without
-    deleting evidence
-  experimental_disclosures: Current product and audience guides name live multichannel and owner-wake
-    qualification limits; historical snapshots retain original source scope
+  validation: governance_yaml_pass; 20 Markdown documents zero missing local link targets; four contract model
+    cases pass; final exact candidate proof remains construction work
+  consolidation: No historical record merged or removed; new models consolidate current authority without deleting
+    evidence
+  experimental_disclosures: Current product and audience guides name live multichannel and owner-wake qualification
+    limits; historical snapshots retain original source scope

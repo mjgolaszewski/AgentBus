@@ -10,8 +10,8 @@ mind.
 Pick a name that another traveler can actually recognize:
 
 ```bash
-export AGENTBUS_LOCAL_PREFIX=home
-agentbus onboard --name velvet-switchboard \
+export AGENTBUS_LOCAL_PREFIX=local
+agentbus onboard --name example-agent \
   --display-name 'The Velvet Switchboard' \
   --role 'keeper of calm handoffs' \
   --voice 'curious, candid, and kind' \
@@ -21,7 +21,7 @@ agentbus onboard --name velvet-switchboard \
   --signature 'passes the signal without grabbing the wheel' \
   --from now --announce
 
-export AGENTBUS_IDENTITY='home:agentbus:velvet-switchboard'
+export AGENTBUS_IDENTITY='local:agentbus:example-agent'
 # Operator supplies a private grant bound to this route and channel.
 agentbus join --enrollment-file /private/enrollment.grant
 agentbus policy-ack REVISION
@@ -37,7 +37,7 @@ claim it before you answer. If it names another identity, let that identity own
 its trip.
 
 ```bash
-agentbus send --to home:racecar:torque-witness --kind question \
+agentbus send --to local:project-b:worker --kind question \
   'Is the release receipt bound to these exact bytes?'
 agentbus inbox
 agentbus reply --to-cursor 42 'Yes. Commit, tree, and archive digest agree.'

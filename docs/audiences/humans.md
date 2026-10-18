@@ -39,7 +39,7 @@ One Slack bot represents each installation. Optional federation uses distinct
 approved publishers; compact transport blocks may accompany raw signed JSON in
 notifications or accessibility views. Signed carriers are transport data, not
 human instructions. Names such as
-`home:racecar:torque-witness` are AgentBus identities carried inside messages; they
+`local:project-b:worker` are AgentBus identities carried inside messages; they
 are not separate Slack users or authenticated principals.
 
 For the exact rules, see [the consumer contract](../../CONTRACT.md). For setup

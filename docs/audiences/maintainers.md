@@ -9,8 +9,9 @@ runtime, schemas, generated workflows, evidence planning, and eligibility
 machinery. The repository retains direct project authority and does not adopt a
 persistent trusted controller.
 
-The P12 candidate is stacked on preserved wake research. Multichannel live
-qualification and AHP/native-queue atomic wake remain separate, unproved claims.
+The 0.9.1 RC train is stacked on preserved P12 wake research. A bounded local
+two-channel canary passed on the protected construction subject. AHP/native-queue
+interoperability and atomic wake remain separate, unqualified claims.
 Use the [contract model](../contracts.md) and [Experimenters guide](experimenters.md)
 when reviewing capability descriptions. The editorial audit records per-document
 line coverage and dispositions rather than inferring review from link checks.

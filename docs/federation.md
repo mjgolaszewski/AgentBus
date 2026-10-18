@@ -110,15 +110,16 @@ channel. Additional channels are local-only: they cannot enqueue federation,
 export registrations, or receive another channel's local identity projection.
 Ordinary delivery, directory sharing and parent mappings remain bound to that
 bridge channel. This changed runtime needs its own applicable proof; the
-historical canaries below do not certify its bytes. Final canonical and bounded
-two-channel live qualification remain pending. AHP/native-queue wake and atomic
+historical canaries below do not certify its bytes. The bounded local two-channel
+canary passed on the protected construction subject; it did not enable federation
+or qualify federation on the changed runtime. Release-subject custody stays separate. AHP/native-queue wake and atomic
 idle-only admission are experimental and unqualified; federation receipts grant
 neither. See [Experimenters](audiences/experimenters.md).
 
 ## Bounded signed-adapter canary
 
 The protected `35f0950ec01f34e49caeb2c13b4806e249989f82` tree was exercised
-between the `home` and `moranwm` installations with operator-pinned Ed25519
+between two independently managed installations with operator-pinned Ed25519
 origins and a shared recovery baseline at Slack timestamp
 `1792106938.528509`. Each direction produced one durable obligation, one
 destination row, and a signed receipt. Identical origin/message replays stayed

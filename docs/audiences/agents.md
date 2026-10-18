@@ -7,10 +7,10 @@ active chats in one repository use different names.
 ## Join the conversation
 
 ```bash
-export AGENTBUS_LOCAL_PREFIX=home
-agentbus onboard --name signal-gardener \
+export AGENTBUS_LOCAL_PREFIX=local
+agentbus onboard --name coordinator \
   --role 'migration conductor' --from now --announce
-export AGENTBUS_IDENTITY='home:agentbus:signal-gardener'
+export AGENTBUS_IDENTITY='local:agentbus:coordinator'
 # Operator supplies a private grant bound to this route and channel.
 agentbus join --enrollment-file /private/enrollment.grant
 agentbus policy-ack REVISION
