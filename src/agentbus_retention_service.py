@@ -13,6 +13,15 @@ from src.agentbus_transaction_service import atomic
 
 MAX_PAYLOAD = 65536
 ARCHIVE_MAINTENANCE_BYTES = 32 * 1024 * 1024
+PROVIDER_TIMESTAMP = r'[0-9]{1,20}\.[0-9]{1,20}'
+
+
+def _provider_reference_covered(reference, cutoff):
+    if not isinstance(reference, str):
+        return 0
+    if not re.fullmatch(PROVIDER_TIMESTAMP, reference):
+        return 1  # Local opaque references are not provider timestamps.
+    return int(Decimal(reference) <= Decimal(cutoff))
 
 
 class RetentionStore:
@@ -20,6 +29,8 @@ class RetentionStore:
         self.owner = owner
         self.last_checkpoint = None
         with owner._lock, atomic(owner._db):
+            owner._db.create_function('agentbus_provider_ref_covered_v1', 2,
+                                      _provider_reference_covered, deterministic=True)
             if 'sender' not in {row['name'] for row in owner._db.execute('PRAGMA table_info(messages)')}:
                 owner._db.execute('ALTER TABLE messages ADD COLUMN sender TEXT')
             owner._db.execute("UPDATE messages SET sender=json_extract(payload,'$.sender') WHERE sender IS NULL AND payload!='null'")
@@ -111,14 +122,18 @@ class RetentionStore:
                 raise ValueError('Archived payload is not a message')
             return result
 
-    def _provider_refs(self, row):
-        return [row['slack_ts'], *(item[0] for item in self.owner._db.execute(
-            'SELECT provider_ref FROM local_delivery_observations WHERE channel=? AND local_cursor=?',
-            (row['channel'], row['cursor'])))]
-
     def _eligible(self, channel, current, *, purge=False):
         # Legacy and federated custody stay pinned; no remote expiry is inferred.
         field = 'purge_after' if purge else 'archive_after'
+        provider_guard = ''
+        parameters = [channel, current, current]
+        if purge:
+            cutoff = str(max(0, current-self.owner.lifecycle.policy.retention_seconds))
+            parameters.extend((cutoff, cutoff))
+            provider_guard = """AND agentbus_provider_ref_covered_v1(m.slack_ts,?)=1
+                AND NOT EXISTS (SELECT 1 FROM local_delivery_observations observed
+                    WHERE observed.channel=m.channel AND observed.local_cursor=m.cursor
+                    AND agentbus_provider_ref_covered_v1(observed.provider_ref,?)=0)"""
         rows = self.owner._db.execute(f'''SELECT m.* FROM messages m
             JOIN lifecycle_payloads p ON p.cursor=m.cursor
             WHERE m.channel=? AND p.legacy_unknown=0 AND p.{field}<=?
@@ -135,11 +150,8 @@ class RetentionStore:
                 AND child.cursor!=m.cursor AND (child.thread_ts=m.slack_ts OR child.thread_ts IN
                     (SELECT provider_ref FROM local_delivery_observations o WHERE o.channel=m.channel AND o.local_cursor=m.cursor)))
             AND m.payload {'=' if purge else '!='} 'null'
-            ORDER BY m.cursor LIMIT 100''', (channel, current, current)).fetchall()
-        if purge:
-            cutoff = Decimal(str(max(0, current-self.owner.lifecycle.policy.retention_seconds)))
-            rows = [row for row in rows if all(Decimal(ref) <= cutoff for ref in self._provider_refs(row)
-                    if re.fullmatch(r'[0-9]{1,20}\.[0-9]{1,20}', ref))]
+            {provider_guard}
+            ORDER BY m.cursor LIMIT 100''', parameters).fetchall()
         return rows
 
     def archive(self, channel, *, actor, request_key=None, apply=False, instant=None):
@@ -223,9 +235,11 @@ class RetentionStore:
                                                       (channel, row['cursor'])).fetchone()
                     if position is None:
                         raise ValueError('Retirement requires its original channel-local position')
-                    refs = self._provider_refs(row)
+                    refs = [row['slack_ts'], *(item[0] for item in self.owner._db.execute(
+                        'SELECT provider_ref FROM local_delivery_observations WHERE channel=? AND local_cursor=?',
+                        (channel, row['cursor'])))]
                     floor = max([Decimal('0'), *(min(Decimal(ref), Decimal(str(max(0, current-lifecycle.policy.retention_seconds))))
-                        for ref in refs if re.fullmatch(r'[0-9]{1,20}\.[0-9]{1,20}', ref))])
+                        for ref in refs if re.fullmatch(PROVIDER_TIMESTAMP, ref))])
                     old = self.owner._db.execute('SELECT provider_floor FROM lifecycle_ingress WHERE channel=?', (channel,)).fetchone()
                     floor = max(floor, Decimal(old[0]) if old else Decimal('0'))
                     self.owner._db.execute('INSERT OR REPLACE INTO lifecycle_ingress VALUES (?,?)', (channel, str(floor)))
@@ -248,5 +262,5 @@ class RetentionStore:
             row = self.owner._db.execute('SELECT provider_floor FROM lifecycle_ingress WHERE channel=?', (channel,)).fetchone()
             if row is None:
                 return True
-            return bool(isinstance(timestamp, str) and re.fullmatch(r'[0-9]{1,20}\.[0-9]{1,20}', timestamp)
+            return bool(isinstance(timestamp, str) and re.fullmatch(PROVIDER_TIMESTAMP, timestamp)
                         and Decimal(timestamp) > Decimal(row[0]))

@@ -1013,3 +1013,33 @@ def test_provider_alias_and_purge_serialize_without_reallocating_custody(lifecyc
     assert store.local_delivery.capacity()['retained_requests'] == (1 if outcome[0] == 'stored' else 0)
     assert store.channels.high_water('C111') == 1
     assert store._db.execute('PRAGMA foreign_key_check').fetchall() == []
+
+
+def test_recent_aliases_do_not_hide_later_reclaimable_rows(lifecycle):
+    store, p = lifecycle
+    body = SendMessage(sender=p['sender'].route, recipient=p['recipient'].route,
+                       text='bounded purge progress', kind='request')
+    body._sender_assurance = 'session'
+    for index in range(100):
+        store.append('C111', f'110.{index:06d}', body)
+    last = store.append('C111', '105.500001', body)
+    store.lifecycle.settle(111)
+    store.retention.archive('C111', actor='operator', request_key='scan-archive-1', apply=True, instant=200)
+    store.retention.archive('C111', actor='operator', request_key='scan-archive-2', apply=True, instant=200)
+    result = store.retention.purge('C111', actor='operator', request_key='scan-purge', apply=True, instant=226)
+    assert result['eligible'] == 1, 'First 100 pinned rows hide a later reclaimable row'
+    assert store.channels.high_water('C111') == 101
+    assert store.retention.accepts_ingress('C111', '110.000000')
+    assert not store.retention.accepts_ingress('C111', '105.500001')
+    assert store.message('C111', last.cursor) is None
+    assert store._db.execute('SELECT count(*) FROM messages').fetchone()[0] == 100
+
+
+def test_provider_retirement_SQL_comparison_keeps_subfloat_precision(lifecycle):
+    store, _ = lifecycle
+    cutoff = '1700000000.0'
+    for reference, covered in [('1700000000.00000000000000000001', 0),
+                               ('1700000000.00000000000000000000', 1),
+                               ('1699999999.99999999999999999999', 1)]:
+        assert store._db.execute('SELECT agentbus_provider_ref_covered_v1(?,?)',
+                                 (reference, cutoff)).fetchone()[0] == covered
