@@ -5,8 +5,10 @@ from __future__ import annotations
 import hmac
 from typing import Annotated, Literal
 
-from fastapi import Header, HTTPException, Request
+from fastapi import Header, HTTPException, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from src.agentbus_send_rate_service import SendRateExceeded
 
 UPGRADE_NOTICE = (
     "Your AgentBus client does not advertise participation-v1. Update it from "
@@ -38,6 +40,8 @@ class EnrollSession(BaseModel):
     session_secret: str = Field(min_length=32, max_length=512, repr=False)
     handoff_token: str | None = Field(default=None, min_length=32, max_length=512, repr=False)
     enrollment_token: str | None = Field(default=None, min_length=32, max_length=512, repr=False)
+    approval_request_id: str | None = Field(default=None, min_length=36, max_length=36)
+    profile_chat_id: str | None = Field(default=None, min_length=36, max_length=36)
 
 
 class IssueEnrollmentGrant(BaseModel):
@@ -201,17 +205,31 @@ def api_session_policy_explain(request: Request, session_id: str) -> dict:
             "sources": policy.sources, "presence": presence}
 
 
-def api_session_enroll(request: Request, body: EnrollSession) -> dict:
+def api_session_enroll(request: Request, body: EnrollSession, response: Response) -> dict:
     try:
-        if body.enrollment_token and body.handoff_token:
-            raise PermissionError("Choose one enrollment grant")
-        chat_id, session_id, revision = request.app.state.store.channels.enroll(
-            body.enrollment_token or body.handoff_token,
-            repo=body.repo, route=body.route, display_name=body.display_name,
-            session_secret=body.session_secret,
-        )
+        if body.approval_request_id is not None:
+            if body.enrollment_token or body.handoff_token or body.profile_chat_id is None:
+                raise PermissionError("Choose one enrollment authorization")
+            result = request.app.state.store.channels.request_enrollment(
+                request_id=body.approval_request_id, chat_id=body.profile_chat_id,
+                repo=body.repo, route=body.route, display_name=body.display_name, session_secret=body.session_secret)
+            if result is None:
+                response.status_code = 202
+                return {"status": "approval_required", "request_id": body.approval_request_id}
+            chat_id, session_id, revision = result
+        else:
+            if body.profile_chat_id is not None or (body.enrollment_token and body.handoff_token):
+                raise PermissionError("Choose one enrollment authorization")
+            chat_id, session_id, revision = request.app.state.store.channels.enroll(
+                body.enrollment_token or body.handoff_token,
+                repo=body.repo, route=body.route, display_name=body.display_name,
+                session_secret=body.session_secret,
+            )
+    except SendRateExceeded as exc:
+        raise HTTPException(429, "Enrollment request rate exceeded", headers={"Retry-After": str(exc.retry_after)}) from None
     except PermissionError:
-        raise HTTPException(403, "Matching enrollment grant required") from None
+        raise HTTPException(403, "Matching enrollment approval required; expired requests need a new approval"
+                            if body.approval_request_id else "Matching enrollment grant required") from None
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from None
     policy = request.app.state.store.participation.effective_policy(body.repo, chat_id)

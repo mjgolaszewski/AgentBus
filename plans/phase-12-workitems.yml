@@ -129,3 +129,14 @@ workitems:
   acceptance_evidence:
   - contract-test
   - test
+
+- id: P12-P1-10
+  priority: P1
+  status: IN_PROGRESS
+  summary: deliver File-free Slack enrollment approval with immutable staged proof and canonical grant custody
+  acceptance:
+  - Pending requests confer no session or message authority; only the existing Slack human operator allowlist can bind the invoking channel
+  - Exact private staged secret request UUID route repository and profile UUID recover one canonical enrollment across lost responses concurrent redemption and restart
+  - Expiry capacity altered proof cross-channel replay stopped or rotated credentials and partial persistence fail closed; legacy file grants remain supported
+  - Final protected subject archive isolated install and bounded live approval flow precede publication or deployment claims
+  acceptance_evidence: [contract-test, test]

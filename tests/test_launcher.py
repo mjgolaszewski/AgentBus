@@ -855,3 +855,81 @@ def test_auxiliary_control_ack_does_not_stop_client_polling(launcher, tmp_path, 
     assert launcher.main(["ack-control", "--identity", identity, "poll-1", "--answer", "review pending"]) == 0
     assert payloads[-1] == {"report": None, "answer": "review pending"}
     assert json.loads(path.read_text())["participation"].get("stopped") is None
+
+
+def test_join_requests_slack_approval_and_recovers_without_credential_file(launcher, tmp_path, monkeypatch, capsys):
+    from src import agentbus_codex_wake_client as wake
+    from src import agentbus_enrollment_client as enrollment
+    state = tmp_path / 'profiles'
+    state.mkdir()
+    identity = 'agentbus:approval'
+    chat_id = 'f149a35a-7467-49a7-b14e-f542e691379f'
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(state), 'AGENTBUS_URL': 'http://127.0.0.1:8766'}
+    profile = {'schema_version': 2, 'identity': identity, 'chat_id': chat_id,
+               'repo': 'agentbus', 'display_name': 'Approval', 'inbox_id': None, 'channel': None,
+               'service_url': values['AGENTBUS_URL'], 'ack_cursor': 0, 'observed_cursor': 0}
+    path = state / f'{identity}.json'
+    path.write_text(json.dumps(profile))
+    monkeypatch.setattr(launcher, 'configuration', lambda **kwargs: (Path('/unused'), values))
+    attempts = []
+    def fake_api(_values, route, body=None, **_kwargs):
+        assert route == '/v1/sessions', 'no pre-enrollment information read'
+        attempts.append(dict(body))
+        if len(attempts) in {1, 3}:
+            return {'status': 'approval_required', 'request_id': body['approval_request_id']}
+        if len(attempts) == 2:
+            raise launcher.ClientError('transport uncertain')
+        return {'chat_id': chat_id, 'session_id': 'session-1', 'revision': 'revision-1',
+                'channel': 'C222', 'inbox_id': 'inbox-2', 'high_water_cursor': 0,
+                'values': {'initial_interval_seconds': 60, 'backoff_factor': 2, 'max_interval_seconds': 1920},
+                'sources': {}, 'ack_required': True}
+    monkeypatch.setattr(launcher, 'api', fake_api)
+    sleeps = []
+    monkeypatch.setattr(enrollment.time, 'sleep', sleeps.append)
+    bindings = []
+    monkeypatch.setattr(wake, 'enroll_current', lambda *_: bindings.append(True) or {'status': 'workspace_disabled'})
+    assert launcher.main(['join', '--identity', identity]) == 0
+    pending = json.loads(path.read_text())['participation_pending']
+    output = capsys.readouterr().out
+    assert '/agentbus approve ' + pending['approval_request_id'] in output
+    assert pending['session_secret'] not in output
+    assert 'participation' not in json.loads(path.read_text()) and bindings == []
+    assert launcher.main(['join', '--identity', identity]) == 1
+    assert launcher.main(['join', '--identity', identity, '--wait-for-approval']) == 0
+    assert attempts[0] == attempts[1] == attempts[2] == attempts[3]
+    assert sleeps == [2.0]
+    assert attempts[0]['profile_chat_id'] == chat_id and 'enrollment_token' not in attempts[0]
+    committed = json.loads(path.read_text())
+    assert committed['channel'] == 'C222' and committed['participation']['session_secret'] == pending['session_secret']
+    assert 'participation_pending' not in committed and bindings == [True]
+
+
+def test_new_approval_request_preserves_old_private_stage_and_denies_service_switch(launcher, tmp_path, monkeypatch, capsys):
+    state = tmp_path / 'profiles'
+    state.mkdir()
+    identity = 'agentbus:approval'
+    request_id = 'c56fbb77-adc6-47fb-8c15-c8af21a9269b'
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(state), 'AGENTBUS_URL': 'http://127.0.0.1:8766'}
+    old = {'session_secret': 'expired-secret-'.ljust(40, 'x'), 'approval_request_id': request_id,
+           'service_url': values['AGENTBUS_URL']}
+    profile = {'schema_version': 2, 'identity': identity, 'chat_id': 'f149a35a-7467-49a7-b14e-f542e691379f',
+               'repo': 'agentbus', 'display_name': 'Approval', 'inbox_id': None, 'channel': None,
+               'service_url': values['AGENTBUS_URL'], 'participation_pending': old}
+    path = state / f'{identity}.json'
+    path.write_text(json.dumps(profile))
+    monkeypatch.setattr(launcher, 'configuration', lambda **kwargs: (Path('/unused'), values))
+    attempts = []
+    def fake_api(_values, route, body=None, **_kwargs):
+        attempts.append(dict(body))
+        return {'status': 'approval_required', 'request_id': body['approval_request_id']}
+    monkeypatch.setattr(launcher, 'api', fake_api)
+    assert launcher.main(['join', '--identity', identity, '--new-enrollment-request']) == 0
+    pending = json.loads(path.read_text())['participation_pending']
+    archive = state / '.enrollment-recovery' / f'{identity}-{request_id}.json'
+    assert json.loads(archive.read_text()) == old
+    assert archive.stat().st_mode & 0o777 == 0o600
+    assert pending['approval_request_id'] != request_id and pending['session_secret'] != old['session_secret']
+    assert old['session_secret'] not in capsys.readouterr().out
+    values['AGENTBUS_URL'] = 'http://different-service:8766'
+    assert launcher.main(['join', '--identity', identity]) == 1
+    assert len(attempts) == 1 and json.loads(path.read_text())['participation_pending'] == pending

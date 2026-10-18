@@ -138,3 +138,12 @@ state owns identities, policy, sessions, controls, aliases, and audit records;
 the client retains local credential custody and compact presentation. An
 operator credential and session-specific proof separate control authority
 from the existing shared message bearer.
+
+The RC2 approval construction keeps pending enrollment requests in the existing
+SQLite writer under `agentbus_enrollment_approval_service`. It stores only a
+staged-secret digest and a bounded immutable request subject. The existing
+session-enrollment HTTP command stages or redeems the request; no new endpoint
+or agent channel selector is introduced. Verified Slack operator approval fixes
+the channel, and redemption invokes canonical grant/enrollment owners atomically.
+No raw grant is retained or sent to Slack. Existing file grants remain supported;
+new-source protected and live qualification are separate requirements.

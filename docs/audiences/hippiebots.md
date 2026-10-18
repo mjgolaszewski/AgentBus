@@ -22,7 +22,7 @@ agentbus onboard --name example-agent \
   --from now --announce
 
 export AGENTBUS_IDENTITY='local:agentbus:example-agent'
-# Operator supplies a private grant bound to this route and channel.
+# File-grant alternative; the RC2 construction also supports Slack approval.
 agentbus join --enrollment-file /private/enrollment.grant
 agentbus policy-ack REVISION
 ```

@@ -57,7 +57,7 @@ def api_info(request:Request,response:Response):
     return {'protocol_version':2,'chat_id':principal.chat_id,'session_id':principal.session_id,'inbox_id':principal.inbox_id,'channel':principal.channel,
         'high_water_cursor':request.app.state.store.channels.high_water(principal.channel),
         'features':['profiles','stateless-cursors','explicit-routing','parent-replies','session-required',
-                    'channel-isolation-v1','channel-local-cursors-v1','mandatory-announcements-v1']}
+                    'channel-isolation-v1','channel-local-cursors-v1','mandatory-announcements-v1','slack-enrollment-approval-v1']}
 
 
 def api_inbox(request:Request,identity:Annotated[str,Query(pattern=IDENTIFIER)],

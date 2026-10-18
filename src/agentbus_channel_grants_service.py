@@ -12,23 +12,31 @@ from src.agentbus_message_assurance_service import route_parts
 from src.agentbus_transaction_service import atomic
 
 
-def issue_grant(channels, *, channel, repo, route, actor, chat_id=None):
-    parts=route_parts(route)
-    if channel not in channels.enabled or parts is None or parts[1]!=repo or not actor:
+def validate_subject(channels, *, channel, repo, route, chat_id=None):
+    """One owner validates both file grants and human approval subjects."""
+    parts = route_parts(route)
+    if channel not in channels.enabled or parts is None or parts[1] != repo:
         raise ValueError('Invalid enrollment grant scope')
-    if chat_id is not None and str(uuid.UUID(chat_id))!=chat_id:
+    if chat_id is not None and str(uuid.UUID(chat_id)) != chat_id:
         raise ValueError('Invalid profile UUID')
-    store=channels.owner
-    token=secrets.token_urlsafe(32)
+    store = channels.owner
+    if store._db.execute('SELECT 1 FROM chat_identities WHERE current_route=? OR chat_id=?', (route, chat_id)).fetchone() or store._db.execute(
+            'SELECT 1 FROM routing_aliases WHERE route=?', (route,)).fetchone():
+        raise ValueError('Enrollment identity already reserved')
+
+
+def issue_grant(channels, *, channel, repo, route, actor, chat_id=None):
+    if not actor:
+        raise ValueError('Invalid enrollment grant scope')
+    store = channels.owner
+    token = secrets.token_urlsafe(32)
     with store._lock, atomic(store._db):
-        if store._db.execute('SELECT 1 FROM chat_identities WHERE current_route=? OR chat_id=?', (route,chat_id)).fetchone() or store._db.execute(
-                'SELECT 1 FROM routing_aliases WHERE route=?', (route,)).fetchone():
-            raise ValueError('Enrollment identity already reserved')
+        validate_subject(channels, channel=channel, repo=repo, route=route, chat_id=chat_id)
         store._db.execute('DELETE FROM channel_enrollment_grants WHERE consumed_session IS NULL AND expires_at<?', (time.time(),))
-        if store._db.execute('SELECT count(*) FROM channel_enrollment_grants').fetchone()[0]>=8192:
+        if store._db.execute('SELECT count(*) FROM channel_enrollment_grants').fetchone()[0] >= 8192:
             raise ValueError('Enrollment grant capacity exhausted')
         store._db.execute('INSERT INTO channel_enrollment_grants VALUES (?,?,?,?,?,?,?,NULL,NULL)',
-            (hashlib.sha256(token.encode()).hexdigest(),channel,repo,route,chat_id,time.time()+600,actor))
+            (hashlib.sha256(token.encode()).hexdigest(), channel, repo, route, chat_id, time.time()+600, actor))
     return token
 
 

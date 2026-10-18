@@ -19,6 +19,7 @@ MODULES = {
     "src/agentbus_transaction_service.py": ("service", "service"),
     "src/agentbus_channel_migration_client.py": ("client", "client"),
     "src/agentbus_enrollment_client.py": ("client", "client"),
+    "src/agentbus_enrollment_approval_service.py": ("service", "service"),
     "src/agentbus_scope_client.py": ("client", "client"),
     "src/agentbus_delivery_client.py": ("client", "client"),
     "src/agentbus_client.py": ("client", "client"),
