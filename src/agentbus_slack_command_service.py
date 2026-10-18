@@ -9,9 +9,27 @@ from src.agentbus_send_rate_service import SendRateExceeded
 
 SESSION_ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 SUFFIX = re.compile(r"[0-9a-f]{6,12}")
-HELP = ("/agentbus help | health | enrollments | approve REQUEST_UUID | roster | broadcast TEXT | poll QUESTION | results CONTROL_UUID | status ID | metrics ID | send ID MESSAGE | wake ID MESSAGE | "
-        "checkpoint ID | pause ID | resume ID | retire ID CONFIRM. "
-        "ID is a unique current identity fragment, last 6–12 hex characters, or full session UUID.")
+HELP = "\n".join([
+    "*🧭 AgentBus operator help*",
+    "*Inspect*\n`/agentbus health` — private dashboard\n`/agentbus roster` — this channel's agents",
+    "`/agentbus status ID` · `/agentbus metrics ID`",
+    "*Enroll*\n`/agentbus enrollments` — pending requests\n`/agentbus approve REQUEST_UUID` — approve in this channel",
+    "*Message*\n`/agentbus send ID MESSAGE`\n`/agentbus wake ID MESSAGE` — request attention; host admission is separate",
+    "*Ask everyone in this channel*\n`/agentbus broadcast TEXT` — read acknowledgement required\n"
+    "`/agentbus poll QUESTION` — answer required\n`/agentbus results CONTROL_UUID` — receipts and answers",
+    "*Control*\n`/agentbus checkpoint ID`\n`/agentbus pause ID` · `/agentbus resume ID`\n"
+    "`/agentbus retire ID CONFIRM` — irreversible stop",
+    "*Targets:* ID is a unique current identity fragment, last 6–12 hex characters, or full session UUID. "
+    "Ambiguous matches require the full UUID. Commands cannot target another channel.",
+    "`/agentbus help` — show this guide",
+    "*Lifecycle*\n`/agentbus lifecycle` — this channel's recipient outcomes\n"
+    "`/agentbus lifecycle settle` — preview due transitions\n"
+    "`/agentbus lifecycle settle CONFIRM` — apply with a durable receipt",
+    "`/agentbus lifecycle archive` · `/agentbus lifecycle purge` — preview eligible history\n"
+    "Append `CONFIRM` to apply a bounded batch. Purge permanently retires eligible history.",
+    "*Storage*\n`/agentbus storage` — service-wide footprint\n"
+    "`/agentbus storage checkpoint CONFIRM` — nonblocking service-wide WAL maintenance; no custody deletion",
+])
 
 
 def resolve_session(store, reference: str, channel: str | None = None) -> str:
@@ -58,6 +76,55 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
     if not parts or parts[0] == "help":
         return HELP
     action = parts[0]
+    if action == 'storage':
+        if len(parts) == 3 and parts[1:] == ['checkpoint','CONFIRM']:
+            import sqlite3
+            try:
+                result = store.retention.checkpoint()
+            except (sqlite3.Error, OSError, ValueError):
+                return 'WAL maintenance unavailable or deferred; custody is retained. Inspect operator diagnostics before retrying.'
+            return (f"*🧹 Service-wide WAL maintenance:* {result['status']}\n"
+                    f"Physical allocation `{result['physical_bytes']}` bytes · reusable pages `{result['reusable_bytes']}` bytes\n"
+                    'No message, receipt, retry identity or credential rows were deleted. This is not an ACK or a vacuum.')
+        if len(parts) != 1 and parts[1:] != ['checkpoint']:
+            return 'Use `/agentbus storage` to inspect; `/agentbus storage checkpoint CONFIRM` applies service-wide WAL maintenance.'
+        storage = store.retention.storage()
+        return (f"*💾 Service-wide storage*\nPhysical allocation `{storage['physical_bytes']}` bytes\n"
+                f"Reusable database pages `{storage['reusable_bytes']}` bytes\n"
+                'Checkpoint maintenance is service-wide, nonblocking and preserves custody. '
+                'Use `/agentbus storage checkpoint CONFIRM` to apply; no generic cache flush is available.')
+    if action == "lifecycle":
+        from src.agentbus_message_lifecycle_service import LifecycleRejected
+        if len(parts) == 1:
+            status = store.lifecycle.status(channel)
+            if not status['enabled']:
+                return 'Recipient lifecycle is not enabled; upgrade and offline migration are required.'
+            states = status['recipients']
+            return '*📬 Recipient lifecycle*\n' + '\n'.join(
+                f"{state}: `{states.get(state, 0)}`" for state in
+                ('unclaimed', 'picked_up', 'handled', 'expired_unclaimed', 'recovery_required'))
+        if parts[1] not in {'settle','archive','purge'} or (len(parts) == 3 and parts[2] != 'CONFIRM'):
+            return 'Use `/agentbus lifecycle settle|archive|purge` to preview; append `CONFIRM` to apply.'
+        try:
+            operation = store.lifecycle.reconcile if parts[1] == 'settle' else getattr(store.retention, parts[1])
+            result = operation(channel, actor=f'slack:{user}',
+                request_key=payload.get('trigger_id'), apply=len(parts) == 3)
+        except LifecycleRejected as exc:
+            return str(exc)
+        if parts[1] != 'settle':
+            return (f"*{'Applied' if result['applied'] else 'Preview'} · {parts[1]} · this channel only*\n"
+                    f"Eligible payloads: `{result['eligible']}` · batch limit `{result['batch_limit']}`\n"
+                    'Open, uncertain, legacy-unknown and referenced custody stays pinned. No acknowledgement is inferred.')
+        return (f"*{'Applied' if result['applied'] else 'Preview'} · this channel only*\n"
+                f"Unclaimed → expired: `{result['expired_unclaimed']}`\n"
+                f"Picked up → recovery required: `{result['recovery_required']}`\n"
+                f"Broadcast / poll unread → expired: `{result['expired_unread']}`\n"
+                'No messages are resent, deleted or acknowledged.')
+    if action == "mah" and len(parts) == 1:
+        return ("*🌿 MAH!*\n"
+                "🚌 Next stop: the Department of Extremely Important Doorbells.\n"
+                "Your imaginary ticket has been punched. Your actual queues have not.\n"
+                "Please keep all hands, feet, and writer locks inside the bus.")
     if action == "health" and len(parts) == 1:
         from src.agentbus_presentation_service import health_text
         from src.agentbus_status_api_service import service_dashboard
@@ -68,7 +135,8 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
             return "No pending enrollment requests."
         return "Showing up to 20 oldest pending requests; approved requests await join.\n" + "\n".join(
             f"{row['request_id']} | {row['route']} | {row['display_name']} | profile {row['chat_id']} | "
-            f"{'approved in ' + row['approved_channel'] if row['approved_channel'] else 'awaiting approval'}"
+            f"{'approved in ' + row['approved_channel'] if row['approved_channel'] else 'awaiting approval'}\n"
+            f"`/agentbus approve {row['request_id']}`"
             for row in rows)
     if action == "approve" and len(parts) == 2:
         if not SESSION_ID.fullmatch(parts[1]):
@@ -87,7 +155,7 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
         completed = sum(row["state"] == "effective" for row in rows)
         lines = [f"{parts[1]}: {completed}/{len(rows)} acknowledged."]
         for row in rows[:8]:
-            lines.append(f"{row['session_id']} | {row['state']}" +
+            lines.append(f"{row['session_id']} | {row.get('lifecycle_state', row['state'])}" +
                          (f" | {row['answer']}" if row['answer'] is not None else ""))
         if len(rows) > 8:
             lines.append(f"{len(rows) - 8} further receipts; use operator control-status for the full report.")
@@ -112,11 +180,12 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
         if not sessions:
             return "No joined sessions."
         all_ids = [item["session_id"] for item in sessions]
-        return "\n".join(
-            f"{item['route']} | {short_session(item['session_id'], all_ids)} | {item['state']} | "
-            f"work {'paused' if item['work_paused'] else 'active'}"
+        return f"*👥 Channel roster* · `{len(sessions)}` sessions\n\n" + "\n\n".join(
+            f"*{item['route']}* · `{short_session(item['session_id'], all_ids)}`\n"
+            f"{'⚪' if item['state'] == 'stopped' else '🟡' if item['work_paused'] else '🔵'} "
+            f"Participation: `{item['state']}` · work {'paused' if item['work_paused'] else 'active'}"
             for item in sessions[:50]
-        ) + (f"\n… {len(sessions) - 50} more" if len(sessions) > 50 else "")
+        ) + (f"\n… `{len(sessions) - 50}` more" if len(sessions) > 50 else "") + "\nHost wake availability is separate from participation."
     if len(parts) < 2:
         return HELP
     try:
@@ -200,6 +269,7 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
             message = SendMessage(sender=f"slack:{user}", recipient=presence["route"],
                                   audience="direct", kind="request", text=parts[2])
             message._sender_assurance = "slack-human"
+            store.retention.reserve_storage(len(message.model_dump_json().encode('utf-8')))
             store.send_rate.reserve(f"slack:{user}")
         except (ValueError, SendRateExceeded) as exc:
             return str(exc)

@@ -11,6 +11,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = yaml.safe_load((ROOT / "architecture-boundaries.yml").read_text())["architecture"]
 MODULES = {
+    "src/agentbus_announcement_lifecycle_service.py": ("service", "service"),
     "src/agentbus_channel_api_service.py": ("service", "service"),
     "src/agentbus_channel_grants_service.py": ("service", "service"),
     "src/agentbus_channel_ingress_service.py": ("service", "service"),
@@ -20,6 +21,11 @@ MODULES = {
     "src/agentbus_channel_migration_client.py": ("client", "client"),
     "src/agentbus_enrollment_client.py": ("client", "client"),
     "src/agentbus_enrollment_approval_service.py": ("service", "service"),
+    "src/agentbus_message_lifecycle_service.py": ("service", "service"),
+    "src/agentbus_lifecycle_migration_service.py": ("service", "service"),
+    "src/agentbus_lifecycle_client.py": ("client", "client"),
+    "src/agentbus_lifecycle_api_service.py": ("service", "service"),
+    "src/agentbus_retention_service.py": ("service", "service"),
     "src/agentbus_scope_client.py": ("client", "client"),
     "src/agentbus_delivery_client.py": ("client", "client"),
     "src/agentbus_client.py": ("client", "client"),

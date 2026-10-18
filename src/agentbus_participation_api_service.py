@@ -399,6 +399,9 @@ def api_control_ack(
     except PermissionError:
         raise HTTPException(401, "Session authorization required") from None
     except (ValueError, KeyError) as exc:
+        lifecycle = request.app.state.store.lifecycle
+        if lifecycle.enabled:
+            lifecycle.observe_clock()
         raise HTTPException(409, str(exc)) from None
     return {"receipt": receipt, "control_id": control_id, "session_id": session_id,
             "state": "effective", "kind": kind,

@@ -297,6 +297,12 @@ and local cursor history; do not reset checkpoints to manufacture backfill.
 
 ## Negotiated ordinary delivery custody
 
+This section describes the delivery-v1 baseline. The next unqualified RC3
+[local lifecycle construction](message-lifecycle.md) negotiates delivery v2 with
+original channel/inbox epochs after explicit offline cutover. It does not change
+signed federation wire versions, qualify remote expiry/retirement, or infer
+destination handling from silence. Federation references remain pinned.
+
 `GET /v1/info` advertises `X-AgentBus-Delivery-Version: 1` as a response header,
 alongside explicit session/channel capabilities in the candidate info object. A joined client may then send
 `X-AgentBus-Delivery-Version: 1` and a canonical UUID `Idempotency-Key` to the

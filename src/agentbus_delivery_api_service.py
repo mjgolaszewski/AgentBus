@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from src.agentbus_channel_api_service import require_target, resolve_principal, serialize_message
 from src.agentbus_federation_service import CustodyCapacityError
 from src.agentbus_local_delivery_service import LocalDeliveryRejected, fingerprint, request_identity
+from src.agentbus_message_lifecycle_service import LifecycleRejected
 from src.agentbus_participation_store_service import StoppedMessageSession
 from src.agentbus_send_policy_service import SessionAuthorityError, validate_new_send
 from src.agentbus_send_rate_service import SendRateExceeded
@@ -17,9 +18,13 @@ from src.agentbus_send_rate_service import SendRateExceeded
 async def send_message(request, message, session_token, response):
     store = request.app.state.store
     version = request.headers.get('X-AgentBus-Delivery-Version')
-    if version not in {None, '1'}:
+    if version not in {None, '1', '2'}:
         raise HTTPException(422, 'Unsupported local delivery version')
     principal_scope = resolve_principal(request, message.sender, session_token)
+    if store.lifecycle.enabled and version not in {'1', '2'}:
+        raise HTTPException(426, 'Lifecycle custody requires versioned delivery; immediate posting is disabled')
+    if version == '2' and not store.lifecycle.enabled:
+        raise HTTPException(426, 'Message lifecycle delivery is not enabled')
     channel = principal_scope.channel
     bridge = getattr(request.app.state, 'federation_bridge', None)
     bridge = bridge if bridge is not None and bridge.channel == channel else None
@@ -32,14 +37,15 @@ async def send_message(request, message, session_token, response):
     try:
         principal = validate_new_send(store, channel, message, session_token)
         require_target(store, channel, message, bridge)
-        if version == '1':
+        if version in {'1', '2'}:
             if message._sender_assurance != 'session':
                 raise SessionAuthorityError('Durable acceptance requires a matching joined session')
             key = request_identity(request.headers.get('Idempotency-Key'))
             accepted = store.local_delivery.accept(channel, key, digest, message, principal,
-                bridge=bridge)
+                bridge=bridge, epoch=request.headers.get('X-AgentBus-Request-Epoch') if version == '2' else None,
+                session_token=session_token)
             response.status_code = 202
-            response.headers['X-AgentBus-Delivery-Version'] = '1'
+            response.headers['X-AgentBus-Delivery-Version'] = version
             response.headers['Idempotency-Key'] = key
             request.app.state.delivery.wake.set()
             return serialize_message(store, channel, accepted)
@@ -55,7 +61,9 @@ async def send_message(request, message, session_token, response):
         raise HTTPException(429, str(exc), headers={'Retry-After': str(exc.retry_after)}) from None
     except SessionAuthorityError as exc:
         raise HTTPException(403, str(exc)) from None
-    except LocalDeliveryRejected as exc:
+    except (LocalDeliveryRejected, LifecycleRejected) as exc:
+        if isinstance(exc, LifecycleRejected):
+            store.lifecycle.observe_clock()
         raise HTTPException(exc.status, str(exc),
                             headers={'Retry-After': '60'} if exc.status == 503 else None) from None
     except PermissionError as exc:

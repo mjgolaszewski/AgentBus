@@ -105,6 +105,14 @@ async def run_delivery(worker, bridge=None, *, connect=None):
     while True:
         worker.wake.clear()
         try:
+            if worker.store.lifecycle.enabled:
+                worker.store.lifecycle.rotate_epochs()
+                channels = [item.channel for item in worker.workers] if hasattr(worker, 'workers') else [worker.channel]
+                for channel in channels:
+                    worker.store.lifecycle.settle(channel=channel)
+                storage = worker.store.retention.storage()
+                if storage['accounted_bytes'] * 5 >= storage['limit_bytes'] * 4:
+                    worker.store.retention.checkpoint()
             if connect is not None:
                 try:
                     bridge = await connect()
@@ -129,6 +137,7 @@ async def run_delivery(worker, bridge=None, *, connect=None):
 class DeliveryCoordinator:
     """One bounded loop rotates channel-bound workers; one bridge cycles once."""
     def __init__(self,store,posters):
+        self.store=store
         self.workers=[LocalDeliveryWorker(store,poster,channel) for channel,poster in posters.items()]
         self.wake=asyncio.Event()
         self.offset=0

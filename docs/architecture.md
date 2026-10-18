@@ -79,6 +79,7 @@ one surface while remaining absent from the other inventory.
 | Optional Codex wake | Local binding, worker projection, and host-owned resume adapter |
 | Slack delivery | `SlackPoster`, `SlackReceiver`, and `normalize_event` |
 | Lifecycle and configuration | `Settings`, CLI configuration, and lifecycle operations |
+| RC3 message lifecycle (unqualified construction) | `MessageLifecycleStore`, `AnnouncementLifecycle`, receipt API/client, `RetentionStore` and offline lifecycle migration; existing SQLite writer only |
 
 Protocol translations are explicit at Slack ingestion. Startup authenticates
 the configured bot token with Slack and binds routed protocol 1 and 2 envelopes

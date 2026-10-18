@@ -75,6 +75,8 @@ async def delivery_lifespan(app, settings, http_client, socket_factory):
     try:
         check_startup(settings.db_path)
         store = MessageStore(settings.db_path)
+        if store.lifecycle.enabled and settings.local_delivery_version != 1:
+            raise ValueError('Lifecycle migrated storage requires AGENTBUS_LOCAL_DELIVERY_VERSION=1')
         store.local_delivery.configure(settings.local_delivery_outstanding_limit,
                                        settings.local_delivery_retained_limit,
                                        settings.local_delivery_observation_limit)

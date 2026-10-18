@@ -47,6 +47,140 @@ def test_immediate_transport_retains_session_scope_and_rejects_unnegotiated_dura
     assert len(calls) == 1
 
 
+def test_lifecycle_send_stages_before_network_and_reuses_original_epoch(tmp_path):
+    import json
+
+    from src.agentbus_delivery_client import send_command
+    values = {'_AGENTBUS_DELIVERY_VERSION':'2', 'AGENTBUS_STATE_DIR':str(tmp_path),
+              'AGENTBUS_URL':'http://localhost:8766'}
+    profile = {'repo':'agentbus', 'inbox_id':'inbox-one', 'channel':'C111', 'chat_id':'chat-one',
+               'service_url':values['AGENTBUS_URL'],
+               'participation':{'session_id':'session-one', 'session_secret':'private-session'}}
+    info = {'features':['message-lifecycle-v1'], 'lifecycle':{'version':1, 'request_epoch':'a' * 64}}
+    calls = []
+    def post(_values, path, payload, **kwargs):
+        files = list((tmp_path / 'send-requests').glob('*.json'))
+        assert len(files) == 1
+        staged = json.loads(files[0].read_text())
+        assert staged['epoch'] == kwargs['delivery_epoch']
+        assert staged['payload'] == payload
+        assert 'private-session' not in files[0].read_text()
+        calls.append(kwargs)
+        raise ClientError('lost response')
+    ns = parse_args(['send', '--identity','agentbus:flower','--to','agentbus:other','hello'])
+    with pytest.raises(ClientError, match='--message-id'):
+        send_command(ns, values, lambda *_:(profile,info), lambda value:value, post)
+    key = calls[0]['delivery_key']
+    info['lifecycle']['request_epoch'] = 'b' * 64
+    ns = parse_args(['send','--identity','agentbus:flower','--to','agentbus:other','--message-id',key,'hello'])
+    with pytest.raises(ClientError):
+        send_command(ns, values, lambda *_:(profile,info), lambda value:value, post)
+    assert calls[0] == calls[1] and calls[1]['delivery_epoch'] == 'a' * 64
+    ns.text = 'changed'
+    with pytest.raises(ClientError, match='evidence retained'):
+        send_command(ns, values, lambda *_:(profile,info), lambda value:value, post)
+    assert len(calls) == 2
+
+
+def test_lifecycle_stage_missing_or_symlink_fails_before_submission(tmp_path):
+    from src.agentbus_lifecycle_client import request_stage
+    values = {'AGENTBUS_STATE_DIR':str(tmp_path),'AGENTBUS_URL':'http://localhost:8766'}
+    profile = {'service_url':values['AGENTBUS_URL'],'inbox_id':'one','channel':'C111',
+               'chat_id':'chat','participation':{'session_id':'session'}}
+    with pytest.raises(ClientError, match='missing'):
+        request_stage(values, profile, 'old-id', {}, 'a' * 64, existing=True)
+    directory = tmp_path / 'send-requests'
+    directory.rmdir()
+    directory.symlink_to(tmp_path, target_is_directory=True)
+    with pytest.raises(ClientError, match='symbolic links'):
+        request_stage(values, profile, 'new-id', {}, 'a' * 64)
+
+
+def test_work_receipt_is_stable_across_retry_and_bound_to_session():
+    from copy import deepcopy
+
+    from src.agentbus_lifecycle_client import message_command
+    values = {'AGENTBUS_URL':'http://localhost:8766'}
+    profile = {'service_url':values['AGENTBUS_URL'],'inbox_id':'one','channel':'C111',
+               'chat_id':'chat','participation':{'session_id':'session','session_secret':'private'}}
+    calls = []
+    def post(*args, **kwargs):
+        calls.append((args, kwargs))
+        return {'state':'picked_up'}
+    ns = parse_args(['pickup','--identity','agentbus:flower','--cursor','7'])
+    message_command(ns, values, profile, api_call=post)
+    message_command(ns, values, profile, api_call=post)
+    assert calls[0] == calls[1]
+    token = calls[0][0][2]['receipt_id']
+    ns.command = 'complete'
+    message_command(ns, values, profile, api_call=post)
+    assert calls[2][0][2]['receipt_id'] == token
+    replacement = deepcopy(profile)
+    replacement['participation']['session_id'] = 'replacement'
+    message_command(ns, values, replacement, api_call=post)
+    assert calls[3][0][2]['receipt_id'] != token
+
+
+def test_cached_wake_refs_require_current_recipient_outcomes_and_do_not_ack():
+    from src.agentbus_lifecycle_client import filter_wake_refs
+    values = {'AGENTBUS_URL':'http://localhost:8766'}
+    profile = {'service_url':values['AGENTBUS_URL'],'inbox_id':'one','channel':'C111',
+               'chat_id':'chat','participation':{'session_id':'session','session_secret':'private'},
+               'message_lifecycle_version':1, 'ack_cursor':0}
+    requests = []
+    states = {1:'expired_unclaimed', 2:'unclaimed', 3:'handled', 4:'recovery_required'}
+    def read(_values, path, **kwargs):
+        requests.append(path)
+        cursor = int(path.split('/')[3])
+        return {'cursor':cursor,'scope':'recipient','state':states[cursor],
+                'deadline_elapsed':False,'owned_by_this_session':False}
+    projection = {}
+    refs = ['MESSAGE:1','MESSAGE:2','MESSAGE:3','MESSAGE:4']
+    assert filter_wake_refs(values, profile, refs, projection, api_call=read) == ['MESSAGE:2']
+    assert projection['lifecycle_terminal_cursors'] == [1,3]
+    assert profile['ack_cursor'] == 0
+    requests.clear()
+    assert filter_wake_refs(values, profile, refs, projection, api_call=read) == ['MESSAGE:2']
+    assert len(requests) == 2  # Definitive terminal projections do not repeatedly query or acknowledge.
+
+
+def test_semantic_receipts_precede_local_ack_and_survive_lost_response():
+    from src.agentbus_lifecycle_client import acknowledge_handled
+    values = {'AGENTBUS_URL':'http://localhost:8766'}
+    profile = {'service_url':values['AGENTBUS_URL'],'inbox_id':'one','channel':'C111', 'identity':'agentbus:flower',
+               'chat_id':'chat','participation':{'session_id':'session','session_secret':'private'},
+               'message_lifecycle_version':1, 'ack_cursor':0}
+    requests = []
+    failed = [True]
+    def call(_values, path, payload=None, **kwargs):
+        if payload is None:
+            return {'messages':[{'cursor':1,'lifecycle':{'state':'unclaimed'}},
+                                {'cursor':2,'lifecycle':{'state':'legacy_unknown'}}],
+                    'next_cursor':2, 'has_more':False}
+        requests.append((path, payload))
+        if failed[0]:
+            raise ClientError('response lost')
+        return {'session_id':'session','handled':0,'already_handled':1,'expired_unclaimed':0}
+    with pytest.raises(ClientError):
+        acknowledge_handled(values, profile, 2, api_call=call)
+    assert profile['ack_cursor'] == 0
+    failed[0] = False
+    result = acknowledge_handled(values, profile, 2, api_call=call)
+    assert result['through'] == 2 and result['outcomes']['legacy_unknown'] == 1
+    assert requests[0] == requests[1] and profile['ack_cursor'] == 0
+
+
+def test_claimed_inactive_projection_cannot_be_wake_candidate():
+    from src.agentbus_codex_wake_events_client import _candidate
+    event = {'kind':'MESSAGE', 'id':'1', 'message':{'sender_assurance':'session', 'audience':'unrouted',
+             'action_reason':'claimed by this identity', 'actionable':False}}
+    assert _candidate(event, 'agentbus:flower') is None
+    event['message']['actionable'] = True
+    assert _candidate(event, 'agentbus:flower') == (4, 'MESSAGE:1')
+    event['message']['lifecycle'] = {'state':'handled'}
+    assert _candidate(event, 'agentbus:flower') is None
+
+
 @pytest.mark.parametrize('confirmed', [True, False])
 def test_transport_negotiation_checks_exact_acceptance_headers(monkeypatch, confirmed):
     import io

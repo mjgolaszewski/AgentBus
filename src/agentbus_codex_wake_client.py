@@ -484,7 +484,16 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
                 scan_state = wake_inbox.read_state(values, profile, state["binding_generation"])
         refs = eligible_events(profile_path, profile,
                                wake_inbox.candidates(scan_state, int(profile.get("ack_cursor", 0))))
+        if live and profile.get('message_lifecycle_version') == 1:
+            from src.agentbus_lifecycle_client import filter_wake_refs
+            try:
+                refs = filter_wake_refs(values, profile, refs, state, api_call=api)
+                _save(path, state)
+            except ClientError as exc:
+                return finish({'status':'notification_only', 'reason':str(exc), 'eligible':refs})
         if not refs:
+            if live and state.get('lifecycle_recovery_required'):
+                return finish({'status':'notification_only', 'reason':'expired_work_lease_requires_owner_recovery', 'eligible':[]})
             if scan_error:
                 return finish({"status": "service_unavailable", "reason": scan_error, "eligible": []})
             return finish({"status": "no_action", "eligible": []})
@@ -589,6 +598,11 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
                     host.resume(state["thread_id"])
                 except CodexHostRejected:
                     return finish({"status": "thread_owned_by_host", "eligible": refs})
+                from src.agentbus_lifecycle_client import pickup_wake_refs
+                try:
+                    pickup_wake_refs(values, profile, refs, api_call=api)
+                except ClientError as exc:
+                    return finish({'status':'lifecycle_wait', 'reason':str(exc), 'eligible':refs})
                 record_intent(state, "eligible", refs, reason="exact_ready_session_and_idle_owner")
                 attempt_id = str(uuid.uuid4())
                 state["wake_epoch"] += 1

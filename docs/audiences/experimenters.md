@@ -10,6 +10,7 @@ passed a bounded local two-channel canary; release-subject custody remains separ
 
 | Capability | Candidate scope | Evidence still required |
 | --- | --- | --- |
+| RC3 message lifecycle | Scoped epochs, private retry staging, exact-session pickup/handling, shared read expiry and bounded archive/purge | Final canonical/archive/install proof, populated-store migration and client-drain review, bounded live checks; unknown legacy and federation references remain pinned |
 | Slack enrollment approval | File-free pending request, private operator approval in the intended channel, canonical staged-secret redemption | Exact protected source, legacy grant compatibility, archive installs and bounded live human approval; pending requests have no message authority |
 | Multiple channels | One service, database, Slack app and socket; explicit allowlist of at most 16 channels | Bounded local two-channel canary passed on the protected construction; each release subject requires fresh canonical custody and archive/install verification |
 | Channel authorization | One immutable channel per identity; grant-backed enrollment; exact-session reads and writes; channel-local public cursors | Protected construction includes negative controls and populated-store migration/restart continuity; see the exact [qualification record](../../audits/channel-live-qualification.yml) |
@@ -47,6 +48,12 @@ and request IDs, foreign inbox assertions, stopped/rotated credentials, grant
 replay and lost responses, aliases, reply ancestry, disabled channels, outages,
 provider echoes, federation containment, and profile/spool/wake scope mismatch.
 No negative control may acquire another channel by editing local profile fields.
+
+For [lifecycle construction](../message-lifecycle.md), exercise pickup/expiry and
+ACK races, stopped/rotated credentials, unknown provider outcomes, old-epoch and
+legacy replay, archive corruption/interruption, foreign scope, reference closure,
+cursor/ingress retirement and cached wake references. A shared read deadline must
+never expire a safety control or manufacture an acknowledgement.
 
 ## Move to a bounded live experiment
 

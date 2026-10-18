@@ -780,3 +780,37 @@ def test_ordinary_rate_budget_never_blocks_required_control(setup):
     put(path, profile, {"kind": "CONTROL", "id": "stop-1", "control": {"kind": "stop_end_turn"}})
     assert wake.run_once(values, identity, live=True, host_factory=lambda: host)["status"] == "turn_completed"
     assert len(host.prompts) == 1
+
+
+def test_expired_lease_never_restarts_uncertain_host_attempt(setup, monkeypatch):
+    from src.agentbus_lifecycle_client import pickup_wake_refs
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, 'thread-one', lambda: host)
+    wake.set_enabled(values, identity, True)
+    put(path, profile, message(1))
+    host.failure = TurnStartUncertain('prior outcome unknown')
+    assert wake.run_once(values, identity, live=True, host_factory=lambda: host)['status'] == 'uncertain'
+    binding_path = wake._state_path(values, profile['chat_id'])
+    before = json.loads(binding_path.read_text())
+    spool = path.with_name(path.name + '.poll.json').read_bytes()
+    profile['message_lifecycle_version'] = 1
+    profile['participation']['session_secret'] = 'session-proof'
+    def observed(_values, target, payload=None, **_kwargs):
+        if target.endswith('/outcome'):
+            return {'cursor':1, 'scope':'recipient', 'state':'recovery_required',
+                    'deadline_elapsed':False, 'lease_elapsed':True, 'owned_by_this_session':True}
+        if target.endswith('/pickup'):
+            return {'state':'recovery_required', 'lease_until':1}
+        raise AssertionError('Unexpected service operation')
+    monkeypatch.setattr(wake, 'api', observed)
+    host.calls.clear()
+    result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
+    assert result['status'] == 'notification_only'
+    assert result['reason'] == 'expired_work_lease_requires_owner_recovery'
+    after = json.loads(binding_path.read_text())
+    assert after['last_attempt'] == before['last_attempt']
+    assert after['wake_intent'] == before['wake_intent']
+    assert host.calls == [] and path.with_name(path.name + '.poll.json').read_bytes() == spool
+    assert profile.get('ack_cursor', 0) == 0
+    with pytest.raises(ClientError, match='no turn submitted'):
+        pickup_wake_refs(values, profile, ['MESSAGE:1'], api_call=observed)

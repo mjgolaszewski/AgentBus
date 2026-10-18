@@ -31,7 +31,7 @@ interfaces:
   - channel-isolation-v1
   - channel-local-cursors-v1
   inbox_assertion: X-AgentBus-Inbox-ID must match resolved principal
-  enrollment: operator-only enrollment-grants; agent consumes a private grant file
+  enrollment: operator grant consumed from a private file or canonically redeemed after allowlisted Slack approval under participation v2
   profile: service channel inbox chat session binding; no automatic switch
 invariants:
 - Every identity has exactly one immutable channel; every session and alias inherits that identity binding

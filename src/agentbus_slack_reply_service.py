@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from pydantic import ValidationError
 
+from src.agentbus_message_lifecycle_service import LifecycleRejected
 from src.agentbus_send_rate_service import SendRateExceeded
 from src.agentbus_transaction_service import atomic
 
@@ -33,7 +34,7 @@ def _thread_route(store: MessageStore, channel: str, root: Message) -> str | Non
     from src.agentbus_service import SendMessage
 
     rows = store._db.execute(
-        "SELECT payload, sender_assurance FROM messages WHERE channel = ? AND "
+        "SELECT cursor, channel, payload, sender_assurance FROM messages WHERE channel = ? AND "
         "(cursor = ? OR thread_ts = ? OR thread_ts IN "
         "(SELECT provider_ref FROM local_delivery_observations WHERE channel = ? AND local_cursor = ?))",
         (channel, root.cursor, root.slack_ts, channel, root.cursor),
@@ -41,7 +42,7 @@ def _thread_route(store: MessageStore, channel: str, root: Message) -> str | Non
     routes = set()
     for row in rows:
         try:
-            item = SendMessage.model_validate_json(row['payload'])
+            item = SendMessage.model_validate_json(store.retention.payload(channel, row['cursor'], row['payload']))
         except ValidationError:
             return None
         route = None
@@ -78,10 +79,11 @@ def route_human_reply(store: MessageStore, channel: str, message: SendMessage, *
         route = _thread_route(store, channel, root)
         if route is None:
             return message
+        store.lifecycle.require_live_parent(channel, root.cursor, route)
         routed = SendMessage(sender=message.sender, recipient=route, text=message.text,
                              repo=root.repo, kind='request', thread_ts=message.thread_ts,
                              audience='direct', reply_to_cursor=root.cursor)
-    except (ValidationError, PermissionError):
+    except (ValidationError, PermissionError, LifecycleRejected):
         return message
     routed._sender_assurance = message._sender_assurance
     return routed

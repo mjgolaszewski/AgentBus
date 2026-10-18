@@ -54,6 +54,7 @@ model:
     internal_reference: messages_cursor_private_and_unchanged
 inheritance:
   precedence: v2_and_channel_contract_override_conflicting_v1_authorization_only
+  optional_lifecycle_override: message_lifecycle_v1_after_explicit_offline_cutover_overrides_ordinary_work_and_shared_read_deadlines_only_not_safety_or_exact_session_authority
   retained:
   - policy_resolution
   - exact_revision_ack
@@ -112,7 +113,7 @@ slack_interaction:
   health:
     audience: allowlisted_human_operator_only; private_ephemeral_response
     scope: global_read_only_dashboard; no_global_agent_view
-    contents: version_runtime_socket_channels_custody_and_local_federation_configuration
+    contents: version_runtime_socket_channels_custody_and_local_federation_configuration_with_optional_distinct_lifecycle_policy_storage_and_pinned_history
     exclusions: credentials_private_paths_key_material_remote_health_or_wake_guarantees
     bounds: at_most_64_channel_details; retained_count_and_truncation_disclosed
   presentation:
@@ -133,13 +134,13 @@ mandatory_announcements:
   authority: existing_Slack_operator_allowlist; invoking_channel_only
   representation: one_operator_control_payload; per_session_target_receipts_only; no_message_fanout
   targets: fixed_snapshot_of_non_stopped_sessions_in_invoking_channel; no_late_join_expansion
-  delivery: control_check_before_ordinary_inbox; redeliver_until_explicit_acknowledgement
+  delivery: control_check_before_ordinary_inbox; redeliver_until_explicit_acknowledgement_or_declared_optional_lifecycle_read_expiry
   broadcast_ack: exact_session_explicit_read_receipt; delivery_or_rendering_does_not_ack
   poll_ack: exact_session_explicit_bounded_answer_required; read_without_answer_remains_pending
   recovery: stable_Slack_trigger_identity; same_request_returns_original_control; changed_request_fails_closed
   limits: text_1_to_1000_characters; answer_1_to_2000_characters
   status: private_channel_scoped_Slack_results_up_to_8_targets; existing_privileged_control_status_for_full_report
-  exclusions: no_forced_model_turn; no_proof_of_comprehension; offline_sessions_remain_pending; no_remote_fanout
+  exclusions: no_forced_model_turn; no_proof_of_comprehension; offline_sessions_remain_pending_unless_declared_optional_lifecycle_read_expiry_applies; no_remote_fanout
 
 slack_enrollment_approval:
   status: construction_unqualified_until_exact_subject_proof_and_bounded_live_validation

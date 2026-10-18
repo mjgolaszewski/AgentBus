@@ -6,12 +6,17 @@ import re
 import sqlite3
 import threading
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.agentbus_message_lifecycle_service import MessageLifecycleStore
 
 
 class ClaimRecoveryStore:
     def __init__(self, db: sqlite3.Connection, lock: threading.RLock):
         self._db = db
         self._lock = lock
+        self.lifecycle: MessageLifecycleStore | None = None
         with lock, db:
             db.execute("""
                 CREATE TABLE IF NOT EXISTS claim_recovery_audit (
@@ -52,6 +57,8 @@ class ClaimRecoveryStore:
             if new_identity == previous:
                 return {"cursor": cursor, "previous_identity": previous,
                         "new_identity": previous, "changed": False}
+            if self.lifecycle is not None:
+                self.lifecycle.recover_claim(channel, cursor, new_identity)
             changed = datetime.now(timezone.utc).isoformat()
             if new_identity is None:
                 self._db.execute("DELETE FROM claims WHERE channel = ? AND cursor = ?",

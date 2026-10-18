@@ -7,9 +7,13 @@ import sqlite3
 import threading
 import uuid
 from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING
 
 from src.agentbus_participation_service import resolve_policy
 from src.agentbus_participation_store_service import ParticipationStore
+
+if TYPE_CHECKING:
+    from src.agentbus_announcement_lifecycle_service import AnnouncementLifecycle
 
 
 def _now() -> str:
@@ -23,6 +27,7 @@ class ControlStore:
         self._db = db
         self._lock = lock
         self._participation = participation
+        self.lifecycle: AnnouncementLifecycle | None = None
         with lock, db:
             db.execute("""
                 CREATE TABLE IF NOT EXISTS operator_controls (
@@ -135,6 +140,8 @@ class ControlStore:
                     ).fetchall()
                     targets.extend(row["session_id"] for row in rows)
                 targets = sorted(set(targets))
+            if kind in {'broadcast','poll'} and self.lifecycle is not None:
+                self.lifecycle.reserve(len(targets), reason)
             issued = datetime.now(timezone.utc)
             expires_at = None
             if override_values is not None:
@@ -162,6 +169,8 @@ class ControlStore:
                 "INSERT INTO control_targets(control_id, session_id, state) VALUES (?, ?, 'issued')",
                 [(control_id, session_id) for session_id in targets],
             )
+            if kind in {'broadcast','poll'} and self.lifecycle is not None:
+                self.lifecycle.register(control_id)
             if kind in {"pause_work", "resume_work"}:
                 paused = int(kind == "pause_work")
                 self._db.executemany(
@@ -193,12 +202,15 @@ class ControlStore:
                 WHERE t.session_id = ? AND t.state IN ('issued', 'delivered')
                 ORDER BY c.issued_at, c.control_id
             """, (session_id,)).fetchall()
+            if self.lifecycle is not None:
+                rows = [row for row in rows if self.lifecycle.pending(row['control_id'], session_id)]
             if rows:
-                self._db.execute(
-                    "UPDATE control_targets SET state = 'delivered', delivered_at = COALESCE(delivered_at, ?) WHERE session_id = ? AND state = 'issued'",
-                    (_now(), session_id),
+                self._db.executemany(
+                    "UPDATE control_targets SET state = 'delivered', delivered_at = COALESCE(delivered_at, ?) WHERE session_id = ? AND control_id=? AND state = 'issued'",
+                    [(_now(), session_id, row['control_id']) for row in rows],
                 )
             return [{"control_id": row["control_id"], "kind": row["kind"],
+                     **(self.lifecycle.projection(row['control_id'], session_id) if self.lifecycle is not None else {}),
                      "reason": row["reason"], **({"expires_at": row["expires_at"]}
                      if row["expires_at"] is not None else {})} for row in rows]
 
@@ -221,6 +233,9 @@ class ControlStore:
             ).fetchone()
             if target is None:
                 raise PermissionError("control is not targeted to this session")
+            if (target['state'] not in {'acknowledged','effective'} and self.lifecycle is not None
+                    and not self.lifecycle.pending(control_id, session_id)):
+                raise ValueError('Announcement read window expired; no acknowledgement recorded')
             if target["state"] == "issued":
                 raise ValueError("control delivery is pending")
             kind = target["kind"]
@@ -271,6 +286,8 @@ class ControlStore:
                 "WHERE control_id = ? AND session_id = ? AND state = 'acknowledged'",
                 (_now(), control_id, session_id),
             )
+            if self.lifecycle is not None:
+                self.lifecycle.acknowledge(control_id, session_id)
 
     def _apply_stop_effect(self, control_id: str, session_id: str) -> None:
         with self._lock, self._db:
@@ -309,6 +326,7 @@ class ControlStore:
                     "delivered_at", "acknowledged_at", "effective_at", "receipt",
                 )}, "override_active": row["expires_at"] is not None and
                     datetime.fromisoformat(row["expires_at"]) > datetime.now(timezone.utc),
+                 **(self.lifecycle.projection(control_id, row['session_id']) if self.lifecycle is not None else {}),
                  "answer": json.loads(row["report_json"])["answer"] if row["kind"] == "poll" and row["report_json"] else None,
                  "report": json.loads(row["report_json"]) if row["report_json"] and row["kind"] != "poll" else None}
                 for row in rows

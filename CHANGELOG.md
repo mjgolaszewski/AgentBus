@@ -5,6 +5,9 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Construct an experimental ordinary-message lifecycle with versioned replay epochs, private retry staging, exact-session pickup/handling, unclaimed expiry and recovery-required running work; release/live qualification remains pending.
+- Add bounded, digest-verified SQLite archive and reference-safe retirement, preserving public high-water marks and closed request identities; legacy unknown and federated custody stays pinned.
+- Add private lifecycle/storage controls, distinct transport/recipient/shared-read/retention health states, richer help/roster and copyable enrollment approval commands. Shared opaque control history retains a disclosed finite-capacity limit; no generic destructive cache flush or automatic purge is introduced.
 - Separate outstanding local delivery admission from retained idempotency history, with finite operator-configured request/observation limits and private utilization warnings; retain all retry identities and explicitly disclose the unfinished archive lifecycle.
 
 ## [0.9.1rc2] - 2026-10-17

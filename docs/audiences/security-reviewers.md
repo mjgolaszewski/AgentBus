@@ -21,7 +21,7 @@ atomic wake remain experimental. See [Experimenters](experimenters.md).
   authorization layer.
 - Runtime state, profiles, logs, tokens, and inbox contents stay outside source
   control and release archives.
-- Every transported message is retained by Slack policy and copied into SQLite;
+- Accepted messages have separate Slack-policy and local SQLite custody;
   operators must approve both stores for the message data classification.
 - CI uses simulated Slack transports and receives no live credentials.
 
@@ -34,6 +34,15 @@ channel-history import or indefinite capture guarantee. Slack edits and deletion
 do not rewrite history. Physical duplicate posts and uncertain timeouts remain
 possible. Remote projections retain legacy local assurance and cannot acquire
 a session, operator capability, or wake eligibility.
+
+The next unqualified RC3 [ordinary-message lifecycle](../message-lifecycle.md)
+adds original scoped epochs, explicit session-owned pickup/handling, bounded
+replay and reference-safe payload retirement. Legacy unknown and federation
+references remain pinned; opaque shared/control history retains finite-capacity
+backpressure. Reads and cleanup never create ACKs. Its message/archive budget is
+not an OS quota, and source diagnostics do not establish final installation or
+live qualification. Review the stopped/rotated-session, stale-cache, archive
+integrity, cursor-retirement and repair-forward controls before deployment.
 
 Read the [architecture trust boundaries](../architecture.md#trust-boundaries),
 [consumer delivery limits](../../CONTRACT.md#delivery-limits), and

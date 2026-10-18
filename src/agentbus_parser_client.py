@@ -35,6 +35,7 @@ def build_parser() -> argparse.ArgumentParser:
     send.add_argument("--repo")
     send.add_argument("--correlation-id")
     send.add_argument("--message-id", help="Reuse this UUID when retrying an identical durable request")
+    send.add_argument('--legacy-replay', action='store_true', help='Replay only a known pre-lifecycle UUID; cannot allocate new custody')
     send.add_argument("--thread-ts")
     send.add_argument("--reply-to-cursor", type=int)
     read = commands.add_parser("read", help="Read the durable local inbox")
@@ -85,6 +86,14 @@ def build_parser() -> argparse.ArgumentParser:
     ack = commands.add_parser("ack", help="Acknowledge handled messages through a cursor")
     ack.add_argument("--identity")
     ack.add_argument("--through", type=int, required=True)
+    for name, description in (('pickup','Record the start of addressed work'),
+                              ('complete','Record handling with the original pickup receipt'),
+                              ('message-status','Inspect an addressed or authored message outcome')):
+        operation = commands.add_parser(name, help=description)
+        operation.add_argument('--identity')
+        operation.add_argument('--cursor', type=int, required=True)
+        if name != 'message-status':
+            operation.add_argument('--receipt-id', help='Original pickup UUID; defaults to a stable session-scoped receipt')
     rebind = commands.add_parser("rebind", help="Bind a profile to this inbox and choose its durable cursor")
     rebind.add_argument("--identity")
     rebind.add_argument("--from", dest="start_from", choices=("now", "beginning"), required=True)
@@ -96,6 +105,7 @@ def build_parser() -> argparse.ArgumentParser:
     reply.add_argument("--identity")
     reply.add_argument("--to-cursor", type=int, required=True)
     reply.add_argument("--message-id", help="Reuse this UUID when retrying an identical durable request")
+    reply.add_argument('--legacy-replay', action='store_true', help='Replay only a known pre-lifecycle UUID; cannot allocate new custody')
     handoff = commands.add_parser("issue-handoff", help="Operator: authorize migration of a local profile UUID")
     handoff.add_argument("--identity")
     handoff.add_argument("--output", required=True)

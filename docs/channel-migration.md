@@ -7,6 +7,11 @@ a migrated database. Live multichannel readiness additionally needs final
 canonical proof, archive installation and a bounded two-channel Slack canary;
 see [Experimenters](audiences/experimenters.md).
 
+Channel migration does not activate the next unqualified RC3 message lifecycle.
+That is a separate [offline cutover](message-lifecycle.md) with a verified backup,
+legacy-unknown pins and refreshed long-lived clients; neither migration grants
+host interoperability or permission to restore over newly accepted custody.
+
 ## Prepare the original channel
 
 The operator identifies the existing Slack channel ID, stops the service, and

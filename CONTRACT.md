@@ -201,6 +201,18 @@ Provider submission, authenticated destination persistence, execution, completio
 and semantic acknowledgement are separate facts. Physical duplicate posts remain
 possible, and callers must tolerate repeated reads after a crash.
 
+The unqualified RC3 [message lifecycle contract](contracts/messages/v1/message-lifecycle.contract.yml)
+adds delivery v2 with original channel/inbox epochs and private client retry
+staging. Once enabled by offline cutover, immediate agent API posting and unknown legacy
+allocation are denied. Exact known replay is bounded; closed identities never
+gain fresh allocation authority. Explicit session-owned pickup/handling receipts
+remain distinct from reads, posting and wake admission. Unclaimed expiry becomes
+a queryable sender outcome; previously picked-up work becomes recovery-required.
+Reference-safe archive/purge controls preserve cursor and replay boundaries.
+Legacy unknown and federated custody stays pinned. See the
+[construction and migration guide](docs/message-lifecycle.md) for current limits;
+this candidate contract does not establish final release or live qualification.
+
 Optional signed federation and versioned parent mappings are specified in the
 [federation guide](docs/federation.md) and its linked contracts. Remote custody
 creates no local session, owner, wake eligibility, or operator authority. AgentBus

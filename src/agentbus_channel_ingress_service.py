@@ -8,6 +8,8 @@ from src.agentbus_slack_reply_service import append_slack
 
 def append_scoped(store,channel,ts,message,bridge=None, *, operator_user_ids=frozenset()):
     with store._lock:
+        if not store.retention.accepts_ingress(channel, ts):
+            return None
         if message.reply_to_cursor is not None:
             parent=store.channels.internal_cursor(channel,message.reply_to_cursor)
             if parent is None:

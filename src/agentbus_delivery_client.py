@@ -11,7 +11,7 @@ def send_command(ns, values, checked_profile, resolve_identity, api):
     send_profile: dict | None = None
     if ns.command == "reply":
         identity = resolve_identity(ns.identity)
-        profile, _ = checked_profile(values, identity)
+        profile, info = checked_profile(values, identity)
         text = sys.stdin.read() if ns.text == "-" else ns.text
         payload = {
             "sender": identity, "text": text, "repo": profile["repo"], "kind": "reply",
@@ -25,7 +25,7 @@ def send_command(ns, values, checked_profile, resolve_identity, api):
             raise ClientError("Use exactly one of --identity or --sender.")
         sender = ns.sender
         sender = resolve_identity(ns.identity or ns.sender)
-        send_profile, _ = checked_profile(values, sender)
+        send_profile, info = checked_profile(values, sender)
         if ns.broadcast and ns.recipient:
             raise ClientError("Use either --to/--recipient or --broadcast.")
         if ns.broadcast and ns.informational:
@@ -55,7 +55,10 @@ def send_command(ns, values, checked_profile, resolve_identity, api):
         raise ClientError("A joined sender profile is required")
     session = profile_session_token(send_profile)
     explicit = getattr(ns, 'message_id', None)
-    capable = values.get('_AGENTBUS_DELIVERY_VERSION') == '1' and session is not None
+    legacy_replay = getattr(ns, 'legacy_replay', False)
+    if legacy_replay and (explicit is None or values.get('_AGENTBUS_DELIVERY_VERSION') != '2'):
+        raise ClientError('Legacy replay requires an original --message-id and an active lifecycle server')
+    capable = values.get('_AGENTBUS_DELIVERY_VERSION') in {'1','2'} and session is not None
     if explicit is not None:
         try:
             if str(UUID(explicit)) != explicit:
@@ -67,7 +70,19 @@ def send_command(ns, values, checked_profile, resolve_identity, api):
     if not capable:
         return api(values, '/v1/messages', payload, session_token=session, inbox_id=send_profile["inbox_id"])
     key = explicit or str(uuid4())
+    options = {}
+    if values.get('_AGENTBUS_DELIVERY_VERSION') == '2' and not legacy_replay:
+        from src.agentbus_lifecycle_client import request_stage
+        lifecycle = info.get('lifecycle') or {}
+        if 'message-lifecycle-v1' not in info.get('features', []) or lifecycle.get('version') != 1:
+            raise ClientError('Server lifecycle capability is incomplete; no message submitted')
+        options['delivery_epoch'] = request_stage(values, send_profile, key, payload,
+            lifecycle.get('request_epoch'), existing=explicit is not None)
     try:
-        return api(values, '/v1/messages', payload, session_token=session, delivery_key=key, inbox_id=send_profile["inbox_id"])
+        return api(values, '/v1/messages', payload, session_token=session, delivery_key=key, inbox_id=send_profile["inbox_id"], **options)
     except ClientError as exc:
+        if exc.status == 410:
+            raise ClientError('Request expired. Its identity is retained; do not resubmit under a new UUID.', status=410) from None
+        if exc.status in {409, 426}:
+            raise ClientError(f'{exc} Request identity or capability rejected; preserve the original record.', status=exc.status) from None
         raise ClientError(f'{exc} Retry the identical request with --message-id {key}; acceptance may be uncertain.') from None

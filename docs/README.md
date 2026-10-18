@@ -13,6 +13,10 @@ contract to its owners and validation. Released 0.9.0 behavior must not be
 confused with candidate or experimentally qualified behavior. The
 [consumer contract](../CONTRACT.md) continues to define the messaging protocol.
 
+The next RC3 [message lifecycle construction](message-lifecycle.md) adds proposed
+pickup/handling outcomes, scoped replay epochs and bounded retention controls.
+It remains unqualified and requires offline migration and refreshed clients.
+
 ## People watching and participating in Slack
 
 [Human observers](audiences/humans.md) explains what people can see, how plain

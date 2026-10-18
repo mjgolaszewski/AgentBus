@@ -14,7 +14,9 @@ from uuid import UUID
 
 
 class ClientError(Exception):
-    pass
+    def __init__(self, message, *, status=None):
+        self.status = status
+        super().__init__(message)
 
 
 def local_prefix(values: dict[str, str], *, required: bool = False) -> str | None:
@@ -82,7 +84,8 @@ def configuration(*, include_operator: bool = False) -> tuple[Path, dict[str, st
 
 def api(values: dict[str, str], path: str, payload: dict | None = None, *,
         bearer_token: str | None = None, session_token: str | None = None,
-        timeout_seconds: float | None = None, delivery_key: str | None = None, inbox_id: str | None = None) -> dict:
+        timeout_seconds: float | None = None, delivery_key: str | None = None, inbox_id: str | None = None,
+        delivery_epoch: str | None = None) -> dict:
     token = bearer_token if bearer_token is not None else values.get("AGENTBUS_API_TOKEN", "")
     if path != "/healthz" and not token:
         raise ClientError("Set AGENTBUS_API_TOKEN in the environment or AgentBus .env file.")
@@ -99,6 +102,7 @@ def api(values: dict[str, str], path: str, payload: dict | None = None, *,
     body = json.dumps(payload).encode() if payload is not None else None
     headers = {"Content-Type": "application/json"}
     headers["X-AgentBus-Client-Capabilities"] = "participation-v1"
+    headers['X-AgentBus-Lifecycle-Version'] = '1'
     if token and path != "/healthz":
         headers["Authorization"] = f"Bearer {token}"
     if session_token is not None:
@@ -111,9 +115,13 @@ def api(values: dict[str, str], path: str, payload: dict | None = None, *,
                 raise ValueError()
         except ValueError:
             raise ClientError('Durable request identity must be a canonical UUID.') from None
-        if path != '/v1/messages' or values.get('_AGENTBUS_DELIVERY_VERSION') != '1' or not session_token:
+        if path != '/v1/messages' or values.get('_AGENTBUS_DELIVERY_VERSION') not in {'1','2'} or not session_token:
             raise ClientError('Durable delivery requires fresh server capability and a joined session.')
-        headers['X-AgentBus-Delivery-Version'] = '1'
+        headers['X-AgentBus-Delivery-Version'] = '2' if delivery_epoch is not None else '1'
+        if delivery_epoch is not None:
+            if values.get('_AGENTBUS_DELIVERY_VERSION') != '2' or not re.fullmatch('[0-9a-f]{64}', delivery_epoch):
+                raise ClientError('Lifecycle delivery requires a verified original request epoch.')
+            headers['X-AgentBus-Request-Epoch'] = delivery_epoch
         headers['Idempotency-Key'] = delivery_key
     request = Request(base + path, data=body, headers=headers)
     try:
@@ -122,10 +130,11 @@ def api(values: dict[str, str], path: str, payload: dict | None = None, *,
         ) as response:
             if path == '/v1/info':
                 values.pop('_AGENTBUS_DELIVERY_VERSION', None)
-                if response.headers.get('X-AgentBus-Delivery-Version') == '1':
-                    values['_AGENTBUS_DELIVERY_VERSION'] = '1'
+                advertised = response.headers.get('X-AgentBus-Delivery-Version')
+                if advertised in {'1','2'}:
+                    values['_AGENTBUS_DELIVERY_VERSION'] = advertised
             if delivery_key is not None and (response.status != 202 or
-                    response.headers.get('X-AgentBus-Delivery-Version') != '1' or
+                    response.headers.get('X-AgentBus-Delivery-Version') != headers['X-AgentBus-Delivery-Version'] or
                     response.headers.get('Idempotency-Key') != delivery_key):
                 raise ClientError('Server did not confirm the negotiated durable acceptance; do not resend blindly.')
             return json.load(response)
@@ -136,7 +145,7 @@ def api(values: dict[str, str], path: str, payload: dict | None = None, *,
         if exc.code == 409 and claimant and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}", claimant):
             suffix += f"; already claimed by {claimant}"
         # Avoid printing upstream/proxy response bodies that might echo credentials.
-        raise ClientError(f"AgentBus returned HTTP {exc.code}{suffix}.") from None
+        raise ClientError(f"AgentBus returned HTTP {exc.code}{suffix}.", status=exc.code) from None
     except (URLError, TimeoutError):
         raise ClientError("Cannot reach AgentBus. Check `agentbus status` and AGENTBUS_URL.") from None
     except (ValueError, UnicodeDecodeError):

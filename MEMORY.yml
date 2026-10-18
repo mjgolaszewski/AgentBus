@@ -48,7 +48,7 @@ memory_retention_policy:
     - preserve_replacement_reference_when_available
 environment_facts:
   current_repo_state:
-    - RC2 allowlisted human replies and slash sends share request authority and quota; unique current identity fragments resolve channel-first; health is global private human-operator only; rich projection preserves wire and locator; RC2 broadcast/poll construction retains one shared control with channel-local explicit read receipts or answers, no forced wake; final proof pending; Slack enrollment approval is an independently tested successor using private staged proof and canonical internal grant consumption with no file handoff
+    - "Immutable0.9.1rc2 is released and installed; protected admission fix8fa4729 separates outstanding from retained capacity. RC3 lifecycle construction remains unqualified: original scoped request epochs and staged retries, exact-session pickup/handling, terminal unclaimed expiry versus recovery-required running work, digest-verified bounded SQLite archives and reference-safe purge; old unknown custody remains pinned. Keep service lightweight, CQRS-lite owners tight, Slack operator flows simple and private; no cache flush may erase authoritative custody or wake state."
     - all governance, memory, specs, plans, workitem ledgers, and phase logs are YAML-native
     - observability contracts are scaffolded under contracts/observability/v1/
     - structural anti-drift gates are scaffolded for module size, layer ownership, bounded-context ownership, CQRS side rules, router thinness, and duplication
