@@ -64,3 +64,15 @@ def test_untrusted_directional_and_control_characters_are_visible_escapes():
         assert "\u202e" not in rendered and "\u200b" not in rendered and "\x1b" not in rendered
         assert "\\u202e" in rendered and "\\u200b" in rendered and "\\u001b" in rendered
     assert event["message"]["text"] == "trusted\u202eabc\u200b\x1b[31m"
+
+
+def test_mandatory_announcement_text_never_clips_or_acknowledges():
+    for kind in ('broadcast', 'poll'):
+        event = {'kind': 'CONTROL', 'control': {'control_id': 'announcement-1', 'kind': kind,
+                                              'reason': 'Please read all of this ' * 30}}
+        rendered = render_event(event, json_mode=False, budget_bytes=1)
+        assert 'Please read all of this ' * 30 in rendered
+        assert 'ack-control' in rendered
+        if kind == 'poll':
+            assert '--answer' in rendered
+        assert json.loads(render_event(event, json_mode=True, budget_bytes=1)) == event

@@ -107,7 +107,7 @@ class StopControl(BaseModel):
 
 
 class AuxiliaryControl(StopControl):
-    kind: Literal["nudge", "checkpoint_request", "temporary_policy_override", "pause_work", "resume_work"]
+    kind: Literal["nudge", "checkpoint_request", "temporary_policy_override", "pause_work", "resume_work", "broadcast", "poll"]
     values: dict[str, int | float | None] | None = None
     duration_seconds: int | None = Field(default=None, ge=1, le=86400)
 
@@ -137,6 +137,7 @@ class AcknowledgeControl(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     report: CheckpointReport | None = None
+    answer: str | None = Field(default=None, min_length=1, max_length=2000)
 
 
 class RenameSession(BaseModel):
@@ -375,6 +376,7 @@ def api_control_ack(
         receipt, kind = request.app.state.store.controls.acknowledge_control(
             control_id, session_id, session_token or "",
             report=body.report.model_dump() if body and body.report else None,
+            answer=body.answer if body else None,
         )
     except PermissionError:
         raise HTTPException(401, "Session authorization required") from None

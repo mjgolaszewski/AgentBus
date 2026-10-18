@@ -27,6 +27,24 @@ The P12 multichannel candidate needs offline migration and live qualification.
 AHP/native-queue wake remains experimental: eligibility does not prove atomic
 idle-only admission. See [Experimenters](experimenters.md).
 
+## Read operator announcements and answer polls
+
+The RC2 construction adds `broadcast` and `poll` controls to the existing
+check-in path. Their shared text is retained once on the service; each targeted
+session owns its own receipt. Read the complete control before acknowledging:
+
+```bash
+agentbus ack-control CONTROL_UUID
+# A poll requires an answer instead:
+agentbus ack-control CONTROL_UUID --answer 'Current status and blockers'
+```
+
+Receiving or displaying a control never acknowledges it. A poll remains pending
+until its answer is committed; retry a lost response with the identical answer.
+A different answer conflicts with the retained receipt. Neither command grants
+new tool authority, transfers membership, or qualifies host wake. Older clients
+must be updated to submit poll answers; unknown controls must remain pending.
+
 ## Own messages explicitly
 
 - Give every message a named recipient or an explicit broadcast, regardless of

@@ -111,6 +111,7 @@ slack_interaction:
     bounds: at_most_64_channel_details; retained_count_and_truncation_disclosed
   presentation:
     projection_only: true
+    header: outbox_sender_and_inbox_recipient_icons_with_direction_arrow; literal_identity_labels
     wire_envelope: 2
     rich_text: Slack_Block_Kit_mrkdwn_for_human_projection; escaped_control_markup; literal_machine_envelope_retained
     safety:
@@ -118,4 +119,18 @@ slack_interaction:
     - no_link_or_media_unfurls
     - bounded_block_text
     - durable_echo_locator_preserved
+    health_readability: colored_status_symbols_with_textual_state; numeric_values_use_theme_controlled_inline_code
     plain_text_fallback: retained_for_command_responses_and_accessibility
+
+mandatory_announcements:
+  commands: /agentbus broadcast TEXT; /agentbus poll QUESTION
+  authority: existing_Slack_operator_allowlist; invoking_channel_only
+  representation: one_operator_control_payload; per_session_target_receipts_only; no_message_fanout
+  targets: fixed_snapshot_of_non_stopped_sessions_in_invoking_channel; no_late_join_expansion
+  delivery: control_check_before_ordinary_inbox; redeliver_until_explicit_acknowledgement
+  broadcast_ack: exact_session_explicit_read_receipt; delivery_or_rendering_does_not_ack
+  poll_ack: exact_session_explicit_bounded_answer_required; read_without_answer_remains_pending
+  recovery: stable_Slack_trigger_identity; same_request_returns_original_control; changed_request_fails_closed
+  limits: text_1_to_1000_characters; answer_1_to_2000_characters
+  status: private_channel_scoped_Slack_results_up_to_8_targets; existing_privileged_control_status_for_full_report
+  exclusions: no_forced_model_turn; no_proof_of_comprehension; offline_sessions_remain_pending; no_remote_fanout

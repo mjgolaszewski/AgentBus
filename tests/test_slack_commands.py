@@ -300,7 +300,10 @@ def test_health_is_private_operator_only_and_does_not_need_a_target(enrolled):
     result=command(settings,store,web,'health')
     for word in ('AgentBus health','Version','Python','Channels','Federation','C123456'):
         assert word in result
-    assert 'unknown' in result.lower()  # A direct unit call cannot observe a socket.
+    assert '🟡 unknown' in result.lower()  # A direct unit call cannot observe a socket.
+    assert '*Channels:* `1` enabled' in result
+    assert '*Storage:* `' in result
+    assert 'protocol `2`' in result
     assert settings.slack_bot_token not in result and str(settings.db_path) not in result
     assert web.posts==[]
 
@@ -393,3 +396,51 @@ def test_regular_reply_authorization_empty_allowlist_foreign_parent_and_atomic_f
     with pytest.raises(sqlite3.Error):
         receive_reply(settings,store,web,root.slack_ts,ts='1800000000.000003')
     assert store._db.execute('SELECT used FROM send_rate_buckets WHERE principal=?',('slack:U123',)).fetchone()[0]==used
+
+
+def test_channel_broadcast_single_shared_control_no_message_fanout(enrolled):
+    settings, store, sid, web = enrolled
+    payload = {'command': '/agentbus', 'channel_id': 'C123456', 'user_id': 'U123',
+               'text': 'broadcast Everyone read this', 'trigger_id': 'broadcast-trigger'}
+    result = execute_command(payload, settings, store, web)
+    assert '1 session' in result
+    assert execute_command(payload, settings, store, web) == result
+    assert not web.posts
+    assert store._db.execute('SELECT count(*) FROM operator_controls').fetchone()[0] == 1
+    assert store.controls.deliver(sid, SECRET)[0]['reason'] == 'Everyone read this'
+    assert 'not enabled' in execute_command({**payload, 'user_id': 'U999'}, settings, store, web)
+    assert 'configured channel' in execute_command({**payload, 'channel_id': 'CFOREIGN'}, settings, store, web)
+
+
+def test_poll_snapshot_excludes_foreign_and_late_join_sessions(enrolled):
+    settings, store, sid, web = enrolled
+    settings = replace(settings, slack_channels=('C123456', 'C654321'))
+    store.channels.configure(settings.channels)
+    grant = store.channels.issue_grant(channel='C654321', route='agentbus:foreign', repo='agentbus', actor='operator')
+    # Enrollment uses the same supported grant path as the live service.
+    other = store.channels.enroll(grant, repo='agentbus', route='agentbus:foreign', display_name='Foreign',
+        session_secret='foreign-secret-with-at-least-32-characters')
+    payload = {'command': '/agentbus', 'channel_id': 'C123456', 'user_id': 'U123',
+               'text': 'poll What is blocked?', 'trigger_id': 'poll-trigger'}
+    result = execute_command(payload, settings, store, web)
+    assert '1 session' in result
+    late_secret = 'late-secret-with-at-least-32-characters'
+    late_grant = store.channels.issue_grant(channel='C123456', route='agentbus:late', repo='agentbus', actor='operator')
+    _, late, _ = store.channels.enroll(late_grant, repo='agentbus', route='agentbus:late',
+                                      display_name='Late', session_secret=late_secret)
+    assert execute_command(payload, settings, store, web) == result
+    assert store.controls.deliver(late, late_secret) == []
+    assert store.controls.deliver(other[1], 'foreign-secret-with-at-least-32-characters') == []
+    assert store.controls.deliver(sid, SECRET)[0]['kind'] == 'poll'
+
+
+def test_results_are_private_operator_and_channel_scoped(enrolled):
+    settings, store, sid, web = enrolled
+    cid, _ = store.controls.issue_auxiliary(kind='poll', routes=None, session_ids=[sid],
+                                           reason='Ready?', actor='operator')
+    store.controls.deliver(sid, SECRET)
+    store.controls.acknowledge_control(cid, sid, SECRET, answer='waiting for CI')
+    assert 'waiting for CI' in command(settings, store, web, f'results {cid}')
+    assert 'not enabled' in command(settings, store, web, f'results {cid}', user='U999')
+    settings = replace(settings, slack_channels=('C123456', 'C654321'))
+    assert 'No announcement results' in command(settings, store, web, f'results {cid}', channel='C654321')

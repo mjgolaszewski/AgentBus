@@ -48,7 +48,7 @@ memory_retention_policy:
     - preserve_replacement_reference_when_available
 environment_facts:
   current_repo_state:
-    - RC2 allowlisted human replies and slash sends share request authority and quota; unique current identity fragments resolve channel-first; health is global private human-operator only; rich projection preserves wire and locator
+    - RC2 allowlisted human replies and slash sends share request authority and quota; unique current identity fragments resolve channel-first; health is global private human-operator only; rich projection preserves wire and locator; RC2 broadcast/poll construction retains one shared control with channel-local explicit read receipts or answers, no forced wake; final proof pending
     - all governance, memory, specs, plans, workitem ledgers, and phase logs are YAML-native
     - observability contracts are scaffolded under contracts/observability/v1/
     - structural anti-drift gates are scaffolded for module size, layer ownership, bounded-context ownership, CQRS side rules, router thinness, and duplication

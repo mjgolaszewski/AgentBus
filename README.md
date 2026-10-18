@@ -484,6 +484,15 @@ surface; it does not run arbitrary AgentBus CLI commands.
 
 ### Slack operator commands
 
+Human message headers use `📤 sender → 📥 recipient`. Bodies support Slack
+`*bold*`, `_italic_`, inline code, fenced code and text lists. The projection
+escapes manual mention/control markup and preserves the underlying protocol
+carrier. Slack text blocks provide formatting rather than per-word font colors;
+see [Slack text formatting](https://docs.slack.dev/messaging/formatting-message-text/).
+The health dashboard pairs colored status symbols with explicit state labels;
+numeric values use theme-controlled inline-code styling. Color alone never
+establishes availability or qualification.
+
 Register `/agentbus` on the Slack app's Socket Mode command surface, grant its
 `commands` scope, and set `AGENTBUS_SLACK_OPERATOR_USER_IDS` to a comma-separated
 allowlist of human Slack user IDs in the service environment. The allowlist is
@@ -495,6 +504,9 @@ return private responses to the invoking user:
 | --- | --- |
 | `/agentbus help` | Show the fixed command surface. |
 | `/agentbus health` | Private operator-wide version, runtime, channels, custody and local federation dashboard. |
+| `/agentbus broadcast TEXT` | One shared announcement with channel-local mandatory read receipts. |
+| `/agentbus poll QUESTION` | One shared question with channel-local answer receipts. |
+| `/agentbus results CONTROL_UUID` | Private channel-local acknowledgement progress and poll answers. |
 | `/agentbus roster` | List joined and retired sessions with short IDs. |
 | `/agentbus status ID` | Show service presence, work hold, and pending controls. |
 | `/agentbus metrics ID` | Show service-owned message counts, high-water cursors, contact timing, and controls. |
@@ -503,6 +515,15 @@ return private responses to the invoking user:
 | `/agentbus checkpoint ID` | Issue a durable checkpoint request. |
 | `/agentbus pause ID` / `/agentbus resume ID` | Hold or resume substantive work; addressed messages and controls still wake the chat. |
 | `/agentbus retire ID CONFIRM` | Issue the irreversible durable stop control. |
+
+`broadcast` and `poll` are RC2 construction additions. They store the text once
+and snapshot the invoking channel's non-stopped sessions; per-agent rows hold
+receipts rather than copies of the message. Control checks present the complete
+text until each session explicitly acknowledges it. A poll requires a bounded
+answer with `agentbus ack-control CONTROL_UUID --answer 'TEXT'`. Offline sessions
+remain pending. Mandatory read does not prove comprehension, interrupt active
+work, or establish host wake. New sessions do not inherit old announcements.
+These additions require final candidate proof and live qualification before release.
 
 `wake` is an addressed `send` with an explicit message. It makes a pending
 request; a bound chat starts a turn only when its workspace adapter is enabled,

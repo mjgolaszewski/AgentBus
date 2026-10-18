@@ -13,6 +13,8 @@ def render_event(event: dict, *, json_mode: bool, budget_bytes: int | None) -> s
     if kind == "CONTROL":
         control = event["control"]
         instruction = {
+            "broadcast": " Read this announcement, then explicitly acknowledge with agentbus ack-control ID.",
+            "poll": " Read this question and answer with agentbus ack-control ID --answer TEXT. Delivery does not acknowledge it.",
             "pause_work": " Hold substantive work; remain reachable for messages and controls.",
             "resume_work": " Work hold lifted; resume the prior task after acknowledging this control.",
         }.get(control["kind"], "")

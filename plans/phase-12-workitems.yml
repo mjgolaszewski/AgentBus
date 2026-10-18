@@ -125,6 +125,7 @@ workitems:
   - Authorized private health dashboard reports actual version/runtime/channel/federation state without secrets or inferred
     remote health
   - Rich Slack display preserves protocol2 carrier and echo locators without mentions/unfurls
+  - Broadcast and poll retain one shared control payload with channel-local target receipts, explicit read ACK or bounded answer, durable retry and restart recovery
   acceptance_evidence:
   - contract-test
   - test

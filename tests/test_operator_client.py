@@ -170,3 +170,18 @@ def test_temporary_override_cli_and_session_policy_explanation(tmp_path, monkeyp
     assert operator.policy_show(parse_args(["policy-show", "--session-id", "session-1"]), VALUES) == 0
     assert calls[1] == ("/v1/sessions/session-1/policy", None, "operator-only-capability")
     assert "r2" in capsys.readouterr().out
+
+
+def test_poll_answer_parser_and_operator_issue_preserve_explicit_targets(monkeypatch, capsys):
+    answer = parse_args(['ack-control', 'control-one', '--answer', 'waiting for review'])
+    assert answer.answer == 'waiting for review'
+    assert answer.report_file is None
+    calls = []
+    monkeypatch.setenv('AGENTBUS_OPERATOR_TOKEN', 'operator-only-capability')
+    monkeypatch.setattr(operator, 'api', lambda _values, path, body, **kwargs:
+                        calls.append((path, body, kwargs)) or {'control_id': 'one'})
+    ns = parse_args(['control-issue', '--kind', 'poll', '--session-id', 'session-one', '--reason', 'Ready?'])
+    assert operator.control_issue(ns, VALUES) == 0
+    assert calls[0][1]['session_ids'] == ['session-one']
+    assert calls[0][1]['kind'] == 'poll'
+    assert calls[0][2]['bearer_token'] == 'operator-only-capability'

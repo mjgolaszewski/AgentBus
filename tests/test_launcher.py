@@ -852,4 +852,6 @@ def test_auxiliary_control_ack_does_not_stop_client_polling(launcher, tmp_path, 
     assert launcher.main(["ack-control", "--identity", identity, "checkpoint-1",
                           "--report-file", str(report_file)]) == 0
     assert payloads == [{"report": report}]
+    assert launcher.main(["ack-control", "--identity", identity, "poll-1", "--answer", "review pending"]) == 0
+    assert payloads[-1] == {"report": None, "answer": "review pending"}
     assert json.loads(path.read_text())["participation"].get("stopped") is None

@@ -214,3 +214,54 @@ def test_existing_control_rows_survive_additive_override_columns(tmp_path) -> No
         "override_values_json", "expires_at",
     }
     db.close()
+
+
+def test_shared_poll_payload_retry_answer_and_restart(tmp_path):
+    path = tmp_path / 'shared.sqlite3'
+    db, participation, controls = open_stores(path)
+    participation.set_policy(scope='global', scope_key='*', values=POLICY, actor='operator')
+    _, first = enroll(participation, 'one')
+    _, second = enroll(participation, 'two')
+    kwargs = dict(kind='poll', routes=None, session_ids=[first, second],
+                  reason='Which task is blocked?', actor='slack:U1:C1', request_key='trigger-one')
+    control_id, targets = controls.issue_auxiliary(**kwargs)
+    assert set(targets) == {first, second}
+    assert controls.issue_auxiliary(**kwargs) == (control_id, targets)
+    assert db.execute('SELECT count(*) FROM operator_controls').fetchone()[0] == 1
+    assert db.execute('SELECT count(*) FROM control_targets').fetchone()[0] == 2
+    with pytest.raises(ValueError):
+        controls.issue_auxiliary(**{**kwargs, 'reason': 'changed'})
+    with pytest.raises(ValueError):
+        controls.acknowledge_control(control_id, first, SECRET, answer='not delivered')
+    assert controls.deliver(first, SECRET)[0]['reason'] == kwargs['reason']
+    assert controls.deliver(first, SECRET)[0]['control_id'] == control_id
+    with pytest.raises(ValueError):
+        controls.acknowledge_control(control_id, first, SECRET)
+    with pytest.raises(PermissionError):
+        controls.acknowledge_control(control_id, first, 'wrong', answer='blocked')
+    receipt, kind = controls.acknowledge_control(control_id, first, SECRET, answer='blocked')
+    assert kind == 'poll'
+    assert controls.acknowledge_control(control_id, first, SECRET, answer='blocked')[0] == receipt
+    with pytest.raises(ValueError):
+        controls.acknowledge_control(control_id, first, SECRET, answer='changed')
+    db.close()
+    db, _, controls = open_stores(path)
+    assert controls.deliver(first, SECRET) == []
+    assert controls.deliver(second, SECRET)[0]['control_id'] == control_id
+    assert next(row for row in controls.status(control_id) if row['session_id'] == first)['answer'] == 'blocked'
+    db.close()
+
+
+def test_broadcast_requires_explicit_read_ack_and_rejects_answer(tmp_path):
+    db, participation, controls = open_stores(tmp_path / 'broadcast.sqlite3')
+    participation.set_policy(scope='global', scope_key='*', values=POLICY, actor='operator')
+    _, sid = enroll(participation, 'one')
+    cid, _ = controls.issue_auxiliary(kind='broadcast', routes=None, session_ids=[sid],
+                                      reason='Read this', actor='operator')
+    controls.deliver(sid, SECRET)
+    assert controls.status(cid)[0]['state'] == 'delivered'
+    with pytest.raises(ValueError):
+        controls.acknowledge_control(cid, sid, SECRET, answer='unexpected')
+    controls.acknowledge_control(cid, sid, SECRET)
+    assert controls.status(cid)[0]['state'] == 'effective'
+    db.close()
