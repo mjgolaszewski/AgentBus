@@ -5,6 +5,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Keep historical live-proof rejection strict for release candidates; update its diagnostic assertion for unsupported prerelease metadata without widening the verifier.
+
 ## [0.9.1rc1] - 2026-10-17
 
 Release candidate for channel-isolated operation. Requires updated clients and
