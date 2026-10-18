@@ -37,12 +37,13 @@ documents:
   - - 1
     - 42
   line_count: 42
-  sha256: 12c66cebcf19524105a7df7658200ab8088cb9b766f1ad65bdbff18fec13d1e2
+  sha256: 70e09433752fc5a0be46e9fd1b5ace26c07ed84d46ecdba5fea95d3c4545e4e7
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
   - Fresh-store bootstrap requires distinct operator capability and configured global policy before grant-backed
     joining; existing migration preserves policy
+  - Anonymized local route examples and exported local-prefix configuration agree
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: CONTRACT.md
   review_status: line_by_line_reviewed
@@ -89,7 +90,7 @@ documents:
   - - 1
     - 825
   line_count: 825
-  sha256: 11d51fafd473387a8f9a416158b4a95004b4d085c95f24a4e1a60f4dfa0f7f91
+  sha256: 292620748c9017fb6634b9674547e759683f9534bedecc38cd1646dc0dae958e
   disposition: updates
   findings:
   - Removed legacy bearer/unjoined authority and rollout fallback
@@ -98,6 +99,7 @@ documents:
     joining; existing migration preserves policy
   - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
     bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - Anonymized local route examples and exported local-prefix configuration agree
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: SECURITY.md
   review_status: line_by_line_reviewed
@@ -398,12 +400,13 @@ documents:
   - - 1
     - 56
   line_count: 56
-  sha256: b6ad8cf52d7037021fde04a011a31e6ba3d6e9d7009479e7da3b4c11d65cb614
+  sha256: 74c1ee82df4bb43ff33ffcb72b1743ac63f7bff61c9682a4d88a7f500ff0b939
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
   - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
     bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - Anonymized local route examples and exported local-prefix configuration agree
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: docs/audiences/experimenters.md
   review_status: line_by_line_reviewed
@@ -425,12 +428,13 @@ documents:
   - - 1
     - 71
   line_count: 71
-  sha256: ac497172570020fba65a0e73f9422c0991b0f2a0bdb1c2cd835885040206a584
+  sha256: 6ce30297c3f3cb1b3fa4462c0c8206273f37145c9d444be10b04671d41a2ff25
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
   - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present;
     bounded channel canary and experimental wake limits remain distinct; original machine evidence unchanged'
+  - Anonymized local route examples and exported local-prefix configuration agree
   verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
 - document: docs/audiences/humans.md
   review_status: line_by_line_reviewed

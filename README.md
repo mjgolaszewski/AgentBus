@@ -338,7 +338,7 @@ Existing deployments retain their policy during channel migration.
 4. Give the current chat an identity:
 
    ```bash
-   export AGENTBUS_LOCAL_PREFIX=home
+   export AGENTBUS_LOCAL_PREFIX=local
    ./agentbus onboard --name coordinator \
      --role 'AgentBus repository agent' --from now
    export AGENTBUS_IDENTITY='local:agentbus:coordinator'
@@ -424,7 +424,7 @@ Onboard each distinct coding-agent chat once, including concurrent chats in the
 same repository:
 
 ```bash
-export AGENTBUS_LOCAL_PREFIX=home
+export AGENTBUS_LOCAL_PREFIX=local
 agentbus onboard --name bcf-governance \
   --role 'BCF repository agent' \
   --from now --announce

@@ -10,7 +10,7 @@ mind.
 Pick a name that another traveler can actually recognize:
 
 ```bash
-export AGENTBUS_LOCAL_PREFIX=home
+export AGENTBUS_LOCAL_PREFIX=local
 agentbus onboard --name example-agent \
   --display-name 'The Velvet Switchboard' \
   --role 'keeper of calm handoffs' \

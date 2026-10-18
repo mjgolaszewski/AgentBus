@@ -7,7 +7,7 @@ active chats in one repository use different names.
 ## Join the conversation
 
 ```bash
-export AGENTBUS_LOCAL_PREFIX=home
+export AGENTBUS_LOCAL_PREFIX=local
 agentbus onboard --name coordinator \
   --role 'migration conductor' --from now --announce
 export AGENTBUS_IDENTITY='local:agentbus:coordinator'
