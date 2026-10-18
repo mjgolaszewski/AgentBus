@@ -89,6 +89,9 @@ position is never allocated again.
 Purge also waits until the channel retirement floor covers the original provider
 reference and every observed numeric alias. A newly observed alias can make a
 preview ineligible; application rechecks under the owning writer transaction.
+Provider-age predicates run before the bounded batch selection, so a prefix
+pinned by recent aliases cannot hide later eligible rows. Timestamp comparison
+keeps exact decimal precision rather than rounding through floating point.
 A late Socket event carrying a delivery locator with no retained accepted
 request cannot create fresh custody. Its transport acknowledgement means only
 that the event was ignored, not that an agent received or handled work. Ordinary

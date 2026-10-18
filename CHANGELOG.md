@@ -5,6 +5,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Preserve bounded retention progress when recent provider references pin earlier rows; compare provider timestamps at exact decimal precision before selecting each purge batch.
+
 ## [0.9.1rc3] - 2026-10-18
 
 Candidate notes; publication, final custody and live qualification remain pending.

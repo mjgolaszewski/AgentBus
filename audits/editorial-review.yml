@@ -94,7 +94,7 @@ documents:
   - - 1
     - 105
   line_count: 105
-  sha256: 778ce7033eac231e9b04a1dc4931fa0457a46a8058fa5364d031e075b530feb8
+  sha256: ba98cfe9d9aff2a32ffe110677fd9bc88b0428d3ef69f8507e73821248c85cf1
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
@@ -119,6 +119,8 @@ documents:
     limits remain explicit.'
   - Reconciled the live RC2 no-expiry constraint with experimental RC3 cutover/replay scope; added verified explicit
     NFS permission readback constraint without expanding memory line budget.
+  - Reviewed provider-age eligibility before batch selection and exact decimal comparison; bounded progress scope
+    and pending final proof remain explicit.
   verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
     qualification remain pending
   baseline_review_sha256: bdaf73c69ddbbc3ba02acc02ebdf2d1b7ea6620fc06ea11d2d329df4a5ff5701
@@ -959,9 +961,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 233
-  line_count: 233
-  sha256: f8666cca9885dcccddee05fecf7a72031ed540c012f9ac04205e6eaf83e48d03
+    - 234
+  line_count: 234
+  sha256: df35066d5a725c6c2364d2e3347cbaf8f498ae6d65c0ebeec118d35dce82d664
   disposition: updates
   findings:
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
@@ -989,6 +991,8 @@ documents:
   - 'Reviewed provider-retirement correction in context: all observed aliases constrain purge; apply rechecks atomically;
     unknown delivery locators cannot recreate custody or semantic acknowledgement. Experimental and publication
     limits remain explicit.'
+  - Reviewed provider-age eligibility before batch selection and exact decimal comparison; bounded progress scope
+    and pending final proof remain explicit.
   verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
     qualification remain pending
   baseline_review_sha256: a26359db528ecae6e82564456c8a5a60f9f5c21fa861d5ad7097f8cc44a0bbab
@@ -1425,7 +1429,7 @@ documents:
   - - 1
     - 100
   line_count: 100
-  sha256: 58d65e5a004692da5bf3ceb3c8d0a9fb4958f3b96fb856ac06a073be70e0651b
+  sha256: 40ea6bc9eb37acbac7d27de0eb2acb77c3c5da51248e212b4d11e28fbe04061f
   disposition: new
   findings:
   - New governed ordinary-message lifecycle contract models exact scopes, replay epochs, independent transport/recipient/shared
@@ -1441,15 +1445,17 @@ documents:
   - 'Reviewed provider-retirement correction in context: all observed aliases constrain purge; apply rechecks atomically;
     unknown delivery locators cannot recreate custody or semantic acknowledgement. Experimental and publication
     limits remain explicit.'
+  - Reviewed provider-age eligibility before batch selection and exact decimal comparison; bounded progress scope
+    and pending final proof remain explicit.
   verification: Editorial review complete; conditional RC3 behavior and retained-history limits reviewed; final
     exact-source custody pending
 - document: docs/message-lifecycle.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 164
-  line_count: 164
-  sha256: da83fa3eb29e630fff32acc96a4372d69947f421e39568bab0c53a722380bf76
+    - 167
+  line_count: 167
+  sha256: 184ea4eee37e5c5d223c4196f473ff0450dc3030a0a20e1f306f38a48c36ea5c
   disposition: new
   findings:
   - New complete lifecycle guide distinguishes released RC2 from unqualified RC3; covers command/body expectations,
@@ -1465,6 +1471,8 @@ documents:
   - 'Reviewed provider-retirement correction in context: all observed aliases constrain purge; apply rechecks atomically;
     unknown delivery locators cannot recreate custody or semantic acknowledgement. Experimental and publication
     limits remain explicit.'
+  - Reviewed provider-age eligibility before batch selection and exact decimal comparison; bounded progress scope
+    and pending final proof remain explicit.
   verification: Editorial review complete; conditional RC3 behavior and retained-history limits reviewed; final
     exact-source custody pending
 summary:
