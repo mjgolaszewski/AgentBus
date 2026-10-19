@@ -1194,3 +1194,37 @@ def test_newly_ready_reply_chain_progresses_only_within_remaining_cycle_budget(l
     assert poster.calls == [(keys[0],None),(keys[1],'200.000001'),(keys[2],'200.000001')]
     assert asyncio.run(worker.submit_once(budget=1)) == 1
     assert worker.cycle_attempts == 1 and poster.calls[-1] == (keys[3],'200.000001')
+
+
+def test_eligibility_refresh_cannot_project_foreign_payload_through_shared_request_key(lifecycle):
+    import asyncio
+
+    from src.agentbus_delivery_runtime_service import LocalDeliveryWorker
+    from src.agentbus_local_delivery_service import fingerprint
+
+    store, p = lifecycle
+    def accept(sender, recipient, text, *, key=None, parent=None):
+        body = SendMessage(sender=sender.route,recipient=recipient.route,text=text,kind='request',reply_to_cursor=parent)
+        body._sender_assurance = 'session'
+        key = key or str(uuid4())
+        epoch = store.lifecycle.epoch(sender.channel,100)['epoch']
+        return key,store.local_delivery.accept(sender.channel,key,fingerprint(body.model_dump()),body,sender.session_id,epoch=epoch)
+    root_key, root = accept(p['sender'],p['recipient'],'unknown parent')
+    assert store.local_delivery.reserve('C111',root_key,now=100)
+    store.local_delivery.uncertain('C111',root_key)
+    shared, child = accept(p['sender'],p['recipient'],'blocked local',parent=root.cursor)
+    ready, _ = accept(p['sender'],p['recipient'],'safe independent')
+    accept(p['foreign'],p['foreign'],'foreign private payload',key=shared)
+    class Poster:
+        def __init__(self):self.calls=[]
+        async def post(self,message,*,message_id):
+            self.calls.append((message_id,message.text))
+            return f'200.{len(self.calls):06d}'
+    poster=Poster()
+    try:
+        assert asyncio.run(LocalDeliveryWorker(store,poster,'C111').submit_once()) == 1
+        assert poster.calls == [(ready,'safe independent')]
+        assert store.message('C111',child.cursor).slack_ts == ''
+        assert store._db.execute('SELECT attempts FROM local_delivery_obligations WHERE channel=? AND request_id=?',('C111',shared)).fetchone()[0] == 0
+    finally:
+        assert store._db.execute('PRAGMA foreign_key_check').fetchall() == []

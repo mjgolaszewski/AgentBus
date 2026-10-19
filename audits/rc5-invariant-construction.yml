@@ -59,6 +59,7 @@ work_orders:
   - tests/test_message_lifecycle.py::test_parent_recovery_unblocks_child_after_restart_without_cross_channel_expiry
   - tests/test_message_lifecycle.py::test_expiry_settlement_rolls_back_targets_and_obligations_together
   - tests/test_message_lifecycle.py::test_newly_ready_reply_chain_progresses_only_within_remaining_cycle_budget
+  - tests/test_message_lifecycle.py::test_eligibility_refresh_cannot_project_foreign_payload_through_shared_request_key
   edge_dispositions:
     atomic_expiry: Target and obligation updates join one existing writer transaction; injected failure or outer-command
       rollback retains both original states, then exact retry settles.
@@ -75,6 +76,9 @@ work_orders:
       resend.
     newly_ready_parent: Refresh eligibility after actual progress within the remaining shared attempt budget/deadline;
       same-cycle parent/child behavior preserved, budget3 then1 chain proves no reset or extra submissions.
+    refresh_channel_scope: Both initial and refreshed eligibility reads retain explicit channel context. A foreign
+      payload colliding with a still-blocked local request UUID cannot enter the local poster; removing only refreshed
+      scope fails the oracle.
   implementation_symbols:
   - src/agentbus_local_delivery_service.py::LocalDeliveryStore.pending
   - src/agentbus_local_delivery_service.py::LocalDeliveryStore.settle_expired
