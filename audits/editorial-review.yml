@@ -980,11 +980,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 253
-  line_count: 253
-  sha256: 9837be7cbab1b180d90a4cf67ba34acb325c76f7257cb36fc8db28a2691a64f7
+    - 254
+  line_count: 254
+  sha256: 53afdb6d8e0587a075f4640bb6cdfc1d0892c67a48f783230b65944213b9ad44
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 5ba7d9f6; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 follow-up changed lines reviewed in context against hash-verified 60b5a1e; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 follow-up changed lines reviewed in context against hash-verified 015dec71; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 follow-up changed lines reviewed in context against hash-verified 6a1c6720; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
