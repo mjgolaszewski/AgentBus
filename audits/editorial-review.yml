@@ -1019,9 +1019,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 296
-  line_count: 296
-  sha256: 8bb92aa643042dd8aee97ded7f7842d7a10e157262cfad51324475115a7ca2e2
+    - 297
+  line_count: 297
+  sha256: 8be9eddd7e76ce6e30bd3c727234a9779d4daaf5fd18b8f8b52ef28eec21eb07
   disposition: updates
   findings:
   - Post-RC5 audit-count evidence note reviewed in context; inherited per-file reviews and runtime proof subjects

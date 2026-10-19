@@ -15,6 +15,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Include existing child-failure propagation and runtime-smoke namespace controls in ordinary and Python 3.14 assurance producers.
+
 - Correct the editorial audit summary to count all 93 reviewed product documents and reconcile the historical bounded-channel canary reference; retain subject-specific proof and unfinished qualification states.
 
 - Record exact RC5 candidate proof, reproducible archive and SDK-free installation; complete the five corrective work orders while keeping publication, deployment and P12 owner-wake qualification separate.
