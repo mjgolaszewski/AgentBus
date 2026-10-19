@@ -95,9 +95,11 @@ documents:
   - - 1
     - 105
   line_count: 105
-  sha256: 8f05d5322ac8e24d9fd7afb320faf7afb22a056a45e7fc6a1179099883ebbe60
+  sha256: f1891de20f87b6c1e1ac538a6fb82c9aaa5d6f4291ddc39341680183e5adfdf3
   disposition: updates
   findings:
+  - RC5 qualification closeout changed lines reviewed against exact946445c; runtime proof stays bound to that
+    immutable candidate, with publication/deployment and owner-wake qualification separate.
   - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays
     bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 follow-up changed lines reviewed in context against hash-verified 6a1c6720; released runtime evidence stays
@@ -733,11 +735,13 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 108
-  line_count: 108
-  sha256: 79bbfa9e632b168f5ecf2fa0b134f8eec2de5b01ab0699e48717f89fd6a7ebca
+    - 110
+  line_count: 110
+  sha256: cea2e519870c848e9bc753257c8ede1aaab6abe3fe838eef56e85e6a7f5f6688
   disposition: updates
   findings:
+  - RC5 qualification closeout changed lines reviewed against exact946445c; runtime proof stays bound to that
+    immutable candidate, with publication/deployment and owner-wake qualification separate.
   - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and
     observation limits disclosed without promoting historical proof.
   - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject
@@ -1014,11 +1018,13 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 292
-  line_count: 292
-  sha256: cc9d16e33231c5ef085e25f581f93d422992171de26b4ea963a44c3651c32327
+    - 294
+  line_count: 294
+  sha256: 19ca0ac6c997a2ac8c43d3b19a703f5d7af032ac715a3cbf1828dcecba6997f9
   disposition: updates
   findings:
+  - RC5 qualification closeout changed lines reviewed against exact946445c; runtime proof stays bound to that
+    immutable candidate, with publication/deployment and owner-wake qualification separate.
   - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays
     bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 follow-up changed lines reviewed in context against hash-verified 5ba7d9f6; released runtime evidence stays
@@ -1407,9 +1413,11 @@ documents:
   - - 1
     - 220
   line_count: 220
-  sha256: 4c898c3af7f0f3550f831c366276ece619bb28d5570c85b8dd1d97a25baaf591
+  sha256: 869e7d8c402629da7ecbb7dc1fe3263b3d23ed8ea152c35720e12a27cc318f4a
   disposition: updates
   findings:
+  - RC5 qualification closeout changed lines reviewed against exact946445c; runtime proof stays bound to that
+    immutable candidate, with publication/deployment and owner-wake qualification separate.
   - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays
     bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 follow-up changed lines reviewed in context against hash-verified 5a7feb3e; diagnostic outcomes remain exact-subject
@@ -1584,11 +1592,13 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 279
-  line_count: 279
-  sha256: 80bfdaacfa06b034b6103cd3d897bc2d7c32c93a3a837ccf5b7c7fffb3665498
+    - 302
+  line_count: 302
+  sha256: f93d71e9842c463986bd886e2dca539f6818cfb6b7361999780610049756f86a
   disposition: new
   findings:
+  - RC5 qualification closeout changed lines reviewed against exact946445c; runtime proof stays bound to that
+    immutable candidate, with publication/deployment and owner-wake qualification separate.
   - Authored and reviewed RC5 invariant-to-owner-to-edge acceptance map; source baseline pinned to released BCF
     vocabulary; no qualification or deployment authority inferred.
   verification: Targeted controls pass; full exact-source proof pending

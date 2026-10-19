@@ -3,8 +3,10 @@
 The package version in [`pyproject.toml`](../pyproject.toml) is the single
 version authority; FastAPI and lockfile version literals are checked projections. This page is the derived release/capability guide; versioned
 contracts below own behavior. RC5 is a corrective construction candidate for
-[#94](https://github.com/mjgolaszewski/AgentBus/issues/94), awaiting its own
-exact-source proof and release review. Released RC4 (`6a1c672`) passed protected
+[#94](https://github.com/mjgolaszewski/AgentBus/issues/94). Exact subject `946445c`
+has protected PR/main proof, a reproducible archive and SDK-free isolated-install
+verification; see the [qualification record](../audits/rc5-invariant-construction.yml).
+Publication and deployment remain separate. Released RC4 (`6a1c672`) passed protected
 PR/exact-main CI, reproducible archive, isolated installation and bounded local
 two-channel checks; the operator confirmed grouped health readable and private.
 RC3 introduced the experimental lifecycle, retained in RC4. Released 0.9.0 is
