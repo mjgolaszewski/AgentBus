@@ -1164,3 +1164,33 @@ def test_expiry_settlement_rolls_back_targets_and_obligations_together(lifecycle
     store.local_delivery.settle_expired('C111',now=200)
     assert store._db.execute('SELECT state FROM lifecycle_targets WHERE cursor=?',(accepted.cursor,)).fetchone()[0] == 'expired_unclaimed'
     assert store._db.execute('SELECT state FROM local_delivery_obligations WHERE request_id=?',(key,)).fetchone()[0] == 'expired_unsubmitted'
+
+
+def test_newly_ready_reply_chain_progresses_only_within_remaining_cycle_budget(lifecycle):
+    import asyncio
+
+    from src.agentbus_delivery_runtime_service import LocalDeliveryWorker
+    from src.agentbus_local_delivery_service import fingerprint
+
+    store, p = lifecycle
+    epoch = store.lifecycle.epoch('C111',100)['epoch']
+    keys, parent = [], None
+    for index in range(4):
+        body = SendMessage(sender=p['sender'].route,recipient=p['recipient'].route,text=str(index),kind='request',reply_to_cursor=parent)
+        body._sender_assurance = 'session'
+        key = str(uuid4())
+        accepted = store.local_delivery.accept('C111',key,fingerprint(body.model_dump()),body,'exact-session',epoch=epoch)
+        keys.append(key)
+        parent = accepted.cursor
+    class Poster:
+        def __init__(self):self.calls=[]
+        async def post(self,message,*,message_id):
+            self.calls.append((message_id,message.thread_ts))
+            return f'200.{len(self.calls):06d}'
+    poster=Poster()
+    worker=LocalDeliveryWorker(store,poster,'C111')
+    assert asyncio.run(worker.submit_once(budget=3)) == 3
+    assert worker.cycle_attempts == 3
+    assert poster.calls == [(keys[0],None),(keys[1],'200.000001'),(keys[2],'200.000001')]
+    assert asyncio.run(worker.submit_once(budget=1)) == 1
+    assert worker.cycle_attempts == 1 and poster.calls[-1] == (keys[3],'200.000001')

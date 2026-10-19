@@ -29,7 +29,8 @@ work_orders:
 - id: RC5-01
   status: implemented_exact_source_proof_pending
   invariant: Independent eligible delivery progresses and expiry settles without ancestry reservation
-  domain_law: Independent eligible delivery progresses and expiry settles without ancestry reservation
+  domain_law: Delivery eligibility combines durable obligation state, channel-bound ancestry, recovery coverage
+    and recipient outcomes; only reservation allocates provider attempts, and expiry never asserts delivery or ACK.
   pinned_canonical_owner:
     families:
     - agentbus_service_state
@@ -57,6 +58,7 @@ work_orders:
   - tests/test_message_lifecycle.py::test_blocked_ancestry_cannot_starve_independent_delivery_or_expiry
   - tests/test_message_lifecycle.py::test_parent_recovery_unblocks_child_after_restart_without_cross_channel_expiry
   - tests/test_message_lifecycle.py::test_expiry_settlement_rolls_back_targets_and_obligations_together
+  - tests/test_message_lifecycle.py::test_newly_ready_reply_chain_progresses_only_within_remaining_cycle_budget
   edge_dispositions:
     atomic_expiry: Target and obligation updates join one existing writer transaction; injected failure or outer-command
       rollback retains both original states, then exact retry settles.
@@ -71,6 +73,8 @@ work_orders:
       pending.
     provider_uncertain: Existing coverage-bound recovery/retry rules unchanged; missing history cannot authorize
       resend.
+    newly_ready_parent: Refresh eligibility after actual progress within the remaining shared attempt budget/deadline;
+      same-cycle parent/child behavior preserved, budget3 then1 chain proves no reset or extra submissions.
   implementation_symbols:
   - src/agentbus_local_delivery_service.py::LocalDeliveryStore.pending
   - src/agentbus_local_delivery_service.py::LocalDeliveryStore.settle_expired
@@ -78,7 +82,8 @@ work_orders:
 - id: RC5-02
   status: implemented_exact_source_proof_pending
   invariant: Fresh mandatory controls precede ordinary wake admission
-  domain_law: Fresh mandatory controls precede ordinary wake admission
+  domain_law: Service session/control authority outranks disposable client projection; host execution facts and
+    target acknowledgements remain independent authorities.
   pinned_canonical_owner:
     families:
     - agentbus_host_adapter
@@ -126,7 +131,8 @@ work_orders:
 - id: RC5-03
   status: implemented_exact_source_proof_pending
   invariant: Service-authorized direct aliases retain quiet presentation priority
-  domain_law: Service-authorized direct aliases retain quiet presentation priority
+  domain_law: Reserved routes identify the same immutable chat/session; service-proved logical addressing owns presentation
+    priority rather than recipient text equality.
   pinned_canonical_owner:
     families:
     - agentbus_channel_authority
@@ -163,7 +169,8 @@ work_orders:
 - id: RC5-04
   status: implemented_exact_source_proof_pending
   invariant: Architectural claims cover exact declared populations with meaningful oracles
-  domain_law: Architectural claims cover exact declared populations with meaningful oracles
+  domain_law: Closed operation populations and effect ports own classification; read authority never confers mutation,
+    and command receipts describe their own transition rather than unrelated read models.
   pinned_canonical_owner:
     families:
     - agentbus_service_state
@@ -208,7 +215,8 @@ work_orders:
 - id: RC5-05
   status: implemented_exact_source_proof_pending
   invariant: Fresh documented enrollment and capability status agree with authorization
-  domain_law: Fresh documented enrollment and capability status agree with authorization
+  domain_law: Package identity and declared configuration own derived guidance; human authority requires the configured
+    allowlist, and experimental qualification remains exact-subject evidence.
   pinned_canonical_owner:
     families:
     - agentbus_channel_authority

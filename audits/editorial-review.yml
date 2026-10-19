@@ -1014,9 +1014,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 288
-  line_count: 288
-  sha256: 07dadc0937583d74e502e54e94704a1d089c1a8ead329ac9360f0be977499e0b
+    - 289
+  line_count: 289
+  sha256: d96ff8e4945e989fa3febfd6145c835fd73ab3d08ff9885df7d5f47c663e3f05
   disposition: updates
   findings:
   - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays
@@ -1530,9 +1530,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 109
-  line_count: 109
-  sha256: 8a7fbc2c12346a1ae47cf16dc967a21bcb8a21454b368764ef80a5606e3de26a
+    - 110
+  line_count: 110
+  sha256: 2223963b98aee1fbba1945ed31fa3bdaa0f0cb62273a17d32969ee718c8d426f
   disposition: new
   findings:
   - New governed ordinary-message lifecycle contract models exact scopes, replay epochs, independent transport/recipient/shared
@@ -1584,9 +1584,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 267
-  line_count: 267
-  sha256: 50ae81a57242f5a740b38ce3bd88c02b03532508bf06842c4a90e59b2813cda6
+    - 275
+  line_count: 275
+  sha256: bef9f8403ab9bacd55d6e07a93caf10a35d955b3fdc562def38af5ea89347766
   disposition: new
   findings:
   - Authored and reviewed RC5 invariant-to-owner-to-edge acceptance map; source baseline pinned to released BCF
