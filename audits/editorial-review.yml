@@ -974,11 +974,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 247
-  line_count: 247
-  sha256: 6da4282f5cfb8e2d33347ffc41bc27b2983c41f51488ae3d1e2748ce06d9465c
+    - 248
+  line_count: 248
+  sha256: 11bf0e8283328ac90336a7c8746b2bbb9218e1c5c96744a74cedee1603a13f2e
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified edbeeade; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified 037cff1a; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified 3909fe76; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified 5a7feb3e; diagnostic outcomes remain exact-subject and final proof pending.
@@ -1531,7 +1532,7 @@ release_record_review:
 rc4_review:
   baseline_commit: 2468a033e309ed945b1ff35151feed942fef6762
   baseline_document_hashes_verified: 92
-  changed_document_count: 11
+  changed_document_count: 12
   method: All prior document hashes verified; RC4 changed lines reviewed in full section context and full-file coverage refreshed.
   disposition: updates_only; no historic evidence removed_or_relabelled
   runtime_qualification: pending; no copied proof applicability
