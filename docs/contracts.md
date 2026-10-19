@@ -2,7 +2,7 @@
 
 The package version in [`pyproject.toml`](../pyproject.toml) is the single
 version authority; FastAPI and lockfile version literals are checked projections. This page is the derived release/capability guide; versioned
-contracts below own behavior. RC5 is a corrective candidate for
+contracts below own behavior. RC5 is a corrective construction candidate for
 [#94](https://github.com/mjgolaszewski/AgentBus/issues/94). Exact subject `946445c`
 has protected PR/main proof, a reproducible archive and SDK-free isolated-install
 verification; see the [qualification record](../audits/rc5-invariant-construction.yml).
