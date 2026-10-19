@@ -54,7 +54,10 @@ acceptance:
 - legacy migration atomic failure idempotent replay and preserved custody references
 - canonical manifests provider JUnit protected PR exact-main archive and isolated installation
 live_qualification:
-  status: blocked_prerequisites_not_authorized
+  status: passed_bounded_construction
+  record: audits/channel-live-qualification.yml
+  subject: abec71ebd270d9849bd600e72ce331fd4c8b1929
+  applicability: historical construction subject only; changed runtime requires its own proof and authorization
   requires:
   - two isolated operator-approved Slack channels
   - bounded canary deployment window and rollback
