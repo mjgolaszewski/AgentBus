@@ -1018,11 +1018,13 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 294
-  line_count: 294
-  sha256: 19ca0ac6c997a2ac8c43d3b19a703f5d7af032ac715a3cbf1828dcecba6997f9
+    - 295
+  line_count: 295
+  sha256: bcd19a0fd77814c236a827aedaecb59c800fc664e3e3f61ff35c5810fcfda581
   disposition: updates
   findings:
+  - Post-RC5 audit-count evidence note reviewed in context; inherited per-file reviews and runtime proof subjects
+    remain unchanged.
   - RC5 qualification closeout changed lines reviewed against exact946445c; runtime proof stays bound to that
     immutable candidate, with publication/deployment and owner-wake qualification separate.
   - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays
@@ -1603,9 +1605,9 @@ documents:
     vocabulary; no qualification or deployment authority inferred.
   verification: Targeted controls pass; full exact-source proof pending
 summary:
-  documents_reviewed: 92
+  documents_reviewed: 93
   pending_line_reviews: 0
-  validation: All92 hashes verified against protected6a1c672; release-record changed lines reviewed in context and full-file coverage refreshed. New documentation subject awaits canonical proof; runtime evidence remains bound to immutable6a1. Older per-file findings retain their historical review scope.
+  validation: All 93 current product-document hashes, line counts, full coverage ranges and declared population are verified; unchanged per-file reviews retain their historical scope. The summary count correction adds no runtime or live authority. Changed log bytes are reviewed in context and the new documentation subject awaits canonical proof; RC5 runtime evidence remains bound to exact946445c.
   consolidation: No historical record merged or removed; new models consolidate current authority without deleting
     evidence
   experimental_disclosures: Current product and audience guides name live multichannel and owner-wake qualification

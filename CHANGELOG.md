@@ -15,6 +15,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Correct the editorial audit summary to count all 93 reviewed product documents; retain historical proof and unfinished qualification states.
+
 - Record exact RC5 candidate proof, reproducible archive and SDK-free installation; complete the five corrective work orders while keeping publication, deployment and P12 owner-wake qualification separate.
 
 - Record operator acceptance of RC4 grouped private health and completion of the requested safe cleanup; close the authored RC4 diagnostics workitem while keeping owner-wake qualification open.
