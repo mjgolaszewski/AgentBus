@@ -1131,3 +1131,36 @@ def test_parent_recovery_unblocks_child_after_restart_without_cross_channel_expi
         assert restored._db.execute('PRAGMA foreign_key_check').fetchall() == []
     finally:
         restored.close()
+
+
+def test_expiry_settlement_rolls_back_targets_and_obligations_together(lifecycle):
+    import sqlite3
+
+    from src.agentbus_local_delivery_service import fingerprint
+    from src.agentbus_transaction_service import atomic
+
+    store, p = lifecycle
+    body = SendMessage(sender=p['sender'].route, recipient=p['recipient'].route, text='atomic expiry', kind='request')
+    body._sender_assurance = 'session'
+    key = str(uuid4())
+    epoch = store.lifecycle.epoch('C111',100)['epoch']
+    accepted = store.local_delivery.accept('C111',key,fingerprint(body.model_dump()),body,'exact-session',epoch=epoch)
+    with store._db:
+        store._db.execute("CREATE TRIGGER expiry_failure BEFORE UPDATE ON local_delivery_obligations "
+            "WHEN NEW.state='expired_unsubmitted' BEGIN SELECT RAISE(ABORT,'expiry interruption'); END")
+    with pytest.raises(sqlite3.DatabaseError,match='expiry interruption'):
+        store.local_delivery.settle_expired('C111',now=200)
+    assert store._db.execute('SELECT state FROM lifecycle_targets WHERE cursor=?',(accepted.cursor,)).fetchone()[0] == 'unclaimed'
+    assert store._db.execute('SELECT state FROM local_delivery_obligations WHERE request_id=?',(key,)).fetchone()[0] == 'pending'
+    with store._db:
+        store._db.execute('DROP TRIGGER expiry_failure')
+    with pytest.raises(RuntimeError,match='caller rollback'):
+        with atomic(store._db):
+            store._db.execute("INSERT INTO metadata(key,value) VALUES ('outer-command-probe','uncommitted')")
+            store.local_delivery.settle_expired('C111',now=200)
+            raise RuntimeError('caller rollback')
+    assert store._db.execute("SELECT 1 FROM metadata WHERE key='outer-command-probe'").fetchone() is None
+    assert store._db.execute('SELECT state FROM lifecycle_targets WHERE cursor=?',(accepted.cursor,)).fetchone()[0] == 'unclaimed'
+    store.local_delivery.settle_expired('C111',now=200)
+    assert store._db.execute('SELECT state FROM lifecycle_targets WHERE cursor=?',(accepted.cursor,)).fetchone()[0] == 'expired_unclaimed'
+    assert store._db.execute('SELECT state FROM local_delivery_obligations WHERE request_id=?',(key,)).fetchone()[0] == 'expired_unsubmitted'

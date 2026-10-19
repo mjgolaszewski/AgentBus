@@ -10,6 +10,7 @@ from uuid import UUID
 
 from src.agentbus_message_assurance_service import route_parts
 from src.agentbus_participation_store_service import StoppedMessageSession
+from src.agentbus_transaction_service import atomic
 
 if TYPE_CHECKING:
     from src.agentbus_service import Message, MessageStore, SendMessage
@@ -201,7 +202,7 @@ class LocalDeliveryStore:
         """Command: settle expiry independently of ancestry and provider selection."""
         if not self.owner.lifecycle.enabled:
             return
-        with self.owner._lock, self.owner._db:
+        with self.owner._lock, atomic(self.owner._db):
             self.owner.lifecycle.settle(now, channel=channel)
             self.owner._db.execute("""UPDATE local_delivery_obligations
                 SET state=CASE WHEN attempts=0 THEN 'expired_unsubmitted' ELSE 'expired_uncertain' END

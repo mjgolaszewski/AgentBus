@@ -56,9 +56,10 @@ work_orders:
   evidence:
   - tests/test_message_lifecycle.py::test_blocked_ancestry_cannot_starve_independent_delivery_or_expiry
   - tests/test_message_lifecycle.py::test_parent_recovery_unblocks_child_after_restart_without_cross_channel_expiry
+  - tests/test_message_lifecycle.py::test_expiry_settlement_rolls_back_targets_and_obligations_together
   edge_dispositions:
-    parent_not_ready_or_failed: Hold child without reserve or provider success; ancestry predicate runs before bounded
-      selection. Unknown/no-lifecycle deadlines remain pinned, never guessed.
+    atomic_expiry: Target and obligation updates join one existing writer transaction; injected failure or outer-command rollback retains both original states, then exact retry settles.
+    parent_not_ready_or_failed: Without a proved provider or thread reference hold the child without reserve; test readiness before bounded selection. A known thread root retains existing child eligibility without claiming parent submission success. Unknown/no-lifecycle deadlines remain pinned.
     independent_ready: Eligible row beyond blocked prefix receives submission within the same bounded cycle.
     unsubmitted_expired: Explicit channel command settles expired_unsubmitted before selection without incrementing
       attempts.
