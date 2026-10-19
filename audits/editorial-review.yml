@@ -346,11 +346,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 68
-  line_count: 68
-  sha256: f3eb01d2018f9e0209d5c679f2c5ea2827e1e020a2ca52b9adfe12f47811cf36
+    - 71
+  line_count: 71
+  sha256: ef6171057b8dace7a03847ce88a93b0f15b02e58683ae81921ff96a967a20b83
   disposition: updates
   findings:
+  - Reconciled historical bounded canary status against exact abec71e record; changed runtime needs independent proof and authorization.
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
   - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
     unique current identities, private operator health, unchanged wire and experimental wake boundaries'
@@ -1018,9 +1019,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 295
-  line_count: 295
-  sha256: bcd19a0fd77814c236a827aedaecb59c800fc664e3e3f61ff35c5810fcfda581
+    - 296
+  line_count: 296
+  sha256: 8bb92aa643042dd8aee97ded7f7842d7a10e157262cfad51324475115a7ca2e2
   disposition: updates
   findings:
   - Post-RC5 audit-count evidence note reviewed in context; inherited per-file reviews and runtime proof subjects
