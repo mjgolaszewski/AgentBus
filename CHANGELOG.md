@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.9.1rc5 — corrective candidate
+## [0.9.1rc5] - 2026-10-19
 
 - Prevent dependency-blocked replies from starving eligible local delivery; settle expiry before provider selection while retaining uncertain custody.
 - Defer ordinary wake when fresh mandatory controls or policy have not reached the presentation projection.

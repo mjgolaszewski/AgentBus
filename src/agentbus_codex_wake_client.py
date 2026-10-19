@@ -408,6 +408,8 @@ def status(values: dict[str, str], identity: str) -> dict:
         readiness, reason = "unknown", "service_presence_unobserved"
     elif service_presence["state"] not in {"active_compliant", "control_pending"}:
         readiness, reason = "deferred", "service_session_not_ready"
+    elif not controls_projected(service_presence, refs):
+        readiness, reason = "deferred", "control_projection_pending"
     elif not adapter_worker_running or not participation_worker_running:
         readiness, reason = "deferred", "local_worker_not_running"
     elif state is not None and refs:

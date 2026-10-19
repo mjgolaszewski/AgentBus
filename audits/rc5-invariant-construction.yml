@@ -58,8 +58,11 @@ work_orders:
   - tests/test_message_lifecycle.py::test_parent_recovery_unblocks_child_after_restart_without_cross_channel_expiry
   - tests/test_message_lifecycle.py::test_expiry_settlement_rolls_back_targets_and_obligations_together
   edge_dispositions:
-    atomic_expiry: Target and obligation updates join one existing writer transaction; injected failure or outer-command rollback retains both original states, then exact retry settles.
-    parent_not_ready_or_failed: Without a proved provider or thread reference hold the child without reserve; test readiness before bounded selection. A known thread root retains existing child eligibility without claiming parent submission success. Unknown/no-lifecycle deadlines remain pinned.
+    atomic_expiry: Target and obligation updates join one existing writer transaction; injected failure or outer-command
+      rollback retains both original states, then exact retry settles.
+    parent_not_ready_or_failed: Without a proved provider or thread reference hold the child without reserve; test
+      readiness before bounded selection. A known thread root retains existing child eligibility without claiming
+      parent submission success. Unknown/no-lifecycle deadlines remain pinned.
     independent_ready: Eligible row beyond blocked prefix receives submission within the same bounded cycle.
     unsubmitted_expired: Explicit channel command settles expired_unsubmitted before selection without incrementing
       attempts.
@@ -68,6 +71,10 @@ work_orders:
       pending.
     provider_uncertain: Existing coverage-bound recovery/retry rules unchanged; missing history cannot authorize
       resend.
+  implementation_symbols:
+  - src/agentbus_local_delivery_service.py::LocalDeliveryStore.pending
+  - src/agentbus_local_delivery_service.py::LocalDeliveryStore.settle_expired
+  - src/agentbus_delivery_runtime_service.py::LocalDeliveryWorker.submit_once
 - id: RC5-02
   status: implemented_exact_source_proof_pending
   invariant: Fresh mandatory controls precede ordinary wake admission
@@ -79,9 +86,11 @@ work_orders:
     symbols:
     - src/agentbus_codex_wake_client.py
     - src/agentbus_codex_wake_events_client.py
+    - src/agentbus_codex_wake_intent_client.py
     baseline_sha256:
       src/agentbus_codex_wake_client.py: 96d9ade45dc122715a530e8899b198c7a572f295a842ce581dff1efb23ea7937
       src/agentbus_codex_wake_events_client.py: 558deb8007103f8cfa51b07b23730f5ca14099cf8a41d6e9f16e62c40d5527f1
+      src/agentbus_codex_wake_intent_client.py: b1d9f91bc651f8e125baab416310b97cd1384c61c17d68b0039595571aebf03c
   primitive: exact-session self-presence outstanding_controls
   states_and_transitions: ordinary_pending control_pending deferred stopped uncertain notification_only
   typed_exclusions: No active turn cancellation, control ACK, AHP conformance or atomic owner admission claim
@@ -93,6 +102,9 @@ work_orders:
   evidence:
   - tests/test_codex_wake_client.py::test_fresh_control_presence_blocks_ordinary_spool_admission
   - tests/test_codex_wake_client.py::test_fresh_authority_requires_matching_control_or_policy_projection
+  - tests/test_codex_wake_client.py::test_real_stop_between_spool_and_admission_never_picks_up_or_starts_host
+  - tests/test_codex_wake_client.py::test_fresh_control_deferral_preserves_uncertain_host_intent
+  - tests/test_codex_wake_client.py::test_status_reports_fresh_control_projection_lag_without_writes
   edge_dispositions:
     projection_lag: Fresh outstanding mandatory control or unacknowledged policy defers ordinary refs before pickup/reconciliation/host
       submission.
@@ -101,9 +113,16 @@ work_orders:
     stale_or_malformed_control: Missing/malformed references cannot satisfy current required controls; contradictory
       empty pending projection defers.
     stopped_or_revoked: Existing exact-session denial remains ahead of admission; no ordinary host effect.
-    uncertain_or_active_owner: Existing uncertain recovery/owner idle proof still required; no blind retry/steering;
-      control deferral does not erase attempt state.
+    uncertain_or_active_owner: Control projection deferral preserves existing IN_FLIGHT host observations and last_attempt
+      exactly; no cancellation, reconciliation retry or ordinary launch. Owner-side idle proof remains required.
     owner_interop: 'Typed exclusion: Issue75 live AHP/native queue and atomic admission remain unqualified.'
+    self_status: Fresh control priority is identical in read-only readiness and live admission; filesystem snapshot
+      and host-call negative controls prove no query side effect.
+  implementation_symbols:
+  - src/agentbus_codex_wake_client.py::run_once
+  - src/agentbus_codex_wake_client.py::status
+  - src/agentbus_codex_wake_events_client.py::controls_projected
+  - src/agentbus_codex_wake_intent_client.py::record_result
 - id: RC5-03
   status: implemented_exact_source_proof_pending
   invariant: Service-authorized direct aliases retain quiet presentation priority
@@ -137,6 +156,10 @@ work_orders:
     quiet_off: Retained alias presentation remains available; cleanup never claims semantic ACK.
     cadence_projection: Client mirrors finite canonical cadence with valid custom-cap parity and exact invalid policy
       rejection; no service import.
+  implementation_symbols:
+  - src/agentbus_poll_client.py::_routine_message
+  - src/agentbus_poll_client.py::peek_event
+  - src/agentbus_poll_client.py::_worker
 - id: RC5-04
   status: implemented_exact_source_proof_pending
   invariant: Architectural claims cover exact declared populations with meaningful oracles
@@ -176,6 +199,12 @@ work_orders:
     command_receipts: Contract-defined mutation receipts allowed; unrelated read models prohibited. Semantic meaning
       explicitly human-review-only under CQRS-RECEIPT-SEMANTICS; registry effects remain machine checked.
     bounds: Source LOC <=800 remains mandatory; no new production module, daemon, transport, schema or dependency.
+  implementation_symbols:
+  - tests/test_architecture.py::boundary_violations
+  - tests/test_architecture.py::router_violations
+  - tests/architecture_query_probe.py::assert_query_nonmutation
+  - tests/architecture_query_probe.py::assert_cli_query_nonmutation
+  - src/agentbus_enrollment_approval_service.py::enroll_authorized
 - id: RC5-05
   status: implemented_exact_source_proof_pending
   invariant: Fresh documented enrollment and capability status agree with authorization
@@ -219,6 +248,10 @@ work_orders:
     native_platform: Linux /proc/fcntl requirement and Linux-container/WSL2 alternative explicit; macOS/Windows
       native launcher unsupported.
     host_wake: Experimental owner interop and atomic wake remain unqualified, never a release guarantee.
+  implementation_symbols:
+  - scripts/check_source.py::main
+  - src/agentbus_participation_api_service.py::api_session_enroll
+  - src/agentbus_slack_command_service.py::execute_command
 integration:
   required:
   - all affected behavioral and negative controls

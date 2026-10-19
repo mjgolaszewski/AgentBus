@@ -83,16 +83,6 @@ def tree(relative: str) -> ast.Module:
     return ast.parse((ROOT / relative).read_text(encoding="utf-8"), filename=relative)
 
 
-def imports(relative: str) -> set[str]:
-    values: set[str] = set()
-    for node in ast.walk(tree(relative)):
-        if isinstance(node, ast.Import):
-            values.update(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            values.add(node.module)
-    return values
-
-
 def test_architecture_registry_covers_every_production_module() -> None:
     roots = [ROOT / root for root in CONFIG["source_roots"]]
     discovered = {

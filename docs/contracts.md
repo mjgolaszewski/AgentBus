@@ -1,7 +1,7 @@
 # AgentBus contract model
 
 The package version in [`pyproject.toml`](../pyproject.toml) is the single
-version authority. This page is the derived release/capability guide; versioned
+version authority; FastAPI and lockfile version literals are checked projections. This page is the derived release/capability guide; versioned
 contracts below own behavior. RC5 is a corrective construction candidate for
 [#94](https://github.com/mjgolaszewski/AgentBus/issues/94), awaiting its own
 exact-source proof and release review. Released RC4 (`6a1c672`) passed protected

@@ -17,7 +17,7 @@ claim_model:
     participation-contract: [contracts/participation/**, schemas/participation-contract.schema.json]
     codex-wake-contract: [contracts/codex-wake/**, schemas/codex-wake-contract.schema.json]
     package-source: [src/__init__.py, &id002 pyproject.toml, uv.lock]
-    client-tests: [tests/test_channel*.py, tests/test_owner_wake_qualification.py, &id065 tests/test_launcher.py, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_self_service_client.py]
+    client-tests: [tests/test_rename_store.py, tests/test_channel*.py, tests/test_owner_wake_qualification.py, &id065 tests/test_launcher.py, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_self_service_client.py]
     service-tests: [tests/test_message_lifecycle.py, tests/test_local_delivery_custody.py, tests/test_delivery_client.py, tests/test_channel*.py, tests/test_federation_inbox_projection.py, tests/test_federation_directory_wire.py, tests/test_federation_directory_recovery.py, tests/test_federation_bridge.py, tests/test_federation_adapter.py, tests/test_federation_service.py, &id055 tests/test_service.py, tests/test_slack_commands.py, tests/test_participation_contract.py, tests/test_federation_contract.py, tests/test_participation_service.py, tests/test_participation_store.py, tests/test_control_store.py, tests/test_rename_store.py, tests/test_claim_recovery.py, tests/test_credential_rotation.py]
     architecture-tests: [&id051 tests/test_architecture.py, tests/architecture_query_probe.py, tests/test_service.py, tests/test_rename_store.py]
     compatibility-tests: [tests/test_rename_store.py, tests/test_message_lifecycle.py, tests/test_local_delivery_custody.py, tests/test_delivery_client.py, tests/test_federation_bridge.py, tests/test_federation_adapter.py, tests/test_python_compatibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, *id055, tests/test_slack_commands.py, tests/test_claim_recovery.py]
@@ -261,7 +261,7 @@ claim_model:
       execution_group: client-behavior
       legacy_gate: test
       dependencies:
-        subject: [*id012, codex-wake-contract]
+        subject: [*id012, *id013, participation-contract, codex-wake-contract]
         detector: [*id014]
         test_population: [client-tests]
         toolchain: [*id011]
@@ -273,7 +273,7 @@ claim_model:
       execution_group: service-contract
       legacy_gate: *id025
       dependencies:
-        subject: [*id013, participation-contract]
+        subject: [*id013, *id012, participation-contract, codex-wake-contract]
         detector: [*id014]
         test_population: [service-tests]
         toolchain: [*id011]
@@ -679,6 +679,8 @@ gates:
         expected_nodes_mode: exact
         artifact_binding: *id042
     negative_controls:
+    - {id: control-deferral-preserves-inflight-observation, mutation: {path: src/agentbus_codex_wake_intent_client.py, search: 'if status == "control_projection_pending" and', replace: 'if False and'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_codex_wake_client::test_fresh_control_deferral_preserves_uncertain_host_intent']}}
+    - {id: readiness-shares-fresh-control-priority, mutation: {path: src/agentbus_codex_wake_client.py, search: '    elif not controls_projected(service_presence, refs):', replace: '    elif False:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_codex_wake_client::test_status_reports_fresh_control_projection_lag_without_writes']}}
     - {id: fresh-controls-precede-ordinary-admission, mutation: {path: src/agentbus_codex_wake_client.py, search: '        if not controls_projected(presence, refs):', replace: '        if False:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_codex_wake_client::test_fresh_control_presence_blocks_ordinary_spool_admission[stop]']}}
     - {id: quiet-alias-priority-is-service-classified, mutation: {path: src/agentbus_poll_client.py, search: '(message.get("actionable") is True or message.get("recipient") == identity))', replace: '(message.get("recipient") == identity))'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_poll_client::test_quiet_keeps_service_authorized_alias_at_direct_priority']}}
     - {id: managed-start-cannot-bypass-channel-preflight, mutation: {path: src/agentbus_client.py, search: "        _service_configuration_preflight(values)\n        launcher = project / \"agentbus\"", replace: "        launcher = project / \"agentbus\""}, oracle: {kind: test_node_failure, node_ids: ['tests.test_launcher::test_lifecycle_rejects_simultaneous_channel_forms_before_spawn[C111-start]']}}

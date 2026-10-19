@@ -187,7 +187,7 @@ documents:
   - - 1
     - 67
   line_count: 67
-  sha256: 7dcccd5602496f3f6941481efc966823b6a2010f03fbb0e95e809e57afc496b0
+  sha256: d75b80e963f2271691a434e27eadfb8fbcf419e9f468cad506d5c90d9754c75e
   disposition: updates
   findings:
   - Removed obsolete legacy bearer bypass as supported behavior
@@ -366,7 +366,7 @@ documents:
   - - 1
     - 139
   line_count: 139
-  sha256: f376df7f29a74409a42a8e0434cb3cca897331b0b1071ea3b52146ed03037dd1
+  sha256: 71259c42e40270f4ce1a51dd78606e55069953fde08d8930e29f4f1dbdc99ef0
   disposition: updates
   findings:
   - Added channel scope and experimental qualification boundary, replaced obsolete unrestricted joining statement;
@@ -735,7 +735,7 @@ documents:
   - - 1
     - 108
   line_count: 108
-  sha256: 5d282a27635f8ef18feed0449ce09046247dd32de91e48993b7185401081fcb5
+  sha256: 79bbfa9e632b168f5ecf2fa0b134f8eec2de5b01ab0699e48717f89fd6a7ebca
   disposition: updates
   findings:
   - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and
@@ -1014,9 +1014,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 286
-  line_count: 286
-  sha256: 86cd01867ed0eb8618096c9ee2517690afd72a61300bcb27d2304b0cc2653604
+    - 287
+  line_count: 287
+  sha256: 9bae489c787329409dedc53701bda232a6734a792b5f96ad64bcb54b84ae2b12
   disposition: updates
   findings:
   - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays
@@ -1584,9 +1584,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 234
-  line_count: 234
-  sha256: 8e6ae365d24173a8201948cb44ecc3bd88b131fefdfa60aa657756d5bf71c927
+    - 267
+  line_count: 267
+  sha256: 50ae81a57242f5a740b38ce3bd88c02b03532508bf06842c4a90e59b2813cda6
   disposition: new
   findings:
   - Authored and reviewed RC5 invariant-to-owner-to-edge acceptance map; source baseline pinned to released BCF
