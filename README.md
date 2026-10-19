@@ -39,11 +39,13 @@ ownership. Production activation and final release custody remain separate.
 
 ## Candidate and experimental capabilities
 
-The RC4 candidate adds a quieter, grouped private health dashboard and
+Released experimental [0.9.1rc4](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc4)
+adds a quieter, grouped private health dashboard and
 `/agentbus workers`, `doctor`, `pending [ID]` and `explain CURSOR`. Existing
 service-task observations reset on restart; external poll/wake workers and
-remote health remain unobserved. These read-only additions await final proof
-and operator UI checks; see [operator guidance](docs/audiences/operators.md).
+remote health remain unobserved. Exact protected-source, archive/install and
+bounded two-channel checks passed; human UI readability follow-up remains open.
+See [operator guidance](docs/audiences/operators.md).
 
 Released experimental RC3 [message lifecycle behavior](docs/message-lifecycle.md) separates
 provider delivery, recipient pickup, handling, expiry, recovery and retention.

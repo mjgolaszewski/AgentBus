@@ -148,7 +148,7 @@ the resume control. AgentBus does not intercept Codex tools or cancel an
 in-flight call; the active chat acts on the hold at its next checkpoint.
 `/agentbus health` is a private, read-only operator-wide dashboard. It reports
 version, process/runtime, Slack connection, configured and retained channels,
-custody, and local federation configuration. RC4's candidate adds spaced sections
+custody, and local federation configuration. Released experimental RC4 adds spaced sections
 and bounded process-local observations of the existing delivery task and its
 delivery/lifecycle and federation cycles. Last attempt and completed-cycle times,
 backoff and fixed error codes are observations, not delivery or execution proof.
@@ -171,7 +171,8 @@ Read the [lifecycle migration guide](../message-lifecycle.md) before cutover.
 without deleting custody or running a vacuum. This explicit physical-maintenance
 scope spans the one database; it does not change agent membership or access.
 
-The RC4 inspection candidate remains pending final proof and UI qualification:
+RC4 has exact protected-source, archive/install and bounded two-channel evidence.
+Human UI readability follow-up remains open. Its private inspections are:
 
 - `/agentbus workers` shows the existing service task and cycle observations;
   it does not scan processes, invoke providers or inspect another host.
@@ -191,7 +192,7 @@ All four require the existing Slack operator allowlist and return privately.
 There is no new daemon, credential, schema migration or automatic repair. RC4
 preserves RC3 lifecycle and host-wake limitations; see [Experimenters](experimenters.md).
 
-The construction candidate separates unresolved local deliveries from retained
+RC4 retains the separation of unresolved local deliveries from retained
 request history. `AGENTBUS_LOCAL_DELIVERY_OUTSTANDING_LIMIT` defaults to 1,024;
 submitted records do not consume this budget. Unknown, blocked, uncertain and
 federated states remain unresolved. `AGENTBUS_LOCAL_DELIVERY_RETAINED_LIMIT`
@@ -212,8 +213,8 @@ fingerprints and results never silently expire. Do not delete submitted rows to
 make room; an exact authenticated retry within its applicable replay window must return its retained result,
 and changed content must conflict. Existing over-capacity data remains intact;
 new allocation is denied, while existing retries and updates that need no new
-bounded allocation remain available. This candidate is not installed merely
-because an operator has applied temporary incident containment.
+bounded allocation remain available. Deployment requires an explicitly coordinated
+cutover; temporary incident containment does not install a release.
 
 Slash-command responses are private to the invoking user; ordinary replies
 remain in their Slack thread. Allowlisted human replies with one proved local
