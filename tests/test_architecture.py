@@ -134,13 +134,29 @@ def test_production_modules_map_to_exactly_one_bounded_context() -> None:
     }]
 
 
+def boundary_violations(modules: dict[str, ast.Module]) -> list[str]:
+    violations = []
+    for relative, module in modules.items():
+        layer = MODULES[relative][0]
+        policy = CONFIG['layers'][layer]
+        for node in ast.walk(module):
+            names = ([alias.name for alias in node.names] if isinstance(node, ast.Import) else
+                     [node.module] if isinstance(node, ast.ImportFrom) and node.module else [])
+            for name in names:
+                target = 'src/' + name.removeprefix('src.').replace('.', '/') + '.py'
+                if (any(name == prefix or name.startswith(prefix + '.') for prefix in policy['forbidden_import_prefixes'])
+                        or (target in MODULES and MODULES[target][0] in policy['forbidden_layer_imports'])):
+                    violations.append(f'{relative}:{node.lineno}:{name}')
+    return violations
+
+
 def test_context_import_boundaries() -> None:
-    client_imports = imports("src/agentbus_client.py")
-    service_imports = imports("src/agentbus_service.py")
-    for prefix in CONFIG["layers"]["client"]["forbidden_import_prefixes"]:
-        assert not any(value == prefix or value.startswith(prefix + ".") for value in client_imports)
-    assert "src.agentbus_client" not in service_imports
-    assert not service_imports.intersection({"argparse", "fcntl", "subprocess"})
+    modules = {relative: tree(relative) for relative in MODULES}
+    assert not boundary_violations(modules)
+    # A forbidden dependency in a non-entrypoint must be caught too.
+    mutated = dict(modules)
+    mutated['src/agentbus_poll_client.py'] = ast.parse('from src.agentbus_participation_service import next_inbox_interval_values')
+    assert boundary_violations(mutated)
 
 
 def test_command_and_query_populations_are_closed() -> None:
@@ -158,34 +174,51 @@ def test_command_and_query_populations_are_closed() -> None:
             if name in {"CLI_OPERATIONS", "API_OPERATIONS"}:
                 assignments[name] = value
     assert set(assignments) == {"CLI_OPERATIONS", "API_OPERATIONS"}
-    assert all(isinstance(value, ast.Dict) and value.keys for value in assignments.values())
+    registry = yaml.safe_load((ROOT / 'governance/application-operations.yml').read_text())
+    for population, name in [('cli', 'CLI_OPERATIONS'), ('api', 'API_OPERATIONS')]:
+        value = assignments[name]
+        assert isinstance(value, ast.Dict)
+        keys = [ast.literal_eval(key) for key in value.keys]
+        declared = [o for o in registry['operations'] if o['population'] == population]
+        assert len(keys) == len(set(keys))
+        assert set(keys) == {o['population_key'] for o in declared}
+        for operation in declared:
+            if operation['semantic_kind'] == 'query':
+                assert operation['authoritative_mutation'] is False
+                assert operation['allowed_mutation_ports'] == []
+                assert operation['allowed_authority_ports'] == []
+    from architecture_query_probe import assert_cli_query_nonmutation, assert_query_nonmutation
+    assert_query_nonmutation(registry['operations'])
+    assert_cli_query_nonmutation(registry['operations'])
+    # Negative control: the same query authority rejects an actual SQLite write.
+    import sqlite3
+    try:
+        assert_query_nonmutation(registry['operations'], inject=lambda store:
+            store._db.execute("INSERT INTO metadata(key,value) VALUES ('query-mutation-control','bad')"))
+    except sqlite3.DatabaseError as error:
+        assert 'not authorized' in str(error)
+    else:
+        raise AssertionError('Query mutation control was not rejected')
+
+
+def router_violations(handler: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
+    policy = CONFIG['thin_router_policy']
+    branches = sum(isinstance(node, (ast.If, ast.Match, ast.Try)) for node in ast.walk(handler))
+    loops = sum(isinstance(node, (ast.For, ast.AsyncFor, ast.While)) for node in ast.walk(handler))
+    return branches > policy['max_branch_nodes'] or loops > policy['max_loop_nodes']
 
 
 def test_http_routers_remain_thin_transport_adapters() -> None:
-    policy = CONFIG["thin_router_policy"]
-    handlers = {
-        node.name: node
-        for node in tree("src/agentbus_service.py").body
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("api_")
-    }
-    assert set(handlers) == {"api_send", "api_claim"}
-    channel_handlers = {node.name: node for node in tree("src/agentbus_channel_api_service.py").body
-                        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("api_")}
-    assert set(channel_handlers) == {"api_read", "api_info", "api_inbox"}
-    handlers.update(channel_handlers)
-    status_handlers = {node.name: node for node in tree("src/agentbus_status_api_service.py").body
-                       if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith("api_")}
-    assert set(status_handlers) == {"api_health", "api_status"}
-    handlers.update(status_handlers)
-    federation_handlers = {node.name: node for node in tree('src/agentbus_federation_api_service.py').body
-                           if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith('api_')}
-    assert set(federation_handlers) == {'api_federation_enqueue'}
-    handlers.update(federation_handlers)
-    for handler in handlers.values():
-        branches = sum(isinstance(node, (ast.If, ast.Match, ast.Try)) for node in ast.walk(handler))
-        loops = sum(isinstance(node, (ast.For, ast.AsyncFor, ast.While)) for node in ast.walk(handler))
-        assert branches <= policy["max_branch_nodes"], handler.name
-        assert loops <= policy["max_loop_nodes"], handler.name
+    registry = yaml.safe_load((ROOT / 'governance/application-operations.yml').read_text())
+    declared = {symbol for operation in registry['operations'] if operation['population'] == 'api'
+                for symbol in operation['entrypoints']}
+    discovered = {f'{relative}::{node.name}':node for relative in MODULES
+                  for node in tree(relative).body
+                  if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith('api_')}
+    assert set(discovered) == declared
+    assert not {name for name, handler in discovered.items() if router_violations(handler)}
+    mutation = ast.parse('def api_session_enroll():\n' + '    if True: pass\n' * 5).body[0]
+    assert router_violations(mutation)
 
 
 def test_cross_context_duplication_stays_below_declared_block_size() -> None:

@@ -83,3 +83,22 @@ def _prompt(identity: str, attempt_id: str, refs: list[str], *, work_paused: boo
            "start or continue substantive work until a resume_work control is issued."
            if work_paused else "")
     )
+
+
+def controls_projected(presence: dict, refs: list[str]) -> bool:
+    """Fresh mandatory authority cannot be bypassed by a stale projection."""
+    controls = presence.get('outstanding_controls', [])
+    required = {'CONTROL:' + item['control_id'] for item in controls
+                if isinstance(item, dict) and isinstance(item.get('control_id'), str)}
+    policy = presence.get('effective_policy_revision')
+    policy_pending = policy is not None and policy != presence.get('acknowledged_policy_revision')
+    pending = presence.get('state') == 'control_pending' or bool(controls) or policy_pending
+    if not pending:
+        return True
+    if not refs or not refs[0].startswith(('CONTROL:', 'POLICY_CHANGED:')):
+        return False
+    if required:
+        return required.issubset(refs)
+    if policy_pending:
+        return 'POLICY_CHANGED:' + policy in refs
+    return refs[0].startswith('CONTROL:')

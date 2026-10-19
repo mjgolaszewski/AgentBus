@@ -60,6 +60,7 @@ class LocalDeliveryWorker:
         from src.agentbus_service import SendMessage
 
         self.cycle_attempts = 0
+        self.store.local_delivery.settle_expired(self.channel)
         pending = self.store.local_delivery.pending(channel=self.channel)
         uncertain = self.store.local_delivery.recovery_pending(self.channel)
         if self.federation is not None and self.federation.ordinary_channel == self.channel:

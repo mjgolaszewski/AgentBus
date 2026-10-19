@@ -1,7 +1,7 @@
 document:
   kind: editorial_audit
   path: audits/editorial-review.yml
-  status: reviewed_rc4_release_record_pending_documentation_proof
+  status: rc5_changed_bytes_reviewed_prior_full_line_audit_retained
 request:
   scope: Complete product documentation review, including historical records and product contracts; line-by-line
     coverage and disposition per file
@@ -25,8 +25,7 @@ request:
   completion_rule: No document marked reviewed without full line inspection; pending rows mean audit incomplete.
     Re-review modified bytes and refresh hashes before final candidate.
 experimental_claims:
-  multichannel: Historical bounded two-channel evidence remains subject-specific; changed RC3 runtime requires final
-    custody and bounded live verification
+  multichannel: Released RC4 bounded evidence remains subject-specific; RC5 requires its own exact-source custody
   AHP_native_queue: offline research; no production adapter
   atomic_idle_only_wake: unqualified
   federation: historical pinned canary is not changed-runtime proof
@@ -36,9 +35,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 48
-  line_count: 48
-  sha256: da03d39584633054c86ef8b90e08aba4fa59c4fc74de823029263ab211cc29d6
+    - 51
+  line_count: 51
+  sha256: 268bd4a563719d794cb8480ae05f5cdc6beaf6e2a16a3638f252707597a781ff
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
@@ -47,7 +46,9 @@ documents:
   - Anonymized local route examples and exported local-prefix configuration agree
   - Reviewed all candidate capacity setting comments and finite defaults; retained request expiry and archival limits
     are explicit. Hash-matched prior full review inherited; all changed lines reviewed in context.
-  verification: 75 affected behavioral checks plus Ruff and mypy pass; canonical exact-source proof pending
+  - RC5 changed bytes reviewed in context; prior full-line review inherited from pinned baseline. Current release
+    qualification remains distinct from this candidate.
+  verification: RC5 targeted characterization; canonical exact-source proof pending
 - document: CONTRACT.md
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -94,16 +95,23 @@ documents:
   - - 1
     - 105
   line_count: 105
-  sha256: 69b344a53d188c72bc793037c574b9a18c35c566178b03fb9759a4f427ef9885
+  sha256: b3213267aef142a02aec44a89d779770210c585daecb45ec965cc4ed1f8ef446
   disposition: updates
   findings:
-  - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
-  - RC4 follow-up changed lines reviewed in context against hash-verified 6a1c6720; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
-  - RC4 follow-up changed lines reviewed in context against hash-verified 9ebee089; diagnostic outcomes remain exact-subject and final proof pending.
-  - RC4 follow-up changed lines reviewed in context against hash-verified dec5582d; diagnostic outcomes remain exact-subject and final proof pending.
-  - RC4 follow-up changed lines reviewed in context against hash-verified 037cff1a; diagnostic outcomes remain exact-subject and final proof pending.
-  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
-  - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays
+    bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 6a1c6720; released runtime evidence stays
+    bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 9ebee089; diagnostic outcomes remain exact-subject
+    and final proof pending.
+  - RC4 follow-up changed lines reviewed in context against hash-verified dec5582d; diagnostic outcomes remain exact-subject
+    and final proof pending.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 037cff1a; diagnostic outcomes remain exact-subject
+    and final proof pending.
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and
+    observation limits disclosed without promoting historical proof.
+  - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject
+    bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
   - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
@@ -128,8 +136,9 @@ documents:
     NFS permission readback constraint without expanding memory line budget.
   - Reviewed provider-age eligibility before batch selection and exact decimal comparison; bounded progress scope
     and pending final proof remain explicit.
-  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
-    qualification remain pending
+  - RC5 changed bytes reviewed in context; prior full-line review inherited from pinned baseline. Current release
+    qualification remains distinct from this candidate.
+  verification: RC5 targeted characterization; canonical exact-source proof pending
   baseline_review_sha256: bdaf73c69ddbbc3ba02acc02ebdf2d1b7ea6620fc06ea11d2d329df4a5ff5701
   review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
     in surrounding context
@@ -137,14 +146,17 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 894
-  line_count: 894
-  sha256: 2ed4d15194ab058e66c775170fbdf7939ff3b87daee28eed5f2d96ceeeec8000
+    - 901
+  line_count: 901
+  sha256: bb09322f431ee87ff7becb2e9cede3da84f1ef241662383c3c8ba7fb2ba73cc3
   disposition: updates
   findings:
-  - RC4 follow-up changed lines reviewed in context against hash-verified 6a1c6720; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
-  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
-  - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 6a1c6720; released runtime evidence stays
+    bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and
+    observation limits disclosed without promoting historical proof.
+  - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject
+    bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - Removed legacy bearer/unjoined authority and rollout fallback
   - Added grant-backed examples, scoped cursors/API capabilities and experimental disclosures
   - Fresh-store bootstrap requires distinct operator capability and configured global policy before grant-backed
@@ -163,8 +175,9 @@ documents:
   - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
     pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
     absence of hidden-command disclosure or private narrative identifiers.
-  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
-    qualification remain pending
+  - RC5 changed bytes reviewed in context; prior full-line review inherited from pinned baseline. Current release
+    qualification remains distinct from this candidate.
+  verification: RC5 targeted characterization; canonical exact-source proof pending
   baseline_review_sha256: 3f622f18a857df3aa1577067c3b1225254922bad7fa895cabc9117afdc155b58
   review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
     in surrounding context
@@ -172,25 +185,29 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 66
-  line_count: 66
-  sha256: 32db8013af52ac8c1b127763b80de6c57bdb6b6f5403458b717a04aef00663c7
+    - 67
+  line_count: 67
+  sha256: 7dcccd5602496f3f6941481efc966823b6a2010f03fbb0e95e809e57afc496b0
   disposition: updates
   findings:
   - Removed obsolete legacy bearer bypass as supported behavior
   - Retained shared-account public-Slack retention and audit limitations
-  verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
+  - RC5 changed bytes reviewed in context; prior full-line review inherited from pinned baseline. Current release
+    qualification remains distinct from this candidate.
+  verification: RC5 targeted characterization; canonical exact-source proof pending
 - document: architecture-boundaries.yml
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 59
-  line_count: 59
-  sha256: d743ffb399e331434b9066c32c43079124197c9d5fb34aad23e9099c71001ab9
+    - 63
+  line_count: 63
+  sha256: a33c32e3868fa68c0309257ca7d4eb7526217cbe756e0f905ff4544ff37fc641
   disposition: updates
   findings:
   - Removed seven obsolete Lite human-review waivers; Standard executable gates remain mandatory
-  verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
+  - RC5 changed bytes reviewed in context; prior full-line review inherited from pinned baseline. Current release
+    qualification remains distinct from this candidate.
+  verification: RC5 targeted characterization; canonical exact-source proof pending
 - document: audits/2026-09-29-external-product-review.md
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -347,14 +364,16 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 138
-  line_count: 138
-  sha256: a1bbae93813fd1b7e1c392b00fee8ff5e0dfd270f417d3c6b9458aeeb85b5f86
+    - 139
+  line_count: 139
+  sha256: f376df7f29a74409a42a8e0434cb3cca897331b0b1071ea3b52146ed03037dd1
   disposition: updates
   findings:
   - Added channel scope and experimental qualification boundary, replaced obsolete unrestricted joining statement;
     retained standalone host lifecycle and no-blind-retry rules
-  verification: governance_yaml_and_local_link_targets_passed; final_exact_candidate_proof_pending
+  - RC5 changed bytes reviewed in context; prior full-line review inherited from pinned baseline. Current release
+    qualification remains distinct from this candidate.
+  verification: RC5 targeted characterization; canonical exact-source proof pending
 - document: contracts/federation/v1/federation.contract.yml
   review_status: line_by_line_reviewed
   reviewed_lines:
@@ -409,13 +428,15 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 164
-  line_count: 164
-  sha256: 8a37fd6c6eafb4239e43ba9073b57e458624d97a67d8a473fcfc0b37732a8596
+    - 171
+  line_count: 171
+  sha256: ed0f7fa850b701609a6fa8b4c1e319eb0636b3f2cf496a079a0d6114c9b050a0
   disposition: updates
   findings:
-  - RC4 follow-up changed lines reviewed in context against hash-verified 562192ee; diagnostic outcomes remain exact-subject and final proof pending.
-  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 562192ee; diagnostic outcomes remain exact-subject
+    and final proof pending.
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and
+    observation limits disclosed without promoting historical proof.
   - Expanded model with owner cardinality principal grant/public-position fields and explicit inheritance/overrides
   - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
     unique current identities, private operator health, unchanged wire and experimental wake boundaries'
@@ -428,8 +449,9 @@ documents:
   - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
     pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
     absence of hidden-command disclosure or private narrative identifiers.
-  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
-    qualification remain pending
+  - RC5 changed bytes reviewed in context; prior full-line review inherited from pinned baseline. Current release
+    qualification remains distinct from this candidate.
+  verification: RC5 targeted characterization; canonical exact-source proof pending
   baseline_review_sha256: 5929f568c6211d741da96bfaf00e26c0503248246baafcaf326d5e4a1ea3d28c
   review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
     in surrounding context
@@ -448,17 +470,18 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 65
-  line_count: 65
-  sha256: 15106e941642c513a31806d62c7446cab5d7b264c0faaac4eea4562429e005c8
+    - 67
+  line_count: 67
+  sha256: 3bf42df0b01d81f99274bcaea2c9329786184190e854d09dcebfb61e6e54fddf
   disposition: updates
   findings:
   - Added Experimenters seat and current contract model; corrected v1 authority
   - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
     pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
     absence of hidden-command disclosure or private narrative identifiers.
-  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
-    qualification remain pending
+  - RC5 changed bytes reviewed in context; prior full-line review inherited from pinned baseline. Current release
+    qualification remains distinct from this candidate.
+  verification: RC5 targeted characterization; canonical exact-source proof pending
   baseline_review_sha256: 979139bcdd5985f40003294e4f96d73d4531dc44ccc11eccd034593329b7024f
   review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
     in surrounding context
@@ -547,15 +570,19 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 83
-  line_count: 83
-  sha256: 4c26431531df07c16d06377cc9092ba14ce19599315424aa6f6341f2d34b6048
+    - 87
+  line_count: 87
+  sha256: ab3767351940e80ab9fcd7441320f7a5f1f843d4253947e1d88422963420a23f
   disposition: updates
   findings:
-  - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
-  - RC4 follow-up changed lines reviewed in context against hash-verified 6a1c6720; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
-  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
-  - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays
+    bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 6a1c6720; released runtime evidence stays
+    bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and
+    observation limits disclosed without promoting historical proof.
+  - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject
+    bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - New seat separates experimental candidate claims from released baseline and bounded tests; no live deployment/wake
     authority supplied
   - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
@@ -565,8 +592,9 @@ documents:
   - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
     pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
     absence of hidden-command disclosure or private narrative identifiers.
-  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
-    qualification remain pending
+  - RC5 changed bytes reviewed in context; prior full-line review inherited from pinned baseline. Current release
+    qualification remains distinct from this candidate.
+  verification: RC5 targeted characterization; canonical exact-source proof pending
   baseline_review_sha256: 1809808cec7adc66afd739fb70197089e2d0b0e9532a8afe24428fd894fbc51d
   review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
     in surrounding context
@@ -705,13 +733,15 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 103
-  line_count: 103
-  sha256: 3a1215b6242085c1ecb88de19816a198e3d427456b4d306134fc1867c6fa8f9a
+    - 108
+  line_count: 108
+  sha256: 5d282a27635f8ef18feed0449ce09046247dd32de91e48993b7185401081fcb5
   disposition: updates
   findings:
-  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
-  - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and
+    observation limits disclosed without promoting historical proof.
+  - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject
+    bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - New model connects all current product contracts to identity/cursor relationships, inheritance, implementation
     and behavioral evidence; observability scaffolds explicitly not an implemented collector guarantee
   - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
@@ -724,8 +754,9 @@ documents:
   - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
     pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
     absence of hidden-command disclosure or private narrative identifiers.
-  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
-    qualification remain pending
+  - RC5 changed bytes reviewed in context; prior full-line review inherited from pinned baseline. Current release
+    qualification remains distinct from this candidate.
+  verification: RC5 targeted characterization; canonical exact-source proof pending
   baseline_review_sha256: f2dc99332aee8d484d7d9cfad6d10cb9f98c9300363dd5996d122fa38c4db72b
   review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
     in surrounding context
@@ -983,28 +1014,45 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 256
-  line_count: 256
-  sha256: c41f42b19d39fc51e0719988e6965a0f1c0ff8e815cb2698b31001998eb42a48
+    - 286
+  line_count: 286
+  sha256: a8a45e727569f900aed10b6f08bf34e57bfbc39b2705c9585ddeea0e5f28a4fb
   disposition: updates
   findings:
-  - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
-  - RC4 follow-up changed lines reviewed in context against hash-verified 5ba7d9f6; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
-  - RC4 follow-up changed lines reviewed in context against hash-verified 60b5a1e; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
-  - RC4 follow-up changed lines reviewed in context against hash-verified 015dec71; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
-  - RC4 follow-up changed lines reviewed in context against hash-verified 6a1c6720; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
-  - RC4 follow-up changed lines reviewed in context against hash-verified 9ebee089; diagnostic outcomes remain exact-subject and final proof pending.
-  - RC4 follow-up changed lines reviewed in context against hash-verified dec5582d; diagnostic outcomes remain exact-subject and final proof pending.
-  - RC4 follow-up changed lines reviewed in context against hash-verified 5b30de95; diagnostic outcomes remain exact-subject and final proof pending.
-  - RC4 follow-up changed lines reviewed in context against hash-verified edbeeade; diagnostic outcomes remain exact-subject and final proof pending.
-  - RC4 follow-up changed lines reviewed in context against hash-verified 037cff1a; diagnostic outcomes remain exact-subject and final proof pending.
-  - RC4 follow-up changed lines reviewed in context against hash-verified 3909fe76; diagnostic outcomes remain exact-subject and final proof pending.
-  - RC4 follow-up changed lines reviewed in context against hash-verified 5a7feb3e; diagnostic outcomes remain exact-subject and final proof pending.
-  - RC4 follow-up changed lines reviewed in context against hash-verified 2c54adf8; diagnostic outcomes remain exact-subject and final proof pending.
-  - RC4 follow-up changed lines reviewed in context against hash-verified 562192ee; diagnostic outcomes remain exact-subject and final proof pending.
-  - RC4 follow-up changed lines reviewed in context against hash-verified 700ee191; diagnostic outcomes remain exact-subject and final proof pending.
-  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
-  - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays
+    bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 5ba7d9f6; released runtime evidence stays
+    bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 60b5a1e; released runtime evidence stays
+    bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 015dec71; released runtime evidence stays
+    bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 6a1c6720; released runtime evidence stays
+    bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 9ebee089; diagnostic outcomes remain exact-subject
+    and final proof pending.
+  - RC4 follow-up changed lines reviewed in context against hash-verified dec5582d; diagnostic outcomes remain exact-subject
+    and final proof pending.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 5b30de95; diagnostic outcomes remain exact-subject
+    and final proof pending.
+  - RC4 follow-up changed lines reviewed in context against hash-verified edbeeade; diagnostic outcomes remain exact-subject
+    and final proof pending.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 037cff1a; diagnostic outcomes remain exact-subject
+    and final proof pending.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 3909fe76; diagnostic outcomes remain exact-subject
+    and final proof pending.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 5a7feb3e; diagnostic outcomes remain exact-subject
+    and final proof pending.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 2c54adf8; diagnostic outcomes remain exact-subject
+    and final proof pending.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 562192ee; diagnostic outcomes remain exact-subject
+    and final proof pending.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 700ee191; diagnostic outcomes remain exact-subject
+    and final proof pending.
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and
+    observation limits disclosed without promoting historical proof.
+  - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject
+    bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
   - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded
@@ -1032,8 +1080,9 @@ documents:
     limits remain explicit.'
   - Reviewed provider-age eligibility before batch selection and exact decimal comparison; bounded progress scope
     and pending final proof remain explicit.
-  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
-    qualification remain pending
+  - RC5 changed bytes reviewed in context; prior full-line review inherited from pinned baseline. Current release
+    qualification remains distinct from this candidate.
+  verification: RC5 targeted characterization; canonical exact-source proof pending
   baseline_review_sha256: a26359db528ecae6e82564456c8a5a60f9f5c21fa861d5ad7097f8cc44a0bbab
   review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
     in surrounding context
@@ -1330,12 +1379,13 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 54
-  line_count: 54
-  sha256: df498cd020aca2b53f36915906c380b6b80fb471b13dbeeb6bf93b3744ffeba2
+    - 55
+  line_count: 55
+  sha256: 84b68e0d4d846eb150fbdcf6f572aa702aeef97f0fae96ec6a31c274db7850a0
   disposition: updates
   findings:
-  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and
+    observation limits disclosed without promoting historical proof.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
   - The active P12 delivery contract explicitly includes file-free Slack approval; no lifecycle closure or deployment
@@ -1345,8 +1395,9 @@ documents:
   - RC3 ordinary-message lifecycle is conditional and unqualified; epochs pickup handling retention and legacy/shared/federation
     pins remain distinct. Checked current contracts, private operator scope, migration/repair-forward language and
     absence of hidden-command disclosure or private narrative identifiers.
-  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
-    qualification remain pending
+  - RC5 changed bytes reviewed in context; prior full-line review inherited from pinned baseline. Current release
+    qualification remains distinct from this candidate.
+  verification: RC5 targeted characterization; canonical exact-source proof pending
   baseline_review_sha256: 1a74d3ad86a09733c42278950b71bc2fb45f6a42707e3ad9be5d0b829d9be91a
   review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
     in surrounding context
@@ -1354,14 +1405,17 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 178
-  line_count: 178
-  sha256: b7724197394ccbcde904bd297717b191bd999cb7bd0326439e6edd80dede7527
+    - 220
+  line_count: 220
+  sha256: 00a59e5559f2adf93f6410aca0ea8724e6ae1d3fb3e2bf1455f0ec25b1ef8e11
   disposition: updates
   findings:
-  - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
-  - RC4 follow-up changed lines reviewed in context against hash-verified 5a7feb3e; diagnostic outcomes remain exact-subject and final proof pending.
-  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays
+    bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
+  - RC4 follow-up changed lines reviewed in context against hash-verified 5a7feb3e; diagnostic outcomes remain exact-subject
+    and final proof pending.
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and
+    observation limits disclosed without promoting historical proof.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
   - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
@@ -1380,8 +1434,9 @@ documents:
   - 'Reviewed provider-retirement correction in context: all observed aliases constrain purge; apply rechecks atomically;
     unknown delivery locators cannot recreate custody or semantic acknowledgement. Experimental and publication
     limits remain explicit.'
-  verification: Editorial review complete; source diagnostics only; final canonical archive installation and live
-    qualification remain pending
+  - RC5 changed bytes reviewed in context; prior full-line review inherited from pinned baseline. Current release
+    qualification remains distinct from this candidate.
+  verification: RC5 targeted characterization; canonical exact-source proof pending
   baseline_review_sha256: b6873711e82eaca543ff16690e03799e72904de8e98e94332d8cebdfc7e71e56
   review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed
     in surrounding context
@@ -1475,9 +1530,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 100
-  line_count: 100
-  sha256: 40ea6bc9eb37acbac7d27de0eb2acb77c3c5da51248e212b4d11e28fbe04061f
+    - 109
+  line_count: 109
+  sha256: 8a7fbc2c12346a1ae47cf16dc967a21bcb8a21454b368764ef80a5606e3de26a
   disposition: new
   findings:
   - New governed ordinary-message lifecycle contract models exact scopes, replay epochs, independent transport/recipient/shared
@@ -1495,8 +1550,9 @@ documents:
     limits remain explicit.'
   - Reviewed provider-age eligibility before batch selection and exact decimal comparison; bounded progress scope
     and pending final proof remain explicit.
-  verification: Editorial review complete; conditional RC3 behavior and retained-history limits reviewed; final
-    exact-source custody pending
+  - RC5 changed bytes reviewed in context; prior full-line review inherited from pinned baseline. Current release
+    qualification remains distinct from this candidate.
+  verification: RC5 targeted characterization; canonical exact-source proof pending
 - document: docs/message-lifecycle.md
   review_status: line_by_line_reviewed
   reviewed_lines:

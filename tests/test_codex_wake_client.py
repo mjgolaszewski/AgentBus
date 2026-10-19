@@ -19,7 +19,7 @@ import pytest
 from src import agentbus_codex_wake_client as wake
 from src import agentbus_wake_inbox_client as wake_inbox
 from src.agentbus_codex_rpc_client import CodexHostRejected, TurnCompletionUncertain, TurnStartUncertain
-from src.agentbus_poll_client import change_spool
+from src.agentbus_poll_client import change_spool, read_spool_events
 from src.agentbus_transport_client import ClientError
 
 
@@ -840,3 +840,34 @@ def test_retired_cursor_preserves_uncertain_external_wake_intent(setup, monkeypa
     assert after['wake_intent'] == before['wake_intent']
     assert host.calls == [] and path.with_name(path.name + '.poll.json').read_bytes() == spool
     assert profile.get('ack_cursor', 0) == 0
+
+
+@pytest.mark.parametrize('control_kind', ['stop', 'checkpoint', 'pause_work', 'policy'])
+def test_fresh_control_presence_blocks_ordinary_spool_admission(setup, monkeypatch, control_kind):
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, 'thread-one', lambda: host)
+    wake.set_enabled(values, identity, True)
+    host.calls.clear()
+    put(path, profile, message(1))
+    before = path.read_bytes()
+    monkeypatch.setattr(wake, 'api', lambda *_args, **_kwargs: {
+        'session_id': profile['participation']['session_id'], 'chat_id': profile['chat_id'],
+        'route': identity, 'state': 'control_pending', 'outstanding_controls': [
+            {'control_id': 'fresh-'+control_kind, 'state': 'pending'}], 'work_paused': False})
+    result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
+    assert result['status'] == 'control_projection_pending'
+    assert not host.calls
+    assert path.read_bytes() == before
+    assert read_spool_events(path, profile=profile)[0]['id'] == '1'
+
+
+@pytest.mark.parametrize('presence,refs,expected', [
+    ({'state':'control_pending','outstanding_controls':[{'control_id':'new'}]}, ['CONTROL:old'], False),
+    ({'state':'control_pending','outstanding_controls':[{'control_id':'new'}]}, ['CONTROL:new'], True),
+    ({'state':'active_compliant','effective_policy_revision':'new','acknowledged_policy_revision':'old'}, ['MESSAGE:1'], False),
+    ({'state':'active_compliant','effective_policy_revision':'new','acknowledged_policy_revision':'old'}, ['POLICY_CHANGED:new'], True),
+    ({'state':'active_compliant'}, ['MESSAGE:1'], True),
+])
+def test_fresh_authority_requires_matching_control_or_policy_projection(presence, refs, expected):
+    from src.agentbus_codex_wake_events_client import controls_projected
+    assert controls_projected(presence, refs) is expected

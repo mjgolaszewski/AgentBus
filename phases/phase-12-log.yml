@@ -17,6 +17,24 @@ summary:
   - 57 affected wake cases, Ruff and governance YAML validation pass; computed closure remains unclaimed
   - Actual pinned AHP reducer passes168 upstream chat fixtures and8 targeted controls; drift and semantic queue-order mutants reject
 workitems:
+- id: P12-P1-14
+  status: DONE
+  summary: Freeze RC5 Issue94 canonical owners vocabulary and acceptance matrix
+- id: P12-P1-15
+  status: IN_PROGRESS
+  summary: Correct local delivery fairness and expiry without losing custody
+- id: P12-P1-16
+  status: IN_PROGRESS
+  summary: Require fresh mandatory controls before ordinary wake admission
+- id: P12-P1-17
+  status: IN_PROGRESS
+  summary: Preserve alias direct presentation through quiet polling
+- id: P12-P1-18
+  status: IN_PROGRESS
+  summary: Enforce complete architecture populations and meaningful query gates
+- id: P12-P1-19
+  status: IN_PROGRESS
+  summary: Align onboarding authorization release capability and platform guidance
 - id: P12-P1-13
   status: DONE
   summary: RC4 protected proof archive installation and canary passed; operator confirms grouped health readable and private
@@ -81,6 +99,16 @@ execution_evidence:
   - 'Extended pinned action-schema probe to7 cases PASS: empty ID and non-user origin are valid wire shapes; no client or host authority follows.
     Focused probe lint PASS.'
   notes:
+  - 'RC5 baseline: bebbab2631b104b653d452f2bc3adc412e300489'
+  - 'RC5 owner_map: audits/rc5-invariant-construction.yml'
+  - 'RC5 characterization: Original source reproduces independent message starvation, stop-after-spool admission and alias quiet suppression; first harness rate-window and provider-fixture mistakes retained separately, then corrected without weakening rate or authorization checks.'
+  - 'RC5 first_corrections: Six regression cases pass; original failures retained under local .artifacts/rc5. Expanded import and router gates fail on original poll dependency and enrollment handler.'
+  - 'RC5 cqrs_review: Every declared API query executes under SQLite write denial; every CLI query under read-only transport and local mutation-port guards. Command receipts preserve existing operation registry projection classifications; semantic meaning remains explicit human review under CQRS-RECEIPT-SEMANTICS rather than a false AST claim.'
+  - 'RC5 cadence_owner: Service domain remains canonical; client intentionally mirrors participation-v2 finite wire cadence without importing service implementation. Exhaustive custom-cap and reset parity covers this small projection.'
+  - 'RC5 enrollment_owner: Existing approval application owner selects exclusive authorization; HTTP adapter maps receipt/status/errors. Grant and staged-secret transactions remain unchanged.'
+  - 'RC5 migration: No schema or data migration. Preserve existing databases, aliases, request fingerprints, uncertain outcomes, session/inbox/channel and semantic ACK positions.'
+  - 'RC5 rollback: RC4 compatibility remains; do not reverse expiry outcomes or discard unresolved obligations. Live rollback/deployment requires custodian review and stopped backup; no such action taken.'
+  - 'RC5 qualification: Targeted unit evidence only; full suites, canonical exact-subject CI, archive and isolated installation pending. No AHP interoperability or atomic idle-only qualification; Issue75 remains open.'
   - "RC4 operator UI acceptance: the operator explicitly reports \"Readable and private\" after the requested live /agentbus health check covering grouped layout, Workers and private visibility. This closes the remaining UI criterion for authored workitem P12-P1-13 on the unchanged installed 6a1c672 release. Protected PR91/main39198822103, archive8c3376b5, SDK-absent installation and the 17-check two-channel canary remain bound to that original runtime subject. No new code, configuration, deployment, canary or owner wake is implied; P12/Issue75 and AHP/atomic admission remain open. Submit this documentation-only authored closeout through canonical released BCF2.3.4; authored DONE is not computed phase closure."
   - "Release-record PR92 protected merge7d175943 and exact-main39209447366 passed all six jobs. Six downloaded provider artifact ZIP digests authenticated; provider truth PASS/pr, no issues, bundlea79bfd25b412713f858f72d4336f91dd38255cf6fe6d9fa28a966d47470862a6, authorizes empty. Published RC4 tag/assets remain6a1c672; documentation proof does not replace runtime proof."
   - "Final requested isolated staging retirement passed after preserving two failed-safe attempts: a new inert coordination-cache reference and a missing private-pointer parent. Full local-private archive94f53659a8ab09f7fb6af7b716c5da31d0183065983a9de7a130305a9ec16e42 and map29feb84661756cf5dd4f822c3e13a76ec0b05371bab9a5d1bb614629e7c946dc retain all 2166 entries and 1812 unique objects, including the environment. A second complete restoration, current inventory/ownership/mode checks, durable intent/pointer and final exact device/inode/process/config guards preceded removal of only the stopped staging root. Actual terminal0 in3.417s, quiescence/EOF/reaping, known handles absent and fresh original fence verified. All613 source files unchanged. Retired52936704 allocated bytes;17999876-byte archive remains local-private, no exclusive free-space attribution. BCF and custodian independently verified the complete retention/disposition, original canary receipt and live zero-drift healthy runtime; original cleanup request handled. Raw originals, coordinates and diagnostics remain private non-authoritative retention. No further deletion pending."

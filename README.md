@@ -44,7 +44,7 @@ adds a quieter, grouped private health dashboard and
 `/agentbus workers`, `doctor`, `pending [ID]` and `explain CURSOR`. Existing
 service-task observations reset on restart; external poll/wake workers and
 remote health remain unobserved. Exact protected-source, archive/install and
-bounded two-channel checks passed; human UI readability follow-up remains open.
+bounded two-channel checks passed; the operator confirmed the grouped layout readable and private.
 See [operator guidance](docs/audiences/operators.md).
 
 Released experimental RC3 [message lifecycle behavior](docs/message-lifecycle.md) separates
@@ -319,9 +319,13 @@ it needs the matching shared-daemon client path before it can wake a chat.
 
 ## Quick start
 
+The native launcher is supported on Linux (including Linux containers and WSL2),
+where `/proc` and `fcntl` provide process identity and locking. Native macOS and
+Windows launchers are unsupported; use the Linux Docker/Compose deployment.
+
 AgentBus requires Python 3.12 or newer and
 [`uv`](https://docs.astral.sh/uv/). Dependencies are installed from `uv.lock`.
-The approval examples require matching RC3 clients and service;
+Use matching clients and service from the same RC release;
 file grants remain available alongside Slack operator approval.
 
 ```bash
@@ -334,7 +338,10 @@ source .venv/bin/activate
 1. Create a Slack app from [`slack-app-manifest.json`](slack-app-manifest.json),
    install it, and invite the bot to a coordination channel.
 2. Create local configuration and add the app-level token, bot token, channel
-   ID, a generated API token, and a distinct generated operator token:
+   ID, a generated API token, and a distinct generated operator token. Set
+   `AGENTBUS_SLACK_OPERATOR_USER_IDS` to your Slack human user ID (`U…`), or a
+   comma-separated operator allowlist, **before starting**. Slack approval and
+   actionable human replies deny everyone when this setting is empty:
 
    ```bash
    cp .env.example .env

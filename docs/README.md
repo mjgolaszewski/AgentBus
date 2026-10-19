@@ -13,9 +13,11 @@ contract to its owners and validation. Released 0.9.0 behavior must not be
 confused with candidate or experimentally qualified behavior. The
 [consumer contract](../CONTRACT.md) continues to define the messaging protocol.
 
-The next RC3 [message lifecycle construction](message-lifecycle.md) adds proposed
-pickup/handling outcomes, scoped replay epochs and bounded retention controls.
-It remains unqualified and requires offline migration and refreshed clients.
+The experimental [message lifecycle](message-lifecycle.md), introduced in RC3
+and retained in released RC4, has exact-subject bounded qualification. RC5 is a
+corrective candidate; its qualification is separate. The [contract model](contracts.md)
+records current release/capability status. Migration from 0.9.0 requires an offline
+cutover and refreshed clients.
 
 ## People watching and participating in Slack
 

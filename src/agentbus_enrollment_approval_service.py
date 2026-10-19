@@ -107,3 +107,18 @@ def pending_enrollments(channels, *, channel=None):
             AND (? IS NULL OR approved_channel IS NULL OR approved_channel=?)
             ORDER BY expires_at,request_id LIMIT 20''', (time.time(), channel, channel)).fetchall()
         return [dict(row) for row in rows]
+
+
+def enroll_authorized(channels, *, repo, route, display_name, session_secret,
+                      enrollment_token=None, handoff_token=None,
+                      approval_request_id=None, profile_chat_id=None):
+    """Application owner chooses exactly one existing enrollment authority."""
+    if approval_request_id is not None:
+        if enrollment_token or handoff_token or profile_chat_id is None:
+            raise PermissionError('Choose one enrollment authorization')
+        return channels.request_enrollment(request_id=approval_request_id, chat_id=profile_chat_id,
+            repo=repo, route=route, display_name=display_name, session_secret=session_secret)
+    if profile_chat_id is not None or (enrollment_token and handoff_token):
+        raise PermissionError('Choose one enrollment authorization')
+    return channels.enroll(enrollment_token or handoff_token, repo=repo, route=route,
+                           display_name=display_name, session_secret=session_secret)

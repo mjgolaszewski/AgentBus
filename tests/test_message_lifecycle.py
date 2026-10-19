@@ -1043,3 +1043,91 @@ def test_provider_retirement_SQL_comparison_keeps_subfloat_precision(lifecycle):
                                ('1699999999.99999999999999999999', 1)]:
         assert store._db.execute('SELECT agentbus_provider_ref_covered_v1(?,?)',
                                  (reference, cutoff)).fetchone()[0] == covered
+
+
+def test_blocked_ancestry_cannot_starve_independent_delivery_or_expiry(lifecycle, monkeypatch):
+    import asyncio
+
+    from src.agentbus_delivery_runtime_service import LocalDeliveryWorker
+    from src.agentbus_local_delivery_service import fingerprint
+
+    store, p = lifecycle
+    # Build a backlog over successive rate windows; retain the real rate check.
+    reserve = store.send_rate._reserve
+    rate_clock = [100.0]
+    monkeypatch.setattr(store.send_rate, '_reserve', lambda principal: reserve(principal, now=rate_clock[0]))
+    epoch = store.lifecycle.epoch('C111', 100)['epoch']
+    parent_body = SendMessage(sender=p['sender'].route, recipient=p['recipient'].route, text='uncertain parent', kind='request')
+    parent_body._sender_assurance = 'session'
+    parent_key = str(uuid4())
+    parent = store.local_delivery.accept('C111', parent_key, fingerprint(parent_body.model_dump()), parent_body, 'exact-session', epoch=epoch)
+    assert store.local_delivery.reserve('C111', parent_key, now=100)
+    store.local_delivery.uncertain('C111', parent_key)
+    keys = []
+    for index in range(101):
+        rate_clock[0] += 61
+        body = SendMessage(sender=p['sender'].route, recipient=p['recipient'].route,
+            text=str(index), kind='request', reply_to_cursor=parent.cursor if index < 100 else None)
+        body._sender_assurance = 'session'
+        key = str(uuid4())
+        keys.append(key)
+        store.local_delivery.accept('C111', key, fingerprint(body.model_dump()), body, 'exact-session', epoch=epoch)
+    class Poster:
+        def __init__(self): self.keys = []
+        async def post(self, message, *, message_id):
+            self.keys.append(message_id)
+            return '123.456'
+    poster = Poster()
+    worker = LocalDeliveryWorker(store, poster, 'C111')
+    for _ in range(3):
+        asyncio.run(worker.submit_once())
+    assert poster.keys == [keys[-1]]
+    assert store._db.execute("SELECT count(*) FROM local_delivery_obligations WHERE state='pending'").fetchone()[0] == 100
+    # Expiry must settle without ever reserving a blocked child.
+    store.lifecycle.now(200, persist=True)
+    asyncio.run(LocalDeliveryWorker(store, poster, 'C111').submit_once())
+    rows = store._db.execute('SELECT state,attempts FROM local_delivery_obligations ORDER BY local_cursor').fetchall()
+    assert all(row['state'] == 'expired_unsubmitted' and row['attempts'] == 0 for row in rows[1:101])
+    assert rows[0]['state'] == 'expired_uncertain' and rows[0]['attempts'] == 1
+    assert rows[-1]['state'] == 'submitted'
+    assert store._db.execute("SELECT count(*) FROM messages WHERE channel='C111'").fetchone()[0] == 102
+    assert store.local_delivery.capacity()['outstanding'] == 1
+
+
+def test_parent_recovery_unblocks_child_after_restart_without_cross_channel_expiry(lifecycle):
+    import asyncio
+
+    from src.agentbus_delivery_runtime_service import LocalDeliveryWorker
+    from src.agentbus_local_delivery_service import fingerprint
+    store, p = lifecycle
+    def accept(channel, sender, recipient, parent=None):
+        body = SendMessage(sender=sender, recipient=recipient, text='retained edge', kind='request', reply_to_cursor=parent)
+        body._sender_assurance = 'session'
+        key = str(uuid4())
+        epoch = store.lifecycle.epoch(channel,100)['epoch']
+        return key, store.local_delivery.accept(channel,key,fingerprint(body.model_dump()),body,'exact-session',epoch=epoch)
+    parent_key, parent = accept('C111',p['sender'].route,p['recipient'].route)
+    child_key, child = accept('C111',p['sender'].route,p['recipient'].route,parent.cursor)
+    foreign_key, _ = accept('C222',p['foreign'].route,p['foreign'].route)
+    assert store.local_delivery.reserve('C111',parent_key,now=100)
+    store.local_delivery.blocked('C111',parent_key,'missing_echo','123.400')
+    assert store.local_delivery.pending(channel='C111',now=100) == []
+    assert store.retention.purge('C111',actor='operator',instant=105)['eligible'] == 0
+    database = store._db.execute('PRAGMA database_list').fetchone()['file']
+    store.close()
+    restored = MessageStore(__import__('pathlib').Path(database))
+    restored.channels.configure(('C111','C222'))
+    class Poster:
+        async def post(self, message, *, message_id):
+            assert message_id == child_key and message.thread_ts == '123.400'
+            return '123.500'
+    try:
+        assert asyncio.run(LocalDeliveryWorker(restored,Poster(),'C111').submit_once()) == 0
+        restored.local_delivery.complete('C111',parent_key,'123.400')
+        assert asyncio.run(LocalDeliveryWorker(restored,Poster(),'C111').submit_once()) == 1
+        restored.local_delivery.settle_expired('C111',now=200)
+        assert restored._db.execute('SELECT state FROM local_delivery_obligations WHERE request_id=?',(foreign_key,)).fetchone()[0] == 'pending'
+        assert restored.message('C111',child.cursor).slack_ts == '123.500'
+        assert restored._db.execute('PRAGMA foreign_key_check').fetchall() == []
+    finally:
+        restored.close()

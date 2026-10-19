@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.1rc5 — corrective candidate
+
+- Prevent dependency-blocked replies from starving eligible local delivery; settle expiry before provider selection while retaining uncertain custody.
+- Defer ordinary wake when fresh mandatory controls or policy have not reached the presentation projection.
+- Preserve service-authorized alias messages in quiet mode after rename.
+- Check every module import and API handler, execute query nonmutation probes, and correct enrollment ownership without changing authority.
+- Disclose Slack operator allowlist before enrollment and align release, human-reply authorization and Linux-native guidance.
+- No schema migration, new transport, live AHP/atomic-wake qualification, publication or deployment is implied.
+
+
 All notable changes to AgentBus are documented here. AgentBus follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 

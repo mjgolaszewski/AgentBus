@@ -19,7 +19,7 @@ claim_model:
     package-source: [src/__init__.py, &id002 pyproject.toml, uv.lock]
     client-tests: [tests/test_channel*.py, tests/test_owner_wake_qualification.py, &id065 tests/test_launcher.py, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_self_service_client.py]
     service-tests: [tests/test_channel*.py, tests/test_federation_inbox_projection.py, tests/test_federation_directory_wire.py, tests/test_federation_directory_recovery.py, tests/test_federation_bridge.py, tests/test_federation_adapter.py, tests/test_federation_service.py, &id055 tests/test_service.py, tests/test_slack_commands.py, tests/test_participation_contract.py, tests/test_federation_contract.py, tests/test_participation_service.py, tests/test_participation_store.py, tests/test_control_store.py, tests/test_rename_store.py, tests/test_claim_recovery.py, tests/test_credential_rotation.py]
-    architecture-tests: [&id051 tests/test_architecture.py]
+    architecture-tests: [&id051 tests/test_architecture.py, tests/architecture_query_probe.py]
     compatibility-tests: [tests/test_federation_bridge.py, tests/test_federation_adapter.py, tests/test_python_compatibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, *id055, tests/test_slack_commands.py, tests/test_claim_recovery.py]
     producer-code: [scripts/check_source.py, &id037 scripts/run_project_gate.py]
     release-code: [&id003 Dockerfile, .dockerignore, compose.yaml, .env.example, &id060 scripts/build_release.py, *id001]
@@ -221,7 +221,7 @@ claim_model:
       qualification_scope: *id008
       profiles: [normal, *id009, self]
     operation-populations-valid:
-      truth: CLI and API operation populations stay closed and classified
+      truth: CLI and API operation populations stay closed and classified; every HTTP query executes under SQLite write denial and every CLI query under read-only transport and mutation-port guards
       execution_group: operation-populations
       legacy_gate: *id022
       dependencies:
@@ -394,6 +394,7 @@ gates:
         expected_nodes_mode: exact
         artifact_binding: *id042
     negative_controls:
+    - {id: query-write-is-rejected, mutation: {path: src/agentbus_status_api_service.py, search: 'def api_health(request: Request) -> dict:', replace: "def api_health(request: Request) -> dict:\n    request.app.state.store._db.execute(\"INSERT INTO metadata(key,value) VALUES ('bad-query','write')\")"}, oracle: {kind: test_node_failure, node_ids: ['tests.test_architecture::test_command_and_query_populations_are_closed']}}
     - {id: cli-population-drift-is-rejected, mutation: {path: *id043, search: 'CLI_OPERATIONS = {', replace: 'CLI_OPERATIONS_BROKEN = {'}, oracle: {kind: *id044, node_ids: ['tests.test_architecture::test_command_and_query_populations_are_closed']}}
   architecture-duplication:
     invocation: {argv: [python3, *id037, *id024, --junit, &id045 .artifacts/junit/architecture-duplication.xml], cwd: ., env: {}, required_env: []}
@@ -424,6 +425,7 @@ gates:
         expected_nodes_mode: exact
         artifact_binding: *id042
     negative_controls:
+    - {id: nonentrypoint-service-import-is-rejected, mutation: {path: src/agentbus_poll_client.py, search: 'import fcntl', replace: "import fcntl\nfrom src.agentbus_participation_service import next_inbox_interval_values"}, oracle: {kind: test_node_failure, node_ids: ['tests.test_architecture::test_context_import_boundaries']}}
     - {id: client-framework-import-is-rejected, mutation: {path: *id039, yaml_path: architecture.layers.client.forbidden_import_prefixes, value: [pathlib]}, oracle: {kind: *id044, node_ids: ['tests.test_architecture::test_context_import_boundaries']}}
   architecture-layer-membership:
     invocation: {argv: [python3, *id037, *id019, --junit, &id047 .artifacts/junit/architecture-layer-membership.xml], cwd: ., env: {}, required_env: []}
@@ -469,6 +471,7 @@ gates:
         expected_nodes_mode: exact
         artifact_binding: *id042
     negative_controls:
+    - {id: enrollment-router-branch-is-rejected, mutation: {path: src/agentbus_participation_api_service.py, search: 'def api_session_enroll(request: Request, body: EnrollSession, response: Response) -> dict:', replace: "def api_session_enroll(request: Request, body: EnrollSession, response: Response) -> dict:\n    if True: pass\n    if True: pass\n    if True: pass\n    if True: pass\n    if True: pass"}, oracle: {kind: test_node_failure, node_ids: ['tests.test_architecture::test_http_routers_remain_thin_transport_adapters']}}
     - {id: router-branch-budget-is-enforced, mutation: {path: *id039, yaml_path: architecture.thin_router_policy.max_branch_nodes, value: 0}, oracle: {kind: *id044, node_ids: ['tests.test_architecture::test_http_routers_remain_thin_transport_adapters']}}
   architecture-test:
     invocation: {argv: [python3, *id037, *id016, --junit, &id050 .artifacts/junit/architecture-test.xml], cwd: ., env: {}, required_env: []}

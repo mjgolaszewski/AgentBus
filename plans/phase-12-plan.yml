@@ -19,6 +19,7 @@ phase:
   - MEMORY.yml
 delivery_contract:
   tightly_scoped_deliverables:
+  - Issue94 RC5 bounded invariant-first delivery wake alias assurance and onboarding corrections; audits/rc5-invariant-construction.yml owns edge coverage
   - Pinned owner and protocol capability inventory with explicit unknowns
   - Conditional admission contract and deterministic conformance matrix
   - Separate live-provider prerequisite and go-no-go inventory

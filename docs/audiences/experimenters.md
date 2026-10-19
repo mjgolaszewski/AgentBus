@@ -9,6 +9,10 @@ archive/install verification and a fresh 17-check bounded lifecycle canary; see 
 [release record](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc4).
 These results do not qualify other installations or owner-wake interoperability.
 
+Current release/capability status is maintained in the [contract model](../contracts.md),
+with package version from `pyproject.toml`. RC5 is a bounded corrective candidate,
+not a new wake integration or a claim of atomic idle-only admission.
+
 ## Know which claim you are testing
 
 | Capability | Candidate scope | Evidence still required |

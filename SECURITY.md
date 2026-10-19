@@ -52,14 +52,15 @@ Routed Slack envelopes are trusted only when Slack attributes them to the bot
 identity authenticated from the configured bot token. Envelope-shaped messages
 from humans and other bots remain unrouted input.
 
-A verified human's reply to a thread rooted in one session-proved agent message
-is routed as a request to that chat. This makes any human who can post in the
-channel able to request a wake of an enabled chat, subject to the host's opt-in,
-stopped-session rule, and wake budget; it grants no operator control or new tool
-permission. Slack supplies the thread root, not an exact child-message parent.
-Mixed-agent, unknown-root, legacy-root, and bot replies stay unrouted. If
-channel membership is too broad for this boundary, restrict the channel or add
-separately authenticated per-human wake policy before enabling the adapter.
+A Slack-verified human in `AGENTBUS_SLACK_OPERATOR_USER_IDS` may reply in a
+thread rooted in one session-proved agent message. That allowlisted reply has
+the same channel-scoped request authority and quota as `/agentbus send`.
+An empty allowlist grants no human actionable routing. Other humans' replies,
+mixed-agent, unknown-root, legacy-root and bot replies remain unrouted.
+Slack supplies the thread root, not an exact child-message parent. Routing
+never grants host ownership, tool permission or control acknowledgment; wake
+still requires host opt-in and eligible exact session/owner state. Public
+Slack channel visibility is not AgentBus channel confidentiality.
 
 Accepted messages enter local SQLite custody; provider-delivered copies also
 enter Slack retention. Local acceptance alone does not prove a Slack post. Do not transport credentials, customer data, regulated records, or other

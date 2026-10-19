@@ -29,7 +29,7 @@ from src.agentbus_codex_rpc_client import (
     TurnCompletionUncertain,
     TurnStartUncertain,
 )
-from src.agentbus_codex_wake_events_client import _candidate, _fingerprint, _prompt, eligible_events
+from src.agentbus_codex_wake_events_client import _candidate, _fingerprint, _prompt, controls_projected, eligible_events
 from src.agentbus_codex_wake_intent_client import (
     attach_observer,
     observe_host,
@@ -522,6 +522,8 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
             return finish({"status": "session_stopped", "eligible": refs})
         if presence.get("state") not in {"active_compliant", "control_pending"}:
             return finish({"status": "service_session_not_ready", "eligible": refs})
+        if not controls_projected(presence, refs):
+            return finish({"status": "control_projection_pending", "eligible": refs})
         previous = state.get("last_attempt") or {}
         reconciled = False
         if previous.get("state") in {"starting", "uncertain"}:
