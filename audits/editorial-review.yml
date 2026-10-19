@@ -973,11 +973,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 242
-  line_count: 242
-  sha256: 28191f714c824afb9281a268a60c8b2cc6648ca0cee30016a76a2804ef1ebe83
+    - 243
+  line_count: 243
+  sha256: 14c9aa2124de5cc88600cb8a553d61d315073d679f0420dd3826773293671c88
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 2c54adf8; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified 562192ee; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified 700ee191; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
@@ -1018,11 +1019,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 101
-  line_count: 101
-  sha256: c2aaf13beca7c165014e0e886a4a755fb02b04698ace9e7635ce7c71eff497e7
+    - 100
+  line_count: 100
+  sha256: 707bf6f78f03c580d01c29d85f91955a42ed1d595c8d7a8ff9d67795d3ee6ee8
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 2c54adf8; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
@@ -1394,11 +1396,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 41
-  line_count: 41
-  sha256: 4aeb66e6f8f312acfd7dcbf7a3f3266df411d1bdaa9597188e17600a414d9ba3
+    - 40
+  line_count: 40
+  sha256: 8b80e72707440e4b98650b8dd91d6c78432327c00285a53a2499326c24e79ea2
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 2c54adf8; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
