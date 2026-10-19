@@ -95,7 +95,7 @@ release_trains:
   release_7_prefix: {target_version: "0.8.0", status: active, focus: [configurable_local_identity_prefix, session_proved_legacy_route_migration, accumulated_unreleased_hotfixes]}
   release_8: {target_version: "0.8.1", status: planned, focus: [governance_dependency_hash_lock, proxy_header_remediation]}
   release_9: {target_version: "0.9.0", status: active, focus: [outbound_only_federation, durable_bridge_obligations, remote_directory_sync, owner_mediated_idle_wake, final_bcf_custody]}
-  release_10: {target_version: "0.9.1rc2", status: active, focus: [channel_isolation, operator_granted_membership, bounded_local_two_channel_qualification, privacy_safe_documentation, experimental_owner_wake_disclosure, human_reply_parity, private_health, shared_broadcast_and_poll_controls, slack_enrollment_approval]}
+  release_10: {target_version: "0.9.1rc4", status: active, focus: [channel_isolation, operator_granted_membership, bounded_local_two_channel_qualification, privacy_safe_documentation, experimental_owner_wake_disclosure, human_reply_parity, private_health, shared_broadcast_and_poll_controls, slack_enrollment_approval, observed_service_workers, scoped_read_only_diagnostics]}
 release_readiness:
   computed_by: bcf truth
   requirements_source: governance/evidence-policy.yml

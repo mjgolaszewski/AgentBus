@@ -973,11 +973,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 243
-  line_count: 243
-  sha256: 14c9aa2124de5cc88600cb8a553d61d315073d679f0420dd3826773293671c88
+    - 244
+  line_count: 244
+  sha256: 314c20b9035b5e181c3008101d8c1887376a1a4b475ca62b7af2fb15fcd6e7e4
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 5a7feb3e; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified 2c54adf8; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified 562192ee; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified 700ee191; diagnostic outcomes remain exact-subject and final proof pending.
@@ -1334,9 +1335,10 @@ documents:
   - - 1
     - 178
   line_count: 178
-  sha256: 3591133303d70d79b2d7104968664782d57e9e8c407977cb8853885f40cf8f84
+  sha256: 1312aa7fea97e879276f802b7ded77c67758d3bcb63d2531b399e8821842f3a9
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 5a7feb3e; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
@@ -1379,9 +1381,10 @@ documents:
   - - 1
     - 103
   line_count: 103
-  sha256: 615741bd6e3e35ec3ebae64da43ea00744ca1df47ec68f8440cb4934f26c064d
+  sha256: d0c2c1c3b4f31c70dcb46de44e78ff1d6048e80e6cf55efcc9b77573bdcdc753
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 5a7feb3e; diagnostic outcomes remain exact-subject and final proof pending.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
   - 'Re-reviewed complete current text for0.9.1rc1: anonymized private narrative identifiers where present; bounded

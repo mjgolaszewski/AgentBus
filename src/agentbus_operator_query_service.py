@@ -80,7 +80,7 @@ def doctor_checks(snapshot):
                    for c in snapshot['channels'])
     partial = snapshot['channel_details_truncated']
     checks.append(('Recipient recovery', 'WARN' if recovery else 'UNKNOWN' if partial else 'OK',
-                   f'{recovery} observed recovery-required outcomes' + ('; channel coverage is truncated' if partial else '') +
+                   f'`{recovery}` observed recovery-required outcomes' + ('; channel coverage is truncated' if partial else '') +
                    '; no automatic retry or completion is inferred.'))
     checks.extend([('External poll / wake workers', 'UNKNOWN', 'Not observed by this service; inspect on the owning host.'),
                    ('Remote federation health', 'UNKNOWN', 'No remote probe or health guarantee.'),
