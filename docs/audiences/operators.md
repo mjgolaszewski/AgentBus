@@ -154,6 +154,8 @@ delivery/lifecycle and federation cycles. Last attempt and completed-cycle times
 backoff and fixed error codes are observations, not delivery or execution proof.
 They reset on restart. External workspace poll workers and the host wake
 supervisor are explicitly not observed; remote health is not inferred.
+Stopping or failing the owning task retires any active cycle observation as
+interrupted or failed; it never manufactures a completed cycle.
 The operator-authenticated `/v1/status` exposes the same read model; shared
 bearer status remains minimal. No credential or private path is included.
 

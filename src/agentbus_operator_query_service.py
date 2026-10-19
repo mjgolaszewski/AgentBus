@@ -52,7 +52,7 @@ def explain_snapshot(store, channel, position):
                                   (channel, cursor)).fetchone()
         return {'position':position, 'received_at':row['received_at'],
                 'transport':dict(transport) if transport else None, 'observations':observed,
-                'recipients':recipients, 'archived':archived, 'legacy_unknown':bool(legacy and legacy[0])}
+                'recipients':recipients, 'archived':archived, 'legacy_unknown':bool(legacy[0]) if legacy else None}
 
 
 def doctor_checks(snapshot):
@@ -78,8 +78,10 @@ def doctor_checks(snapshot):
                        'Use retention previews and custodian capacity planning before applying maintenance.'))
     recovery = sum(c.get('lifecycle', {}).get('recipients', {}).get('recovery_required', 0)
                    for c in snapshot['channels'])
-    checks.append(('Recipient recovery', 'WARN' if recovery else 'OK',
-                   f'{recovery} recovery-required outcomes; no automatic retry or completion is inferred.'))
+    partial = snapshot['channel_details_truncated']
+    checks.append(('Recipient recovery', 'WARN' if recovery else 'UNKNOWN' if partial else 'OK',
+                   f'{recovery} observed recovery-required outcomes' + ('; channel coverage is truncated' if partial else '') +
+                   '; no automatic retry or completion is inferred.'))
     checks.extend([('External poll / wake workers', 'UNKNOWN', 'Not observed by this service; inspect on the owning host.'),
                    ('Remote federation health', 'UNKNOWN', 'No remote probe or health guarantee.'),
                    ('Owner wake qualification', 'UNQUALIFIED', 'AHP interoperability and atomic idle-only admission remain unqualified.')])

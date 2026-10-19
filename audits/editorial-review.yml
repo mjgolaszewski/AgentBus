@@ -405,9 +405,10 @@ documents:
   - - 1
     - 164
   line_count: 164
-  sha256: b19e7c2cc88ce6de96b7bca9177db921537c060bb1f773c7898ea8e0d9370f64
+  sha256: 8a37fd6c6eafb4239e43ba9073b57e458624d97a67d8a473fcfc0b37732a8596
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 562192ee; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Expanded model with owner cardinality principal grant/public-position fields and explicit inheritance/overrides
   - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
@@ -622,11 +623,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 292
-  line_count: 292
-  sha256: dc11e537e6595ed626cd6d8cbadc6084549474c740c555d005051418324bab31
+    - 294
+  line_count: 294
+  sha256: 2e1870a0f08353f76276496560cb5413ea72733e60c9173a0ac67664bdb663ee
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 562192ee; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Replaced unrestricted join/automatic migration with explicit grants and offline migration
   - Scoped Slack suffix lookup; prohibited membership-moving rebind
@@ -971,11 +973,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 241
-  line_count: 241
-  sha256: 70080c09ba9fbb7eebf363341b8e0efdb72469f5b681f456658557f642f31529
+    - 242
+  line_count: 242
+  sha256: 28191f714c824afb9281a268a60c8b2cc6648ca0cee30016a76a2804ef1ebe83
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 562192ee; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified 700ee191; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.

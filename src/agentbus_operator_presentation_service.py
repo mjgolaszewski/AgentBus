@@ -19,7 +19,7 @@ def workers_text(snapshot):
             row = rows[key]
             lines.append(f"{label}: `{row['state']}`")
             if key != 'task':
-                lines.append(f"Last attempt: `{_timestamp(row['last_attempt_at'])}`; completed cycle: `{_timestamp(row['last_success_at'])}`")
+                lines.append(f"Last attempt: `{_timestamp(row['last_attempt_at'])}`; completed cycle: `{_timestamp(row['last_completed_at'])}`")
             if row['error']:
                 lines.append(f"Warning: `{row['error']}` at `{_timestamp(row['last_error_at'])}`")
     lines.extend(['Workspace poll workers: not observed', 'Host wake supervisor: not observed',
@@ -115,12 +115,13 @@ def explain_text(snapshot):
     if snapshot is None:
         return 'Message unavailable in this channel (unknown or retired cursor).'
     transport = snapshot['transport']
+    legacy = snapshot['legacy_unknown'] if snapshot['legacy_unknown'] is not None else 'not classified'
     sections = [f"*Cursor `{snapshot['position']}` — retained evidence*\nLocal custody recorded: `{snapshot['received_at']}`",
         '*Transport*\n' + (f"State `{transport['state']}`; provider attempts `{transport['attempts']}`" if transport else
         'No retained ordinary delivery obligation.') + f"\nRetained provider observations: `{snapshot['observations']}`",
         '*Recipient outcomes*\n' + ('; '.join(f"{state} `{count}`" for state, count in sorted(snapshot['recipients'].items())) or
         'No classified recipient outcomes retained.'),
-        f"*Retention*\nArchived: `{snapshot['archived']}`; legacy unknown / pinned: `{snapshot['legacy_unknown']}`",
+        f"*Retention*\nArchived: `{snapshot['archived']}`; legacy unknown / pinned: `{legacy}`",
         'Retained-state summary, not a complete event log. Missing stages remain unknown; posting is not execution. '
         'Reads do not settle deadlines or acknowledge work.']
     return '\n\n'.join(sections)

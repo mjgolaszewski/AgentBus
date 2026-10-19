@@ -133,7 +133,7 @@ async def run_delivery(worker, bridge=None, *, connect=None):
                 if getattr(worker, 'cycle_incomplete', False):
                     observations.mark('delivery', 'degraded', error='channel_cycle_incomplete')
                 else:
-                    observations.mark('delivery', 'waiting', success=True)
+                    observations.mark('delivery', 'waiting', completed=True)
         except (sqlite3.Error, OSError, ValueError):
             LOGGER.warning('Local delivery cycle incomplete; durable custody retained')
             if observations is not None:
@@ -150,7 +150,7 @@ async def run_delivery(worker, bridge=None, *, connect=None):
                     observations.mark('federation', 'failed', error='federation_cycle_failed')
                 raise
             if observations is not None:
-                observations.mark('federation', 'waiting', success=True)
+                observations.mark('federation', 'waiting', completed=True)
         try:
             await asyncio.wait_for(worker.wake.wait(), timeout=60)
         except TimeoutError:
@@ -192,10 +192,10 @@ class DeliveryCoordinator:
         try:
             await run_delivery(self,bridge,connect=connect)
         except asyncio.CancelledError:
-            self.observations.mark('task', 'stopped')
+            self.observations.finish_task()
             raise
         except Exception:
-            self.observations.mark('task', 'failed', error='unexpected_task_failure')
+            self.observations.finish_task(failed=True)
             raise
         else:
-            self.observations.mark('task', 'stopped')
+            self.observations.finish_task()

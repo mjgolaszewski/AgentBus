@@ -168,6 +168,21 @@ def test_rc4_pending_bounds_rows_and_excludes_real_foreign_targets_and_controls(
     assert store._db.total_changes == before and web.posts == []
 
 
+def test_rc4_unclassified_history_and_truncated_recovery_checks_remain_unknown(enrolled):
+    from src.agentbus_operator_query_service import doctor_checks
+    from src.agentbus_service import SendMessage
+    from src.agentbus_status_api_service import service_dashboard
+    settings, store, _, web = enrolled
+    store.append('C123456','100.0',SendMessage(sender='slack:U123',text='unclassified legacy'))
+    before = store._db.total_changes
+    assert 'legacy unknown / pinned: `not classified`' in command(settings,store,web,'explain 1')
+    snapshot = service_dashboard(settings,store)
+    snapshot['channel_details_truncated'] = True
+    checks = doctor_checks(snapshot)
+    assert any(name == 'Recipient recovery' and state == 'UNKNOWN' for name,state,_ in checks)
+    assert store._db.total_changes == before and web.posts == []
+
+
 def test_mah_is_hidden_private_authorized_and_has_no_effects(enrolled):
     settings, store, _, web = enrolled
     before = store._db.total_changes
