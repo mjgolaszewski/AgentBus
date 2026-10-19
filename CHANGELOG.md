@@ -5,13 +5,15 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Record RC4 publication, exact-subject certification, workspace upgrade and verified safe cleanup; preserve experimental owner-wake limits and pending human UI follow-up.
+
 - Record the immutable RC3 release, exact-subject proof, isolated installation and bounded lifecycle canary, retaining the initial probe failure and unqualified owner-wake limits.
 
 - Preserve bounded retention progress when recent provider references pin earlier rows; compare provider timestamps at exact decimal precision before selecting each purge batch.
 
 ## [0.9.1rc4] - 2026-10-18
 
-Candidate under construction; protected proof, archive installation and operator UI checks are pending. RC3 remains the immutable released runtime.
+Published as immutable `v0.9.1rc4` after protected PR and exact-main proof, archive installation, and a bounded two-channel canary. The workspace upgrade is complete; the human UI readability follow-up remains open.
 
 - Group health and roster output with spaced sections and textual states instead of repeated colored dots; preserve numeric code styling and escaped Slack rich text.
 - Observe the existing service delivery task and delivery/federation cycle attempts, completion, backoff and sanitized failures in bounded process-local memory. External poll/wake workers and remote health remain explicitly unobserved.
