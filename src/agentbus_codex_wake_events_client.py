@@ -106,6 +106,6 @@ def controls_projected(presence: dict, refs: list[str]) -> bool:
         return False
     if required:
         return required.issubset(refs)
-    if policy_pending:
+    if policy is not None and policy_pending:
         return 'POLICY_CHANGED:' + policy in refs
     return refs[0].startswith('CONTROL:')

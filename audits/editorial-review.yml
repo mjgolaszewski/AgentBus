@@ -1014,9 +1014,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 287
-  line_count: 287
-  sha256: 9bae489c787329409dedc53701bda232a6734a792b5f96ad64bcb54b84ae2b12
+    - 288
+  line_count: 288
+  sha256: 07dadc0937583d74e502e54e94704a1d089c1a8ead329ac9360f0be977499e0b
   disposition: updates
   findings:
   - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays
