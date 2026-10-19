@@ -982,9 +982,10 @@ documents:
   - - 1
     - 252
   line_count: 252
-  sha256: d8b795f74880f44346295e77a5346b20031d15762e3c91c81a481fb771b4aabe
+  sha256: 08add02680b82314a88c01d11f055b7c482e1af348c561e86db88241b07782c5
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 015dec71; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 follow-up changed lines reviewed in context against hash-verified 6a1c6720; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 follow-up changed lines reviewed in context against hash-verified 9ebee089; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified dec5582d; diagnostic outcomes remain exact-subject and final proof pending.
