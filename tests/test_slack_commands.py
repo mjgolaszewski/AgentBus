@@ -141,6 +141,33 @@ def test_rc4_doctor_reports_failed_worker_as_warning_without_repair(enrolled):
     assert store._db.total_changes == before and web.posts == []
 
 
+def test_rc4_pending_bounds_rows_and_excludes_real_foreign_targets_and_controls(enrolled):
+    from src.agentbus_service import SendMessage
+    settings, store, session, web = enrolled
+    store.channels.configure(('C123456','COTHER'))
+    grant = store.channels.issue_grant(channel='COTHER', repo='agentbus', route='agentbus:foreign-only', actor='operator')
+    _, foreign, revision = store.channels.enroll(grant, repo='agentbus', route='agentbus:foreign-only',
+        display_name='Foreign', session_secret='foreign-session-secret-with-32-characters')
+    store.participation.acknowledge_policy(foreign, 'foreign-session-secret-with-32-characters', revision)
+    store.lifecycle.activate_fresh()
+    for channel, route, total in (('COTHER','agentbus:foreign-only',1),('C123456','agentbus:flower',21)):
+        for index in range(total):
+            body = SendMessage(sender='slack:U123',recipient=route,audience='direct',text='not projected')
+            body._sender_assurance = 'slack-human'
+            store.append(channel,f'100.{index:06}',body)
+    foreign_control, _ = store.controls.issue_auxiliary(kind='broadcast',routes=None,session_ids=[foreign],
+                                                       reason='foreign question',actor='operator')
+    own_control, _ = store.controls.issue_auxiliary(kind='broadcast',routes=None,session_ids=[session],
+                                                   reason='local question',actor='operator')
+    before = store._db.total_changes
+    result = command(settings,store,web,'pending')
+    assert 'bounded to 20 rows' in result and 'Cursor `21`' not in result
+    assert 'foreign-only' not in result and foreign_control not in result
+    assert own_control in result
+    assert 'Unknown session or identity' in command(settings,store,web,'pending foreign-only')
+    assert store._db.total_changes == before and web.posts == []
+
+
 def test_mah_is_hidden_private_authorized_and_has_no_effects(enrolled):
     settings, store, _, web = enrolled
     before = store._db.total_changes

@@ -971,11 +971,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 240
-  line_count: 240
-  sha256: cf232c532160b0119e6358620894bf7f2e82a9d62df1e718feb6116b6c5425ce
+    - 241
+  line_count: 241
+  sha256: 70080c09ba9fbb7eebf363341b8e0efdb72469f5b681f456658557f642f31529
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 700ee191; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
