@@ -37,7 +37,7 @@ documents:
   - - 1
     - 51
   line_count: 51
-  sha256: 268bd4a563719d794cb8480ae05f5cdc6beaf6e2a16a3638f252707597a781ff
+  sha256: f392bacb548e59306941f16eb2fea2be8b8ec6d9f06fc24207c82edeb1c3c2da
   disposition: updates
   findings:
   - Reviewed complete text for authority, examples, scope and experimental qualification boundaries
@@ -1014,9 +1014,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 286
-  line_count: 286
-  sha256: a8a45e727569f900aed10b6f08bf34e57bfbc39b2705c9585ddeea0e5f28a4fb
+    - 284
+  line_count: 284
+  sha256: b1f046b3dbcd5a687fba28569143501a48b921efb63c84fa13e57b6626659d35
   disposition: updates
   findings:
   - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays
@@ -1580,6 +1580,18 @@ documents:
     and pending final proof remain explicit.
   verification: Editorial review complete; conditional RC3 behavior and retained-history limits reviewed; final
     exact-source custody pending
+- document: audits/rc5-invariant-construction.yml
+  review_status: line_by_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 182
+  line_count: 182
+  sha256: 5ed2ddb4dab43890931436b6676b0ede9e0d6f68ca44e8a7946f990103ced653
+  disposition: new
+  findings:
+  - Authored and reviewed RC5 invariant-to-owner-to-edge acceptance map; source baseline pinned to released BCF
+    vocabulary; no qualification or deployment authority inferred.
+  verification: Targeted controls pass; full exact-source proof pending
 summary:
   documents_reviewed: 92
   pending_line_reviews: 0
