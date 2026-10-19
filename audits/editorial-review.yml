@@ -974,11 +974,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 248
-  line_count: 248
-  sha256: 11bf0e8283328ac90336a7c8746b2bbb9218e1c5c96744a74cedee1603a13f2e
+    - 249
+  line_count: 249
+  sha256: 4e78fa2ac3196f0ff46f6789a3839b75a12d4530aaccc71bdd250264cc43273b
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 5b30de95; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified edbeeade; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified 037cff1a; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified 3909fe76; diagnostic outcomes remain exact-subject and final proof pending.
