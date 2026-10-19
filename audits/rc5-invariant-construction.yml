@@ -27,7 +27,7 @@ pre_edit:
   scope: Bounded owner corrections only; original released BCF gates retained
 work_orders:
 - id: RC5-01
-  status: implemented_exact_source_proof_pending
+  status: verified_on_946445c_candidate
   invariant: Independent eligible delivery progresses and expiry settles without ancestry reservation
   domain_law: Delivery eligibility combines durable obligation state, channel-bound ancestry, recovery coverage
     and recipient outcomes; only reservation allocates provider attempts, and expiry never asserts delivery or ACK.
@@ -84,7 +84,7 @@ work_orders:
   - src/agentbus_local_delivery_service.py::LocalDeliveryStore.settle_expired
   - src/agentbus_delivery_runtime_service.py::LocalDeliveryWorker.submit_once
 - id: RC5-02
-  status: implemented_exact_source_proof_pending
+  status: verified_on_946445c_candidate
   invariant: Fresh mandatory controls precede ordinary wake admission
   domain_law: Service session/control authority outranks disposable client projection; host execution facts and
     target acknowledgements remain independent authorities.
@@ -133,7 +133,7 @@ work_orders:
   - src/agentbus_codex_wake_events_client.py::controls_projected
   - src/agentbus_codex_wake_intent_client.py::record_result
 - id: RC5-03
-  status: implemented_exact_source_proof_pending
+  status: verified_on_946445c_candidate
   invariant: Service-authorized direct aliases retain quiet presentation priority
   domain_law: Reserved routes identify the same immutable chat/session; service-proved logical addressing owns presentation
     priority rather than recipient text equality.
@@ -171,7 +171,7 @@ work_orders:
   - src/agentbus_poll_client.py::peek_event
   - src/agentbus_poll_client.py::_worker
 - id: RC5-04
-  status: implemented_exact_source_proof_pending
+  status: verified_on_946445c_candidate
   invariant: Architectural claims cover exact declared populations with meaningful oracles
   domain_law: Closed operation populations and effect ports own classification; read authority never confers mutation,
     and command receipts describe their own transition rather than unrelated read models.
@@ -217,7 +217,7 @@ work_orders:
   - tests/architecture_query_probe.py::assert_cli_query_nonmutation
   - src/agentbus_enrollment_approval_service.py::enroll_authorized
 - id: RC5-05
-  status: implemented_exact_source_proof_pending
+  status: verified_on_946445c_candidate
   invariant: Fresh documented enrollment and capability status agree with authorization
   domain_law: Package identity and declared configuration own derived guidance; human authority requires the configured
     allowlist, and experimental qualification remains exact-subject evidence.
@@ -273,7 +273,30 @@ integration:
   - migration and rollback assessment
   live: Only separately authorized bounded qualification; no publication/deployment inferred
   phase: Stack on active P12; Issue75 owner interop/atomic admission remains unqualified
-  local_evidence: Initial isolated source reproductions retained; first six defect controls and restart/alias/query/onboarding
-    unit checks pass. Broader integration and exact-subject proof pending.
+  local_evidence: Original defect reproductions and failed harness attempts remain retained separately. Full725
+    tests pass; protected PR95 and exact-main39301039600 pass all six jobs. Canonical BCF2.3.4 proof and installed
+    archive checks apply to the exact subject below, not to changed documentation or future deployment.
+  qualified_candidate:
+    commit: 946445c13447e3e6032a3724fb7907111ac60e45
+    tree: 54b1186e635e2c4afd963048467483afdca520fa
+    pull_request: https://github.com/mjgolaszewski/AgentBus/pull/95
+    pr_run: https://github.com/mjgolaszewski/AgentBus/actions/runs/39300364758
+    main_run: https://github.com/mjgolaszewski/AgentBus/actions/runs/39301039600
+    main_truth_sha256: 66006edc10efc9195e7bc9fe1fd3d635b0c24bb024e871d27880023cf021abce
+    predicate: pull_request_progress_valid
+    authorizes: []
+    archive_sha256: 634482acf7187665f18802118ef01608e155d91945698977b3640b030111d248
+    archive_bytes: 6540961
+    manifest_sha256: 72d4f31a8b13b75a1a031ec0b821a5f5131ca3101603f2e8e276c50619fe0070
+    isolated_install_receipt_sha256: 2ced0feceebb00778de96d7b17935d73ab4d3d5bec89139932f358111c5f12e2
+    installed_controls: SDK absent;615 archive hashes and modes;66 module origins;entrypoint help;7 read-only
+      operator queries;fresh control and alias priority;invalid cadence;blocked-parent selection and retained
+      uncertain expiry;fresh allowlisted enrollment with empty-list denial and exact retry/policy activation
+    artifact_custody: Six original ZIP digests authenticated per provider run; main truth independently recomputes
+      exact bundle PASS with original released BCF2.3.4; two local archive builds match main release-smoke manifest
+    publication: Not performed by this construction record
+    live_qualification: No new live canary; no Slack wire, endpoint, channel membership or host-adapter capability
+      added. Existing live qualification remains historical exact-subject evidence; deterministic affected-edge
+      controls and SDK-absent installation do not establish a new live wake or multi-installation guarantee.
   rollout: No schema migration; retain RC4 backup and custody. RC5 never reclassifies submitted or uncertain provider
     work as acknowledged. Publication/deployment separate.

@@ -21,19 +21,19 @@ workitems:
   status: DONE
   summary: Freeze RC5 Issue94 canonical owners vocabulary and acceptance matrix
 - id: P12-P1-15
-  status: IN_PROGRESS
+  status: DONE
   summary: Correct local delivery fairness and expiry without losing custody
 - id: P12-P1-16
-  status: IN_PROGRESS
+  status: DONE
   summary: Require fresh mandatory controls before ordinary wake admission
 - id: P12-P1-17
-  status: IN_PROGRESS
+  status: DONE
   summary: Preserve alias direct presentation through quiet polling
 - id: P12-P1-18
-  status: IN_PROGRESS
+  status: DONE
   summary: Enforce complete architecture populations and meaningful query gates
 - id: P12-P1-19
-  status: IN_PROGRESS
+  status: DONE
   summary: Align onboarding authorization release capability and platform guidance
 - id: P12-P1-13
   status: DONE
@@ -99,6 +99,7 @@ execution_evidence:
   - 'Extended pinned action-schema probe to7 cases PASS: empty ID and non-user origin are valid wire shapes; no client or host authority follows.
     Focused probe lint PASS.'
   notes:
+  - "RC5 construction qualification: original234 canonical submit exact23d4fa0 terminal0/802.986s; PR95/run39300364758 all6 green, normal protected merge946445c13447e3e6032a3724fb7907111ac60e45/tree54b1186e635e2c4afd963048467483afdca520fa; exact-main39301039600 all6 green. Six ZIP digests per run authenticated, independent original234 main truth PASS/pr/no issues/bundle66006edc10efc9195e7bc9fe1fd3d635b0c24bb024e871d27880023cf021abce/authorizes empty. Provider JUnit confirms204 test,508 contract,594 Python314 cases and architecture controls. Two archive builds match each other and main manifest:634482acf7187665f18802118ef01608e155d91945698977b3640b030111d248/6540961bytes; SDK-absent frozen install615files/66origins/modes/7queries/corrective and fresh-enrollment checks PASS, receipt2ced0feceebb00778de96d7b17935d73ab4d3d5bec89139932f358111c5f12e2. Offline package terminal0/7.776s,615source hashes fixed, quiescent EOF/reap/known handles absent/original fence fresh free; custodian independently verifies complete package/installed bytes and accepts handback13195. Authored new RC5 items15-19 DONE; not computed P12 closure. No migration, publication, deployment or new live qualification. Original private diagnostics retained: collector parent missing before download and partial CI certification arguments on first local truth reconstruction; corrected workflow-equivalent invocation reproduces exact bundle, not a provider failure."
   - "RC5 first canonical234 submit exact2dd3be8 stopped at existing exposure preflight: newly authored MEMORY contained a private workspace path. No suites/provider transaction observed. Preserve raw first diagnostic and terminal as private non-authoritative retention; actual terminal1/41.307s, controller1247139/SDK1247160 absent and original fence freshly free, custodian independent13130 accepts handback. Remove the unnecessary local path, refresh changed-document audit, retain original checks and released234 bytes, then freeze a new subject for separately scheduled canonical proof."
   - "RC5 exact0f79ce4 V6: lint/source615/Ruff/mypy68 PASS; full725 tests PASS/no failures/errors/skips in115.71s. Existing same-cycle reply and new budget/scope refresh controls execute. Governance stopped on this log's unqualified ephemeral reference; mark private diagnostic retention non-authoritative without replacing canonical proof. Actual terminal1/122.266s,615 source hashes unchanged, quiescent EOF/reaping, owner1235796/supervisor1235801/root1235802 absent and original fence fresh/free; custodian independent13093 accepts handback. Original234 normalization and final canonical/archive/install proof remain pending. No live changes or SDK successor adopted."
   - "RC5 refreshed-window scope control passes1.37s; intentional unscoped refresh fails by posting two instead of one in a cross-channel shared-request-key fixture. Register separate initial/refresh mutation controls with newline-anchored unique sites; no test oracle relaxed and production scope remains explicit. This closes the new bounded-refresh edge before final normalization/proof."
@@ -116,7 +117,7 @@ execution_evidence:
   - 'RC5 enrollment_owner: Existing approval application owner selects exclusive authorization; HTTP adapter maps receipt/status/errors. Grant and staged-secret transactions remain unchanged.'
   - 'RC5 migration: No schema or data migration. Preserve existing databases, aliases, request fingerprints, uncertain outcomes, session/inbox/channel and semantic ACK positions.'
   - 'RC5 rollback: RC4 compatibility remains; do not reverse expiry outcomes or discard unresolved obligations. Live rollback/deployment requires custodian review and stopped backup; no such action taken.'
-  - 'RC5 qualification: Full725 local tests and lint/type checks pass on0f79ce4; canonical exact-subject CI, archive and isolated installation pending. No AHP interoperability or atomic idle-only qualification; Issue75 remains open.'
+  - 'RC5 qualification: Full725 local tests and lint/type checks pass on0f79ce4; canonical exact-subject CI, archive and isolated installation pass on946445c as recorded above; publication and deployment separate. No AHP interoperability or atomic idle-only qualification; Issue75 remains open.'
   - "RC4 operator UI acceptance: the operator explicitly reports \"Readable and private\" after the requested live /agentbus health check covering grouped layout, Workers and private visibility. This closes the remaining UI criterion for authored workitem P12-P1-13 on the unchanged installed 6a1c672 release. Protected PR91/main39198822103, archive8c3376b5, SDK-absent installation and the 17-check two-channel canary remain bound to that original runtime subject. No new code, configuration, deployment, canary or owner wake is implied; P12/Issue75 and AHP/atomic admission remain open. Submit this documentation-only authored closeout through canonical released BCF2.3.4; authored DONE is not computed phase closure."
   - "Release-record PR92 protected merge7d175943 and exact-main39209447366 passed all six jobs. Six downloaded provider artifact ZIP digests authenticated; provider truth PASS/pr, no issues, bundlea79bfd25b412713f858f72d4336f91dd38255cf6fe6d9fa28a966d47470862a6, authorizes empty. Published RC4 tag/assets remain6a1c672; documentation proof does not replace runtime proof."
   - "Final requested isolated staging retirement passed after preserving two failed-safe attempts: a new inert coordination-cache reference and a missing private-pointer parent. Full local-private archive94f53659a8ab09f7fb6af7b716c5da31d0183065983a9de7a130305a9ec16e42 and map29feb84661756cf5dd4f822c3e13a76ec0b05371bab9a5d1bb614629e7c946dc retain all 2166 entries and 1812 unique objects, including the environment. A second complete restoration, current inventory/ownership/mode checks, durable intent/pointer and final exact device/inode/process/config guards preceded removal of only the stopped staging root. Actual terminal0 in3.417s, quiescence/EOF/reaping, known handles absent and fresh original fence verified. All613 source files unchanged. Retired52936704 allocated bytes;17999876-byte archive remains local-private, no exclusive free-space attribution. BCF and custodian independently verified the complete retention/disposition, original canary receipt and live zero-drift healthy runtime; original cleanup request handled. Raw originals, coordinates and diagnostics remain private non-authoritative retention. No further deletion pending."

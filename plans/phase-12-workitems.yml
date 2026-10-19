@@ -16,35 +16,35 @@ workitems:
   - Issue94 invariant domain law canonical owner primitive transitions exclusions producer consumer controls and exact-source evidence are recorded in audits/rc5-invariant-construction.yml
   acceptance_evidence: [test, contract-test, architecture-cqrs-side]
 - id: P12-P1-15
-  status: IN_PROGRESS
+  status: DONE
   summary: Correct local delivery fairness and expiry without losing custody
   priority: P1
   acceptance:
   - Issue94 invariant domain law canonical owner primitive transitions exclusions producer consumer controls and exact-source evidence are recorded in audits/rc5-invariant-construction.yml
   acceptance_evidence: [test, contract-test, architecture-cqrs-side]
 - id: P12-P1-16
-  status: IN_PROGRESS
+  status: DONE
   summary: Require fresh mandatory controls before ordinary wake admission
   priority: P1
   acceptance:
   - Issue94 invariant domain law canonical owner primitive transitions exclusions producer consumer controls and exact-source evidence are recorded in audits/rc5-invariant-construction.yml
   acceptance_evidence: [test, contract-test, architecture-cqrs-side]
 - id: P12-P1-17
-  status: IN_PROGRESS
+  status: DONE
   summary: Preserve alias direct presentation through quiet polling
   priority: P2
   acceptance:
   - Issue94 invariant domain law canonical owner primitive transitions exclusions producer consumer controls and exact-source evidence are recorded in audits/rc5-invariant-construction.yml
   acceptance_evidence: [test, contract-test, architecture-cqrs-side]
 - id: P12-P1-18
-  status: IN_PROGRESS
+  status: DONE
   summary: Enforce complete architecture populations and meaningful query gates
   priority: P2
   acceptance:
   - Issue94 invariant domain law canonical owner primitive transitions exclusions producer consumer controls and exact-source evidence are recorded in audits/rc5-invariant-construction.yml
   acceptance_evidence: [test, contract-test, architecture-cqrs-side]
 - id: P12-P1-19
-  status: IN_PROGRESS
+  status: DONE
   summary: Align onboarding authorization release capability and platform guidance
   priority: P2
   acceptance:
