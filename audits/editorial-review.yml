@@ -1014,9 +1014,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 290
-  line_count: 290
-  sha256: 318e04926728273acfb1981de572455dc6b9a80dcca791eb47c78b51cbba4b28
+    - 291
+  line_count: 291
+  sha256: ba72ea2f805ee0e8f0a9bdf2ab189fb8d155117ca4491bd5fcf6bb32e2d1ca3d
   disposition: updates
   findings:
   - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays
@@ -1407,7 +1407,7 @@ documents:
   - - 1
     - 220
   line_count: 220
-  sha256: 00a59e5559f2adf93f6410aca0ea8724e6ae1d3fb3e2bf1455f0ec25b1ef8e11
+  sha256: 4c898c3af7f0f3550f831c366276ece619bb28d5570c85b8dd1d97a25baaf591
   disposition: updates
   findings:
   - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays

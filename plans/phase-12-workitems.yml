@@ -10,7 +10,7 @@ document:
 workitems:
 - id: P12-P1-14
   status: DONE
-  summary: Freeze RC5 Issue94 canonical owners vocabulary and acceptance matrix
+  summary: deliver Issue94 RC5 bounded invariant-first delivery wake alias assurance and onboarding corrections; audits/rc5-invariant-construction.yml owns edge coverage
   priority: P0
   acceptance:
   - Issue94 invariant domain law canonical owner primitive transitions exclusions producer consumer controls and exact-source evidence are recorded in audits/rc5-invariant-construction.yml
