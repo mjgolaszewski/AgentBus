@@ -10,6 +10,12 @@ clients and explicit offline migration are required. AHP/native-queue
 interoperability and atomic wake remain unqualified; see
 [Experimenters](audiences/experimenters.md).
 
+The RC4 candidate adds private read-only operator diagnostics under participation
+v2: grouped health, process-local task/cycle observations, `workers`, `doctor`,
+channel-scoped `pending [ID]` and `explain CURSOR`. These additions await their
+own exact-source/archive/install and UI checks. They do not change message,
+session, channel, custody or wake authority, and introduce no schema migration.
+
 ## Contract authority and inheritance
 
 | Contract | Current role | What it does not establish |
@@ -80,6 +86,7 @@ membership and obligations while ordinary access/posting pauses.
 
 | Rule family | Application owners | Behavioral populations |
 | --- | --- | --- |
+| RC4 private inspection | Operator query/presentation, status API, worker status and existing delivery runtime | Slack command and channel delivery tests, including read-only isolation, failure/cancellation and bounded projection controls |
 | Registry, binding and migration | `agentbus_channel_store_service`, `agentbus_channel_migration_service` | `test_channel_isolation`, `test_channel_migration` |
 | Slack approval requests | `agentbus_enrollment_approval_service`, enrollment client, participation API and Slack commands | Channel isolation, launcher, architecture and legacy grant tests |
 | Grant consumption and exact principal | `agentbus_channel_grants_service`, `agentbus_channel_api_service`, participation API/store | Channel isolation, participation, rotation and service tests |

@@ -12,7 +12,9 @@ SUFFIX = re.compile(r"[0-9a-f]{6,12}")
 HELP = "\n".join([
     "*🧭 AgentBus operator help*",
     "*Inspect*\n`/agentbus health` — private dashboard\n`/agentbus roster` — this channel's agents",
-    "`/agentbus status ID` · `/agentbus metrics ID`",
+    "`/agentbus workers` — observed service workers\n`/agentbus doctor` — read-only diagnostic guidance\n"
+    "`/agentbus pending [ID]` — bounded channel work and controls\n`/agentbus explain CURSOR` — retained delivery/outcome evidence\n"
+    "`/agentbus status ID`\n`/agentbus metrics ID`",
     "*Enroll*\n`/agentbus enrollments` — pending requests\n`/agentbus approve REQUEST_UUID` — approve in this channel",
     "*Message*\n`/agentbus send ID MESSAGE`\n`/agentbus wake ID MESSAGE` — request attention; host admission is separate",
     "*Ask everyone in this channel*\n`/agentbus broadcast TEXT` — read acknowledgement required\n"
@@ -21,7 +23,7 @@ HELP = "\n".join([
     "`/agentbus retire ID CONFIRM` — irreversible stop",
     "*Targets:* ID is a unique current identity fragment, last 6–12 hex characters, or full session UUID. "
     "Ambiguous matches require the full UUID. Commands cannot target another channel.",
-    "`/agentbus help` — show this guide",
+    "`/agentbus help` — show this guide\n",
     "*Lifecycle*\n`/agentbus lifecycle` — this channel's recipient outcomes\n"
     "`/agentbus lifecycle settle` — preview due transitions\n"
     "`/agentbus lifecycle settle CONFIRM` — apply with a durable receipt",
@@ -30,6 +32,7 @@ HELP = "\n".join([
     "*Storage*\n`/agentbus storage` — service-wide footprint\n"
     "`/agentbus storage checkpoint CONFIRM` — nonblocking service-wide WAL maintenance; no custody deletion",
 ])
+HELP = HELP.replace('\n*', '\n\n*').replace(' · ', '\n')
 
 
 def resolve_session(store, reference: str, channel: str | None = None) -> str:
@@ -76,6 +79,31 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
     if not parts or parts[0] == "help":
         return HELP
     action = parts[0]
+    if action in {'workers', 'doctor', 'pending', 'explain'}:
+        from src.agentbus_operator_presentation_service import explain_text, pending_text, workers_text
+        from src.agentbus_operator_query_service import doctor_checks, explain_snapshot, pending_snapshot
+        if action in {'workers', 'doctor'}:
+            if len(parts) != 1:
+                return f'Use `/agentbus {action}` without a target.'
+            from src.agentbus_status_api_service import service_dashboard
+            snapshot = dashboard() if dashboard is not None else service_dashboard(settings, store)
+            if action == 'workers':
+                return workers_text(snapshot)
+            return '*Doctor — read-only checks*\n\n' + '\n\n'.join(
+                f'*{name}: {state}*\n{guidance}' for name, state, guidance in doctor_checks(snapshot))
+        if action == 'explain':
+            if len(parts) != 2 or not re.fullmatch(r'[1-9][0-9]{0,17}', parts[1]):
+                return 'Use `/agentbus explain CURSOR` with a positive channel-local cursor.'
+            return explain_text(explain_snapshot(store, channel, int(parts[1])))
+        if len(parts) > 2:
+            return 'Use `/agentbus pending` or `/agentbus pending ID`.'
+        try:
+            target = resolve_session(store, parts[1], channel) if len(parts) == 2 else None
+        except KeyError:
+            return 'Unknown session or identity. Use /agentbus roster.'
+        except ValueError as exc:
+            return str(exc)
+        return pending_text(pending_snapshot(store, channel, target))
     if action == 'storage':
         if len(parts) == 3 and parts[1:] == ['checkpoint','CONFIRM']:
             import sqlite3
@@ -181,10 +209,9 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
         if not sessions:
             return "No joined sessions."
         all_ids = [item["session_id"] for item in sessions]
-        return f"*👥 Channel roster* · `{len(sessions)}` sessions\n\n" + "\n\n".join(
-            f"*{item['route']}* · `{short_session(item['session_id'], all_ids)}`\n"
-            f"{'⚪' if item['state'] == 'stopped' else '🟡' if item['work_paused'] else '🔵'} "
-            f"Participation: `{item['state']}` · work {'paused' if item['work_paused'] else 'active'}"
+        return f"*👥 Channel roster*\n`{len(sessions)}` sessions\n\n" + "\n\n".join(
+            f"*{item['route']}*\nSession `{short_session(item['session_id'], all_ids)}`\n"
+            f"Participation: `{item['state']}`; work {'paused' if item['work_paused'] else 'active'}"
             for item in sessions[:50]
         ) + (f"\n… `{len(sessions) - 50}` more" if len(sessions) > 50 else "") + "\nHost wake availability is separate from participation."
     if len(parts) < 2:

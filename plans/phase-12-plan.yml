@@ -33,6 +33,7 @@ delivery_contract:
   - File-free Slack enrollment approval with immutable staged proof and canonical grant custody
   - Local delivery admission separated from retained idempotency history
   - Versioned local message lifecycle pickup return and bounded retention
+  - RC4 grouped private health observed service workers and bounded read-only operator diagnostics
   parallelizable_workstreams:
   - id: P12-WS1
     name: owner_protocol_qualification

@@ -15,12 +15,12 @@ product:
 constraints:
   operating_constraints:
     - "RC2 human Slack requests require the operator allowlist; unique current identity fragments resolve channel-first; global health is private operator-only; rich text preserves machine envelopes; broadcast/poll retain one shared durable control with fixed channel-local read receipts or answers, distinct from delivery and wake; optional secret-bound Slack approval replaces manual file handoff without granting pending agents authority; RC3 ordinary-message lifecycle construction uses scoped epochs explicit pickup/handling bounded replay and reference-safe SQLite retention; legacy unknown federation and shared-control retirement remain pinned or unqualified; no live qualification or automatic purge is implied"
+    - "RC4 grouped private health and workers doctor pending explain commands inspect process-local delivery progress and bounded channel-scoped retained outcomes without new monitoring loops provider probes repairs acknowledgement or host/remote-health guarantees"
     - "one process SQLite database Slack app and Socket Mode receiver; explicit allowlist up to16 channels; one immutable grant-backed channel per identity"
     - "all agent reads/writes require exact session proof and bound inbox; no bearer-only or unjoined fallback; channel-local public cursors conceal other-channel counts"
     - "bearer-authenticated HTTP is loopback-only unless an operator supplies a secure boundary; opt-in federation enqueue requires a joined session, operator Ed25519 bindings, durable bounded custody, and separate live-provider qualification"
-    - "SQLite and consumer profiles remain outside source and release archives; Python 3.12 or newer uses dependencies locked by uv"
+    - "SQLite and consumer profiles remain outside source and release archives; Python 3.12 or newer uses dependencies locked by uv; operators approve Slack retention and the local SQLite copy for transported data"
     - "routed Slack envelopes require the bot identity authenticated from the configured token"
-    - "operators approve both Slack retention and the local SQLite copy for transported data"
     - "operator controls require authority separate from ordinary agent send authority; local chat routes use configurable workspace prefixes without making labels ownership proof, and existing routes migrate with session proof and reserved aliases"
   known_external_dependencies: ["Slack Web API and Socket Mode", "SQLite", "GitHub Actions hosted runners", "Docker for container release evidence"]
 architecture: {backend: "flat client and service contexts with closed CLI and HTTP operation populations; optional host-owned Codex wake adapter", frontend: "not applicable; the product is a CLI and HTTP service", data: "SQLite durable inbox plus local JSON consumer profiles"}
