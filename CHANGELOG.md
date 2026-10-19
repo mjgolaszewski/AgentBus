@@ -5,7 +5,9 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
-- Record RC4 publication, exact-subject certification, workspace upgrade and verified safe cleanup; preserve experimental owner-wake limits and pending human UI follow-up.
+- Record operator acceptance of RC4 grouped private health and completion of the requested safe cleanup; close the authored RC4 diagnostics workitem while keeping owner-wake qualification open.
+
+- Record RC4 publication, exact-subject certification, workspace upgrade and verified safe cleanup; preserve experimental owner-wake limits and record completed human UI acceptance.
 
 - Record the immutable RC3 release, exact-subject proof, isolated installation and bounded lifecycle canary, retaining the initial probe failure and unqualified owner-wake limits.
 
@@ -13,7 +15,7 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [0.9.1rc4] - 2026-10-18
 
-Published as immutable `v0.9.1rc4` after protected PR and exact-main proof, archive installation, and a bounded two-channel canary. The workspace upgrade is complete; the human UI readability follow-up remains open.
+Published as immutable `v0.9.1rc4` after protected PR and exact-main proof, archive installation, and a bounded two-channel canary. The workspace upgrade is complete; the operator confirmed that grouped health and Workers are readable and private.
 
 - Group health and roster output with spaced sections and textual states instead of repeated colored dots; preserve numeric code styling and escaped Slack rich text.
 - Observe the existing service delivery task and delivery/federation cycle attempts, completion, backoff and sanitized failures in bounded process-local memory. External poll/wake workers and remote health remain explicitly unobserved.

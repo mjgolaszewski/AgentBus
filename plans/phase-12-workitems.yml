@@ -10,7 +10,7 @@ document:
 workitems:
 - id: P12-P1-13
   priority: P1
-  status: IN_PROGRESS
+  status: DONE
   summary: deliver RC4 grouped private health observed service workers and bounded read-only operator diagnostics
   acceptance:
   - Health workers doctor pending and explain authorize the exact Slack operator allowlist before channel-scoped resource lookup

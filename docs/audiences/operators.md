@@ -172,7 +172,8 @@ without deleting custody or running a vacuum. This explicit physical-maintenance
 scope spans the one database; it does not change agent membership or access.
 
 RC4 has exact protected-source, archive/install and bounded two-channel evidence.
-Human UI readability follow-up remains open. Its private inspections are:
+The operator confirmed that grouped health, including Workers, is readable and
+visible only to them. Its private inspections are:
 
 - `/agentbus workers` shows the existing service task and cycle observations;
   it does not scan processes, invoke providers or inspect another host.
