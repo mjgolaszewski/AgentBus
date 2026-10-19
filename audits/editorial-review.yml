@@ -94,9 +94,10 @@ documents:
   - - 1
     - 105
   line_count: 105
-  sha256: 92846f3a7473828df1543a42eb02a3a1fb412344823d4cbdcdfaaf4d73ffcedd
+  sha256: 69b344a53d188c72bc793037c574b9a18c35c566178b03fb9759a4f427ef9885
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 follow-up changed lines reviewed in context against hash-verified 6a1c6720; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 follow-up changed lines reviewed in context against hash-verified 9ebee089; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified dec5582d; diagnostic outcomes remain exact-subject and final proof pending.
@@ -548,9 +549,10 @@ documents:
   - - 1
     - 83
   line_count: 83
-  sha256: a49e965240c9a8910a73568da45d396657ae2ba069897dca8c83437a7d56ee73
+  sha256: 4c26431531df07c16d06377cc9092ba14ce19599315424aa6f6341f2d34b6048
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 follow-up changed lines reviewed in context against hash-verified 6a1c6720; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
@@ -629,11 +631,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 295
-  line_count: 295
-  sha256: 4918c9e280e64ea9c5b2da6084b62fcb95939dc33480b854a5378717f718c726
+    - 296
+  line_count: 296
+  sha256: 70857225e20bb29293faef6cae5383e4f703f9665d3362a055ee61179d59c1ef
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 follow-up changed lines reviewed in context against hash-verified 6a1c6720; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 follow-up changed lines reviewed in context against hash-verified 562192ee; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
@@ -980,11 +983,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 254
-  line_count: 254
-  sha256: 53afdb6d8e0587a075f4640bb6cdfc1d0892c67a48f783230b65944213b9ad44
+    - 256
+  line_count: 256
+  sha256: c41f42b19d39fc51e0719988e6965a0f1c0ff8e815cb2698b31001998eb42a48
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 follow-up changed lines reviewed in context against hash-verified 5ba7d9f6; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 follow-up changed lines reviewed in context against hash-verified 60b5a1e; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 follow-up changed lines reviewed in context against hash-verified 015dec71; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
@@ -1352,9 +1356,10 @@ documents:
   - - 1
     - 178
   line_count: 178
-  sha256: 1312aa7fea97e879276f802b7ded77c67758d3bcb63d2531b399e8821842f3a9
+  sha256: b7724197394ccbcde904bd297717b191bd999cb7bd0326439e6edd80dede7527
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays bound to immutable6a1c672; this documentation-only subject awaits canonical proof.
   - RC4 follow-up changed lines reviewed in context against hash-verified 5a7feb3e; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
