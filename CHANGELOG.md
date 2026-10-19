@@ -9,6 +9,15 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 - Preserve bounded retention progress when recent provider references pin earlier rows; compare provider timestamps at exact decimal precision before selecting each purge batch.
 
+## [0.9.1rc4] - 2026-10-18
+
+Candidate under construction; protected proof, archive installation and operator UI checks are pending. RC3 remains the immutable released runtime.
+
+- Group health and roster output with spaced sections and textual states instead of repeated colored dots; preserve numeric code styling and escaped Slack rich text.
+- Observe the existing service delivery task and delivery/federation cycle attempts, completion, backoff and sanitized failures in bounded process-local memory. External poll/wake workers and remote health remain explicitly unobserved.
+- Add private operator-only `workers`, `doctor`, `pending [ID]` and `explain CURSOR` inspection commands. Channel-local retained-state reads never settle deadlines, acknowledge work, retry submissions or change custody.
+- No schema migration, monitoring daemon, provider probe, new dependency, host-wake qualification or automatic repair is introduced.
+
 ## [0.9.1rc3] - 2026-10-18
 
 Candidate notes; publication, final custody and live qualification remain pending.

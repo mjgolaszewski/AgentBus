@@ -134,7 +134,7 @@ Socket Mode app and its `commands` scope. Set
 authorize exact human Slack user IDs; the default empty allowlist disables all
 slash operations and actionable ordinary replies. The service accepts commands only from its channel allowlist. Roster and
 full-ID/suffix/current-identity-fragment lookup are scoped to the invoking channel before resolution.
-`/agentbus help` lists the fixed surface: health, enrollments, approve, broadcast, poll, results, roster, status, metrics, send, wake,
+`/agentbus help` lists the fixed surface: health, workers, doctor, pending, explain, enrollments, approve, broadcast, poll, results, roster, status, metrics, send, wake,
 checkpoint, pause, resume, and retire. Session-targeting commands accept a unique
 6–12-character session UUID suffix, a full UUID, or a case-insensitive fragment
 of the current agent identity. Approval and results use their full request/control
@@ -148,11 +148,16 @@ the resume control. AgentBus does not intercept Codex tools or cancel an
 in-flight call; the active chat acts on the hold at its next checkpoint.
 `/agentbus health` is a private, read-only operator-wide dashboard. It reports
 version, process/runtime, Slack connection, configured and retained channels,
-custody, and local federation configuration. Remote health is not inferred.
+custody, and local federation configuration. RC4's candidate adds spaced sections
+and bounded process-local observations of the existing delivery task and its
+delivery/lifecycle and federation cycles. Last attempt and completed-cycle times,
+backoff and fixed error codes are observations, not delivery or execution proof.
+They reset on restart. External workspace poll workers and the host wake
+supervisor are explicitly not observed; remote health is not inferred.
 The operator-authenticated `/v1/status` exposes the same read model; shared
 bearer status remains minimal. No credential or private path is included.
 
-The next unqualified RC3 construction adds rich help/roster, a copyable
+Released experimental RC3 adds rich help/roster, a copyable
 `/agentbus approve REQUEST_UUID` line per enrollment and distinct lifecycle
 states in health. `/agentbus lifecycle` inspects the invoking channel;
 `lifecycle settle`, `lifecycle archive` and `lifecycle purge` preview a bounded
@@ -163,6 +168,26 @@ Read the [lifecycle migration guide](../message-lifecycle.md) before cutover.
 `/agentbus storage checkpoint CONFIRM` performs nonblocking WAL maintenance
 without deleting custody or running a vacuum. This explicit physical-maintenance
 scope spans the one database; it does not change agent membership or access.
+
+The RC4 inspection candidate remains pending final proof and UI qualification:
+
+- `/agentbus workers` shows the existing service task and cycle observations;
+  it does not scan processes, invoke providers or inspect another host.
+- `/agentbus doctor` evaluates the local read model and suggests relevant
+  inspection commands. `UNKNOWN` is not a successful check. It repairs nothing.
+- `/agentbus pending [ID]` lists at most 20 rows per group for the invoking
+  channel: open recipient outcomes, controls/shared reads and transport custody.
+  With an identity selector, work is identity-scoped, controls are exact-session,
+  and the transport group is omitted. The query does not settle elapsed deadlines.
+- `/agentbus explain CURSOR` resolves only a positive channel-local public cursor
+  and summarizes retained transport, recipient and archive evidence without
+  message bodies or pickup tokens. It is not a complete event log; unknown and
+  retired positions return the same unavailable response. Posting never proves
+  execution, and reading never acknowledges work.
+
+All four require the existing Slack operator allowlist and return privately.
+There is no new daemon, credential, schema migration or automatic repair. RC4
+preserves RC3 lifecycle and host-wake limitations; see [Experimenters](experimenters.md).
 
 The construction candidate separates unresolved local deliveries from retained
 request history. `AGENTBUS_LOCAL_DELIVERY_OUTSTANDING_LIMIT` defaults to 1,024;

@@ -1,7 +1,7 @@
 document:
   kind: editorial_audit
   path: audits/editorial-review.yml
-  status: reviewed_release_record_followup_pending_canonical_docs_proof
+  status: reviewed_rc4_candidate_pending_canonical_proof
 request:
   scope: Complete product documentation review, including historical records and product contracts; line-by-line
     coverage and disposition per file
@@ -94,9 +94,10 @@ documents:
   - - 1
     - 105
   line_count: 105
-  sha256: e54a99dc4f481d8a737e310664d6daf642b635b11ddae82364c8f21fa4a20609
+  sha256: 18dbc80eede62908e333ccabc69dec250e5d9211611604764e33a59f2296c570
   disposition: updates
   findings:
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
@@ -131,11 +132,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 886
-  line_count: 886
-  sha256: 7dde2a9937fd41fe51f773cc7201321964e6c576385bffdca3fa66afb572ccaf
+    - 892
+  line_count: 892
+  sha256: 023e388e17c720160707600e522ab2b4996d37c2d486563791cb0552f8e6af1c
   disposition: updates
   findings:
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - Removed legacy bearer/unjoined authority and rollout fallback
   - Added grant-backed examples, scoped cursors/API capabilities and experimental disclosures
@@ -401,11 +403,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 159
-  line_count: 159
-  sha256: 071114ad55dbac9840d40552a74834b6b81c633ba8766c1e7721a88051be79d2
+    - 164
+  line_count: 164
+  sha256: b19e7c2cc88ce6de96b7bca9177db921537c060bb1f773c7898ea8e0d9370f64
   disposition: updates
   findings:
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Expanded model with owner cardinality principal grant/public-position fields and explicit inheritance/overrides
   - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
     unique current identities, private operator health, unchanged wire and experimental wake boundaries'
@@ -537,11 +540,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 82
-  line_count: 82
-  sha256: 7dc4bb16e01370295e185e49a8af9cd2c13951f1520f12ef6561dd7fd538bae7
+    - 83
+  line_count: 83
+  sha256: 30121295637563b2a5b10ab4f0718955f6d924ef02879fcc8cc93640c40b509e
   disposition: updates
   findings:
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - New seat separates experimental candidate claims from released baseline and bounded tests; no live deployment/wake
     authority supplied
@@ -618,11 +622,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 267
-  line_count: 267
-  sha256: 876705fdbe658b38cf24fa74b3bfcf80545b950c1bfe94cdedf6721cacf60a94
+    - 292
+  line_count: 292
+  sha256: dc11e537e6595ed626cd6d8cbadc6084549474c740c555d005051418324bab31
   disposition: updates
   findings:
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Replaced unrestricted join/automatic migration with explicit grants and offline migration
   - Scoped Slack suffix lookup; prohibited membership-moving rebind
   - Fresh-store bootstrap requires distinct operator capability and configured global policy before grant-backed
@@ -688,11 +693,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 96
-  line_count: 96
-  sha256: cc7c7456849d36a6bda71e758d8daa3bb41565227b737b065161afa5f014b2f5
+    - 103
+  line_count: 103
+  sha256: 3a1215b6242085c1ecb88de19816a198e3d427456b4d306134fc1867c6fa8f9a
   disposition: updates
   findings:
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - New model connects all current product contracts to identity/cursor relationships, inheritance, implementation
     and behavioral evidence; observability scaffolds explicitly not an implemented collector guarantee
@@ -965,11 +971,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 236
-  line_count: 236
-  sha256: 88a16e98eb1b8a4a0922d91871c08c0718d459463da3297cf90d3f669658d62e
+    - 240
+  line_count: 240
+  sha256: cf232c532160b0119e6358620894bf7f2e82a9d62df1e718feb6116b6c5425ce
   disposition: updates
   findings:
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
@@ -1007,11 +1014,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 100
-  line_count: 100
-  sha256: db8277b7062355217f26b9900b45472d0e1c0ead35c1cfe843732f8cb9d2a415
+    - 101
+  line_count: 101
+  sha256: c2aaf13beca7c165014e0e886a4a755fb02b04698ace9e7635ce7c71eff497e7
   disposition: updates
   findings:
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
   - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
@@ -1294,11 +1302,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 53
-  line_count: 53
-  sha256: 661dc33bcd685a567df0e79bc15b6632ec6f4d3ed2ca92f5b72b2bf5c5b6050d
+    - 54
+  line_count: 54
+  sha256: df498cd020aca2b53f36915906c380b6b80fb471b13dbeeb6bf93b3744ffeba2
   disposition: updates
   findings:
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
   - The active P12 delivery contract explicitly includes file-free Slack approval; no lifecycle closure or deployment
@@ -1317,11 +1326,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 167
-  line_count: 167
-  sha256: 1cc4b969063aab1779ebe4bf8770d0fdeed4d31b9303363ee5b1489d2db0c09a
+    - 178
+  line_count: 178
+  sha256: 3591133303d70d79b2d7104968664782d57e9e8c407977cb8853885f40cf8f84
   disposition: updates
   findings:
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
   - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
@@ -1380,11 +1390,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 40
-  line_count: 40
-  sha256: 72f070000611819a76e19154acc73b62e98fbe57b4e8db0deee9b12e83d884eb
+    - 41
+  line_count: 41
+  sha256: 4aeb66e6f8f312acfd7dcbf7a3f3266df411d1bdaa9597188e17600a414d9ba3
   disposition: updates
   findings:
+  - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Reviewed full authority/model and qualification wording; retained constraints or corrected current candidate
     scope
   - 'RC2 changed lines reviewed against retained full-document baseline: allowlisted human request parity, scoped
@@ -1503,3 +1514,11 @@ release_record_review:
   baseline_document_hashes_verified: 92
   method: Inherit unchanged full-document review; inspect each release-record changed line in context and refresh its full-file hash and coverage.
   new_runtime_or_closure_authority: false
+
+rc4_review:
+  baseline_commit: 2468a033e309ed945b1ff35151feed942fef6762
+  baseline_document_hashes_verified: 92
+  changed_document_count: 11
+  method: All prior document hashes verified; RC4 changed lines reviewed in full section context and full-file coverage refreshed.
+  disposition: updates_only; no historic evidence removed_or_relabelled
+  runtime_qualification: pending; no copied proof applicability

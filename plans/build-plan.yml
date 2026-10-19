@@ -19,6 +19,7 @@ planning_inputs:
     - MEMORY.yml
     - plans/phase-ledger.yml
 global_delivery_rules:
+  - "RC4 private operator workers doctor pending and explain reuse existing local observations and channel-scoped custody; no probes new daemon automatic repairs or host-health inference"
   - "RC2 join may request allowlisted Slack approval without a credential file; immutable staged proof and invoking-channel approval redeem canonical grants atomically; file grants remain supported"
   - "RC2 operator broadcast and poll use one durable control payload with fixed invoking-channel recipients; explicit read ACK and bounded poll answers remain distinct from delivery and wake"
   - "RC2 human Slack requests require the operator allowlist; unique current identity fragments resolve channel-first; global health is private operator-only; rich text preserves machine envelopes"

@@ -39,6 +39,12 @@ ownership. Production activation and final release custody remain separate.
 
 ## Candidate and experimental capabilities
 
+The RC4 candidate adds a quieter, grouped private health dashboard and
+`/agentbus workers`, `doctor`, `pending [ID]` and `explain CURSOR`. Existing
+service-task observations reset on restart; external poll/wake workers and
+remote health remain unobserved. These read-only additions await final proof
+and operator UI checks; see [operator guidance](docs/audiences/operators.md).
+
 Released experimental RC3 [message lifecycle behavior](docs/message-lifecycle.md) separates
 provider delivery, recipient pickup, handling, expiry, recovery and retention.
 It adds private operator previews and bounded archive/purge controls.

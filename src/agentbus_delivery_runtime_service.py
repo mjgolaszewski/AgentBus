@@ -102,8 +102,11 @@ class LocalDeliveryWorker:
 
 async def run_delivery(worker, bridge=None, *, connect=None):
     next_federation = 0.0
+    observations = getattr(worker, 'observations', None)
     while True:
         worker.wake.clear()
+        if observations is not None:
+            observations.mark('delivery', 'running')
         try:
             if worker.store.lifecycle.enabled:
                 worker.store.lifecycle.rotate_epochs()
@@ -118,16 +121,36 @@ async def run_delivery(worker, bridge=None, *, connect=None):
                     bridge = await connect()
                 except RuntimeError:
                     LOGGER.warning('Slack bootstrap unavailable; local custody retained')
+                    if observations is not None:
+                        observations.mark('delivery', 'backoff', error='slack_bootstrap_unavailable')
                     try:
                         await asyncio.wait_for(worker.wake.wait(), timeout=60)
                     except TimeoutError:
                         pass
                     continue
             await worker.submit_once()
+            if observations is not None:
+                if getattr(worker, 'cycle_incomplete', False):
+                    observations.mark('delivery', 'degraded', error='channel_cycle_incomplete')
+                else:
+                    observations.mark('delivery', 'waiting', success=True)
         except (sqlite3.Error, OSError, ValueError):
             LOGGER.warning('Local delivery cycle incomplete; durable custody retained')
+            if observations is not None:
+                observations.mark('delivery', 'degraded', error='delivery_cycle_incomplete')
+        if observations is not None and bridge is None:
+            observations.mark('federation', 'disabled')
         if bridge is not None and time.monotonic() >= next_federation:
-            next_federation = time.monotonic() + await bridge.cycle()
+            if observations is not None:
+                observations.mark('federation', 'running')
+            try:
+                next_federation = time.monotonic() + await bridge.cycle()
+            except Exception:
+                if observations is not None:
+                    observations.mark('federation', 'failed', error='federation_cycle_failed')
+                raise
+            if observations is not None:
+                observations.mark('federation', 'waiting', success=True)
         try:
             await asyncio.wait_for(worker.wake.wait(), timeout=60)
         except TimeoutError:
@@ -137,10 +160,12 @@ async def run_delivery(worker, bridge=None, *, connect=None):
 class DeliveryCoordinator:
     """One bounded loop rotates channel-bound workers; one bridge cycles once."""
     def __init__(self,store,posters):
+        from src.agentbus_worker_status_service import WorkerObservations
         self.store=store
         self.workers=[LocalDeliveryWorker(store,poster,channel) for channel,poster in posters.items()]
         self.wake=asyncio.Event()
         self.offset=0
+        self.observations = WorkerObservations()
 
     def bind_transport(self,bot_id,bridge):
         for worker in self.workers:
@@ -148,6 +173,7 @@ class DeliveryCoordinator:
             worker.federation=bridge if bridge is not None and bridge.channel==worker.channel else None
 
     async def submit_once(self):
+        self.cycle_incomplete = False
         quota,deadline=8,time.monotonic()+30
         workers=self.workers[self.offset:]+self.workers[:self.offset]
         self.offset=(self.offset+1)%len(workers)
@@ -157,8 +183,19 @@ class DeliveryCoordinator:
             try:
                 quota-=await worker.submit_once(budget=quota,deadline=deadline)
             except (sqlite3.Error,OSError,ValueError):
+                self.cycle_incomplete = True
                 quota -= worker.cycle_attempts
                 LOGGER.warning('Channel cycle incomplete; retained custody remains channel-bound')
 
     async def run(self,bridge=None,*,connect=None):
-        await run_delivery(self,bridge,connect=connect)
+        self.observations.mark('task', 'running')
+        try:
+            await run_delivery(self,bridge,connect=connect)
+        except asyncio.CancelledError:
+            self.observations.mark('task', 'stopped')
+            raise
+        except Exception:
+            self.observations.mark('task', 'failed', error='unexpected_task_failure')
+            raise
+        else:
+            self.observations.mark('task', 'stopped')

@@ -64,6 +64,83 @@ def command(settings, store, web, text, *, user="U123", channel="C123456"):
                             "user_id": user, "text": text}, settings, store, web)
 
 
+@pytest.mark.parametrize('action', ['workers', 'doctor', 'pending', 'explain 1'])
+def test_rc4_inspection_is_private_authorized_and_read_only(enrolled, action):
+    settings, store, _, web = enrolled
+    before = store._db.total_changes
+    assert 'not enabled' in command(settings, store, web, action, user='U999')
+    assert 'configured channel' in command(settings, store, web, action, channel='COTHER')
+    result = command(settings, store, web, action)
+    assert 'operator help' not in result
+    assert store._db.total_changes == before and web.posts == []
+
+
+def test_rc4_health_groups_sections_without_status_dot_noise(enrolled):
+    settings, store, _, web = enrolled
+    result = command(settings, store, web, 'health')
+    for heading in ('Service', 'Workers', 'Channels', 'Queues', 'Storage', 'Federation', 'Qualification'):
+        assert f'*{heading}*' in result
+    assert '\n\n' in result
+    assert not any(dot in result for dot in ('🟢', '🔵', '⚪', ' · '))
+    assert 'not observed' in command(settings, store, web, 'workers')
+
+
+def test_rc4_explain_uses_channel_local_cursor_and_never_exposes_receipt_secrets(enrolled):
+    from src.agentbus_service import SendMessage
+    settings, store, _, web = enrolled
+    store.channels.configure(('C123456', 'COTHER'))
+    store.lifecycle.activate_fresh()
+    foreign = store.append('COTHER', '100.0', SendMessage(sender='slack:U123', text='FOREIGN CONTENT'))
+    body = SendMessage(sender='slack:U123', recipient='agentbus:flower', audience='direct', text='PRIVATE BODY')
+    body._sender_assurance = 'slack-human'
+    own = store.append('C123456', '100.0', body)
+    assert foreign.cursor != own.cursor
+    before = store._db.total_changes
+    result = command(settings, store, web, 'explain 1')
+    assert 'Cursor `1`' in result and 'unclaimed' in result
+    assert 'FOREIGN CONTENT' not in result and 'PRIVATE BODY' not in result
+    assert 'pickup_token' not in result and SECRET not in result
+    assert 'unavailable in this channel' in command(settings, store, web, 'explain 999999')
+    assert 'positive channel-local cursor' in command(settings, store, web, 'explain -1')
+    assert store._db.total_changes == before and web.posts == []
+    pending = command(settings, store, web, 'pending flower')
+    assert 'Cursor `1`' in pending and 'unclaimed' in pending
+    assert 'FOREIGN CONTENT' not in pending and 'PRIVATE BODY' not in pending
+    with store._db:
+        store._db.execute('UPDATE lifecycle_targets SET deadline=0 WHERE cursor=?', (own.cursor,))
+    before = store._db.total_changes
+    assert 'unclaimed' in command(settings, store, web, 'pending')
+    assert 'unclaimed' in command(settings, store, web, 'explain 1')
+    assert store._db.total_changes == before
+
+
+def test_rc4_inspection_argument_validation_and_block_bounds(enrolled):
+    from src.agentbus_presentation_service import command_blocks
+    settings, store, _, web = enrolled
+    for action in ('workers extra','doctor extra','pending one two','explain 0','explain 9999999999999999999999'):
+        assert command(settings, store, web, action).startswith('Use ')
+    text = command(settings, store, web, 'health')
+    blocks = command_blocks(text)
+    assert len(blocks) <= 50
+    assert all(len(block['text']['text']) <= 3000 for block in blocks[1:])
+    assert sum(block['text']['text'].startswith('*') for block in blocks[1:]) >= 7
+    assert not any(dot in command(settings, store, web, 'roster') for dot in ('🔵','🟢','⚪',' · '))
+
+
+def test_rc4_doctor_reports_failed_worker_as_warning_without_repair(enrolled):
+    from src.agentbus_status_api_service import service_dashboard
+    from src.agentbus_worker_status_service import WorkerObservations
+    settings, store, _, web = enrolled
+    observations = WorkerObservations()
+    observations.mark('task', 'failed', error='unexpected_task_failure')
+    snapshot = service_dashboard(settings, store, workers=observations.snapshot())
+    before = store._db.total_changes
+    result = execute_command({'command':'/agentbus','channel_id':'C123456','user_id':'U123','text':'doctor'},
+                             settings, store, web, dashboard=lambda: snapshot)
+    assert 'Delivery task: WARN' in result and 'External poll / wake workers: UNKNOWN' in result
+    assert store._db.total_changes == before and web.posts == []
+
+
 def test_mah_is_hidden_private_authorized_and_has_no_effects(enrolled):
     settings, store, _, web = enrolled
     before = store._db.total_changes
@@ -362,9 +439,9 @@ def test_health_is_private_operator_only_and_does_not_need_a_target(enrolled):
     result=command(settings,store,web,'health')
     for word in ('AgentBus health','Version','Python','Channels','Federation','C123456'):
         assert word in result
-    assert '🟡 unknown' in result.lower()  # A direct unit call cannot observe a socket.
-    assert '*Channels:* `1` enabled' in result
-    assert '*Storage:* `' in result
+    assert 'Slack `not observed`' in result  # A direct unit call cannot observe a socket.
+    assert '*Channels*\n`1` enabled' in result
+    assert '*Storage*\nDatabase including WAL sidecars: `' in result
     assert 'retention policy: not enabled' in result
     assert 'protocol `2`' in result
     assert settings.slack_bot_token not in result and str(settings.db_path) not in result

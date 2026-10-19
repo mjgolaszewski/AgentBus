@@ -31,7 +31,7 @@ def api_status(request: Request) -> dict:
     return result
 
 
-def service_dashboard(settings, store, *, socket=None, bridge=None, version=None, started_at=None):
+def service_dashboard(settings, store, *, socket=None, bridge=None, version=None, started_at=None, workers=None):
     """Privileged read model; never probe providers, expose credentials or infer remote health."""
     import os
     import platform
@@ -70,7 +70,8 @@ def service_dashboard(settings, store, *, socket=None, bridge=None, version=None
                              'lifecycle':store.lifecycle.status(channel)})
         custody = dict(store._db.execute('SELECT state,count(*) FROM bridge_obligations GROUP BY state').fetchall())
         checkpoints = store._db.execute('SELECT count(*) FROM federation_checkpoints').fetchone()[0]
-    return {'version':version, 'runtime':{'python':platform.python_version(),
+    return {'version':version, 'workers': workers,
+            'runtime':{'python':platform.python_version(),
             'implementation':platform.python_implementation(),'platform':platform.system(),'pid':os.getpid(),
             'uptime_seconds':max(0, int(time.monotonic()-started_at)) if started_at is not None else None},
             'slack_connected':connected, 'channels':channels,'retained_channel_count':retained_channel_count,
@@ -90,6 +91,9 @@ def service_dashboard(settings, store, *, socket=None, bridge=None, version=None
 
 
 def operator_dashboard(app):
+    delivery = getattr(app.state, 'delivery', None)
+    observations = getattr(delivery, 'observations', None)
     return service_dashboard(app.state.settings, app.state.store, socket=app.state.socket,
                              bridge=app.state.federation_bridge, version=app.version,
-                             started_at=getattr(app.state,'runtime_started',None))
+                             started_at=getattr(app.state,'runtime_started',None),
+                             workers=observations.snapshot() if observations is not None else None)
