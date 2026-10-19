@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import fcntl
 import json
+import math
 import os
 import subprocess
 import sys
@@ -13,11 +14,23 @@ from typing import Callable, TypeVar
 from urllib.parse import urlencode
 
 from src.agentbus_client import atomic_json
-from src.agentbus_participation_service import next_inbox_interval_values
 from src.agentbus_scope_client import scope, scoped_api, verify_projection
 from src.agentbus_transport_client import ClientError, api, configuration
 
 T = TypeVar("T")
+
+
+def next_inbox_interval_values(values, previous_interval_seconds, *, semantic_delta):
+    """Client projection of the participation-v2 cadence; no service dependency."""
+    raw = [values[key] for key in ('initial_interval_seconds', 'max_interval_seconds')]
+    if any(not isinstance(value, (int, float)) or isinstance(value, bool)
+           or not math.isfinite(value) or value <= 0 for value in raw):
+        raise ValueError('Polling intervals must be finite and positive')
+    initial, maximum = map(float, raw)
+    if semantic_delta or previous_interval_seconds is None:
+        return initial
+    return next((min(maximum, initial * step) for step in (1, 2, 4, 8, 12, 16, 24, 32)
+                 if min(maximum, initial * step) > previous_interval_seconds), maximum)
 
 
 def spool_path(profile_path: Path) -> Path:
@@ -111,7 +124,7 @@ def _routine_message(event: dict, identity: str) -> bool:
     return not (
         message.get("action_reason") == "claimed by this identity" or
         (message.get("audience") in {"direct", "informational"} and
-         message.get("recipient") == identity)
+         (message.get("actionable") is True or message.get("recipient") == identity))
     )
 
 
@@ -125,10 +138,10 @@ def peek_event(profile_path: Path, profile: dict, *, quiet: bool = False) -> dic
             return 2
         message = event["message"]
         if (message.get("audience") in {"direct", "informational"} and
-                message.get("recipient") == profile["identity"] and message.get("kind") == "blocker"):
+                (message.get("actionable") is True or message.get("recipient") == profile["identity"]) and message.get("kind") == "blocker"):
             return 3
         if (message.get("audience") in {"direct", "informational"} and
-                message.get("recipient") == profile["identity"]):
+                (message.get("actionable") is True or message.get("recipient") == profile["identity"])):
             return 4
         if message.get("action_reason") == "claimed by this identity":
             return 5

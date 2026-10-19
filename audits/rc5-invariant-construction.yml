@@ -1,0 +1,279 @@
+document:
+  kind: rc5_construction_audit
+  path: audits/rc5-invariant-construction.yml
+  status: active
+baseline:
+  commit: bebbab2631b104b653d452f2bc3adc412e300489
+  issue: 94
+  bcf_version: 2.3.4
+  bcf_source: d02f11ef3eafd99e451c1482c5d3403c2feefd03
+  owner_vocabulary:
+  - governance/semantic-families.yml
+  - governance/canonical-representations.yml
+  - governance/application-operations.yml
+  qualification: Existing 697 tests and green exact-main do not prove reported cross-feature defects
+pre_edit:
+  context:
+  - client
+  - service
+  sides:
+  - command
+  - query
+  - presentation
+  forbidden:
+  - installer-owned BCF runtime schemas and generated manifests
+  - live configuration credentials database and bindings
+  - historical release evidence
+  scope: Bounded owner corrections only; original released BCF gates retained
+work_orders:
+- id: RC5-01
+  status: implemented_exact_source_proof_pending
+  invariant: Independent eligible delivery progresses and expiry settles without ancestry reservation
+  domain_law: Delivery eligibility combines durable obligation state, channel-bound ancestry, recovery coverage
+    and recipient outcomes; only reservation allocates provider attempts, and expiry never asserts delivery or ACK.
+  pinned_canonical_owner:
+    families:
+    - agentbus_service_state
+    - agentbus_message_lifecycle
+    symbols:
+    - src/agentbus_local_delivery_service.py
+    - src/agentbus_delivery_runtime_service.py
+    - src/agentbus_message_lifecycle_service.py
+    - src/agentbus_retention_service.py
+    baseline_sha256:
+      src/agentbus_local_delivery_service.py: 658e2405068ee0e8d995fed08875fbd3cb348fc039b9c43c4f521af1d64188e8
+      src/agentbus_delivery_runtime_service.py: cf42ea4a2ffa04233ae1168a3726f3100f050d3a09e61c7ca2ff95471a9be983
+      src/agentbus_message_lifecycle_service.py: d3dce8ddb3b036b90bbe929db25a316845a11f4e16163c2c4c376d2b3d5f6027
+      src/agentbus_retention_service.py: 491f7efc26e1a8e29da1c1f18701fac7e03a9f40c4a1c375c5e18edbbdea69de
+  primitive: local_delivery_obligations
+  states_and_transitions: pending parent_not_ready independent_ready submitting uncertain blocked submitted expired_unsubmitted
+    expired_uncertain
+  typed_exclusions: Unknown provider outcome stays unresolved; parent failure never fabricates success
+  operation_contract: contracts/messages/v1/message-lifecycle.contract.yml
+  producer: contract-test
+  consumer: LocalDeliveryWorker; retention
+  negative_controls: 100 blocked replies then independent; expiry without reserve; restart; retained uncertain;
+    channel isolation
+  evidence:
+  - tests/test_message_lifecycle.py::test_blocked_ancestry_cannot_starve_independent_delivery_or_expiry
+  - tests/test_message_lifecycle.py::test_parent_recovery_unblocks_child_after_restart_without_cross_channel_expiry
+  - tests/test_message_lifecycle.py::test_expiry_settlement_rolls_back_targets_and_obligations_together
+  - tests/test_message_lifecycle.py::test_newly_ready_reply_chain_progresses_only_within_remaining_cycle_budget
+  - tests/test_message_lifecycle.py::test_eligibility_refresh_cannot_project_foreign_payload_through_shared_request_key
+  edge_dispositions:
+    atomic_expiry: Target and obligation updates join one existing writer transaction; injected failure or outer-command
+      rollback retains both original states, then exact retry settles.
+    parent_not_ready_or_failed: Without a proved provider or thread reference hold the child without reserve; test
+      readiness before bounded selection. A known thread root retains existing child eligibility without claiming
+      parent submission success. Unknown/no-lifecycle deadlines remain pinned.
+    independent_ready: Eligible row beyond blocked prefix receives submission within the same bounded cycle.
+    unsubmitted_expired: Explicit channel command settles expired_unsubmitted before selection without incrementing
+      attempts.
+    attempted_expired: expired_uncertain remains outstanding, recoverable and retention-pinned.
+    restart_parent_recovery: Durable parent observation unblocks child thread after reopen; foreign channel remains
+      pending.
+    provider_uncertain: Existing coverage-bound recovery/retry rules unchanged; missing history cannot authorize
+      resend.
+    newly_ready_parent: Refresh eligibility after actual progress within the remaining shared attempt budget/deadline;
+      same-cycle parent/child behavior preserved, budget3 then1 chain proves no reset or extra submissions.
+    refresh_channel_scope: Both initial and refreshed eligibility reads retain explicit channel context. A foreign
+      payload colliding with a still-blocked local request UUID cannot enter the local poster; removing only refreshed
+      scope fails the oracle.
+  implementation_symbols:
+  - src/agentbus_local_delivery_service.py::LocalDeliveryStore.pending
+  - src/agentbus_local_delivery_service.py::LocalDeliveryStore.settle_expired
+  - src/agentbus_delivery_runtime_service.py::LocalDeliveryWorker.submit_once
+- id: RC5-02
+  status: implemented_exact_source_proof_pending
+  invariant: Fresh mandatory controls precede ordinary wake admission
+  domain_law: Service session/control authority outranks disposable client projection; host execution facts and
+    target acknowledgements remain independent authorities.
+  pinned_canonical_owner:
+    families:
+    - agentbus_host_adapter
+    - agentbus_channel_authority
+    symbols:
+    - src/agentbus_codex_wake_client.py
+    - src/agentbus_codex_wake_events_client.py
+    - src/agentbus_codex_wake_intent_client.py
+    baseline_sha256:
+      src/agentbus_codex_wake_client.py: 96d9ade45dc122715a530e8899b198c7a572f295a842ce581dff1efb23ea7937
+      src/agentbus_codex_wake_events_client.py: 558deb8007103f8cfa51b07b23730f5ca14099cf8a41d6e9f16e62c40d5527f1
+      src/agentbus_codex_wake_intent_client.py: b1d9f91bc651f8e125baab416310b97cd1384c61c17d68b0039595571aebf03c
+  primitive: exact-session self-presence outstanding_controls
+  states_and_transitions: ordinary_pending control_pending deferred stopped uncertain notification_only
+  typed_exclusions: No active turn cancellation, control ACK, AHP conformance or atomic owner admission claim
+  operation_contract: contracts/codex-wake/v1/codex-wake.contract.yml
+  producer: test
+  consumer: run_once; host adapter
+  negative_controls: STOP between spool and admission; checkpoint/policy; missing projection; uncertain attempt;
+    unknown owner; revoked session
+  evidence:
+  - tests/test_codex_wake_client.py::test_fresh_control_presence_blocks_ordinary_spool_admission
+  - tests/test_codex_wake_client.py::test_fresh_authority_requires_matching_control_or_policy_projection
+  - tests/test_codex_wake_client.py::test_real_stop_between_spool_and_admission_never_picks_up_or_starts_host
+  - tests/test_codex_wake_client.py::test_fresh_control_deferral_preserves_uncertain_host_intent
+  - tests/test_codex_wake_client.py::test_status_reports_fresh_control_projection_lag_without_writes
+  edge_dispositions:
+    projection_lag: Fresh outstanding mandatory control or unacknowledged policy defers ordinary refs before pickup/reconciliation/host
+      submission.
+    fresh_projected_control: Matching authoritative controls retain priority and do not acknowledge or cancel an
+      active turn.
+    stale_or_malformed_control: Missing/malformed references cannot satisfy current required controls; contradictory
+      empty pending projection defers.
+    stopped_or_revoked: Existing exact-session denial remains ahead of admission; no ordinary host effect.
+    uncertain_or_active_owner: Control projection deferral preserves existing IN_FLIGHT host observations and last_attempt
+      exactly; no cancellation, reconciliation retry or ordinary launch. Owner-side idle proof remains required.
+    owner_interop: 'Typed exclusion: Issue75 live AHP/native queue and atomic admission remain unqualified.'
+    self_status: Fresh control priority is identical in read-only readiness and live admission; filesystem snapshot
+      and host-call negative controls prove no query side effect.
+  implementation_symbols:
+  - src/agentbus_codex_wake_client.py::run_once
+  - src/agentbus_codex_wake_client.py::status
+  - src/agentbus_codex_wake_events_client.py::controls_projected
+  - src/agentbus_codex_wake_intent_client.py::record_result
+- id: RC5-03
+  status: implemented_exact_source_proof_pending
+  invariant: Service-authorized direct aliases retain quiet presentation priority
+  domain_law: Reserved routes identify the same immutable chat/session; service-proved logical addressing owns presentation
+    priority rather than recipient text equality.
+  pinned_canonical_owner:
+    families:
+    - agentbus_channel_authority
+    - agentbus_host_adapter
+    symbols:
+    - src/agentbus_poll_client.py
+    - src/agentbus_rename_client.py
+    baseline_sha256:
+      src/agentbus_poll_client.py: f7c7d5da78bfd297e5ec22da1f0ee6daa26f48d08c9feda7b4ba37cef7f23826
+      src/agentbus_rename_client.py: 6723f44f650102afead1a507d1a62abe603e799e4568d4a1b35e08cff0b232c0
+  primitive: service-classified message actionable projection
+  states_and_transitions: renamed alias_direct queued presented retired acknowledged
+  typed_exclusions: Presentation is not semantic ACK; broadcasts/context/unrouted remain routine
+  operation_contract: contracts/participation/v2/participation.contract.yml
+  producer: test
+  consumer: poll worker; peek_event
+  negative_controls: real rename old-route inbox; quiet worker and peek; quiet-off; foreign spool; stable cursor/session/inbox
+  evidence:
+  - tests/test_poll_client.py::test_quiet_keeps_service_authorized_alias_at_direct_priority
+  - tests/test_rename_store.py::test_real_rename_alias_inbox_survives_quiet_worker_and_peek
+  edge_dispositions:
+    rename_old_alias: Service inbox classifies old reserved route actionable for same stable session; quiet worker
+      and peek retain direct blocker priority.
+    routine_or_context: Broadcast/unrouted/context-only remain routine; no alias authority inferred from client
+      text.
+    foreign_projection: Existing service/inbox/channel/chat/session projection guard precedes merge or cursor advance.
+    quiet_off: Retained alias presentation remains available; cleanup never claims semantic ACK.
+    cadence_projection: Client mirrors finite canonical cadence with valid custom-cap parity and exact invalid policy
+      rejection; no service import.
+  implementation_symbols:
+  - src/agentbus_poll_client.py::_routine_message
+  - src/agentbus_poll_client.py::peek_event
+  - src/agentbus_poll_client.py::_worker
+- id: RC5-04
+  status: implemented_exact_source_proof_pending
+  invariant: Architectural claims cover exact declared populations with meaningful oracles
+  domain_law: Closed operation populations and effect ports own classification; read authority never confers mutation,
+    and command receipts describe their own transition rather than unrelated read models.
+  pinned_canonical_owner:
+    families:
+    - agentbus_service_state
+    - agentbus_host_adapter
+    symbols:
+    - tests/test_architecture.py
+    - architecture-boundaries.yml
+    - AGENTS.yml
+    - governance/application-operations.yml
+    baseline_sha256:
+      tests/test_architecture.py: d5336f749c125686e8c96c4a9e10472ffa56751caa55c13ec11867eea08da3d0
+      architecture-boundaries.yml: d743ffb399e331434b9066c32c43079124197c9d5fb34aad23e9099c71001ab9
+      AGENTS.yml: 71a9d3a2e6fdf249e383f88d9adc89cd2898eac958087cd7a1b08a7af26a90c5
+      governance/application-operations.yml: 8ff9db05035c1819f05c5fa33e6015cdf48f268bf863a2adb97581a177cfc582
+  primitive: pinned CLI/API operation registry and complete module map
+  states_and_transitions: classified command query handler receipt read_model
+  typed_exclusions: Command receipts allowed; non-authoritative local output explicit; no green by renaming
+  operation_contract: architecture-boundaries.yml
+  producer: architecture-*
+  consumer: BCF required structural gates
+  negative_controls: forbidden imports in non-entrypoint; query mutation; all API handlers including enrollment
+  evidence:
+  - tests/test_architecture.py
+  - tests/architecture_query_probe.py
+  - tests/test_poll_client.py::test_client_cadence_projection_matches_domain_without_service_import
+  edge_dispositions:
+    module_population: Every production module appears in exact layer/context map and every import is checked. Non-entrypoint
+      forbidden import mutant rejects.
+    handler_population: Every api_* symbol must equal declared API operation entrypoints. Enrollment branch mutant
+      rejects.
+    query_population: Every declared HTTP query executes with SQLite writes denied; every CLI query executes with
+      read-only transport and mutation-port guards; registry drift rejects.
+    command_receipts: Contract-defined mutation receipts allowed; unrelated read models prohibited. Semantic meaning
+      explicitly human-review-only under CQRS-RECEIPT-SEMANTICS; registry effects remain machine checked.
+    bounds: Source LOC <=800 remains mandatory; no new production module, daemon, transport, schema or dependency.
+  implementation_symbols:
+  - tests/test_architecture.py::boundary_violations
+  - tests/test_architecture.py::router_violations
+  - tests/architecture_query_probe.py::assert_query_nonmutation
+  - tests/architecture_query_probe.py::assert_cli_query_nonmutation
+  - src/agentbus_enrollment_approval_service.py::enroll_authorized
+- id: RC5-05
+  status: implemented_exact_source_proof_pending
+  invariant: Fresh documented enrollment and capability status agree with authorization
+  domain_law: Package identity and declared configuration own derived guidance; human authority requires the configured
+    allowlist, and experimental qualification remains exact-subject evidence.
+  pinned_canonical_owner:
+    families:
+    - agentbus_channel_authority
+    - agentbus_host_adapter
+    symbols:
+    - README.md
+    - .env.example
+    - SECURITY.md
+    - docs/contracts.md
+    - docs/README.md
+    - docs/audiences/experimenters.md
+    baseline_sha256:
+      README.md: 2ed4d15194ab058e66c775170fbdf7939ff3b87daee28eed5f2d96ceeeec8000
+      .env.example: da03d39584633054c86ef8b90e08aba4fa59c4fc74de823029263ab211cc29d6
+      SECURITY.md: 32db8013af52ac8c1b127763b80de6c57bdb6b6f5403458b717a04aef00663c7
+      docs/contracts.md: 3a1215b6242085c1ecb88de19816a198e3d427456b4d306134fc1867c6fa8f9a
+      docs/README.md: 15106e941642c513a31806d62c7446cab5d7b264c0faaac4eea4562429e005c8
+      docs/audiences/experimenters.md: 4c26431531df07c16d06377cc9092ba14ce19599315424aa6f6341f2d34b6048
+  primitive: release and capability authority
+  states_and_transitions: configured requested approved redeemed policy_ack active
+  typed_exclusions: No unsupported host wake, public Slack confidentiality, publication or deployment authority
+  operation_contract: contracts/participation/v2/participation.contract.yml
+  producer: contract-test
+  consumer: new operator and agent
+  negative_controls: allowlisted fresh approval; empty allowlist denial; version parity; platform disclosure
+  evidence:
+  - tests/test_participation_contract.py::test_primary_onboarding_discloses_operator_allowlist_and_native_limits
+  - tests/test_channel_isolation.py::test_slack_approval_real_api_has_no_authority_before_human_approval
+  - tests/test_slack_commands.py::test_empty_allowlist_disables_operator_commands
+  edge_dispositions:
+    fresh_install: Primary quick start and env disclose human allowlist before startup; fresh staged approval and
+      policy ACK use existing allowlisted HTTP/Slack control test.
+    unauthorized_human: Empty allowlist and foreign humans deny actionable commands/replies; SECURITY wording agrees
+      with implementation.
+    release_status: pyproject.toml owns version; docs/contracts.md derives capability status, other guides link
+      it. RC4 evidence does not authenticate RC5.
+    native_platform: Linux /proc/fcntl requirement and Linux-container/WSL2 alternative explicit; macOS/Windows
+      native launcher unsupported.
+    host_wake: Experimental owner interop and atomic wake remain unqualified, never a release guarantee.
+  implementation_symbols:
+  - scripts/check_source.py::main
+  - src/agentbus_participation_api_service.py::api_session_enroll
+  - src/agentbus_slack_command_service.py::execute_command
+integration:
+  required:
+  - all affected behavioral and negative controls
+  - existing full suite
+  - canonical exact-source required graph
+  - reproducible archive and isolated install
+  - migration and rollback assessment
+  live: Only separately authorized bounded qualification; no publication/deployment inferred
+  phase: Stack on active P12; Issue75 owner interop/atomic admission remains unqualified
+  local_evidence: Initial isolated source reproductions retained; first six defect controls and restart/alias/query/onboarding
+    unit checks pass. Broader integration and exact-subject proof pending.
+  rollout: No schema migration; retain RC4 backup and custody. RC5 never reclassifies submitted or uncertain provider
+    work as acknowledged. Publication/deployment separate.

@@ -93,3 +93,51 @@ def test_prefixed_routes_bind_repo_segment_and_reject_reserved_namespace(tmp_pat
     with pytest.raises(ValueError, match="same repository"):
         store.participation.rename(session_id, SECRET, "home:other:flower")
     store.close()
+
+
+def test_real_rename_alias_inbox_survives_quiet_worker_and_peek(tmp_path, monkeypatch):
+    import json
+
+    from src import agentbus_poll_client as poll
+    store = MessageStore(tmp_path/'alias.sqlite3')
+    store.channels.configure((CHANNEL,))
+    store.participation.set_policy(scope='global', scope_key='*', values=POLICY, actor='operator')
+    old, new = 'agentbus:old-name', 'home:agentbus:new-name'
+    grant = store.channels.issue_grant(channel=CHANNEL, repo='agentbus', route=old, actor='operator')
+    chat, session, revision = store.channels.enroll(grant, repo='agentbus', route=old, display_name='Alias', session_secret=SECRET)
+    store.participation.acknowledge_policy(session, SECRET, revision)
+    store.participation.rename(session, SECRET, new)
+    body = SendMessage(sender='peer:agent', recipient=old, text='after rename', kind='blocker')
+    body._sender_assurance = 'session'
+    accepted = store.append(CHANNEL, '123.456', body)
+    page = store.inbox(CHANNEL, new)
+    assert len(page.messages) == 1 and page.messages[0].actionable is True
+    profile = {'identity':new, 'chat_id':chat, 'channel':CHANNEL,
+        'inbox_id':store.channels.inbox_id(CHANNEL), 'service_url':'http://127.0.0.1:8766',
+        'quiet_mode':True, 'ack_cursor':0, 'participation':{'session_id':session,
+            'session_secret':SECRET, 'policy_values':POLICY,'stopped':False}}
+    path = tmp_path/'profile.json'
+    path.write_text(json.dumps(profile))
+    clock, checks = [0.0], [0]
+    monkeypatch.setattr(poll.time, 'monotonic', lambda:clock[0])
+    monkeypatch.setattr(poll.time, 'sleep', lambda seconds:clock.__setitem__(0, clock[0]+seconds))
+    def api(_values, route, _payload=None, **_kwargs):
+        if route.endswith('/check-in'):
+            checks[0] += 1
+            if checks[0] == 2:
+                profile['participation']['stopped'] = True
+                path.write_text(json.dumps(profile))
+            return {'revision':revision,'values':POLICY,'sources':{},'ack_required':False}
+        return page.model_dump()
+    monkeypatch.setattr(poll, 'api', api)
+    try:
+        poll._worker(path, {'AGENTBUS_URL':profile['service_url']})
+        event = poll.peek_event(path, profile, quiet=True)
+        assert event['message']['cursor'] == accepted.cursor
+        assert event['message']['recipient'] == old
+        assert poll.peek_event(path, profile, quiet=False) == event
+        assert json.loads(path.read_text())['ack_cursor'] == 0
+        assert store.inbox(CHANNEL, new).messages[0].cursor == accepted.cursor
+        assert store.channels.principal(SECRET,new).session_id == session
+    finally:
+        store.close()

@@ -314,3 +314,38 @@ def test_policy_tightening_accepts_old_report_then_clamps_worker_backoff(tmp_pat
     assert reports[4] > tighter["max_interval_seconds"]
     assert reports[5:] == [2, 2]
     assert poll.peek_event(path, profile)["kind"] == "POLICY_CHANGED"
+
+
+def test_quiet_keeps_service_authorized_alias_at_direct_priority(tmp_path):
+    path, profile = profile_at(tmp_path)
+    old_route = 'agentbus:old-name'
+    event = {'kind':'MESSAGE','id':'7','message':{'cursor':7,'recipient':old_route,
+        'audience':'direct','kind':'blocker','actionable':True,
+        'action_reason':'addressed to this identity','sender_assurance':'session'}}
+    poll.change_spool(path, profile, lambda state: state['events'].extend([
+        {'kind':'MESSAGE','id':'8','message':{'cursor':8,'recipient':'all','audience':'broadcast'}}, event]))
+    assert poll.peek_event(path, profile, quiet=True) == event
+    assert poll.peek_event(path, profile, quiet=False) == event
+    assert json.loads(path.read_text())['identity'] == profile['identity']
+    assert json.loads(poll.spool_path(path).read_text())['events'] == [event]
+
+
+def test_client_cadence_projection_matches_domain_without_service_import():
+    from src.agentbus_participation_service import next_inbox_interval_values
+    for initial, maximum in [(1, 32), (60, 1920), (5, 17), (2.5, 90)]:
+        values = {'initial_interval_seconds':initial, 'max_interval_seconds':maximum}
+        for previous in [None, 0, initial, 3*initial, maximum, maximum+1]:
+            for delta in [True, False]:
+                assert poll.next_inbox_interval_values(values, previous, semantic_delta=delta) == next_inbox_interval_values(values, previous, semantic_delta=delta)
+
+
+def test_client_cadence_rejects_every_domain_invalid_policy_value():
+    import pytest
+
+    from src.agentbus_participation_service import next_inbox_interval_values
+    for field in ('initial_interval_seconds', 'max_interval_seconds'):
+        for invalid in (True, False, None, '60', 0, -1, float('nan'), float('inf')):
+            values = {'initial_interval_seconds':60, 'max_interval_seconds':1920, field:invalid}
+            for calculate in (next_inbox_interval_values, poll.next_inbox_interval_values):
+                with pytest.raises(ValueError):
+                    calculate(values, None, semantic_delta=False)

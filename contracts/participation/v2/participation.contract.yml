@@ -1,6 +1,6 @@
 document:
   kind: participation_authorization_contract
-  version: 2.0.0
+  version: 2.0.1
   status: active
   path: contracts/participation/v2/participation.contract.yml
 extends: contracts/participation/v1/participation.contract.yml
@@ -162,3 +162,10 @@ slack_enrollment_approval:
   compatibility: private_file_grants_remain_supported; old_servers_deny_unknown_approval_fields_without_fallback
   migration: additive_table_only; existing_identity_credentials_and_grants_unchanged; no_membership_transfer
   excluded: no_automatic_approval; no_grants_from_bearer_or_route_labels; no_operator_credential_in_agent_chat
+
+quiet_alias_presentation:
+  owner: src/agentbus_poll_client.py
+  authority: service_classified_actionable_direct_or_informational_in_verified_session_scope
+  priority: same_as_current_route_even_when_recipient_is_reserved_old_alias
+  excluded: broadcast_context_only_unrouted_unclaimed_and_foreign_projection
+  boundaries: presentation_cleanup_never_advances_semantic_ACK_or_changes_session_inbox_channel

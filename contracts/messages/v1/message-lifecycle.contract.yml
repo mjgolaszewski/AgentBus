@@ -1,6 +1,6 @@
 document:
   kind: message_lifecycle_contract
-  version: 1.0.0
+  version: 1.0.1
   status: active
   path: contracts/messages/v1/message-lifecycle.contract.yml
 contract:
@@ -98,3 +98,13 @@ acceptance:
 - retention_reclaims_eligible_completed_history_with_no_reference_or_cursor_reuse
 - storage_pressure_remains_bounded_and_operator_visible
 - canonical_protected_exact_main_archive_install_and_authorized_live_canary_required
+
+delivery_progress:
+  owner: src/agentbus_local_delivery_service.py
+  selection: ancestry_ready_before_bounded_100_row_selection_no_blocked_prefix_starvation
+  same_cycle: refresh_eligibility_after_progress_within_original_shared_attempt_budget_and_deadline_no_unbounded_scan
+  expiry: channel_scoped_command_settles_targets_and_all_expired_transport_obligations_before_selection
+  unattempted: expired_unsubmitted_without_provider_success_or_recipient_ACK
+  attempted: expired_uncertain_retains_recovery_and_custody
+  parent_unavailable: retain_child_without_provider_attempt_until_proved_parent_or_child_expiry
+  retention: unresolved_parent_child_and_provider_obligations_remain_pinned

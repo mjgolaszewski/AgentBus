@@ -60,6 +60,7 @@ class LocalDeliveryWorker:
         from src.agentbus_service import SendMessage
 
         self.cycle_attempts = 0
+        self.store.local_delivery.settle_expired(self.channel)
         pending = self.store.local_delivery.pending(channel=self.channel)
         uncertain = self.store.local_delivery.recovery_pending(self.channel)
         if self.federation is not None and self.federation.ordinary_channel == self.channel:
@@ -67,32 +68,39 @@ class LocalDeliveryWorker:
                 self.channel, self.federation.identity.instance_id))[:100]
         covered = await self.recover_once(uncertain) if uncertain else set()
         deadline, attempted = deadline or time.monotonic() + 30, 0
-        for row in pending:
-            if row['attempts'] > 0 and row['request_id'] not in covered:
-                continue
-            if time.monotonic() >= deadline or attempted >= budget:
-                break
-            message = SendMessage.model_validate_json(row['payload'])
-            if message.reply_to_cursor is not None:
-                parent = self.store.message(self.channel, message.reply_to_cursor)
-                if parent is None or not (parent.thread_ts or parent.slack_ts):
+        # A successful parent can make a child ready during this same cycle.
+        # Refresh only after progress, within the original shared attempt budget.
+        for _ in range(budget):
+            before = attempted
+            for row in pending:
+                if row['attempts'] > 0 and row['request_id'] not in covered:
                     continue
-                message.thread_ts = parent.thread_ts or parent.slack_ts
-                with self.store._lock, self.store._db:
-                    self.store._db.execute('UPDATE messages SET payload=?,thread_ts=? WHERE cursor=?',
-                                          (message.model_dump_json(), message.thread_ts, row['local_cursor']))
-            if not self.store.local_delivery.reserve(self.channel, row['request_id']):
-                continue
-            attempted += 1
-            self.cycle_attempts = attempted
-            try:
-                reference = await self.poster.post(message, message_id=row['request_id'])
-                self.store.local_delivery.complete(self.channel, row['request_id'], reference)
-            except ProviderCarrierRejected as exc:
-                self.store.local_delivery.blocked(self.channel, row['request_id'], exc.reason, exc.provider_ref)
-            except (HTTPException, sqlite3.Error, OSError, ValueError):
-                self.store.local_delivery.uncertain(self.channel, row['request_id'])
-                LOGGER.warning('Ordinary provider submission incomplete; local custody retained')
+                if time.monotonic() >= deadline or attempted >= budget:
+                    break
+                message = SendMessage.model_validate_json(row['payload'])
+                if message.reply_to_cursor is not None:
+                    parent = self.store.message(self.channel, message.reply_to_cursor)
+                    if parent is None or not (parent.thread_ts or parent.slack_ts):
+                        continue
+                    message.thread_ts = parent.thread_ts or parent.slack_ts
+                    with self.store._lock, self.store._db:
+                        self.store._db.execute('UPDATE messages SET payload=?,thread_ts=? WHERE cursor=?',
+                                              (message.model_dump_json(), message.thread_ts, row['local_cursor']))
+                if not self.store.local_delivery.reserve(self.channel, row['request_id']):
+                    continue
+                attempted += 1
+                self.cycle_attempts = attempted
+                try:
+                    reference = await self.poster.post(message, message_id=row['request_id'])
+                    self.store.local_delivery.complete(self.channel, row['request_id'], reference)
+                except ProviderCarrierRejected as exc:
+                    self.store.local_delivery.blocked(self.channel, row['request_id'], exc.reason, exc.provider_ref)
+                except (HTTPException, sqlite3.Error, OSError, ValueError):
+                    self.store.local_delivery.uncertain(self.channel, row['request_id'])
+                    LOGGER.warning('Ordinary provider submission incomplete; local custody retained')
+            if attempted == before or attempted >= budget or time.monotonic() >= deadline:
+                break
+            pending = self.store.local_delivery.pending(channel=self.channel)
 
         return attempted
 

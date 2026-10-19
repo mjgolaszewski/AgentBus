@@ -13,7 +13,11 @@ architecture:
   mandatory_rule_gate_policy:
     every_mandatory_rule_has_executable_gate: true
     human_review_only_allowed_with_rationale: true
-    human_review_only_rules: []
+    human_review_only_rules:
+      - rule_id: CQRS-RECEIPT-SEMANTICS
+        rationale: AST and query mutation probes cannot prove domain meaning of arbitrary command return data; review exact operation receipts against their contract, not shape names. Registered commands may return their mutation receipt, never an unrelated read model.
+        reviewer_role: application_maintainer
+        phase_log_evidence: phases/phase-12-log.yml
   production_module_policy:
     max_loc: 800
     excluded_path_tokens: [generated, migrations, migration, vendor, fixtures, snapshots, testdata, tests]

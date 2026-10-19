@@ -17,10 +17,10 @@ claim_model:
     participation-contract: [contracts/participation/**, schemas/participation-contract.schema.json]
     codex-wake-contract: [contracts/codex-wake/**, schemas/codex-wake-contract.schema.json]
     package-source: [src/__init__.py, &id002 pyproject.toml, uv.lock]
-    client-tests: [tests/test_channel*.py, tests/test_owner_wake_qualification.py, &id065 tests/test_launcher.py, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_self_service_client.py]
-    service-tests: [tests/test_channel*.py, tests/test_federation_inbox_projection.py, tests/test_federation_directory_wire.py, tests/test_federation_directory_recovery.py, tests/test_federation_bridge.py, tests/test_federation_adapter.py, tests/test_federation_service.py, &id055 tests/test_service.py, tests/test_slack_commands.py, tests/test_participation_contract.py, tests/test_federation_contract.py, tests/test_participation_service.py, tests/test_participation_store.py, tests/test_control_store.py, tests/test_rename_store.py, tests/test_claim_recovery.py, tests/test_credential_rotation.py]
-    architecture-tests: [&id051 tests/test_architecture.py]
-    compatibility-tests: [tests/test_federation_bridge.py, tests/test_federation_adapter.py, tests/test_python_compatibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, *id055, tests/test_slack_commands.py, tests/test_claim_recovery.py]
+    client-tests: [tests/test_rename_store.py, tests/test_channel*.py, tests/test_owner_wake_qualification.py, &id065 tests/test_launcher.py, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_self_service_client.py]
+    service-tests: [tests/test_message_lifecycle.py, tests/test_local_delivery_custody.py, tests/test_delivery_client.py, tests/test_channel*.py, tests/test_federation_inbox_projection.py, tests/test_federation_directory_wire.py, tests/test_federation_directory_recovery.py, tests/test_federation_bridge.py, tests/test_federation_adapter.py, tests/test_federation_service.py, &id055 tests/test_service.py, tests/test_slack_commands.py, tests/test_participation_contract.py, tests/test_federation_contract.py, tests/test_participation_service.py, tests/test_participation_store.py, tests/test_control_store.py, tests/test_rename_store.py, tests/test_claim_recovery.py, tests/test_credential_rotation.py]
+    architecture-tests: [&id051 tests/test_architecture.py, tests/architecture_query_probe.py, tests/test_service.py, tests/test_rename_store.py]
+    compatibility-tests: [tests/test_rename_store.py, tests/test_message_lifecycle.py, tests/test_local_delivery_custody.py, tests/test_delivery_client.py, tests/test_federation_bridge.py, tests/test_federation_adapter.py, tests/test_python_compatibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, *id055, tests/test_slack_commands.py, tests/test_claim_recovery.py]
     producer-code: [scripts/check_source.py, &id037 scripts/run_project_gate.py]
     release-code: [&id003 Dockerfile, .dockerignore, compose.yaml, .env.example, &id060 scripts/build_release.py, *id001]
     toolchain: [*id002, uv.lock, requirements-governance.txt]
@@ -221,7 +221,7 @@ claim_model:
       qualification_scope: *id008
       profiles: [normal, *id009, self]
     operation-populations-valid:
-      truth: CLI and API operation populations stay closed and classified
+      truth: CLI and API operation populations stay closed and classified; every HTTP query executes under SQLite write denial and every CLI query under read-only transport and mutation-port guards
       execution_group: operation-populations
       legacy_gate: *id022
       dependencies:
@@ -261,7 +261,7 @@ claim_model:
       execution_group: client-behavior
       legacy_gate: test
       dependencies:
-        subject: [*id012, codex-wake-contract]
+        subject: [*id012, *id013, participation-contract, codex-wake-contract]
         detector: [*id014]
         test_population: [client-tests]
         toolchain: [*id011]
@@ -273,7 +273,7 @@ claim_model:
       execution_group: service-contract
       legacy_gate: *id025
       dependencies:
-        subject: [*id013, participation-contract]
+        subject: [*id013, *id012, participation-contract, codex-wake-contract]
         detector: [*id014]
         test_population: [service-tests]
         toolchain: [*id011]
@@ -394,6 +394,7 @@ gates:
         expected_nodes_mode: exact
         artifact_binding: *id042
     negative_controls:
+    - {id: query-write-is-rejected, mutation: {path: src/agentbus_status_api_service.py, search: 'def api_health(request: Request) -> dict:', replace: "def api_health(request: Request) -> dict:\n    request.app.state.store._db.execute(\"INSERT INTO metadata(key,value) VALUES ('bad-query','write')\")"}, oracle: {kind: test_node_failure, node_ids: ['tests.test_architecture::test_command_and_query_populations_are_closed']}}
     - {id: cli-population-drift-is-rejected, mutation: {path: *id043, search: 'CLI_OPERATIONS = {', replace: 'CLI_OPERATIONS_BROKEN = {'}, oracle: {kind: *id044, node_ids: ['tests.test_architecture::test_command_and_query_populations_are_closed']}}
   architecture-duplication:
     invocation: {argv: [python3, *id037, *id024, --junit, &id045 .artifacts/junit/architecture-duplication.xml], cwd: ., env: {}, required_env: []}
@@ -424,6 +425,7 @@ gates:
         expected_nodes_mode: exact
         artifact_binding: *id042
     negative_controls:
+    - {id: nonentrypoint-service-import-is-rejected, mutation: {path: src/agentbus_poll_client.py, search: 'import fcntl', replace: "import fcntl\nfrom src.agentbus_participation_service import next_inbox_interval_values"}, oracle: {kind: test_node_failure, node_ids: ['tests.test_architecture::test_context_import_boundaries']}}
     - {id: client-framework-import-is-rejected, mutation: {path: *id039, yaml_path: architecture.layers.client.forbidden_import_prefixes, value: [pathlib]}, oracle: {kind: *id044, node_ids: ['tests.test_architecture::test_context_import_boundaries']}}
   architecture-layer-membership:
     invocation: {argv: [python3, *id037, *id019, --junit, &id047 .artifacts/junit/architecture-layer-membership.xml], cwd: ., env: {}, required_env: []}
@@ -469,6 +471,7 @@ gates:
         expected_nodes_mode: exact
         artifact_binding: *id042
     negative_controls:
+    - {id: enrollment-router-branch-is-rejected, mutation: {path: src/agentbus_participation_api_service.py, search: 'def api_session_enroll(request: Request, body: EnrollSession, response: Response) -> dict:', replace: "def api_session_enroll(request: Request, body: EnrollSession, response: Response) -> dict:\n    if True: pass\n    if True: pass\n    if True: pass\n    if True: pass\n    if True: pass"}, oracle: {kind: test_node_failure, node_ids: ['tests.test_architecture::test_http_routers_remain_thin_transport_adapters']}}
     - {id: router-branch-budget-is-enforced, mutation: {path: *id039, yaml_path: architecture.thin_router_policy.max_branch_nodes, value: 0}, oracle: {kind: *id044, node_ids: ['tests.test_architecture::test_http_routers_remain_thin_transport_adapters']}}
   architecture-test:
     invocation: {argv: [python3, *id037, *id016, --junit, &id050 .artifacts/junit/architecture-test.xml], cwd: ., env: {}, required_env: []}
@@ -499,6 +502,11 @@ gates:
         expected_nodes_mode: exact
         artifact_binding: *id042
     negative_controls:
+    - {id: refreshed-window-keeps-configured-channel, mutation: {path: src/agentbus_delivery_runtime_service.py, search: "\n            pending = self.store.local_delivery.pending(channel=self.channel)", replace: "\n            pending = self.store.local_delivery.pending()"}, oracle: {kind: test_node_failure, node_ids: ['tests.test_message_lifecycle::test_eligibility_refresh_cannot_project_foreign_payload_through_shared_request_key']}}
+    - {id: newly-ready-replies-keep-same-cycle-progress, mutation: {path: src/agentbus_delivery_runtime_service.py, search: '        for _ in range(budget):', replace: '        for _ in range(1):'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_local_delivery_custody::test_pending_local_reply_is_readable_and_waits_for_real_parent_timestamp', 'tests.test_message_lifecycle::test_newly_ready_reply_chain_progresses_only_within_remaining_cycle_budget']}}
+    - {id: blocked-prefix-cannot-starve-ready-message, mutation: {path: src/agentbus_local_delivery_service.py, search: "AND (json_extract(m.payload,'$.reply_to_cursor') IS NULL OR EXISTS (", replace: 'AND (1 OR EXISTS ('}, oracle: {kind: test_node_failure, node_ids: ['tests.test_message_lifecycle::test_blocked_ancestry_cannot_starve_independent_delivery_or_expiry']}}
+    - {id: expiry-keeps-one-writer-transaction, mutation: {path: src/agentbus_local_delivery_service.py, search: '        with self.owner._lock, atomic(self.owner._db):', replace: '        with self.owner._lock, self.owner._db:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_message_lifecycle::test_expiry_settlement_rolls_back_targets_and_obligations_together']}}
+    - {id: ancestry-independent-expiry-is-required, mutation: {path: src/agentbus_delivery_runtime_service.py, search: '        self.store.local_delivery.settle_expired(self.channel)', replace: '        # negative control: omit expiry settlement'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_message_lifecycle::test_blocked_ancestry_cannot_starve_independent_delivery_or_expiry']}}
     - {id: ambiguous-current-identity-has-no-effects, mutation: {path: src/agentbus_slack_command_service.py, search: 'if len(matches) != 1:', replace: 'if False:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_slack_commands::test_ambiguous_identity_fragment_has_no_message_or_control_effect']}}
     - {id: human-reply-requires-operator-allowlist, mutation: {path: src/agentbus_slack_reply_service.py, search: 'or not message.thread_ts or message.sender.removeprefix(''slack:'') not in operator_user_ids', replace: or not message.thread_ts}, oracle: {kind: test_node_failure, node_ids: ['tests.test_slack_commands::test_regular_reply_authorization_empty_allowlist_foreign_parent_and_atomic_failure']}}
     - {id: global-health-requires-operator, mutation: {path: src/agentbus_status_api_service.py, search: '    if _operator(request):', replace: '    if True:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_service::test_operator_status_dashboard_is_complete_read_only_and_not_agent_visible']}}
@@ -531,7 +539,7 @@ gates:
     - {id: provider-compressed-response-is-rejected, mutation: {path: src/agentbus_federation_slack_service.py, search: "            if response.headers.get('Content-Encoding', '').lower() not in {'', 'identity'}:", replace: '            if False:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_provider_http_bounds::test_shared_provider_response_rejects_oversize_or_compression_before_success[False]']}}
     - {id: local-history-binds-provider-bot-and-channel, mutation: {path: src/agentbus_delivery_runtime_service.py, search: '                if len(publisher_parts) != 3 or publisher_parts[1:] != [self.trusted_bot_id, self.channel]:', replace: '                if False:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_local_delivery_custody::test_history_cannot_resolve_local_custody_from_forged_observation[publisher]', 'tests.test_local_delivery_custody::test_history_cannot_resolve_local_custody_from_forged_observation[channel]']}}
     - {id: uncertain-retry-requires-history-coverage, mutation: {path: src/agentbus_delivery_runtime_service.py, search: '        covered = await self.recover_once(uncertain) if uncertain else set()', replace: "        covered = {row['request_id'] for row in uncertain}"}, oracle: {kind: test_node_failure, node_ids: ['tests.test_local_delivery_custody::test_unavailable_history_defers_uncertain_retry_without_consuming_attempt']}}
-    - {id: ordinary-worker-keeps-configured-channel, mutation: {path: src/agentbus_delivery_runtime_service.py, search: '        pending = self.store.local_delivery.pending(channel=self.channel)', replace: '        pending = self.store.local_delivery.pending()'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_local_delivery_custody::test_transport_never_uses_another_channels_payload_under_same_request_key']}}
+    - {id: ordinary-worker-keeps-configured-channel, mutation: {path: src/agentbus_delivery_runtime_service.py, search: "\n        pending = self.store.local_delivery.pending(channel=self.channel)", replace: "\n        pending = self.store.local_delivery.pending()"}, oracle: {kind: test_node_failure, node_ids: ['tests.test_local_delivery_custody::test_transport_never_uses_another_channels_payload_under_same_request_key']}}
     - {id: history-failure-keeps-durable-backoff, mutation: {path: src/agentbus_local_delivery_service.py, search: '                SET next_attempt=MAX(next_attempt,?) WHERE channel=? AND request_id=?', replace: '                SET next_attempt=MAX(next_attempt,?-60) WHERE channel=? AND request_id=?'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_local_delivery_custody::test_unavailable_history_defers_uncertain_retry_without_consuming_attempt']}}
     - {id: local-history-keeps-exact-thread, mutation: {path: src/agentbus_local_delivery_service.py, search: '            if thread_ts not in allowed:', replace: '            if False:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_local_delivery_custody::test_history_cannot_resolve_local_custody_from_forged_observation[thread]']}}
     - {id: local-history-locator-keeps-context-type, mutation: {path: src/agentbus_local_delivery_service.py, search: "    if any(b.get('type') != 'context' for b in marked):", replace: '    if False:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_local_delivery_custody::test_history_locator_must_retain_context_block_type']}}
@@ -599,7 +607,7 @@ gates:
     - {id: unused-import-is-rejected, mutation: {path: *id043, search: import argparse, replace: 'import argparse
 
           import definitely_unused_agentbus_symbol'}, oracle: {kind: *id059, exit_codes: [1], stream: stdout, regex: F401|imported but unused}}
-    - {id: version-drift-is-rejected-at-source-boundary, mutation: {path: *id002, search: version = "0.9.1rc4", replace: version = "9.9.9"}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: project version must match}}
+    - {id: version-drift-is-rejected-at-source-boundary, mutation: {path: *id002, search: version = "0.9.1rc5", replace: version = "9.9.9"}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: project version must match}}
   python314-compatibility:
     invocation: {argv: [python3, *id037, python314-compatibility, --junit, .artifacts/junit/python314-compatibility.xml], cwd: ., env: {}, required_env: []}
     evidence:
@@ -609,7 +617,7 @@ gates:
         min_collected: 1
         min_executed: 1
         max_skipped: 0
-        selectors: [tests/test_channel_projection.py, tests/test_channel_isolation.py, tests/test_channel_migration.py, tests/test_channel_delivery.py, tests/test_federation_canary_evidence.py, tests/test_federation_ordinary_wire.py, tests/test_federation_ordinary_delivery.py, tests/test_provider_http_bounds.py, tests/test_local_delivery_custody.py, tests/test_message_lifecycle.py, tests/test_delivery_client.py, tests/test_federation_bridge.py, tests/test_federation_adapter.py, tests/test_python_compatibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_claim_recovery.py, *id055, tests/test_slack_commands.py]
+        selectors: [tests/test_rename_store.py, tests/test_channel_projection.py, tests/test_channel_isolation.py, tests/test_channel_migration.py, tests/test_channel_delivery.py, tests/test_federation_canary_evidence.py, tests/test_federation_ordinary_wire.py, tests/test_federation_ordinary_delivery.py, tests/test_provider_http_bounds.py, tests/test_local_delivery_custody.py, tests/test_message_lifecycle.py, tests/test_delivery_client.py, tests/test_federation_bridge.py, tests/test_federation_adapter.py, tests/test_python_compatibility.py, *id065, tests/test_poll_client.py, tests/test_presentation_client.py, tests/test_operator_client.py, tests/test_rename_client.py, tests/test_codex_wake_contract.py, tests/test_codex_wake_client.py, tests/test_codex_rpc_client.py, tests/test_claim_recovery.py, *id055, tests/test_slack_commands.py]
         expected_node_manifest: governance/test-manifests/python314-compatibility.txt
         expected_nodes_mode: exact
         artifact_binding: *id042
@@ -673,6 +681,10 @@ gates:
         expected_nodes_mode: exact
         artifact_binding: *id042
     negative_controls:
+    - {id: control-deferral-preserves-inflight-observation, mutation: {path: src/agentbus_codex_wake_intent_client.py, search: 'if status == "control_projection_pending" and', replace: 'if False and'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_codex_wake_client::test_fresh_control_deferral_preserves_uncertain_host_intent']}}
+    - {id: readiness-shares-fresh-control-priority, mutation: {path: src/agentbus_codex_wake_client.py, search: '    elif not controls_projected(service_presence, refs):', replace: '    elif False:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_codex_wake_client::test_status_reports_fresh_control_projection_lag_without_writes']}}
+    - {id: fresh-controls-precede-ordinary-admission, mutation: {path: src/agentbus_codex_wake_client.py, search: '        if not controls_projected(presence, refs):', replace: '        if False:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_codex_wake_client::test_fresh_control_presence_blocks_ordinary_spool_admission[stop]']}}
+    - {id: quiet-alias-priority-is-service-classified, mutation: {path: src/agentbus_poll_client.py, search: '(message.get("actionable") is True or message.get("recipient") == identity))', replace: '(message.get("recipient") == identity))'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_poll_client::test_quiet_keeps_service_authorized_alias_at_direct_priority']}}
     - {id: managed-start-cannot-bypass-channel-preflight, mutation: {path: src/agentbus_client.py, search: "        _service_configuration_preflight(values)\n        launcher = project / \"agentbus\"", replace: "        launcher = project / \"agentbus\""}, oracle: {kind: test_node_failure, node_ids: ['tests.test_launcher::test_lifecycle_rejects_simultaneous_channel_forms_before_spawn[C111-start]']}}
     - {id: client-projections-reject-foreign-scope, mutation: {path: src/agentbus_scope_client.py, search: 'if any(state.get(key)!=value for key,value in expected.items()):', replace: 'if False:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_channel_projection::test_foreign_spool_cannot_advance_ack_or_merge_events[channel-C222]']}}
     - {id: acknowledged-queue-is-reconciled-on-read, mutation: {path: src/agentbus_poll_client.py, search: '                 *, reconcile_ack: bool = True) -> T:', replace: '                 *, reconcile_ack: bool = False) -> T:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_poll_projection_recovery::test_old_acknowledged_queue_cannot_replay_after_restart']}}

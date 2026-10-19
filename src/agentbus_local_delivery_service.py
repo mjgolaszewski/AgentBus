@@ -10,6 +10,7 @@ from uuid import UUID
 
 from src.agentbus_message_assurance_service import route_parts
 from src.agentbus_participation_store_service import StoppedMessageSession
+from src.agentbus_transaction_service import atomic
 
 if TYPE_CHECKING:
     from src.agentbus_service import Message, MessageStore, SendMessage
@@ -197,6 +198,21 @@ class LocalDeliveryStore:
                 WHERE channel=? AND provider_ref=?''', (channel, provider_ref)).fetchone()
         return row[0] if row else None
 
+    def settle_expired(self, channel: str, *, now: float | None = None) -> None:
+        """Command: settle expiry independently of ancestry and provider selection."""
+        if not self.owner.lifecycle.enabled:
+            return
+        with self.owner._lock, atomic(self.owner._db):
+            self.owner.lifecycle.settle(now, channel=channel)
+            self.owner._db.execute("""UPDATE local_delivery_obligations
+                SET state=CASE WHEN attempts=0 THEN 'expired_unsubmitted' ELSE 'expired_uncertain' END
+                WHERE channel=? AND state IN ('pending','uncertain','submitting','blocked')
+                AND EXISTS (SELECT 1 FROM lifecycle_targets t
+                    WHERE t.channel=? AND t.cursor=local_cursor)
+                AND NOT EXISTS (SELECT 1 FROM lifecycle_targets t
+                    WHERE t.channel=? AND t.cursor=local_cursor AND t.state!='expired_unclaimed')""",
+                (channel, channel, channel))
+
     def pending(self, *, channel: str | None = None, now: float | None = None) -> list[dict]:
         instant = time.time() if now is None else now
         with self.owner._lock:
@@ -205,6 +221,12 @@ class LocalDeliveryStore:
                 JOIN messages m ON m.cursor=o.local_cursor
                 WHERE o.state IN ('pending','uncertain','submitting') AND o.attempts<8
                     AND o.next_attempt<=? AND (? IS NULL OR o.channel=?)
+                    AND (json_extract(m.payload,'$.reply_to_cursor') IS NULL OR EXISTS (
+                        SELECT 1 FROM messages parent
+                        WHERE parent.channel=o.channel
+                        AND parent.cursor=json_extract(m.payload,'$.reply_to_cursor')
+                        AND (COALESCE(parent.thread_ts,'')!='' OR
+                            (parent.slack_ts!='' AND parent.slack_ts NOT LIKE 'local:%'))))
                 ORDER BY CASE WHEN o.attempts=0 THEN 0 ELSE 1 END,o.local_cursor LIMIT 100''',
                 (instant, channel, channel))]
 

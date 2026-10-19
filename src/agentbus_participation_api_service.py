@@ -206,25 +206,13 @@ def api_session_policy_explain(request: Request, session_id: str) -> dict:
 
 
 def api_session_enroll(request: Request, body: EnrollSession, response: Response) -> dict:
+    from src.agentbus_enrollment_approval_service import enroll_authorized
     try:
-        if body.approval_request_id is not None:
-            if body.enrollment_token or body.handoff_token or body.profile_chat_id is None:
-                raise PermissionError("Choose one enrollment authorization")
-            result = request.app.state.store.channels.request_enrollment(
-                request_id=body.approval_request_id, chat_id=body.profile_chat_id,
-                repo=body.repo, route=body.route, display_name=body.display_name, session_secret=body.session_secret)
-            if result is None:
-                response.status_code = 202
-                return {"status": "approval_required", "request_id": body.approval_request_id}
-            chat_id, session_id, revision = result
-        else:
-            if body.profile_chat_id is not None or (body.enrollment_token and body.handoff_token):
-                raise PermissionError("Choose one enrollment authorization")
-            chat_id, session_id, revision = request.app.state.store.channels.enroll(
-                body.enrollment_token or body.handoff_token,
-                repo=body.repo, route=body.route, display_name=body.display_name,
-                session_secret=body.session_secret,
-            )
+        result = enroll_authorized(request.app.state.store.channels, **body.model_dump())
+        if result is None:
+            response.status_code = 202
+            return {"status": "approval_required", "request_id": body.approval_request_id}
+        chat_id, session_id, revision = result
     except SendRateExceeded as exc:
         raise HTTPException(429, "Enrollment request rate exceeded", headers={"Retry-After": str(exc.retry_after)}) from None
     except PermissionError:

@@ -95,6 +95,8 @@ def attach_observer(host, binding: dict, path: Path, save: Callable) -> None:
 
 def record_result(binding: dict, profile: dict, refs: list[str], result: dict) -> bool:
     status = result["status"]
+    if status == "control_projection_pending" and (binding.get("wake_intent") or {}).get("state") in IN_FLIGHT:
+        return False
     if status == "no_action":
         intent = binding.get("wake_intent")
         pending = intent["candidate_ids"] if intent else []

@@ -19,7 +19,7 @@ import pytest
 from src import agentbus_codex_wake_client as wake
 from src import agentbus_wake_inbox_client as wake_inbox
 from src.agentbus_codex_rpc_client import CodexHostRejected, TurnCompletionUncertain, TurnStartUncertain
-from src.agentbus_poll_client import change_spool
+from src.agentbus_poll_client import change_spool, read_spool_events
 from src.agentbus_transport_client import ClientError
 
 
@@ -285,6 +285,7 @@ def test_resume_control_wakes_held_conversation(setup, monkeypatch):
         "session_id": profile["participation"]["session_id"],
         "chat_id": profile["chat_id"], "route": identity,
         "state": "control_pending", "work_paused": False,
+        "outstanding_controls": [{"control_id":"resume-1", "state":"delivered"}],
     })
     result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
     assert result["status"] == "turn_completed"
@@ -840,3 +841,125 @@ def test_retired_cursor_preserves_uncertain_external_wake_intent(setup, monkeypa
     assert after['wake_intent'] == before['wake_intent']
     assert host.calls == [] and path.with_name(path.name + '.poll.json').read_bytes() == spool
     assert profile.get('ack_cursor', 0) == 0
+
+
+@pytest.mark.parametrize('control_kind', ['stop', 'checkpoint', 'pause_work', 'policy'])
+def test_fresh_control_presence_blocks_ordinary_spool_admission(setup, monkeypatch, control_kind):
+    values, identity, profile, path, host = setup
+    wake.bind(values, identity, 'thread-one', lambda: host)
+    wake.set_enabled(values, identity, True)
+    host.calls.clear()
+    put(path, profile, message(1))
+    before = path.read_bytes()
+    monkeypatch.setattr(wake, 'api', lambda *_args, **_kwargs: {
+        'session_id': profile['participation']['session_id'], 'chat_id': profile['chat_id'],
+        'route': identity, 'state': 'control_pending', 'outstanding_controls': [
+            {'control_id': 'fresh-'+control_kind, 'state': 'pending'}], 'work_paused': False})
+    result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
+    assert result['status'] == 'control_projection_pending'
+    assert not host.calls
+    assert path.read_bytes() == before
+    assert read_spool_events(path, profile=profile)[0]['id'] == '1'
+
+
+@pytest.mark.parametrize('presence,refs,expected', [
+    ({'state':'control_pending','outstanding_controls':[{'control_id':'new'}]}, ['CONTROL:old'], False),
+    ({'state':'control_pending','outstanding_controls':[{'control_id':'new'}]}, ['CONTROL:new'], True),
+    ({'state':'active_compliant','effective_policy_revision':'new','acknowledged_policy_revision':'old'}, ['MESSAGE:1'], False),
+    ({'state':'active_compliant','effective_policy_revision':'new','acknowledged_policy_revision':'old'}, ['POLICY_CHANGED:new'], True),
+    ({'state':'active_compliant'}, ['MESSAGE:1'], True),
+])
+def test_fresh_authority_requires_matching_control_or_policy_projection(presence, refs, expected):
+    from src.agentbus_codex_wake_events_client import controls_projected
+    assert controls_projected(presence, refs) is expected
+
+
+@pytest.mark.parametrize('controls', [None, 'unknown', [], [{}], [None], [{'control_id':None}]])
+def test_malformed_fresh_control_projection_never_permits_even_stale_control_wake(controls):
+    from src.agentbus_codex_wake_events_client import controls_projected
+    assert controls_projected({'state':'control_pending','outstanding_controls':controls}, ['CONTROL:stale']) is False
+
+
+def test_real_stop_between_spool_and_admission_never_picks_up_or_starts_host(setup, monkeypatch, tmp_path):
+    from test_rename_store import POLICY
+
+    from src.agentbus_service import MessageStore, SendMessage
+
+    values, identity, profile, path, host = setup
+    store = MessageStore(tmp_path/'stop-race.sqlite3')
+    store.channels.configure((profile['channel'],))
+    store.participation.set_policy(scope='global', scope_key='*', values=POLICY, actor='operator')
+    secret = 'stop-race-private-session-secret-at-least-32'
+    grant = store.channels.issue_grant(channel=profile['channel'], repo='agentbus', route=identity, actor='operator')
+    chat, session, revision = store.channels.enroll(grant, repo='agentbus', route=identity,
+        display_name='STOP race', session_secret=secret)
+    store.participation.acknowledge_policy(session,secret,revision)
+    store.lifecycle.activate_fresh()
+    profile.update(chat_id=chat,inbox_id=store.channels.inbox_id(profile['channel']),ack_cursor=0)
+    profile['participation'].update(session_id=session,session_secret=secret)
+    path.write_text(json.dumps(profile))
+    wake.bind(values,identity,'thread-one',lambda:host)
+    wake.set_enabled(values,identity,True)
+    host.calls.clear()
+    body = SendMessage(sender=identity,recipient=identity,text='already projected ordinary work',kind='request')
+    body._sender_assurance = 'session'
+    accepted = store.append(profile['channel'],'123.456',body)
+    projected = store.inbox(profile['channel'],identity).messages[0].model_dump()
+    put(path,profile,{'kind':'MESSAGE','id':str(accepted.cursor),'message':projected})
+    stop, targets = store.controls.issue_stop(routes=None,session_ids=[session],reason='after spool before admission',actor='operator')
+    assert targets == [session]
+    monkeypatch.setattr(wake,'api',lambda *_args,**_kwargs:store.participation.self_presence(session,secret))
+    try:
+        result = wake.run_once(values,identity,live=True,host_factory=lambda:host)
+        assert result['status'] == 'control_projection_pending'
+        assert not host.calls
+        assert store._db.execute('SELECT state FROM control_targets WHERE control_id=?',(stop,)).fetchone()[0] == 'issued'
+        assert store.participation.session_state(session)['state'] == 'active'
+        principal = store.channels.principal(secret,identity)
+        assert store.lifecycle.target(principal,accepted.cursor)['state'] == 'unclaimed'
+        assert profile['ack_cursor'] == 0
+    finally:
+        store.close()
+
+
+def test_fresh_control_deferral_preserves_uncertain_host_intent(setup, monkeypatch):
+    values, identity, profile, path, host = setup
+    wake.bind(values,identity,'thread-one',lambda:host)
+    wake.set_enabled(values,identity,True)
+    put(path,profile,message(1))
+    host.failure = TurnStartUncertain('lost prior response')
+    assert wake.run_once(values,identity,live=True,host_factory=lambda:host)['status'] == 'uncertain'
+    binding = wake._state_path(values,profile['chat_id'])
+    before = json.loads(binding.read_text())
+    host.calls.clear()
+    monkeypatch.setattr(wake,'api',lambda *_args,**_kwargs:{
+        'session_id':profile['participation']['session_id'],'chat_id':profile['chat_id'],
+        'route':identity,'state':'control_pending','outstanding_controls':[{'control_id':'new-stop','state':'issued'}]})
+    result = wake.run_once(values,identity,live=True,host_factory=lambda:host)
+    assert result['status'] == 'control_projection_pending'
+    after = json.loads(binding.read_text())
+    assert after['last_attempt'] == before['last_attempt']
+    assert after['wake_intent'] == before['wake_intent']
+    assert host.calls == []
+
+
+def test_status_reports_fresh_control_projection_lag_without_writes(setup, monkeypatch):
+    values, identity, profile, path, host = setup
+    values['AGENTBUS_API_TOKEN'] = 'shared-fixture'
+    profile['participation']['session_secret'] = 'private-fixture-session-secret'
+    path.write_text(json.dumps(profile))
+    wake.bind(values,identity,'thread-one',lambda:host)
+    wake.set_enabled(values,identity,True)
+    put(path,profile,message(1))
+    host.calls.clear()
+    monkeypatch.setattr(wake,'api',lambda *_args,**_kwargs:{
+        'session_id':profile['participation']['session_id'],'chat_id':profile['chat_id'],
+        'route':identity,'state':'control_pending','outstanding_controls':[{'control_id':'fresh-stop','state':'issued'}]})
+    monkeypatch.setattr(wake,'_worker_pid',lambda *_args:42)
+    monkeypatch.setattr(wake,'worker_running',lambda *_args:True)
+    before = {p:p.read_bytes() for p in path.parent.rglob('*') if p.is_file()}
+    result = wake.status(values,identity)
+    assert result['wake_readiness'] == 'deferred'
+    assert result['reason'] == 'control_projection_pending'
+    assert not host.calls
+    assert {p:p.read_bytes() for p in path.parent.rglob('*') if p.is_file()} == before

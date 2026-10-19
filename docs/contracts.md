@@ -1,20 +1,25 @@
 # AgentBus contract model
 
-This model describes released 0.9.1rc3, including experimental lifecycle behavior.
-Released 0.9.0 is the single-channel migration baseline; immutable RC2 precedes
-lifecycle cutover. RC3 has protected-source, isolated-installation and bounded
-two-channel lifecycle evidence on its exact released subject. Publication and
-deployment remain separate. Protocol-2 Slack envelopes and endpoint paths stay
-stable; bearer-only/unjoined authorization is deliberately removed. Updated
-clients and explicit offline migration are required. AHP/native-queue
-interoperability and atomic wake remain unqualified; see
-[Experimenters](audiences/experimenters.md).
+The package version in [`pyproject.toml`](../pyproject.toml) is the single
+version authority; FastAPI and lockfile version literals are checked projections. This page is the derived release/capability guide; versioned
+contracts below own behavior. RC5 is a corrective construction candidate for
+[#94](https://github.com/mjgolaszewski/AgentBus/issues/94), awaiting its own
+exact-source proof and release review. Released RC4 (`6a1c672`) passed protected
+PR/exact-main CI, reproducible archive, isolated installation and bounded local
+two-channel checks; the operator confirmed grouped health readable and private.
+RC3 introduced the experimental lifecycle, retained in RC4. Released 0.9.0 is
+the migration baseline; old proof does not authenticate a changed RC5 subject.
 
-The RC4 candidate adds private read-only operator diagnostics under participation
-v2: grouped health, process-local task/cycle observations, `workers`, `doctor`,
-channel-scoped `pending [ID]` and `explain CURSOR`. These additions await their
-own exact-source/archive/install and UI checks. They do not change message,
-session, channel, custody or wake authority, and introduce no schema migration.
+Protocol-2 Slack envelopes and endpoint paths stay stable. Updated clients and
+explicit offline migration are required from 0.9.0; RC5 introduces no database
+migration. Publication and deployment are separate actions. Live AHP/native-queue
+interoperability and atomic idle-only admission remain unqualified (#75).
+
+Private RC4 `health`, `workers`, `doctor`, channel-scoped `pending [ID]` and
+`explain CURSOR` observe existing tasks/cycles. They reset on restart and do not
+establish external poll/wake health or remote execution. RC5 corrects delivery
+progress/expiry, control projection priority, alias presentation and assurance;
+see the [construction audit](../audits/rc5-invariant-construction.yml).
 
 ## Contract authority and inheritance
 

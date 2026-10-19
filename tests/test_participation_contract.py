@@ -88,3 +88,21 @@ def test_current_authorization_model_resolves_inherited_rules_without_legacy_aut
     }
     assert current["model"]["enrollment_grant"]["lifetime_seconds"] == channel["authority"]["grant_expiry_seconds"]
     assert current["experimental_boundary"]["atomic_idle_only_wake"] == "unqualified"
+
+
+def test_primary_onboarding_discloses_operator_allowlist_and_native_limits():
+    readme = (ROOT/'README.md').read_text()
+    quick = readme[readme.index('## Quick start'):readme.index('## Quick start')+2900]
+    assert quick.index('AGENTBUS_SLACK_OPERATOR_USER_IDS') < quick.index('./agentbus start')
+    env = (ROOT/'.env.example').read_text()
+    assert '\nAGENTBUS_SLACK_OPERATOR_USER_IDS=' in env
+    assert 'Linux' in quick and '/proc' in quick and 'fcntl' in quick
+    assert 'Native macOS and' in quick and 'Windows launchers are unsupported' in quick
+    security = (ROOT/'SECURITY.md').read_text()
+    assert 'same channel-scoped request authority and quota as `/agentbus send`' in security
+    assert 'any human who can post' not in security
+    model = (ROOT/'docs/contracts.md').read_text()
+    assert 'single version authority' in ' '.join(model.split()) and 'RC5 is a corrective construction candidate' in model
+    assert 'await their' not in model
+    guide = (ROOT/'docs/README.md').read_text()
+    assert 'The next RC3' not in guide
