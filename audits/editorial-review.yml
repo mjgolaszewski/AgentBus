@@ -94,9 +94,10 @@ documents:
   - - 1
     - 105
   line_count: 105
-  sha256: 694f2be22b5564208069e21de4e7d8097e7f7e2b23a037ebc1c551edf46dc928
+  sha256: ccedc40df886e642a75343e7384801ac30f4f5aab43f7cc85a99cab855023467
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified dec5582d; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified 037cff1a; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 changed lines reviewed in context against hash-verified protected2468a03; scoped read-only diagnostics and observation limits disclosed without promoting historical proof.
   - Released RC3 follow-up changed lines reviewed in context against hash-verified full-document baseline; exact-subject bounded evidence, first oracle failure and unqualified owner-wake limits stay distinct.
@@ -974,11 +975,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 249
-  line_count: 249
-  sha256: 4e78fa2ac3196f0ff46f6789a3839b75a12d4530aaccc71bdd250264cc43273b
+    - 250
+  line_count: 250
+  sha256: 902adb4c43a696c1e91151b8a123d2b556231c1020e85177562242482befa956
   disposition: updates
   findings:
+  - RC4 follow-up changed lines reviewed in context against hash-verified dec5582d; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified 5b30de95; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified edbeeade; diagnostic outcomes remain exact-subject and final proof pending.
   - RC4 follow-up changed lines reviewed in context against hash-verified 037cff1a; diagnostic outcomes remain exact-subject and final proof pending.
