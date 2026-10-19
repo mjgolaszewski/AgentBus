@@ -48,6 +48,7 @@ TEST_GATES = {
         "tests/test_codex_wake_client.py",
         "tests/test_codex_rpc_client.py",
         "tests/test_claim_recovery.py",
+        "tests/test_rename_store.py",
         "tests/test_service.py",
         "tests/test_slack_commands.py",
     ],

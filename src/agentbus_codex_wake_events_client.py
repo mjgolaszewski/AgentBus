@@ -88,13 +88,20 @@ def _prompt(identity: str, attempt_id: str, refs: list[str], *, work_paused: boo
 def controls_projected(presence: dict, refs: list[str]) -> bool:
     """Fresh mandatory authority cannot be bypassed by a stale projection."""
     controls = presence.get('outstanding_controls', [])
+    if not isinstance(controls, list) or any(not isinstance(item, dict) or
+            not isinstance(item.get('control_id'), str) or not item['control_id'] for item in controls):
+        return False
     required = {'CONTROL:' + item['control_id'] for item in controls
                 if isinstance(item, dict) and isinstance(item.get('control_id'), str)}
     policy = presence.get('effective_policy_revision')
+    if policy is not None and not isinstance(policy, str):
+        return False
     policy_pending = policy is not None and policy != presence.get('acknowledged_policy_revision')
     pending = presence.get('state') == 'control_pending' or bool(controls) or policy_pending
     if not pending:
         return True
+    if not controls and not policy_pending:
+        return False
     if not refs or not refs[0].startswith(('CONTROL:', 'POLICY_CHANGED:')):
         return False
     if required:

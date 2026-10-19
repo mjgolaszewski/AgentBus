@@ -285,6 +285,7 @@ def test_resume_control_wakes_held_conversation(setup, monkeypatch):
         "session_id": profile["participation"]["session_id"],
         "chat_id": profile["chat_id"], "route": identity,
         "state": "control_pending", "work_paused": False,
+        "outstanding_controls": [{"control_id":"resume-1", "state":"delivered"}],
     })
     result = wake.run_once(values, identity, live=True, host_factory=lambda: host)
     assert result["status"] == "turn_completed"
@@ -871,3 +872,9 @@ def test_fresh_control_presence_blocks_ordinary_spool_admission(setup, monkeypat
 def test_fresh_authority_requires_matching_control_or_policy_projection(presence, refs, expected):
     from src.agentbus_codex_wake_events_client import controls_projected
     assert controls_projected(presence, refs) is expected
+
+
+@pytest.mark.parametrize('controls', [None, 'unknown', [], [{}], [None], [{'control_id':None}]])
+def test_malformed_fresh_control_projection_never_permits_even_stale_control_wake(controls):
+    from src.agentbus_codex_wake_events_client import controls_projected
+    assert controls_projected({'state':'control_pending','outstanding_controls':controls}, ['CONTROL:stale']) is False

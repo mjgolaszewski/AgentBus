@@ -22,9 +22,11 @@ T = TypeVar("T")
 
 def next_inbox_interval_values(values, previous_interval_seconds, *, semantic_delta):
     """Client projection of the participation-v2 cadence; no service dependency."""
-    initial, maximum = (float(values[key]) for key in ('initial_interval_seconds', 'max_interval_seconds'))
-    if any(not math.isfinite(value) or value <= 0 for value in (initial, maximum)):
+    raw = [values[key] for key in ('initial_interval_seconds', 'max_interval_seconds')]
+    if any(not isinstance(value, (int, float)) or isinstance(value, bool)
+           or not math.isfinite(value) or value <= 0 for value in raw):
         raise ValueError('Polling intervals must be finite and positive')
+    initial, maximum = map(float, raw)
     if semantic_delta or previous_interval_seconds is None:
         return initial
     return next((min(maximum, initial * step) for step in (1, 2, 4, 8, 12, 16, 24, 32)

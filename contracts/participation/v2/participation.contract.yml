@@ -1,6 +1,6 @@
 document:
   kind: participation_authorization_contract
-  version: 2.0.0
+  version: 2.0.1
   status: active
   path: contracts/participation/v2/participation.contract.yml
 extends: contracts/participation/v1/participation.contract.yml

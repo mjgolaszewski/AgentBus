@@ -430,7 +430,7 @@ documents:
   - - 1
     - 171
   line_count: 171
-  sha256: ed0f7fa850b701609a6fa8b4c1e319eb0636b3f2cf496a079a0d6114c9b050a0
+  sha256: 718d8b378c90b29101e5df00c10538cccb0b5bccce874c893a8114e49b4580a6
   disposition: updates
   findings:
   - RC4 follow-up changed lines reviewed in context against hash-verified 562192ee; diagnostic outcomes remain exact-subject
@@ -1014,9 +1014,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 284
-  line_count: 284
-  sha256: b1f046b3dbcd5a687fba28569143501a48b921efb63c84fa13e57b6626659d35
+    - 285
+  line_count: 285
+  sha256: b94f03e680d7320bc8dad760c6f696c18b820d4b4cd8e8057f6b578d8333b56a
   disposition: updates
   findings:
   - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays
@@ -1584,9 +1584,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 182
-  line_count: 182
-  sha256: 5ed2ddb4dab43890931436b6676b0ede9e0d6f68ca44e8a7946f990103ced653
+    - 233
+  line_count: 233
+  sha256: 8fe3e389124fee67ef810946dd89dc0d8ddc9d281f64c09b0b13883ef595af91
   disposition: new
   findings:
   - Authored and reviewed RC5 invariant-to-owner-to-edge acceptance map; source baseline pinned to released BCF

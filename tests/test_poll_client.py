@@ -337,3 +337,15 @@ def test_client_cadence_projection_matches_domain_without_service_import():
         for previous in [None, 0, initial, 3*initial, maximum, maximum+1]:
             for delta in [True, False]:
                 assert poll.next_inbox_interval_values(values, previous, semantic_delta=delta) == next_inbox_interval_values(values, previous, semantic_delta=delta)
+
+
+def test_client_cadence_rejects_every_domain_invalid_policy_value():
+    import pytest
+
+    from src.agentbus_participation_service import next_inbox_interval_values
+    for field in ('initial_interval_seconds', 'max_interval_seconds'):
+        for invalid in (True, False, None, '60', 0, -1, float('nan'), float('inf')):
+            values = {'initial_interval_seconds':60, 'max_interval_seconds':1920, field:invalid}
+            for calculate in (next_inbox_interval_values, poll.next_inbox_interval_values):
+                with pytest.raises(ValueError):
+                    calculate(values, None, semantic_delta=False)

@@ -27,7 +27,7 @@ pre_edit:
   scope: Bounded owner corrections only; original released BCF gates retained
 work_orders:
 - id: RC5-01
-  status: characterization
+  status: implemented_exact_source_proof_pending
   invariant: Independent eligible delivery progresses and expiry settles without ancestry reservation
   domain_law: Independent eligible delivery progresses and expiry settles without ancestry reservation
   pinned_canonical_owner:
@@ -56,8 +56,19 @@ work_orders:
   evidence:
   - tests/test_message_lifecycle.py::test_blocked_ancestry_cannot_starve_independent_delivery_or_expiry
   - tests/test_message_lifecycle.py::test_parent_recovery_unblocks_child_after_restart_without_cross_channel_expiry
+  edge_dispositions:
+    parent_not_ready_or_failed: Hold child without reserve or provider success; ancestry predicate runs before bounded
+      selection. Unknown/no-lifecycle deadlines remain pinned, never guessed.
+    independent_ready: Eligible row beyond blocked prefix receives submission within the same bounded cycle.
+    unsubmitted_expired: Explicit channel command settles expired_unsubmitted before selection without incrementing
+      attempts.
+    attempted_expired: expired_uncertain remains outstanding, recoverable and retention-pinned.
+    restart_parent_recovery: Durable parent observation unblocks child thread after reopen; foreign channel remains
+      pending.
+    provider_uncertain: Existing coverage-bound recovery/retry rules unchanged; missing history cannot authorize
+      resend.
 - id: RC5-02
-  status: characterization
+  status: implemented_exact_source_proof_pending
   invariant: Fresh mandatory controls precede ordinary wake admission
   domain_law: Fresh mandatory controls precede ordinary wake admission
   pinned_canonical_owner:
@@ -81,8 +92,19 @@ work_orders:
   evidence:
   - tests/test_codex_wake_client.py::test_fresh_control_presence_blocks_ordinary_spool_admission
   - tests/test_codex_wake_client.py::test_fresh_authority_requires_matching_control_or_policy_projection
+  edge_dispositions:
+    projection_lag: Fresh outstanding mandatory control or unacknowledged policy defers ordinary refs before pickup/reconciliation/host
+      submission.
+    fresh_projected_control: Matching authoritative controls retain priority and do not acknowledge or cancel an
+      active turn.
+    stale_or_malformed_control: Missing/malformed references cannot satisfy current required controls; contradictory
+      empty pending projection defers.
+    stopped_or_revoked: Existing exact-session denial remains ahead of admission; no ordinary host effect.
+    uncertain_or_active_owner: Existing uncertain recovery/owner idle proof still required; no blind retry/steering;
+      control deferral does not erase attempt state.
+    owner_interop: 'Typed exclusion: Issue75 live AHP/native queue and atomic admission remain unqualified.'
 - id: RC5-03
-  status: characterization
+  status: implemented_exact_source_proof_pending
   invariant: Service-authorized direct aliases retain quiet presentation priority
   domain_law: Service-authorized direct aliases retain quiet presentation priority
   pinned_canonical_owner:
@@ -105,8 +127,17 @@ work_orders:
   evidence:
   - tests/test_poll_client.py::test_quiet_keeps_service_authorized_alias_at_direct_priority
   - tests/test_rename_store.py::test_real_rename_alias_inbox_survives_quiet_worker_and_peek
+  edge_dispositions:
+    rename_old_alias: Service inbox classifies old reserved route actionable for same stable session; quiet worker
+      and peek retain direct blocker priority.
+    routine_or_context: Broadcast/unrouted/context-only remain routine; no alias authority inferred from client
+      text.
+    foreign_projection: Existing service/inbox/channel/chat/session projection guard precedes merge or cursor advance.
+    quiet_off: Retained alias presentation remains available; cleanup never claims semantic ACK.
+    cadence_projection: Client mirrors finite canonical cadence with valid custom-cap parity and exact invalid policy
+      rejection; no service import.
 - id: RC5-04
-  status: characterization
+  status: implemented_exact_source_proof_pending
   invariant: Architectural claims cover exact declared populations with meaningful oracles
   domain_law: Architectural claims cover exact declared populations with meaningful oracles
   pinned_canonical_owner:
@@ -134,8 +165,18 @@ work_orders:
   - tests/test_architecture.py
   - tests/architecture_query_probe.py
   - tests/test_poll_client.py::test_client_cadence_projection_matches_domain_without_service_import
+  edge_dispositions:
+    module_population: Every production module appears in exact layer/context map and every import is checked. Non-entrypoint
+      forbidden import mutant rejects.
+    handler_population: Every api_* symbol must equal declared API operation entrypoints. Enrollment branch mutant
+      rejects.
+    query_population: Every declared HTTP query executes with SQLite writes denied; every CLI query executes with
+      read-only transport and mutation-port guards; registry drift rejects.
+    command_receipts: Contract-defined mutation receipts allowed; unrelated read models prohibited. Semantic meaning
+      explicitly human-review-only under CQRS-RECEIPT-SEMANTICS; registry effects remain machine checked.
+    bounds: Source LOC <=800 remains mandatory; no new production module, daemon, transport, schema or dependency.
 - id: RC5-05
-  status: characterization
+  status: implemented_exact_source_proof_pending
   invariant: Fresh documented enrollment and capability status agree with authorization
   domain_law: Fresh documented enrollment and capability status agree with authorization
   pinned_canonical_owner:
@@ -167,6 +208,16 @@ work_orders:
   - tests/test_participation_contract.py::test_primary_onboarding_discloses_operator_allowlist_and_native_limits
   - tests/test_channel_isolation.py::test_slack_approval_real_api_has_no_authority_before_human_approval
   - tests/test_slack_commands.py::test_empty_allowlist_disables_operator_commands
+  edge_dispositions:
+    fresh_install: Primary quick start and env disclose human allowlist before startup; fresh staged approval and
+      policy ACK use existing allowlisted HTTP/Slack control test.
+    unauthorized_human: Empty allowlist and foreign humans deny actionable commands/replies; SECURITY wording agrees
+      with implementation.
+    release_status: pyproject.toml owns version; docs/contracts.md derives capability status, other guides link
+      it. RC4 evidence does not authenticate RC5.
+    native_platform: Linux /proc/fcntl requirement and Linux-container/WSL2 alternative explicit; macOS/Windows
+      native launcher unsupported.
+    host_wake: Experimental owner interop and atomic wake remain unqualified, never a release guarantee.
 integration:
   required:
   - all affected behavioral and negative controls
