@@ -13,6 +13,30 @@ from src.agentbus_federation_bridge_service import ProviderCarrierRejected, Prov
 from src.agentbus_presentation_service import section_blocks, visible_text
 
 MAX_PROVIDER_RESPONSE_BYTES = 8_388_608
+HISTORY_SCAN_SECONDS = 15
+
+
+class InvalidHistoryPage(ProviderUnavailable):
+    """Untrusted provider history cannot establish recovery coverage."""
+
+
+def history_events(messages: list, channel: str, after: str) -> list[dict]:
+    events = []
+    for message in messages:
+        if not isinstance(message, dict) or not isinstance(message.get('ts'), str):
+            raise InvalidHistoryPage()
+        if message.get('channel', channel) != channel:
+            raise InvalidHistoryPage()
+        try:
+            if not Decimal(message['ts']).is_finite() or Decimal(message['ts']) <= Decimal(after):
+                raise InvalidHistoryPage()
+        except InvalidOperation as exc:
+            raise InvalidHistoryPage() from exc
+        events.append({'publisher_id': publisher_id(message, channel),
+                       'text': message.get('text', ''), 'ts': message['ts'],
+                       **{key: message[key] for key in ('blocks', 'thread_ts', 'subtype', 'hidden')
+                          if key in message}})
+    return events
 
 
 async def bounded_response(client: httpx.AsyncClient, token: str, method: str,
@@ -67,6 +91,7 @@ def validate_carrier_echo(data: dict, text: str, reference: str, *, locator: str
 class SlackFederationProvider:
     def __init__(self, client: httpx.AsyncClient, token: str, channel: str):
         self._client, self._token, self.channel = client, token, channel
+        self._scan: dict | None = None
 
     async def _request(self, method: str, body: dict) -> dict:
         try:
@@ -125,20 +150,7 @@ class SlackFederationProvider:
             messages = data.get('messages')
             if not isinstance(messages, list) or len(events) + len(messages) > limit:
                 raise ProviderUnavailable()
-            for message in messages:
-                if not isinstance(message, dict) or not isinstance(message.get('ts'), str):
-                    raise ProviderUnavailable()
-                if message.get('channel', self.channel) != self.channel:
-                    raise ProviderUnavailable()
-                try:
-                    if not Decimal(message['ts']).is_finite() or Decimal(message['ts']) <= Decimal(after):
-                        raise ProviderUnavailable()
-                except InvalidOperation as exc:
-                    raise ProviderUnavailable() from exc
-                events.append({'publisher_id': publisher_id(message, self.channel),
-                               'text': message.get('text', ''), 'ts': message['ts'],
-                               **{key: message[key] for key in ('blocks', 'thread_ts', 'subtype', 'hidden')
-                                  if key in message}})
+            events.extend(history_events(messages, self.channel, after))
             metadata = data.get('response_metadata', {})
             if not isinstance(metadata, dict):
                 raise ProviderUnavailable()
@@ -149,3 +161,63 @@ class SlackFederationProvider:
                 raise ProviderUnavailable()
             cursor = next_cursor
         raise ProviderUnavailable()
+
+    async def scan_history(self, after: str, limit: int) -> tuple[list[dict], bool]:
+        """Return an oldest prefix only after complete, resumable reverse coverage.
+
+        Time-page continuation and candidates are disposable, never custody.
+        A restart rescans from the durable checkpoint. Ordinary local uncertain
+        post recovery deliberately keeps using the complete-history port above.
+        """
+        if type(limit) is not int or not 1 <= limit <= 1000:
+            raise ValueError('invalid history scan budget')
+        if self._scan is None or self._scan['subject'] != (after, limit):
+            self._scan = {'subject': (after, limit), 'latest': None,
+                          'events': [], 'truncated': False}
+        scan = self._scan
+        page_limit = min(100, limit)
+        try:
+            async with asyncio.timeout(HISTORY_SCAN_SECONDS):
+                for _ in range(10):
+                    body = {'channel': self.channel, 'oldest': after,
+                            'limit': page_limit, 'inclusive': False}
+                    if scan['latest'] is not None:
+                        body['latest'] = scan['latest']
+                    data = await self._request('conversations.history', body)
+                    messages = data.get('messages')
+                    metadata = data.get('response_metadata', {})
+                    if not isinstance(messages, list) or len(messages) > page_limit or not isinstance(metadata, dict):
+                        raise ValueError('invalid history page')
+                    events = history_events(messages, self.channel, after)
+                    previous = Decimal(scan['latest']) if scan['latest'] is not None else None
+                    for event in events:
+                        stamp = Decimal(event['ts'])
+                        if previous is not None and stamp >= previous:
+                            raise ValueError('history pages are not strictly newest first')
+                        previous = stamp
+                    cursor = metadata.get('next_cursor', '')
+                    more = bool(data.get('has_more') or cursor)
+                    if not isinstance(cursor, str) or more and not events:
+                        raise ValueError('history continuation made no progress')
+                    candidates = sorted(scan['events'] + events, key=lambda event: Decimal(event['ts']))
+                    truncated = scan['truncated'] or len(candidates) > limit
+                    candidates = candidates[:limit]
+                    sizes = [len(json.dumps(event, ensure_ascii=True).encode()) for event in candidates]
+                    retained_bytes = sum(sizes)
+                    while retained_bytes > MAX_PROVIDER_RESPONSE_BYTES and len(candidates) > 1:
+                        candidates.pop()
+                        retained_bytes -= sizes.pop()
+                        truncated = True
+                    if retained_bytes > MAX_PROVIDER_RESPONSE_BYTES:
+                        raise ValueError('history event exceeds retained scan byte budget')
+                    scan.update(events=candidates, latest=events[-1]['ts'] if events else scan['latest'],
+                                truncated=truncated)
+                    if not more:
+                        self._scan = None
+                        return candidates, not truncated
+        except (ValueError, InvalidOperation, RecursionError, InvalidHistoryPage) as exc:
+            self._scan = None
+            raise ProviderUnavailable() from exc
+        except TimeoutError as exc:
+            raise ProviderUnavailable() from exc
+        return [], False

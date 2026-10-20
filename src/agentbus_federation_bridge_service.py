@@ -102,6 +102,8 @@ class FederationBridge:
             raise ValueError('invalid federation attempt budget')
         self.store, self.identity, self.bindings, self.provider = store, identity, dict(bindings), provider
         self.now, self.max_attempts = now, max_attempts
+        self._recovery_complete = False
+        self._recovery_attempts: dict[tuple[str, str, str], int] | None = None
         self.directory: DirectorySynchronizer | None = None
         self.project_submission: Callable[[str, str, str], bool] | None = None
         self.ordinary_channel: str | None = None
@@ -161,9 +163,13 @@ class FederationBridge:
         self.store.accept(origin_instance_id=self.identity.instance_id, origin_message_id=message,
                           destination_instance_id=destination, payload=frame, local_payload=payload, kind='directory')
 
-    async def submit_once(self) -> None:
-        for row in self.store.pending(now=self.now(), max_attempts=self.max_attempts):
+    async def submit_once(self, *, retry_uncertain: bool = True,
+                          covered_attempts: dict[tuple[str, str, str], int] | None = None) -> None:
+        for row in self.store.pending(now=self.now(), max_attempts=self.max_attempts,
+                                      unattempted_only=not retry_uncertain):
             key = (row['origin_instance_id'], row['origin_message_id'], row['destination_instance_id'])
+            if row['attempts'] and covered_attempts is not None and covered_attempts.get(key) != row['attempts']:
+                continue
             if key[0] != self.identity.instance_id:
                 continue
             digest = hashlib.sha256(row['payload'].encode()).hexdigest()
@@ -276,8 +282,22 @@ class FederationBridge:
 
     async def recover_once(self, limit: int = 100) -> None:
         limit = _recovery_limit(limit)
+        if self._recovery_complete:
+            self._recovery_attempts = None
+        self._recovery_complete = False
+        if self._recovery_attempts is None:
+            self._recovery_attempts = {
+                (row['origin_instance_id'], row['origin_message_id'], row['destination_instance_id']): row['attempts']
+                for row in self.store.pending(now=self.now(), max_attempts=self.max_attempts) if row['attempts']}
         reader = self.identity.instance_id + '/' + self.identity.publisher_id
-        events = await self.provider.history(self.store.checkpoint(reader), limit)
+        scanner = getattr(self.provider, 'scan_history', None)
+        if scanner is None:
+            events = await self.provider.history(self.store.checkpoint(reader), limit)
+            complete = True
+        else:
+            events, complete = await scanner(self.store.checkpoint(reader), limit)
+            if type(complete) is not bool:
+                raise ValueError('invalid history coverage receipt')
         if len(events) > limit:
             raise ValueError('provider history exceeds recovery budget')
         previous = Decimal(self.store.checkpoint(reader))
@@ -294,6 +314,7 @@ class FederationBridge:
                 LOGGER.info('Rejected non-admitted federation history event')
         if events:
             self.store.advance_checkpoint(reader, events[-1]['ts'])
+        self._recovery_complete = complete
 
     async def cycle(self) -> float:
         delay = 60.0
@@ -301,7 +322,8 @@ class FederationBridge:
             if self.directory is not None:
                 self.directory.reconcile()
             await self.recover_once(limit=self.history_limit)
-            await self.submit_once()
+            await self.submit_once(retry_uncertain=self._recovery_complete,
+                                   covered_attempts=self._recovery_attempts)
         except ProviderUnavailable as exc:
             delay = max(delay, exc.retry_after)
             LOGGER.warning('Federation provider unavailable; durable custody retained')

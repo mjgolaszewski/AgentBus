@@ -612,15 +612,17 @@ class FederationStore:
         row = self._db.execute("SELECT * FROM bridge_obligations WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?", (origin_instance_id, origin_message_id, destination_instance_id)).fetchone()
         return dict(row) if row else None
 
-    def pending(self, *, now: float, max_attempts: int, limit: int = 100) -> list[dict[str, Any]]:
+    def pending(self, *, now: float, max_attempts: int, limit: int = 100,
+                unattempted_only: bool = False) -> list[dict[str, Any]]:
         if not 1 <= limit <= 100:
             raise ValueError('invalid bridge page limit')
         with self._lock:
             rows = self._db.execute("""SELECT * FROM bridge_obligations
                 WHERE state IN ('origin_accepted','submitted','uncertain')
                 AND (kind IN ('message', 'directory') OR (kind = 'receipt' AND state IN ('origin_accepted', 'uncertain')))
-                AND attempts < ? AND next_attempt_at <= ? ORDER BY updated_at LIMIT ?""",
-                (max_attempts, now, limit)).fetchall()
+                AND attempts < ? AND next_attempt_at <= ? AND (? = 0 OR attempts = 0)
+                ORDER BY updated_at LIMIT ?""",
+                (max_attempts, now, unattempted_only, limit)).fetchall()
         return [dict(row) for row in rows]
 
     def reserve_submission(self, origin: str, message: str, destination: str, *,

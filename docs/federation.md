@@ -37,13 +37,36 @@ keeps the adapter disabled. Distinct origins require distinct publisher IDs
 and route prefixes.
 
 The optional trusted `history_limit` setting selects an exact integer from 1
-through 1,000 events for a recovery cycle; omitting it keeps the 100-event
-default. Provider pages remain limited to 100 events, at most ten pages. The
-worker requires complete coverage after its existing reader checkpoint before
-advancing to an actual observed provider reference. An incomplete or oversized
-history leaves custody and the checkpoint intact. Select a documented budget
-for the installation’s traffic and resource assumptions; there is no automatic
-checkpoint reset, pruning, or indefinite retention guarantee.
+through 1,000 events to admit per recovery batch; the default remains 100.
+RC6 separates that batch from the size of the provider backlog. Each worker
+cycle reads at most ten 100-event pages within a 15-second scan deadline.
+Slack's newest-first time pagination resumes with the last observed timestamp
+as an exclusive `latest` boundary, so fresh traffic cannot displace older pages.
+Only the oldest configured batch is retained, within an eight-MiB normalized
+candidate budget; the batch shrinks if necessary to meet that byte bound.
+
+No event is applied until the reverse scan reaches the existing durable
+checkpoint. Then the oldest covered prefix is admitted in order and the
+checkpoint advances only to its last actual admitted event. Newer events are
+refetched on later scans. Disposable scan state survives ordinary cycles and
+transient provider failures in memory; a process restart safely rescans from the
+unchanged durable checkpoint. No schema migration, checkpoint reset, custody
+deletion, or higher configured budget is needed for a backlog over 1,000 events.
+
+While catch-up is incomplete, only never-attempted outbound obligations may be
+submitted. They are filtered before the pending-page limit so an uncertain
+prefix cannot starve them. Uncertain retries require complete recovery coverage
+and the exact attempt generation captured before the scan began; an attempt
+created during that scan waits for a later scan. Rate limits and actual provider
+failures still preserve backoff and custody. The separate ordinary local-post
+history check retains its complete-or-fail behavior.
+
+This is bounded lossless traversal of available provider history, not an
+indefinite-retention or throughput guarantee. Retained candidate memory is
+bounded; a single oversized normalized event or a malformed/nonprogressing page
+fails closed. Repeated restarts can delay catch-up, and large backlogs cost
+repeated reverse scans as oldest batches drain. Provider-deleted history remains
+unrecoverable; never reset a checkpoint or resend with a new UUID to conceal it.
 
 Each signed frame carries `key_generation`, the SHA-256 fingerprint of its raw
 Ed25519 public key. The operator approves that fingerprint and the complete
@@ -82,9 +105,9 @@ is recorded in `federated_messages`, and the signed receipt is a durable
 records distinguish provider submission from destination acceptance without
 promoting raw Slack text into routed agent authority.
 
-Recovery requests complete bounded Slack history (100 events per cycle by default,
-up to the configured 1,000-event ceiling in at most ten provider pages) before advancing its durable checkpoint. Partial,
-malformed, unordered, or over-budget history cannot advance that checkpoint.
+Recovery admits only a completely scanned oldest prefix before advancing its
+durable checkpoint. Partial scan pages, malformed or unordered events, and
+failed custody cannot advance that checkpoint.
 Live events never advance the history checkpoint, so a newer socket event
 cannot hide an older missed event. Checkpoints belong to the configured
 instance and publisher/channel stream. Provider recovery honors Retry-After.

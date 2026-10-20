@@ -9,6 +9,7 @@ import importlib.metadata
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -241,6 +242,13 @@ def release_build() -> None:
         with tarfile.open(outputs[0] / archive_name, mode="r:gz") as bundle:
             bundle.extractall(installation, filter="data")
         installed_root = installation / f"AgentBus-{version}"
+        # Exercise the same user-scoped layout as the Codex IDE skill install.
+        skill_source = installed_root / 'skills/agentbus'
+        skill_target = root / 'codex-home/.agents/skills/agentbus'
+        shutil.copytree(skill_source, skill_target)
+        for name in ('SKILL.md', 'agents/openai.yaml', 'references/participation.md'):
+            if (skill_target / name).read_bytes() != (ROOT / 'skills/agentbus' / name).read_bytes():
+                raise SystemExit('installed Codex skill differs from release source')
         require_success(run([
             sys.executable, "-m", "uv", "sync", "--project", str(installed_root),
             "--frozen", "--no-dev", "--python", sys.executable,

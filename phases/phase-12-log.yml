@@ -17,6 +17,12 @@ summary:
   - 57 affected wake cases, Ruff and governance YAML validation pass; computed closure remains unclaimed
   - Actual pinned AHP reducer passes168 upstream chat fixtures and8 targeted controls; drift and semantic queue-order mutants reject
 workitems:
+- id: P12-P1-20
+  status: IN_PROGRESS
+  summary: RC6 bounded federation recovery; source and canonical evidence pending
+- id: P12-P1-21
+  status: IN_PROGRESS
+  summary: RC6 installable Codex participation skill; archive and metadata verification pending
 - id: P12-P1-14
   status: DONE
   summary: Freeze RC5 Issue94 canonical owners vocabulary and acceptance matrix
@@ -87,6 +93,7 @@ execution_evidence:
   planned_commands:
   - canonical bcf ci submit after shared native capacity is available
   executed_commands:
+  - "RC6 source preparation from c72e1aa under operator DDSBZDT: custodian confirms13669 priority native-allocation/install ownership and unchanged live state; bounded source repair and self-contained skill only. Provider incident13662 retained; scan admits oldest prefix only after reverse coverage, fresh-only submissions during catch-up and exact-attempt retry coverage. Canonical proof, archive install and live recovery remain pending; no runtime patch, checkpoint reset or resend. Product uv lock refreshed offline with pinned interpreter and unchanged dependencies."
   - 'Verified project interpreter pytest: 57 affected wake cases PASS'
   - 'Verified project interpreter ruff check tests/test_owner_wake_qualification.py: PASS'
   - 'Verified project interpreter scripts/validate_governance_yaml.py --repo-root .: PASS'

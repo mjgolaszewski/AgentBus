@@ -1,0 +1,51 @@
+document:
+  kind: rc6_construction_audit
+  path: audits/rc6-recovery-skill.yml
+  status: construction_checks_pending
+baseline:
+  main: c72e1aae138619dce114a3186fda9bf9953371c0
+  released_runtime: ce31aa52f939b18774b06110e4df7b47ce79b026
+  incident: custodian confirmed more than1000 provider events after retained checkpoint; accepted original message has zero attempts
+  report: AgentBus13662
+  authority: operator_DDSBZDT_RC6_priority_and_custodian_owned_installation
+pre_edit:
+  bounded_context: service_federation
+  layer: service_application_bridge_and_existing_provider_and_persistence_ports
+  sides: [history_query, durable_checkpoint_and_submission_commands, skill_documentation_and_packaging]
+  owners:
+  - src/agentbus_federation_slack_service.py
+  - src/agentbus_federation_bridge_service.py
+  - src/agentbus_federation_service.py
+  - scripts/run_project_gate.py
+  - skills/agentbus/
+  forbidden: [live_database, live_configuration, credentials, profiles, host_bindings, wake_preferences, generated_BCF_files_by_hand, immutable_releases]
+  expected_controls: [more_than1000_history, oldest_prefix_only, restart, transient_rate_limit, deadline, foreign_channel, nonprogressing_pages, retained_byte_bound, uncertain_generation, blocked_pending_prefix, unchanged_local_post_recovery]
+repair:
+  law: durable_checkpoint_advances_only_through_an_oldest_prefix_observed_under_complete_reverse_coverage_and_admitted_to_custody
+  primitive: existing_reader_checkpoint_and_existing_bridge_obligations
+  provider_port: optional_scan_history_returns_oldest_events_and_complete_coverage_flag_legacy_complete_history_remains_supported
+  continuation: exclusive_latest_time_boundary_from_actual_provider_event_no_opaque_cursor_or_wall_clock_dependency
+  bounds: at_most10pages_of100events_and15seconds_per_scan_call_100default_1000maximum_admitted_prefix_8MiB_retained_normalized_candidates
+  restart: disposable_scan_state_lost_rescan_from_unchanged_durable_checkpoint_no_schema_or_checkpoint_migration
+  fresh_submission: attempts_zero_filtered_before_pending_page_limit_during_incomplete_recovery
+  uncertain_submission: require_complete_coverage_and_exact_attempt_generation_captured_before_scan
+  retained_failures: malformed_foreign_unordered_nonprogressing_page_provider_failure_and_custody_failure_never_advance_checkpoint
+  compatibility: wire_versions_session_and_channel_authority_unchanged_local_complete_history_port_preserved
+  residuals:
+  - Repeated reverse traversal trades bounded memory for provider work on large backlogs; repeated restarts can delay catch-up
+  - Provider retention visibility and outages remain external limits; no physical exactly-once or indefinite-retention claim
+  - One oversized normalized event fails closed; no global disk quota or automatic custody pruning
+skill:
+  path: skills/agentbus/SKILL.md
+  install: copy_self_contained_folder_from_verified_archive_to_Codex_user_or_project_skills_directory_on_execution_host
+  scope: existing_CLI_participation_Slack_approval_controls_scoped_messages_and_uncertain_delivery
+  exclusions: no_credentials_service_extension_enrollment_membership_change_host_binding_or_wake_authority
+  authority_reference: https://learn.chatgpt.com/docs/build-skills
+  validation: skill_creator_validator_real_CLI_help_and_isolated_archive_copy_layout
+  limitation: live_IDE_discovery_requires_compatible_Codex_extension_not_proved_by_archive_copy
+assurance:
+  producers: [contract-test, python314-compatibility, test, release-smoke]
+  new_tests_in_existing_selected_files: [tests/test_federation_adapter.py, tests/test_federation_bridge.py]
+  release_gate: scripts/run_project_gate.py_checks_exact_three_skill_files_after_isolated_copy
+  custody: original_certified_BCF2.3.4_canonical_submit_protected_PR_exact_main_archive_install_and_custodian_rollout_pending
+  evidence: []
