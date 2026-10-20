@@ -10,20 +10,24 @@ archive/install verification and a fresh 17-check bounded lifecycle canary; see 
 These results do not qualify other installations or owner-wake interoperability.
 
 Current release/capability status is maintained in the [contract model](../contracts.md),
-with package version from `pyproject.toml`. Released RC6 has exact `c5c7335` protected
-PR/main proof, reproducible archive and SDK-free installation for bounded federation
-backlog recovery and a [Codex participation skill](../codex-skill.md). Its 1,307-event
-restart check uses an isolated fake provider. Destination custody is distinct
-from execution, semantic ACK, or general federation requalification. The skill
-requires installation; IDE UI discovery remains client-dependent. RC7 constructs
-recovery for authenticated carriers already in raw history and awaits its own
-release proof. Neither feature is a new wake integration or a claim of atomic
-idle-only admission.
+with package version from `pyproject.toml`. Released RC7 has exact `52fcd86`
+protected PR/main proof, reproducible archive and SDK-free installation for
+raw-carrier recovery. Its isolated checks preserve raw history, deny unrelated
+collisions and recover the same notification after restart. The exception requires
+a complete legacy/unrouted carrier matching authenticated custody; altered,
+truncated, assured and routed collisions remain blocked.
+
+RC6 qualified bounded federation backlog recovery and the bundled
+[Codex participation skill](../codex-skill.md). Its 1,307-event restart check uses
+an isolated fake provider. Destination custody is distinct from execution or
+semantic ACK. IDE UI discovery remains client-dependent. Neither release is a
+new wake integration or a claim of atomic idle-only admission.
 
 ## Know which claim you are testing
 
 | Capability | Candidate scope | Evidence still required |
 | --- | --- | --- |
+| RC7 raw-carrier recovery | Preserve raw history and one distinct scoped notification without timestamp reassignment | Exact source `52fcd86`, archive and SDK-free installation passed; deployed incidents still require owner readback, and this is not general federation requalification |
 | RC4 operator inspection | Grouped health, existing-task observations and private workers/doctor/pending/explain reads | Protected source, archive/install and bounded two-channel checks passed on exact release `6a1c672`; the operator confirmed readable, private grouped health including Workers. Observations reset on restart and never establish external poll/wake health, execution or automatic repair |
 | RC3 message lifecycle | Scoped epochs, private retry staging, exact-session pickup/handling, shared read expiry and bounded archive/purge | Exact RC3 source/archive/install and bounded lifecycle checks passed; each deployment needs a backed-up cutover and any applicable migration; unknown legacy and federation references remain pinned |
 | Slack enrollment approval | File-free pending request, private operator approval in the intended channel, canonical staged-secret redemption | Exact protected source, legacy grant compatibility, archive installs and bounded live human approval; pending requests have no message authority |

@@ -2,7 +2,7 @@
 
 ## [0.9.1rc7] - 2026-10-20
 
-Construction candidate; protected-source, archive and isolated-installation proof pending.
+Published as immutable `v0.9.1rc7` from `52fcd86` after protected PR/exact-main proof, reproducible archive and SDK-free installation. Historical runtime and asset identities remain fixed.
 
 - Preserve raw signed-carrier history when recovering a separate authenticated channel-scoped notification; keep timestamp ownership, original custody identities and fail-closed checkpoints.
 - Remove installation-specific channel/publisher details and internal coordination notices from current documentation. Preserve signed historical evidence by exact hash-pinned Git references, without rewriting signatures or history.
@@ -28,6 +28,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+- Record RC7 exact-source publication, raw-carrier recovery controls, 100-document hygiene inventory and isolated installation proof; preserve unfinished owner-wake qualification.
 
 - Record immutable RC6 publication at `c5c7335`, exact protected PR/main proof, matching reproducible archive, SDK-free installation and Codex skill layout verification; preserve actual first failures and unfinished owner-wake qualification.
 

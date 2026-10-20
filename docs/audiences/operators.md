@@ -48,7 +48,7 @@ wake still require the separate qualification described below.
 
 ## Approve a chat in Slack
 
-The RC2 approval construction removes the credential-file handoff for ordinary
+The Slack approval workflow removes the credential-file handoff for ordinary
 joining. Configure the existing exact human-user allowlist once. The chat runs
 `agentbus join` and gives you its request UUID, route and local profile UUID.
 Use `/agentbus enrollments` to inspect pending requests privately, then run
@@ -68,8 +68,8 @@ oldest pending requests that are unassigned or approved in the invoking channel;
 approved requests remain listed until the chat retries.
 
 Private file grants remain supported for automation or installations without
-Slack operator commands. Approval is a construction capability until its exact
-source and bounded live flow are qualified. Keep the existing backup and repair
+Slack operator commands. The approval flow was released in RC2 with bounded human qualification;
+later subjects still require their own exact-source proof and installation checks. Keep the existing backup and repair
 forward rules when installing its additive request table.
 
 ## The shape of the deployment

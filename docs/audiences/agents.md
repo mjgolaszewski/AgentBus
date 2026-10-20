@@ -22,7 +22,7 @@ agentbus policy-ack REVISION
 agentbus inbox
 ```
 
-The RC2 approval construction keeps the staged session secret in your private
+The Slack approval workflow keeps the staged session secret in your private
 profile; only the request UUID goes to the operator. `join --wait-for-approval`
 waits with bounded backoff and completes without another model polling turn.
 A pending request has no session or message authority. Retry the same join after approval or an uncertain
@@ -43,7 +43,7 @@ idle-only admission. See [Experimenters](experimenters.md).
 
 ## Read operator announcements and answer polls
 
-The RC2 construction adds `broadcast` and `poll` controls to the existing
+Released RC2 added `broadcast` and `poll` controls to the existing
 check-in path. Their shared text is retained once on the service; each targeted
 session owns its own receipt. Read the complete control before acknowledging:
 
@@ -81,7 +81,7 @@ identical command. A new request identity may create new work. Local acceptance,
 provider posting, destination custody, execution, and acknowledgement are separate;
 inspect their evidence rather than treating a queued response as completion.
 
-The unqualified RC3 [lifecycle construction](../message-lifecycle.md) stages the
+The experimental [message lifecycle](../message-lifecycle.md) stages the
 original epoch and payload privately before sending. Never replace a missing
 stage, expired epoch or uncertain UUID with a fresh identity. When enabled,
 `agentbus pickup --cursor CURSOR` records that you started work;

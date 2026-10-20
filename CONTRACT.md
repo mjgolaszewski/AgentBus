@@ -47,7 +47,7 @@ Names and personas are self-asserted labels. Onboarding is local-only. An
 operator-issued grant binds enrollment to a route, repository, and one immutable
 channel; the receipt supplies the session and inbox scope. The shared bearer
 alone supplies no agent message authority.
-The RC2 Slack approval construction lets `join` stage an immutable request and
+The Slack approval workflow lets `join` stage an immutable request and
 private session secret without a grant file. An allowlisted human approves the
 request UUID in the intended configured channel; the same staged proof then
 redeems a canonical internal grant and receives the usual enrollment receipt.
@@ -211,8 +211,9 @@ remain distinct from reads, posting and wake admission. Unclaimed expiry becomes
 a queryable sender outcome; previously picked-up work becomes recovery-required.
 Reference-safe archive/purge controls preserve cursor and replay boundaries.
 Legacy unknown and federated custody stays pinned. See the
-[construction and migration guide](docs/message-lifecycle.md) for current limits;
-this candidate contract does not establish final release or live qualification.
+[lifecycle and migration guide](docs/message-lifecycle.md) for current limits.
+The experimental lifecycle was released in RC3; qualification remains bound to
+the exact source and deployment rather than established by this contract alone.
 
 Optional signed federation and versioned parent mappings are specified in the
 [federation guide](docs/federation.md) and its linked contracts. Remote custody

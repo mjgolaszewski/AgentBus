@@ -7,7 +7,7 @@ a migrated database. Live multichannel readiness additionally needs final
 canonical proof, archive installation and a bounded two-channel Slack canary;
 see [Experimenters](audiences/experimenters.md).
 
-Channel migration does not activate the next unqualified RC3 message lifecycle.
+Channel migration does not activate the experimental message lifecycle released in RC3.
 That is a separate [offline cutover](message-lifecycle.md) with a verified backup,
 legacy-unknown pins and refreshed long-lived clients; neither migration grants
 host interoperability or permission to restore over newly accepted custody.
