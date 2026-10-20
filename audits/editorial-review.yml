@@ -95,9 +95,10 @@ documents:
   - - 1
     - 105
   line_count: 105
-  sha256: f1891de20f87b6c1e1ac538a6fb82c9aaa5d6f4291ddc39341680183e5adfdf3
+  sha256: 2c4a494d1f2bd1681ddafa71f94a7680f04bdb404934764790fdfb809ce0691f
   disposition: updates
   findings:
+  - RC5 publication record reviewed against exact ce31aa5 proof; runtime authority remains bound to that released subject.
   - RC5 qualification closeout changed lines reviewed against exact946445c; runtime proof stays bound to that
     immutable candidate, with publication/deployment and owner-wake qualification separate.
   - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays
@@ -1019,11 +1020,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 297
-  line_count: 297
-  sha256: 8be9eddd7e76ce6e30bd3c727234a9779d4daaf5fd18b8f8b52ef28eec21eb07
+    - 299
+  line_count: 299
+  sha256: 175b8138a79d87d29f2e894a42c022c8bf6b0f430b724d23b2a732c9563f6d81
   disposition: updates
   findings:
+  - RC5 publication record reviewed against exact ce31aa5 proof; runtime authority remains bound to that released subject.
   - Post-RC5 audit-count evidence note reviewed in context; inherited per-file reviews and runtime proof subjects
     remain unchanged.
   - RC5 qualification closeout changed lines reviewed against exact946445c; runtime proof stays bound to that
@@ -1595,11 +1597,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 302
-  line_count: 302
-  sha256: f93d71e9842c463986bd886e2dca539f6818cfb6b7361999780610049756f86a
+    - 317
+  line_count: 317
+  sha256: 33c05b82964a54407df5cfe8d3a214365385f6c48a34a66b0fa45e97798b24a3
   disposition: new
   findings:
+  - RC5 publication record reviewed against exact ce31aa5 proof; runtime authority remains bound to that released subject.
   - RC5 qualification closeout changed lines reviewed against exact946445c; runtime proof stays bound to that
     immutable candidate, with publication/deployment and owner-wake qualification separate.
   - Authored and reviewed RC5 invariant-to-owner-to-edge acceptance map; source baseline pinned to released BCF

@@ -300,3 +300,18 @@ integration:
       controls and SDK-absent installation do not establish a new live wake or multi-installation guarantee.
   rollout: No schema migration; retain RC4 backup and custody. RC5 never reclassifies submitted or uncertain provider
     work as acknowledged. Publication/deployment separate.
+
+published_release:
+  tag: v0.9.1rc5
+  subject: ce31aa52f939b18774b06110e4df7b47ce79b026
+  tree: 37363e242d0b4fb30747e6b6e92f9fd8ee9ec429
+  protected_pr: 97
+  pr_run: 39343772349/1
+  exact_main_run: 39344234114/1
+  exact_main_truth_sha256: 1ee14270608564d9f2b79b32a4af09407915b850d5fe904408e157f9e87160eb
+  archive_sha256: 5ce6ad3018a9fe7d6e569ed072b6887b1218e2c0f514a075844955a130ecbce1
+  archive_bytes: 6544053
+  installation: frozen_SDK_absent_615_files_66_origins_queries_enrollment_and_corrective_smoke_pass
+  remote_assets: all_three_bytes_and_immutable_tag_verified
+  qualification: no_new_live_canary_owner_wake_or_federation_authority
+  deployment: separate_custodian_handback_required
