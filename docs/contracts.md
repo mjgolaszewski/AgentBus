@@ -2,19 +2,25 @@
 
 The package version in [`pyproject.toml`](../pyproject.toml) is the single
 version authority; FastAPI and lockfile version literals are checked projections. This page is the derived release/capability guide; versioned
-contracts below own behavior. RC5 is a corrective construction candidate for
-[#94](https://github.com/mjgolaszewski/AgentBus/issues/94). Exact subject `946445c`
-has protected PR/main proof, a reproducible archive and SDK-free isolated-install
-verification; see the [qualification record](../audits/rc5-invariant-construction.yml).
-Publication and deployment remain separate. Released RC4 (`6a1c672`) passed protected
-PR/exact-main CI, reproducible archive, isolated installation and bounded local
-two-channel checks; the operator confirmed grouped health readable and private.
-RC3 introduced the experimental lifecycle, retained in RC4. Released 0.9.0 is
-the migration baseline; old proof does not authenticate a changed RC5 subject.
+contracts below own behavior. RC6 is a corrective construction candidate for
+bounded federation backlog recovery and the bundled Codex participation skill;
+see the [construction record](../audits/rc6-recovery-skill.yml). It keeps the
+100-event default and 1,000-event admission ceiling, with bounded resumable
+reverse scans and oldest-prefix checkpointing rather than an all-backlog fit.
+Uncertain retries require complete exact-attempt recovery coverage.
+
+Released [RC5](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc5)
+closes [#94](https://github.com/mjgolaszewski/AgentBus/issues/94) at runtime subject
+`ce31aa5` after protected PR/exact-main proof, reproducible archive and SDK-free
+installation; its [qualification record](../audits/rc5-invariant-construction.yml)
+retains older candidate evidence under its own subjects. RC5 is installed in the
+workspace; that does not authenticate changed RC6 bytes. Released RC4 (`6a1c672`)
+also has its own protected, archive/install and bounded two-channel evidence.
 
 Protocol-2 Slack envelopes and endpoint paths stay stable. Updated clients and
-explicit offline migration are required from 0.9.0; RC5 introduces no database
-migration. Publication and deployment are separate actions. Live AHP/native-queue
+explicit offline migration are required from released 0.9.0; RC5 and RC6 add no
+database migration. Every candidate requires its own protected proof and archive
+installation; publication and deployment are separate actions. Live AHP/native-queue
 interoperability and atomic idle-only admission remain unqualified (#75).
 
 Private RC4 `health`, `workers`, `doctor`, channel-scoped `pending [ID]` and

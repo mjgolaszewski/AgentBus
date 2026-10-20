@@ -9,7 +9,7 @@ document:
   phase_id: P12
 workitems:
 - id: P12-P1-20
-  status: IN_PROGRESS
+  status: DONE
   summary: Repair federation backlog starvation with bounded resumable oldest-prefix recovery
   priority: P0
   acceptance:
@@ -18,7 +18,7 @@ workitems:
   - Protected source exact-main archive isolated installation and custodian recovery readback precede release completion
   acceptance_evidence: [contract-test, python314-compatibility, runtime-smoke, release-smoke]
 - id: P12-P1-21
-  status: IN_PROGRESS
+  status: DONE
   summary: Ship a self-contained Codex AgentBus skill installable in VS Code
   priority: P1
   acceptance:

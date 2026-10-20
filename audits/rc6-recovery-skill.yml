@@ -1,7 +1,7 @@
 document:
   kind: rc6_construction_audit
   path: audits/rc6-recovery-skill.yml
-  status: construction_checks_pending
+  status: targeted_controls_passed_canonical_pending
 baseline:
   main: c72e1aae138619dce114a3186fda9bf9953371c0
   released_runtime: ce31aa52f939b18774b06110e4df7b47ce79b026
@@ -46,8 +46,10 @@ skill:
 assurance:
   producers: [contract-test, python314-compatibility, test, release-smoke]
   new_tests_in_existing_selected_files: [tests/test_federation_adapter.py, tests/test_federation_bridge.py]
-  release_gate: scripts/run_project_gate.py_checks_exact_three_skill_files_after_isolated_copy
+  release_gate: scripts/run_project_gate.py_checks_exact_three_skill_files_after_isolated_copy_and_validates_frontmatter_and_Codex_UI_metadata
   custody: original_certified_BCF2.3.4_canonical_submit_protected_PR_exact_main_archive_install_and_custodian_rollout_pending
   evidence:
   - Initial2398b54 preparation terminal1; baseline negative confirmed;115PASS3FAIL in legacy-port and multi-cycle test assumptions; lint types and skill validate PASS
   - Reconcile and YAML rejected two authored line budgets before writes; raw private diagnostics retained without provider or live effects
+  - Corrected32d5bcf preparation passes3 prior failures and lint; original234 reconcile converged2rounds and adds12cases to both manifests
+  - Authored phase wording then rejected by YAML coverage; split into exact work-order summaries, retain raw diagnostics and require canonical proof
