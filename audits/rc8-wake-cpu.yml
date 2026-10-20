@@ -1,0 +1,34 @@
+document:
+  kind: engineering_audit
+  path: audits/rc8-wake-cpu.yml
+  status: construction
+scope:
+  context: participation client
+  layer: infrastructure HTTP transport
+  side: query and command transport, no authority decision
+  production: [src/agentbus_transport_client.py]
+  controls: [tests/test_delivery_client.py, tests/test_codex_wake_client.py, tests/test_wake_intent_lifecycle.py, tests/test_wake_owner_eligibility.py]
+  forbidden: [live service or configuration changes during construction, wake binding changes, admission changes, custody resets, generated BCF hand edits, dependency changes]
+diagnosis:
+  observation: Wake supervisor exhibited sustained CPU use; this alone does not establish causation for editor disconnections
+  reproduced: Standard opener construction initializes default TLS trust for every plain loopback HTTP request
+  repair: Defer standard HTTPS handler construction until https_open; do not cache trust or reuse mutable handlers across threads
+  limits: Original wake scan cadence remains; no new AHP native queue or atomic idle-only admission qualification
+acceptance:
+  - Loopback requests initialize no TLS context; remote plaintext is denied
+  - HTTPS uses fresh standard context with certificate and hostname verification
+  - Redirects remain denied and scope headers unchanged
+  - Wake recovery concurrency shutdown and authorization controls pass
+  - Protected PR exact-main archive SDK-free install and custodian CPU readback required
+proof:
+  focused_controls: 116 passed
+  offline_same_interpreter_loopback:
+    requests: 30
+    baseline_cpu_seconds: 1.231197748
+    candidate_cpu_seconds: 0.065184030
+    reduction_percent: 94.7056409
+    baseline_tls_initializations: 30
+    candidate_tls_initializations: 0
+    limits: Synthetic same-process local server measurement; actual watcher and editor connection causation still unproved
+  preparation: Corrected diagnostic instrumentation to actual urllib TLS factory and live interpreter; initial invalid benchmark retained privately. Original installer then rejected a one-line memory budget overrun, corrected without changing its budget.
+  final_status: pending protected exact-main archive install and runtime readback

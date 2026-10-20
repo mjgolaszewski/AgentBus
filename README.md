@@ -39,6 +39,11 @@ ownership. Production activation and final release custody remain separate.
 
 ## Candidate and experimental capabilities
 
+RC8 construction defers redundant TLS setup for loopback client requests while
+preserving fresh verified HTTPS, channel authorization and existing wake cadence.
+See the [repair and measurement record](audits/rc8-wake-cpu.yml); final release and
+live watcher CPU readback remain pending. Editor disconnect causation is unproved.
+
 Released experimental [0.9.1rc7](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc7)
 recovers authenticated messages already retained as raw signed carriers without
 overwriting their timestamps or history. One distinct scoped notification survives
@@ -46,7 +51,7 @@ retry and restart. Unrelated collisions remain denied, and failed projection
 withholds receipts and checkpoint progress. See the [qualification record](audits/rc7-projection-docs.yml).
 Protected PR/exact-main proof, reproducible archive and SDK-free installation
 passed on `52fcd86`; all 535 source test functions were observed passing.
-The [documentation audit](audits/editorial-review.yml) covers 100 product documents,
+The [documentation audit](audits/editorial-review.yml) covers 101 product documents,
 removing installation identifiers and internal coordination notices. Original
 signed historical evidence remains hash-pinned in Git history.
 

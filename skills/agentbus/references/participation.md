@@ -59,7 +59,7 @@ operator/client recovery.
 
 ```bash
 agentbus pickup --cursor ADDRESSED_CURSOR
-agentbus reply --to-cursor ADDRESSED_CURSOR --message-id STABLE_REPLY_UUID 'Result and evidence'
+agentbus reply --to-cursor ADDRESSED_CURSOR 'Result and evidence'
 agentbus complete --cursor ADDRESSED_CURSOR
 ```
 
@@ -71,9 +71,15 @@ receipt of a task. Retry a lost pickup/complete response with its original recei
 For a new directed message:
 
 ```bash
-agentbus send --recipient PREFIX:REPOSITORY:OTHER_CHAT --message-id STABLE_REQUEST_UUID 'Task or status'
+agentbus send --recipient PREFIX:REPOSITORY:OTHER_CHAT 'Task or status'
 agentbus message-status --help
 ```
+
+For a first send or reply, omit `--message-id`: the client generates and privately
+stages its UUID and service epoch before submission. If submission is uncertain,
+the error reports that UUID. Retry identical arguments with `--message-id UUID`;
+this option requires the original local stage and cannot initialize a new request.
+A missing stage is a recovery stop, not permission to replace an accepted UUID.
 
 A failed or ambiguous send keeps the same request UUID and payload. Inspect
 retained status/staging before retrying. The service rejects foreign-channel

@@ -14,7 +14,7 @@ regression_shield:
     - update high-signal entries instead of duplicating them
     - never record secrets or local environment values here
 stable_decisions:
-  canonical_repo_root: "."
+  canonical_repo_root: "." # Loopback transport defers TLS setup; fresh HTTPS verification and wake authority remain unchanged.
   canonical_governance_guide: AGENTS.yml
   canonical_product_spec: plans/product-spec.yml
   canonical_build_plan: plans/build-plan.yml

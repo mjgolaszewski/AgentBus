@@ -8,6 +8,15 @@ document:
   path: plans/phase-12-workitems.yml
   phase_id: P12
 workitems:
+- id: P12-P1-24
+  status: DONE
+  summary: Remove redundant TLS setup from loopback wake and polling requests
+  priority: P0
+  acceptance:
+  - Loopback requests perform no certificate-store initialization while HTTPS retains fresh standard certificate and hostname verification and redirects remain denied
+  - Existing scope authorization uncertain-delivery wake recovery and shutdown controls pass without changing cadence bindings or durable state
+  - Protected exact-main archive isolated installation and bounded before-after runtime CPU measurements precede release completion
+  acceptance_evidence: [contract-test, python314-compatibility, test, runtime-smoke, release-smoke]
 - id: P12-P1-22
   status: DONE
   summary: Recover raw signed carriers without timestamp reassignment

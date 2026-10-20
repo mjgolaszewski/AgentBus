@@ -12,11 +12,15 @@ phase:
 summary:
   outcome: active
   highlights:
+  - RC8 diagnosis reproduced repeated default certificate-store initialization in standard opener construction; defer HTTPS setup without changing polling or wake authority. See audits/rc8-wake-cpu.yml for scope and acceptance.
   - Pinned upstream sources and local installed builds; actual AHP owner remains unverified
   - Four new adapter boundary controls pass; no AHP implementation or live probe
   - 57 affected wake cases, Ruff and governance YAML validation pass; computed closure remains unclaimed
   - Actual pinned AHP reducer passes168 upstream chat fixtures and8 targeted controls; drift and semantic queue-order mutants reject
 workitems:
+- id: P12-P1-24
+  status: DONE
+  summary: Defer TLS context construction for loopback client requests; runtime and final proof pending
 - id: P12-P1-22
   status: DONE
   summary: Recover raw signed carriers without timestamp reassignment
@@ -99,6 +103,9 @@ execution_evidence:
   planned_commands:
   - canonical bcf ci submit after shared native capacity is available
   executed_commands:
+  - "RC8 first canonical4e5a7c4 failed before execution on misplaced authored editorial inventory entry; corrected list placement, then verified101hashes/line counts and changed YAML syntax. Next9276bc4 terminal1/158.408s retained first producer failure67a8734c: Python314 locked environment rejected stale root projectrc7 metadata before tests. Pinned uv0.12.18 offline refresh changes only root project version torc8, preserving82packages and lockrevision3; Python314 offline lockcheck PASS. No SDK change, evidence copying, manual merge or live mutation. Preserve both first diagnostics and native handbacks before retry."
+  - "RC8 final preparationd3c6865 terminal0/34.805s: narrow transport controls, original234 installer reconciliation, governance, source, Ruff and mypy68files PASS;622tracked files unchanged and no generated diff, Q/EOF/reap and originalfence free. Prior preparation4 stopped at private-debug-attribute typing error; removed attribute access, retaining fresh standard HTTPS defaults. Both new controls present in contract and Python314 manifests. Offline original-interpreter benchmark reports94.7056percent less CPU; live watcher comparison still required. Canonical proof follows on final authored subject."
+  - "RC8 focused116PASS and exact-live-interpreter loopback benchmark30requests: CPU1.231197748s to0.065184030s (94.7056percent less), TLS contexts30to0. Preparation retained initial instrumentation error, fixed memory106to105 without budget changes; installer-generated semantic lock and two manifests include both controls. Governance caught inherited version-mutation search still matchingrc7; update only authored search torc8, retain mismatch mutation and oracle. Runtime performance and protected/archive/install proof remain pending."
   - "RC7 release qualification: original234 canonical0b096de terminal0/693.6242875s; protected PR101/run39455399333 all6PASS and normal merge52fcd8608994d69f1108eabc0e58769c815c037e/tree8df44ba60a724a4b8a4e4f5f762ca8088d92416a. Exact-main39456426800 all6PASS; all6ZIPdigests authenticated each run and independent original234 truth matches PRf28b8837 and main91a624df, PASS/no issues. All535source functions baselinePASS; test208/contract533/Python314634 plus8architecture baselines and19projection cases in each relevant suite. New22/23 closed workitem-only; P12 stays active. Two identical archives match main8f4721c6/6544311bytes; SDK-free621files/modes66origins/entrypoints7readonly queries/enrollment/inherited1307event and raw-carrier preservation/restart/collision denial PASS. Immutable v0.9.1rc7 tag and all3 remote asset bytes independently verified; receipt50f4d8c6. Preserve initial selector mismatch/diagnostics and original signed historical bytes. Current public documentation omits installation identifiers and internal bus notices; no deployment-specific inventory or new live canary/owner-wake claim. Documentation closeout does not replace runtime assets."
   - "RC7 first canonical source c81b4ec retained unchanged; generated-manifest inspection found authored Python314 selector mismatch while the runner selected raw projection controls. First terminal diagnostics preserved. Correct only the owning selector, remove duplicate contract selector and reconcile through original BCF installer before a fresh exact-source submission; no SDK defect or gate relaxation."
   - "RC7 intent: recover raw signed carriers without timestamp reassignment and remove installation-specific public documentation; exact RC6 baseline reproduces occupied-timestamp blocker. Focused89PASS after fixing one invalid negative fixture and an actual candidate ordinary-thread omission. Preserve raw history, original custody and actual reply references without observation theft. Initial source preparation installer reconcile PASS; governance rejects authored log object/list shape, no later checks or provider mutation. Original diagnostic retained privately. Correct through log owner and require fresh exact-source validation."
