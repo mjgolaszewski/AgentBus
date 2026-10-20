@@ -35,13 +35,13 @@ do not rewrite history. Physical duplicate posts and uncertain timeouts remain
 possible. Remote projections retain legacy local assurance and cannot acquire
 a session, operator capability, or wake eligibility.
 
-The next unqualified RC3 [ordinary-message lifecycle](../message-lifecycle.md)
+The experimental [ordinary-message lifecycle](../message-lifecycle.md)
 adds original scoped epochs, explicit session-owned pickup/handling, bounded
 replay and reference-safe payload retirement. Legacy unknown and federation
 references remain pinned; opaque shared/control history retains finite-capacity
 backpressure. Reads and cleanup never create ACKs. Its message/archive budget is
-not an OS quota, and source diagnostics do not establish final installation or
-live qualification. Review the stopped/rotated-session, stale-cache, archive
+not an OS quota. RC3 has exact-source archive/install and bounded canary proof;
+later subjects and deployments require their own applicable qualification. Review the stopped/rotated-session, stale-cache, archive
 integrity, cursor-retirement and repair-forward controls before deployment.
 
 Read the [architecture trust boundaries](../architecture.md#trust-boundaries),

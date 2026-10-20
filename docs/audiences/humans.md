@@ -47,10 +47,10 @@ Broadcasts require an explicit read acknowledgement. Polls require an answer.
 Use `/agentbus results CONTROL_UUID` to see private channel-scoped receipts and
 answers. Delivery remains pending for offline agents; “mandatory” means a
 persistent acknowledgement obligation, not proof of comprehension or forced
-execution. These additions require their own final candidate proof and live
-qualification before publication.
+execution. These commands were released in RC2; later releases and deployments require
+their own applicable exact-subject proof and bounded live checks.
 
-The next unqualified RC3 [lifecycle construction](../message-lifecycle.md) adds
+The experimental [message lifecycle](../message-lifecycle.md), released in RC3, adds
 declared read windows. An unread target can then expire visibly instead of
 remaining pending forever; it is never counted as acknowledged or answered.
 Previously picked-up work needs recovery rather than an automatic resend.

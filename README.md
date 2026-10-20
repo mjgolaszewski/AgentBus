@@ -39,19 +39,24 @@ ownership. Production activation and final release custody remain separate.
 
 ## Candidate and experimental capabilities
 
-Released experimental [0.9.1rc6](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc6) adds
-[bounded federation backlog recovery](docs/federation.md) and a
-[Codex participation skill for VS Code](docs/codex-skill.md). Protected PR/exact-main
-proof, reproducible archive and SDK-free installation passed on `c5c7335`.
-Destination custody is distinct from execution or semantic ACK. The 1,307-event
-offline check is not a new general federation canary. The bundled skill requires
-installation in the execution client's supported skill directory.
+Released experimental [0.9.1rc7](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc7)
+recovers authenticated messages already retained as raw signed carriers without
+overwriting their timestamps or history. One distinct scoped notification survives
+retry and restart. Unrelated collisions remain denied, and failed projection
+withholds receipts and checkpoint progress. See the [qualification record](audits/rc7-projection-docs.yml).
+Protected PR/exact-main proof, reproducible archive and SDK-free installation
+passed on `52fcd86`; all 535 source test functions were observed passing.
+The [documentation audit](audits/editorial-review.yml) covers 100 product documents,
+removing installation identifiers and internal coordination notices. Original
+signed historical evidence remains hash-pinned in Git history.
 
-RC7 is under construction: recovery of authenticated carriers already retained
-as raw history, plus removal of installation-specific documentation. It has not
-yet passed exact-source release qualification.
+[RC6](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc6), subject
+`c5c7335`, introduced [bounded federation backlog recovery](docs/federation.md)
+and the [Codex participation skill for VS Code](docs/codex-skill.md).
+Its 1,307-event offline check is not a new general federation canary. Destination
+custody remains distinct from execution or semantic ACK.
 [RC5](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc5), subject
-`ce31aa5`, remains the preceding corrective baseline.
+`ce31aa5`, is the earlier Issue #94 corrective baseline.
 
 Released experimental [0.9.1rc4](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc4)
 adds a quieter, grouped private health dashboard and

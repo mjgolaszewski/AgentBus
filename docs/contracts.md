@@ -3,13 +3,20 @@
 The package version in [`pyproject.toml`](../pyproject.toml) is the single
 version authority; FastAPI and lockfile version literals are checked projections. This page is the derived release/capability guide; versioned
 contracts below own behavior. A construction candidate requires its own exact-subject
-proof before publication. Released experimental [RC6](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc6),
-subject `c5c7335`, passed protected PR/exact-main certification, reproducible archive
-and SDK-free installation for bounded recovery and the bundled Codex skill; see
-the [qualification record](../audits/rc6-recovery-skill.yml). It keeps the
-100-event default and 1,000-event admission ceiling, with bounded resumable
-reverse scans and oldest-prefix checkpointing rather than an all-backlog fit.
-Uncertain retries require complete exact-attempt recovery coverage.
+proof before publication. Released experimental [RC7](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc7),
+subject `52fcd86`, passed protected PR/exact-main certification, reproducible archive
+and SDK-free installation for raw-carrier recovery and documentation hygiene;
+see its [qualification record](../audits/rc7-projection-docs.yml).
+An exact authenticated carrier already retained as legacy/unrouted history keeps
+its raw timestamp. Recovery creates one separate scoped notification, retaining
+the original custody identity and withholding progress on failed projection.
+Changed, truncated, assured, routed or unrelated collisions remain denied.
+
+[RC6](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc6), subject
+`c5c7335`, qualified bounded recovery and the bundled Codex skill under its own
+[record](../audits/rc6-recovery-skill.yml). It keeps the 100-event default and
+1,000-event admission ceiling, bounded resumable reverse scans and oldest-prefix
+checkpoints. Uncertain retries require complete exact-attempt coverage.
 
 Released [RC5](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc5)
 closes [#94](https://github.com/mjgolaszewski/AgentBus/issues/94) at runtime subject
@@ -18,11 +25,11 @@ installation; its [qualification record](../audits/rc5-invariant-construction.ym
 retains older candidate evidence under its own subjects. Deployment observations
 are separate from source qualification and never imply execution or semantic ACK.
 Released RC4 (`6a1c672`) also has protected, archive/install and bounded two-channel
-evidence. RC7 raw-carrier recovery is a construction candidate pending its own
-protected-source, archive and installation proof.
+evidence. RC7 qualification is bound to its exact released subject; later documentation
+changes do not relabel that runtime or replace its archives.
 
 Protocol-2 Slack envelopes and endpoint paths stay stable. Updated clients and
-explicit offline migration are required from released 0.9.0; RC5 and RC6 add no
+explicit offline migration are required from released 0.9.0; RC5 through RC7 add no
 database migration. Every candidate requires its own protected proof and archive
 installation; publication and deployment are separate actions. Live AHP/native-queue
 interoperability and atomic idle-only admission remain unqualified (#75).

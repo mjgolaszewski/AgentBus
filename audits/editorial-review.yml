@@ -1,7 +1,7 @@
 document:
   kind: editorial_audit
   path: audits/editorial-review.yml
-  status: rc7_candidate_review_proof_pending
+  status: rc7_release_record_review_canonical_pending
 request:
   scope: Every product document, authored historical log, contract, audience guide, skill and current changelog;
     installation identifiers and internal coordination notices removed.
@@ -34,14 +34,14 @@ documents:
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
     inspected in section context. New records reviewed in full.
 - document: CONTRACT.md
-  review_status: hash_verified_prior_full_document_review
+  review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
-    - 222
-  line_count: 222
-  sha256: 482ea3731d62fb14307e4bbc0507abe8a2e77287c4abf8f58064cc0aaa750d7c
+    - 223
+  line_count: 223
+  sha256: 3775efd74602e3c04272e98309ddad4329cb3111acf9bd3588d1e229b5d400c9
   baseline_sha256: 482ea3731d62fb14307e4bbc0507abe8a2e77287c4abf8f58064cc0aaa750d7c
-  disposition: retained
+  disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
     inspected in section context. New records reviewed in full.
 - document: CONTRIBUTING.md
@@ -61,7 +61,7 @@ documents:
   - - 1
     - 105
   line_count: 105
-  sha256: 75bcc35339c5c70710e54688d51e2ec565bf4ea355b07b66cc860cdcb8ad0a42
+  sha256: 54997e5c0cb59cbe74d16b292ba15c1d00b6b58d004fb44e32bc0542bc1db194
   baseline_sha256: 486989ca8ea9e296a2dce9fe025313aa5c5f73606531fb405a0c338ee953b4c3
   disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
@@ -70,9 +70,9 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
-    - 915
-  line_count: 915
-  sha256: e59d223f651c52db359e4dd93cc03f69b7d070a5bcb6a6637e96611fb56fc76a
+    - 920
+  line_count: 920
+  sha256: 0292d883f633e7cc3ee372ec3306d9ed3a7a6ff939a1e4c66df88fad2b76956e
   baseline_sha256: b7013d36852333861ccd7453ecce16cc28d4c7baf7c2ac7db3aa39fba4f06931
   disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
@@ -331,14 +331,14 @@ documents:
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
     inspected in section context. New records reviewed in full.
 - document: docs/architecture.md
-  review_status: hash_verified_prior_full_document_review
+  review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
     - 150
   line_count: 150
-  sha256: 11e972fe653bbe1b69944ee1fbb93d384506628eff443c561854af95b94d04b4
+  sha256: d6a49b9e6de2e4ea1eca1fd7c6a91f87fa6372025b5eabf2266efc0dc3df3dd8
   baseline_sha256: 11e972fe653bbe1b69944ee1fbb93d384506628eff443c561854af95b94d04b4
-  disposition: retained
+  disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
     inspected in section context. New records reviewed in full.
 - document: docs/audiences/adapter-users.md
@@ -353,23 +353,23 @@ documents:
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
     inspected in section context. New records reviewed in full.
 - document: docs/audiences/agents.md
-  review_status: hash_verified_prior_full_document_review
+  review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
     - 98
   line_count: 98
-  sha256: 742b9bbdf762f37ccdd2f72ad7bb1bd7ecf35c27264f6319380dbbca33f723f9
+  sha256: af9e6c79021d82f06df3024c507f8afdc8777c890d5ab258612ae52d81c38d31
   baseline_sha256: 742b9bbdf762f37ccdd2f72ad7bb1bd7ecf35c27264f6319380dbbca33f723f9
-  disposition: retained
+  disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
     inspected in section context. New records reviewed in full.
 - document: docs/audiences/experimenters.md
   review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
-    - 94
-  line_count: 94
-  sha256: 3a979ff1944644a761cd3c40fc77e0f53553f6725ee40a7c5eea668e7aa47301
+    - 98
+  line_count: 98
+  sha256: b5f1704f3473cb91be236f96df3aa55ac3a3d5c4e46a94c75748949e944fc215
   baseline_sha256: 244689c58ec180c480b4bcd2747824aaa343de8fc215cd1482bc67ae01d256d9
   disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
@@ -386,14 +386,14 @@ documents:
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
     inspected in section context. New records reviewed in full.
 - document: docs/audiences/humans.md
-  review_status: hash_verified_prior_full_document_review
+  review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
     - 73
   line_count: 73
-  sha256: 7b67a8e3b9e5ed46795be81e320aa964956b777178f8e7e40bb184bfa9acb968
+  sha256: 054ab721ac0b65773f9e473a0bce19f2b69dd98e11fb0430ff4d089f5f5282de
   baseline_sha256: 7b67a8e3b9e5ed46795be81e320aa964956b777178f8e7e40bb184bfa9acb968
-  disposition: retained
+  disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
     inspected in section context. New records reviewed in full.
 - document: docs/audiences/maintainers.md
@@ -408,45 +408,45 @@ documents:
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
     inspected in section context. New records reviewed in full.
 - document: docs/audiences/operators.md
-  review_status: hash_verified_prior_full_document_review
+  review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
     - 296
   line_count: 296
-  sha256: 70857225e20bb29293faef6cae5383e4f703f9665d3362a055ee61179d59c1ef
+  sha256: 08b19629f62a0c9cb1d34af5e20c9c7690b9de446746f849762a9e6008523973
   baseline_sha256: 70857225e20bb29293faef6cae5383e4f703f9665d3362a055ee61179d59c1ef
-  disposition: retained
+  disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
     inspected in section context. New records reviewed in full.
 - document: docs/audiences/security-reviewers.md
-  review_status: hash_verified_prior_full_document_review
+  review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
     - 51
   line_count: 51
-  sha256: ccbc92fc172dfe5e72897a458d5db514202a9e8f03a58c3712d206ae228f4729
+  sha256: 4b0011ac0e1dab23b62bc6f4b64f8edb99585c49377278ce9c27137c4ed8abbf
   baseline_sha256: ccbc92fc172dfe5e72897a458d5db514202a9e8f03a58c3712d206ae228f4729
-  disposition: retained
+  disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
     inspected in section context. New records reviewed in full.
 - document: docs/channel-migration.md
-  review_status: hash_verified_prior_full_document_review
+  review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
     - 88
   line_count: 88
-  sha256: d415b49b0d9ff0b29e06d8ac883bdede7c736df7309cdac0ccb610d4e12d33d2
+  sha256: eafc821d05775c86c9bd652012ecb5646d9091f2316a196599ef201e867c87f4
   baseline_sha256: d415b49b0d9ff0b29e06d8ac883bdede7c736df7309cdac0ccb610d4e12d33d2
-  disposition: retained
+  disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
     inspected in section context. New records reviewed in full.
 - document: docs/contracts.md
   review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
-    - 120
-  line_count: 120
-  sha256: cfeced04d9a6d8906a5499d9b6c3d295ee021e9501ac022f0c0f4d6182f11632
+    - 127
+  line_count: 127
+  sha256: 4e63bb1186e09cbbb31f7033fd0bb7d1911d3b8a4d0f450ad47abe7b951ce922
   baseline_sha256: e1339ee0338de7e0976fd09f3cb48891371068323d5e5bbd59987caacd310f70
   disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
@@ -455,9 +455,9 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
-    - 433
-  line_count: 433
-  sha256: 81f763c822aa790f166a12c3083168d5053338d27c86f2552087b291bb1b852a
+    - 441
+  line_count: 441
+  sha256: 3953f58e8c594606812cc4647bec9bf0985ce0e68d77c960e8c16e4e064d52da
   baseline_sha256: 240d6f30536b0cb6680c5d73d79c501d5f389fc73b3470cece99dff8fa704cf2
   disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
@@ -675,9 +675,9 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
-    - 320
-  line_count: 320
-  sha256: dda643bd51662e5fbb7eb40516467e194d5bbde86e3b1b7525c9e059fa69f26a
+    - 321
+  line_count: 321
+  sha256: 79b3aece63bc982cf3b3be28573357ec0f2630b0aa1d125bb59e03b87124d0ba
   baseline_sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
@@ -1101,12 +1101,12 @@ documents:
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
     inspected in section context. New records reviewed in full.
 - document: CHANGELOG.md
-  review_status: line_by_line_reviewed
+  review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
-    - 547
-  line_count: 547
-  sha256: 8562204b61b5f1a8ac7e8157c29c9a7b99051a9866ee0771b67907f2097a7c9c
+    - 549
+  line_count: 549
+  sha256: 8b64ed61e8de4b056d5cbcb074359454f600fb9b8cb1ef8a9db0782db89d5411
   baseline_sha256: 089d7b76fe9d53eddc539da2141fb02b0b7502354f7ff75661dad2c5a87cfaf0
   disposition: updates
   review_basis: Entire changelog read for RC7, including all historical sections; local host notices removed, historical
@@ -1115,9 +1115,9 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
-    - 28
-  line_count: 28
-  sha256: 42ecf030670d9e88a72f1544380bd7ba1d9042ef2db78a5406649c8fddf511d1
+    - 81
+  line_count: 81
+  sha256: 6a4a4f30581cca0527efaf6a4879cf6ba1662dba08216549f29f591afde09c9e
   baseline_sha256: null
   disposition: new
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
@@ -1125,6 +1125,13 @@ documents:
 summary:
   documents: 100
   new: 1
-  updated: 20
-  retained: 79
+  updated: 27
+  retained: 72
   verification: Privacy regression and exact-source proof pending
+release_record_review:
+  runtime_source: 52fcd8608994d69f1108eabc0e58769c815c037e
+  method: Prior inventory hashes verified; changed release-guidance sections and public qualification records reviewed
+    in context; stale next/unqualified RC3 labels reconciled with subject-specific released evidence; runtime custody
+    unchanged
+  scope: documentation_only
+  qualification: new_documentation_subject_requires_own_canonical_proof

@@ -320,6 +320,14 @@ does not qualify for this exception. A projection/storage failure still withhold
 receipts and checkpoint progress; do not delete raw history or reset checkpoints.
 The additive mapping is capped at 1,024 rows and is never automatically pruned.
 
+This repair is qualified on released RC7 `52fcd86`; see the
+[exact-source record](../audits/rc7-projection-docs.yml). It adds no schema
+migration. Preserve the latest database after accepting new custody. If restoring
+older code that cannot reconcile a raw-carrier collision, keep its bridge disabled
+and retain the raw record, notification mapping and checkpoint for repair forward.
+An unchanged schema does not authorize deleting history or rewinding recovery.
+
+
 Protocol 2 response shapes remain unchanged. A foreign sender retains `legacy`
 local assurance, even though its separate custody record proves the remote origin.
 It creates no local session, operator command, semantic acknowledgement, or wake
@@ -334,8 +342,8 @@ and local cursor history; do not reset checkpoints to manufacture backfill.
 
 ## Negotiated ordinary delivery custody
 
-This section describes the delivery-v1 baseline. The next unqualified RC3
-[local lifecycle construction](message-lifecycle.md) negotiates delivery v2 with
+This section describes delivery v1 for compatibility. The experimental
+[message lifecycle released in RC3](message-lifecycle.md) also supports delivery v2 with
 original channel/inbox epochs after explicit offline cutover. It does not change
 signed federation wire versions, qualify remote expiry/retirement, or infer
 destination handling from silence. Federation references remain pinned.

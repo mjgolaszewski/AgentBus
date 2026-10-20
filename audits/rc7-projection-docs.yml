@@ -1,23 +1,40 @@
 document:
   kind: rc7_construction_audit
   path: audits/rc7-projection-docs.yml
-  status: construction_not_qualified
+  status: released_exact_source_archive_verified_documentation_closeout
 baseline:
   source: b1a46af9efa95ada6151b3c923bca962fca9dfc6
   immutable_runtime: c5c73354dae71d45a8f5177a605c215b90306a23
 pre_edit:
   bounded_context: service_federation
   layer: application_projection_through_existing_store_ports
-  sides: [authenticated_projection_command, documentation]
-  owners: [src/agentbus_federation_inbox_service.py, src/agentbus_federation_bridge_service.py]
-  expected_tests: [raw_carrier_collision, arbitrary_collision_rejection, duplicate_restart, rollback_checkpoint, foreign_scope, ordinary_ancestry]
-  forbidden: [live_database, live_configuration, credentials, checkpoints_by_hand, timestamp_guard_removal, generated_BCF_files_by_hand, immutable_releases]
+  sides:
+  - authenticated_projection_command
+  - documentation
+  owners:
+  - src/agentbus_federation_inbox_service.py
+  - src/agentbus_federation_bridge_service.py
+  expected_tests:
+  - raw_carrier_collision
+  - arbitrary_collision_rejection
+  - duplicate_restart
+  - rollback_checkpoint
+  - foreign_scope
+  - ordinary_ancestry
+  forbidden:
+  - live_database
+  - live_configuration
+  - credentials
+  - checkpoints_by_hand
+  - timestamp_guard_removal
+  - generated_BCF_files_by_hand
+  - immutable_releases
 repair:
   rule: preserve_raw_history_and_allocate_one_distinct_scoped_local_notification_only_for_exact_authenticated_carrier
   custody: original_origin_message_destination_identity_and_payload_hash_remain_unchanged
   checkpoint: no_progress_or_receipt_until_projection_transaction_commits
-  qualification: focused_89PASS_and_genuine_RC6_baseline_reproduction_canonical_pending
-  status: implementation_complete_not_authenticated_release
+  qualification: released_exact_source_and_isolated_archive_verified
+  status: released_exact_source_verified
   canonical_population_correction: runner_and_governed_Python314_selectors_must_both_include_raw_projection_controls_then_installer_manifest_readback
   retained_failure: initial_preparation_installer_PASS_then_authored_log_list_rejected_by_object_schema_no_later_checks_or_provider_effects
 editorial:
@@ -25,4 +42,40 @@ editorial:
   exclusion: BCF_owned_machinery_and_generated_files
   policy: remove_local_operational_notices_channel_and_personal_identifiers_internal_bus_cursors_and_machine_paths_from_public_prose
   evidence: preserve_original_signed_evidence_without_rewriting_signatures_or_historical_claims
-  status: current_inventory_and_changed_spans_reviewed_release_proof_pending
+  status: 100_document_hygiene_inventory_and_dispositions_recorded
+qualification:
+  runtime_source: 52fcd8608994d69f1108eabc0e58769c815c037e
+  tree: 8df44ba60a724a4b8a4e4f5f762ca8088d92416a
+  canonical_source: 0b096dee325cd0c0a96dc18ebd3cb1b3a9fc2d11
+  canonical_terminal: original234_exit0_693.6242875seconds
+  protected_PR: https://github.com/mjgolaszewski/AgentBus/pull/101
+  PR_run: https://github.com/mjgolaszewski/AgentBus/actions/runs/39455399333
+  PR_actual_checkout: 3830c614ac3b4988811494aff0f695aba42a7e09
+  PR_bundle: f28b8837b65ca38978ab1ac305852e0925882ca63a0ea9059886d8e090937344
+  main_run: https://github.com/mjgolaszewski/AgentBus/actions/runs/39456426800
+  main_bundle: 91a624df19cf83551e952301dcba959294eb5a203603f86a3eae479f8d71ddc0
+  authentication: all6_ZIP_digests_each_run_and_independent_original234_truth_PASS_matching_bundle_no_issues
+  execution: all535_source_functions_baseline_PASS_test208_contract533_Python314634_and8_architecture_baselines_19_projection_cases_in_both_relevant_suites
+  workitems: P12-P1-22_and23_closed_workitem_only_P12_active
+archive_install:
+  archive: AgentBus-0.9.1rc7.tar.gz
+  sha256: 8f4721c69bcccf9769a20398d6832a706f63f920aa6532688152028b60f2da1a
+  bytes: 6544311
+  manifest_sha256: 409b8c727cb3e9e7749e9e39ac2e25d56a9525a4024ad82b5c036a829e9dd245
+  sums_sha256: 39491e17c71d8679e2d81bd47397bdc08c769bd2724c26ce58722dfd44d5d503
+  installation_receipt_sha256: 50f4d8c61e4cd5f7b54c33326d6613f5d4f50c0d47a089d9b470260895f034df
+  checks: two_identical_archives_match_authenticated_main_SDK_free621files_modes66module_origins_entrypoints7readonly_queries_enrollment_inherited1307event_backlog_and_raw_carrier_restart_collision_denial_PASS
+  publication: https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc7
+  remote_readback: actual_tag_and_all3_downloaded_asset_bytes_match_qualified_source
+retained_limits:
+- Only an exact complete legacy/unrouted raw carrier qualifies; changed truncated routed assured or unrelated collisions
+  remain blocked
+- No raw-row deletion observation reassignment checkpoint reset new origin identity or automatic authority promotion
+- P12 and Issue75 remain active/open; live owner interoperability and atomic idle-only wake unqualified
+- Offline installation is not a new live federation canary; deployment is a separate owner action
+- Historical evidence and earlier release archives remain immutable; current references do not rewrite Git history
+- This documentation followup never retags or replaces the released52fcd86 runtime or its assets
+documentation_followup:
+  scope: current_release_guidance_and_public_qualification_evidence_only
+  forbidden: runtime_source_tests_locks_versioned_contract_YAML_generated_machinery_by_hand_and_live_state
+  validation: canonical_proof_pending_for_this_documentation_subject
