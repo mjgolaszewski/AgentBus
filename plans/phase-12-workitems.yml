@@ -8,6 +8,15 @@ document:
   path: plans/phase-12-workitems.yml
   phase_id: P12
 workitems:
+- id: P12-P1-28
+  status: DONE
+  summary: Keep elapsed lifecycle outcome flags truthful across explicit settlement
+  priority: P1
+  acceptance:
+  - Expired unclaimed and recovery-required outcomes retain their applicable elapsed flags after settlement and restart; reads do not settle write ACK or renew work
+  - Picked-up work does not expire against its old pickup deadline; handled outcomes do not become recovery work; foreign outcomes remain denied
+  - Expired reply ancestry stays rejected without allocating custody; genuinely new channel-local reports remain possible with distinct request identity
+  acceptance_evidence: [test, contract-test, python314-compatibility, release-smoke]
 - id: P12-P1-27
   status: DONE
   summary: Remove affected project tool and CA bundle pins without bypassing dependency assurance

@@ -82,9 +82,15 @@ Allowlisted Slack operators get private, channel-scoped controls:
 The last three commands preview effects. Append `CONFIRM` to apply a bounded
 batch with a durable operation receipt. Settle distinguishes unclaimed expiry,
 running-work recovery and shared unread expiry. Outcome queries are read-only:
-`deadline_elapsed` and `lease_elapsed` expose elapsed conditions; explicit
-settlement materializes `expired_unclaimed` and `recovery_required`. Reading does
-not settle, renew a lease or acknowledge work. Archive publishes a bounded,
+`deadline_elapsed` applies to due unclaimed work and stays true after settlement
+materializes `expired_unclaimed`. `lease_elapsed` applies to due picked-up work
+and stays true in `recovery_required`. They describe the applicable lifecycle
+condition, not a generic comparison against every historical timestamp: a picked-up
+message does not expire against its old pickup deadline, and handled work has
+neither pending condition. Reading does not settle, renew a lease or acknowledge work.
+An expired reply parent stays rejected. For a genuinely new status report, create
+a new channel-local broadcast; do not replay the expired request under a new UUID.
+Continuing expired actionable work needs a fresh operator request. Archive publishes a bounded,
 compressed, digest-verified payload in the same SQLite database. Purge removes
 only eligible closed history after replay and retention windows, while checking
 claims, ancestry, custody, provider references and federation pins. Unknown

@@ -1,6 +1,6 @@
 document:
   kind: message_lifecycle_contract
-  version: 1.0.1
+  version: 1.0.2
   status: active
   path: contracts/messages/v1/message-lifecycle.contract.yml
 contract:
@@ -47,6 +47,8 @@ states:
   unclaimed_expiry: atomic_with_pickup_and_ACK_one_terminal_sender_visible_outcome
   picked_up_deadline: recovery_required_not_automatic_return_or_resend
   recovery_wake: notification_only_no_automatic_host_submission_or_lease_renewal
+  elapsed_flags: due_unclaimed_or_settled_expired_unclaimed_and_due_picked_up_or_settled_recovery_required_remain_true_until_applicable_terminal_handling
+  elapsed_non_authority: query_only_never_settles_renews_ACKs_or_revives_expired_parent
   return: canonical_queryable_outcome_not_a_recursive_ordinary_message
   late_transition: no_resurrection_of_expired_or_handled_target
   observation_is_not_pickup: [inbox_read, polling, presentation_cleanup, provider_submission, wake_queue_acceptance]

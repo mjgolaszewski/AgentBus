@@ -2,6 +2,8 @@
 
 ## [0.9.1rc9] - 2026-10-20
 
+- Keep recipient elapsed flags true after explicit expiry/recovery settlement; preserve query-only behavior, late completion and expired-parent rejection.
+
 - Pin patched uv 0.13.4 and certifi 2026.10.19 for the upstream emSign trust-store incident; retain audit enforcement and distinguish application dependencies from host/tool trust stores.
 
 - Recover recognized pre-channel wake bindings and missing-chat intents additively from the authenticated profile, retaining IDs, uncertain attempts, host facts, history and ACK boundaries. Conflicting scope remains rejected.

@@ -302,8 +302,8 @@ class MessageLifecycleStore:
                 raise LifecycleRejected(404, 'Recipient outcome unavailable in this scope')
             result = dict(row)
             current = self.now(instant)
-            result['deadline_elapsed'] = result['state'] == 'unclaimed' and result['deadline'] <= current
-            result['lease_elapsed'] = result['state'] == 'picked_up' and result['lease_until'] <= current
+            result['deadline_elapsed'] = result['state'] in {'unclaimed', 'expired_unclaimed'} and result['deadline'] <= current
+            result['lease_elapsed'] = result['state'] in {'picked_up', 'recovery_required'} and result['lease_until'] <= current
             return result
 
     def outcome(self, principal, cursor):

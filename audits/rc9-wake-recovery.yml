@@ -3,9 +3,9 @@ document:
   path: audits/rc9-wake-recovery.yml
   status: construction
 scope:
-  context: client wake adapter and authored consumer documentation
+  context: client wake adapter message lifecycle outcome read model and authored consumer documentation
   layer: existing infrastructure state loader with pure intent compatibility projection
-  production: [src/agentbus_codex_wake_client.py, src/agentbus_codex_wake_intent_client.py]
+  production: [src/agentbus_codex_wake_client.py, src/agentbus_codex_wake_intent_client.py, src/agentbus_message_lifecycle_service.py]
   controls: [tests/test_wake_intent_lifecycle.py, tests/test_codex_wake_contract.py, tests/test_channel_projection.py]
   forbidden: [live state hand edits, host rebind, writer takeover, forced turns, evidence deletion, generated BCF hand edits, unrelated dependency changes]
 recovery:
@@ -16,6 +16,12 @@ recovery:
   persistence: Existing binding lock and atomic JSON; one additive write before normal live processing; no query writes
   preserved: [intent_id, attempt_id, thread, generation, state, candidate_batch, transitions, host_facts, counters, ack_boundaries]
   rejected: [partial_unknown_shapes, explicit_nulls, conflicting_scope, malformed_records, foreign_inbox_projections]
+outcome_status_repair:
+  defect: Elapsed flags became false when explicit settlement materialized expired_unclaimed or recovery_required
+  correction: Preserve the applicable elapsed condition in its settled state; picked-up work does not use its old pickup deadline and handled work has no pending elapsed condition
+  consumers_traced: [recipient_outcome, ACK_batch, wake_reference_filter]
+  preserved: [read_only_queries, session_channel_scope, late_completion, expired_parent_rejection, original_request_identity]
+  controls: tests/test_lifecycle_outcome_clock.py plus existing lifecycle client and wake controls; declared in all producers with two negative mutations
 trust:
   assumption: trusted workspace with trusted non-hostile agents and operators
   enforcement: AgentBus service session channel routing control and rate checks

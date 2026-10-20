@@ -18,6 +18,9 @@ summary:
   - 57 affected wake cases, Ruff and governance YAML validation pass; computed closure remains unclaimed
   - Actual pinned AHP reducer passes168 upstream chat fixtures and8 targeted controls; drift and semantic queue-order mutants reject
 workitems:
+- id: P12-P1-28
+  status: DONE
+  summary: Preserve truthful elapsed outcome flags after expiry settlement; qualification pending
 - id: P12-P1-27
   status: DONE
   summary: Patched project trust dependencies materialized and audited; container guard and final canonical proof pending
@@ -112,6 +115,7 @@ execution_evidence:
   planned_commands:
   - canonical bcf ci submit after shared native capacity is available
   executed_commands:
+  - "Pre-edit status repair scope: message lifecycle service read model and versioned lifecycle contract; command authorization/expiry admission and ACK semantics stay unchanged. Trace shows deadline_elapsed used by recipient outcome and ACK batch, lease_elapsed consumed by wake filtering; keep picked-up/handled semantics while preserving true elapsed flags for settled expired_unclaimed/recovery_required. New focused test module avoids enlarging existing oversized lifecycle tests; wire producer and declared node selections, owner-generated manifests only. No live clocks leases custody checkpoints or expired-parent policy edits. Expected tests cover boundary settlement restart query nonmutation foreign scope late completion and intentional expired-parent410 with genuinely new report allowed."
   - "Operator corrective review rejected initial RC9 README as over-cut: restore the groovy60s VW Microbus creative coder crew, all3 original images, both Mermaid diagrams and prominent upcoming AHP/native-queue wake candidate. Keep explicit trusted non-hostile workspace boundary, critical onboarding facts, exact-session scope and unqualified live atomic-admission limits; RC chronology remains in changelog. Documentation-only follow-up on merged87266e1; runtime tests pins SDK generated artifacts and live state forbidden. Review full corrected README and update editorial hashes; existing3 onboarding cases plus canonical graph are the expected checks."
   - "Initial RC9 PR104 normally merged87266e1/tree54040fbb; protected39512434056 and exact-main39513072909 all6PASS. Six ZIPs per run authenticated; original234 independently recomputed synthetic5d1c385 and main87266e1 truth PASS/noissues. Bounded archive packet terminal1/28.255s after two deterministic archives matched main566f0f42: isolated offline install lacked the pinned Certifi wheel in newer UV cache. No network attempted; first stderr isolated parent and original source retained,624files unchanged Q/EOF/reap all3handles absent originalfencefree. No release publication or live upgrade; operator README correction requires a fresh final subject and eventual qualified installation."
   - "RC9 proof-input preparation083b699 terminal0/45.594s:3 existing onboarding contract tests and original234 reconcile governance source624 PASS. Exact five-file documentation subject declaration accepted; no new gate or SDK behavior. Only installer timing observations changed, retained under owner provenance; no authored runtime test or pin drift during execution. Q/EOF/reap known handles absent and original fence released. Freeze owner output plus execution record for canonical submission; all first failures preserved and protected/main/archive/install proof remains pending."
