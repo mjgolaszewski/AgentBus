@@ -23,7 +23,10 @@ def recover_legacy_scope(binding: dict, profile: dict | None = None) -> dict:
     legacy = {"service_url", "inbox_id", "channel"}
     if absent and absent != legacy:
         raise ClientError("Legacy wake binding scope cannot be recovered; evidence retained")
-    expected = scope(profile) if profile is not None else {
+    needs_recovery = bool(absent) or any(
+        isinstance(binding.get(name), dict) and set(FIELDS) - binding[name].keys()
+        for name in ("wake_intent", "last_attempt"))
+    expected = scope(profile) if profile is not None and needs_recovery else {
         key: binding[key] for key in FIELDS if key in binding}
     if any(key in binding and binding[key] != value for key, value in expected.items()):
         raise ClientError("Wake binding scope differs from the authenticated profile; evidence retained")

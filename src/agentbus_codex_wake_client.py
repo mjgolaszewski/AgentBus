@@ -263,21 +263,6 @@ def bind(values: dict[str, str], identity: str, thread_id: str,
         if prior and (prior.get("last_attempt") or {}).get("state") in {"starting", "uncertain"}:
             raise ClientError("Resolve the uncertain prior wake before rebinding")
         if prior:
-            expected = scope(profile)
-            legacy = any(key not in prior for key in FIELDS)
-            if legacy and all(key not in prior or prior[key] == expected[key] for key in FIELDS):
-                attempt = prior.get("last_attempt")
-                if attempt and any(key in attempt and attempt[key] != expected[key] for key in FIELDS):
-                    raise ClientError("Foreign wake attempt scope; evidence retained")
-                intent = prior.get("wake_intent")
-                if intent and any(key in intent and intent[key] != expected[key] for key in FIELDS):
-                    raise ClientError("Foreign wake intent scope; evidence retained")
-                prior.update(expected)
-                if attempt:
-                    attempt.update(expected)
-                if intent:
-                    intent.update(expected)
-                _save(path, prior)
             verify_projection(prior, profile)
             if prior.legacy_scope_recovered:
                 _save(path, prior)
