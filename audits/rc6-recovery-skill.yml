@@ -48,4 +48,6 @@ assurance:
   new_tests_in_existing_selected_files: [tests/test_federation_adapter.py, tests/test_federation_bridge.py]
   release_gate: scripts/run_project_gate.py_checks_exact_three_skill_files_after_isolated_copy
   custody: original_certified_BCF2.3.4_canonical_submit_protected_PR_exact_main_archive_install_and_custodian_rollout_pending
-  evidence: []
+  evidence:
+  - Initial2398b54 preparation terminal1; baseline negative confirmed;115PASS3FAIL in legacy-port and multi-cycle test assumptions; lint types and skill validate PASS
+  - Reconcile and YAML rejected two authored line budgets before writes; raw private diagnostics retained without provider or live effects

@@ -93,6 +93,7 @@ execution_evidence:
   planned_commands:
   - canonical bcf ci submit after shared native capacity is available
   executed_commands:
+  - "RC6 initial preparation2398b54 terminal1/58.911s: genuine baseline negative rejects fresh-work starvation;115 behavioral cases pass, two legacy-port assumptions and one new scan-loop assumption fail. Ruff/mypy68files/skill validation pass. Reconcile/YAML reject two authored line-budget overages before generated changes. Preserve raw local diagnostics as non-authoritative retention; correct test port separation and cycle oracle, condense authored budgets without exceptions; original fence released with Q/EOF/reap/known PIDs absent. No production change needed for these oracle corrections."
   - "RC6 source preparation from c72e1aa under operator DDSBZDT: custodian confirms13669 priority native-allocation/install ownership and unchanged live state; bounded source repair and self-contained skill only. Provider incident13662 retained; scan admits oldest prefix only after reverse coverage, fresh-only submissions during catch-up and exact-attempt retry coverage. Canonical proof, archive install and live recovery remain pending; no runtime patch, checkpoint reset or resend. Product uv lock refreshed offline with pinned interpreter and unchanged dependencies."
   - 'Verified project interpreter pytest: 57 affected wake cases PASS'
   - 'Verified project interpreter ruff check tests/test_owner_wake_qualification.py: PASS'

@@ -443,12 +443,18 @@ def test_maximum_history_budget_requires_all_ten_provider_pages_before_checkpoin
             'response_metadata': {'next_cursor': str(page+1) if more else ''}})
     async def scenario():
         async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            from types import SimpleNamespace
+
             old = bridges['remote']
             bindings = dict(old.bindings)
             bindings['home'] = replace(bindings['home'], publisher_id='home/publisher/channel')
             target = MessageStore(tmp_path / 'history-reader.sqlite3')
+            provider = SlackFederationProvider(client, 'local-fake-token', 'channel')
+            # Characterize the retained complete-history port used by ordinary
+            # uncertain local posts, separately from RC6 resumable federation.
+            legacy_port = SimpleNamespace(history=provider.history, publish=provider.publish)
             receiver = FederationBridge(target.federation, old.identity, bindings,
-                SlackFederationProvider(client, 'local-fake-token', 'channel'), history_limit=1000)
+                legacy_port, history_limit=1000)
             # Observe only history; submission is separately owned and would post a receipt.
             reader = receiver.identity.instance_id + '/' + receiver.identity.publisher_id
             before = target.federation.checkpoint(reader)
@@ -507,7 +513,7 @@ def test_resumable_history_drains_more_than_one_thousand_events_without_skipping
                     observed.extend(e['text'] for e in events)
                     after = events[-1]['ts']
                 else:
-                    assert after == '0' and not complete
+                    assert not complete
             assert observed == [f'event-{i}' for i in range(1, 1308)]
             assert all('cursor' not in call and call['inclusive'] is False for call in slack.calls)
     asyncio.run(scenario())

@@ -1027,9 +1027,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 306
-  line_count: 306
-  sha256: 38ea00dd89183c0c60263ffe84659a1f0f30b6069aad19a5e1076353582cc043
+    - 307
+  line_count: 307
+  sha256: 111e46658e91a5766b5e989013fec48427c486734a533ea220567e5fa81048bc
   disposition: updates
   findings:
   - RC5 publication record reviewed against exact ce31aa5 proof; runtime authority remains bound to that released subject.
@@ -1100,16 +1100,18 @@ documents:
     remains distinct from this candidate.
   - RC6 complete new text or changed lines reviewed in surrounding context; preserve immutable RC5 evidence, channel
     authority, bounded recovery and unqualified host wake.
+  - 'RC6 diagnostic disposition reviewed: retain actual failed checks, correct test assumptions and compact authored
+    budgets; no evidence or authority exception.'
   verification: RC6 changed text reviewed; exact-source proof and custodian rollout pending
-  baseline_review_sha256: f948ad1ba381ee35d2de573d7077562747c84e6d6a08123451a6dc9c5b8533dd
+  baseline_review_sha256: 38ea00dd89183c0c60263ffe84659a1f0f30b6069aad19a5e1076353582cc043
   review_basis: Unchanged full-line baseline verified at c72e1aa; RC6 changes reviewed in context
 - document: plans/build-plan.yml
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 101
-  line_count: 101
-  sha256: 4a1aa48f27a0196144f74bc14b3318c23e5a156a75adf77b8eab8f073d23259c
+    - 100
+  line_count: 100
+  sha256: 0b81c7c2a888c822e69bc3fa4e7e4eae887a46896902a4a2571a54e94bc7eccb
   disposition: updates
   findings:
   - RC4 follow-up changed lines reviewed in context against hash-verified 2c54adf8; diagnostic outcomes remain exact-subject
@@ -1126,8 +1128,10 @@ documents:
     all changed lines inspected against hash-matched previous full-document review
   - RC6 complete new text or changed lines reviewed in surrounding context; preserve immutable RC5 evidence, channel
     authority, bounded recovery and unqualified host wake.
+  - 'RC6 diagnostic disposition reviewed: retain actual failed checks, correct test assumptions and compact authored
+    budgets; no evidence or authority exception.'
   verification: RC6 changed text reviewed; exact-source proof and custodian rollout pending
-  baseline_review_sha256: 707bf6f78f03c580d01c29d85f91955a42ed1d595c8d7a8ff9d67795d3ee6ee8
+  baseline_review_sha256: 4a1aa48f27a0196144f74bc14b3318c23e5a156a75adf77b8eab8f073d23259c
   review_basis: Unchanged full-line baseline verified at c72e1aa; RC6 changes reviewed in context
 - document: plans/phase-01-plan.yml
   review_status: line_by_line_reviewed
@@ -1499,9 +1503,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 41
-  line_count: 41
-  sha256: f351acd0529c17578f6fa97037a60867992111620ab6769e1ab41de54d80b79c
+    - 40
+  line_count: 40
+  sha256: 8e06d1d18f19726fe6c5ce9f1988208eca799a43314e758d9d97083f3dcaae25
   disposition: updates
   findings:
   - RC4 follow-up changed lines reviewed in context against hash-verified 2c54adf8; diagnostic outcomes remain exact-subject
@@ -1521,8 +1525,10 @@ documents:
     of hidden-command disclosure or private narrative identifiers.
   - RC6 complete new text or changed lines reviewed in surrounding context; preserve immutable RC5 evidence, channel
     authority, bounded recovery and unqualified host wake.
+  - 'RC6 diagnostic disposition reviewed: retain actual failed checks, correct test assumptions and compact authored
+    budgets; no evidence or authority exception.'
   verification: RC6 changed text reviewed; exact-source proof and custodian rollout pending
-  baseline_review_sha256: 8b80e72707440e4b98650b8dd91d6c78432327c00285a53a2499326c24e79ea2
+  baseline_review_sha256: f351acd0529c17578f6fa97037a60867992111620ab6769e1ab41de54d80b79c
   review_basis: Unchanged full-line baseline verified at c72e1aa; RC6 changes reviewed in context
 - document: LICENSE
   review_status: line_by_line_reviewed
@@ -1671,14 +1677,17 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 51
-  line_count: 51
-  sha256: 019ffc0738f509d8cdeb8b2c2455b91ba8143acc2fc77f31c82215bce17f4e11
+    - 53
+  line_count: 53
+  sha256: d080c4fb4ea9ae960aeecd5d82ffaa36afa7042b64ed0374276d2a1e05871017
   disposition: new
   verification: RC6 changed text reviewed; exact-source proof and custodian rollout pending
   findings:
   - RC6 complete new text or changed lines reviewed in surrounding context; preserve immutable RC5 evidence, channel
     authority, bounded recovery and unqualified host wake.
+  - 'RC6 diagnostic disposition reviewed: retain actual failed checks, correct test assumptions and compact authored
+    budgets; no evidence or authority exception.'
+  baseline_review_sha256: 019ffc0738f509d8cdeb8b2c2455b91ba8143acc2fc77f31c82215bce17f4e11
 summary:
   documents_reviewed: 98
   pending_line_reviews: 0
