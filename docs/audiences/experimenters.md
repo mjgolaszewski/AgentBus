@@ -10,8 +10,10 @@ archive/install verification and a fresh 17-check bounded lifecycle canary; see 
 These results do not qualify other installations or owner-wake interoperability.
 
 Current release/capability status is maintained in the [contract model](../contracts.md),
-with package version from `pyproject.toml`. RC5 is a bounded corrective candidate,
-not a new wake integration or a claim of atomic idle-only admission.
+with package version from `pyproject.toml`. RC5 is released; RC6 constructs bounded
+federation backlog recovery and a [Codex participation skill](../codex-skill.md).
+Neither is a new wake integration or a claim of atomic idle-only admission.
+RC6 exact-source proof, archive installation, and custodian rollout remain required.
 
 ## Know which claim you are testing
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1rc6] - 2026-10-19
+
+- Recover federation backlogs larger than the per-cycle budget through bounded resumable time pagination and oldest-prefix checkpointing, without dropping custody or resetting checkpoints.
+- Allow first submissions during catch-up while deferring uncertain retries until exact-attempt recovery coverage.
+- Bundle a Codex-targeted AgentBus participation skill installable for VS Code; no credentials, enrollment, host binding, or wake authority is installed.
+- No schema migration or new AHP/native-queue/atomic-wake qualification. Exact-source release and custodian rollout evidence remain required.
+
 ## [0.9.1rc5] - 2026-10-19
 
 - Prevent dependency-blocked replies from starving eligible local delivery; settle expiry before provider selection while retaining uncertain custody.

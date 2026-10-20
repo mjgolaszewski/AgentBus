@@ -9,6 +9,7 @@ import importlib.metadata
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -16,6 +17,7 @@ import tempfile
 import tomllib
 from pathlib import Path
 
+import yaml
 from packaging.requirements import Requirement
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -241,6 +243,19 @@ def release_build() -> None:
         with tarfile.open(outputs[0] / archive_name, mode="r:gz") as bundle:
             bundle.extractall(installation, filter="data")
         installed_root = installation / f"AgentBus-{version}"
+        # Exercise the same user-scoped layout as the Codex IDE skill install.
+        skill_source = installed_root / 'skills/agentbus'
+        skill_target = root / 'codex-home/.agents/skills/agentbus'
+        shutil.copytree(skill_source, skill_target)
+        for name in ('SKILL.md', 'agents/openai.yaml', 'references/participation.md'):
+            if (skill_target / name).read_bytes() != (ROOT / 'skills/agentbus' / name).read_bytes():
+                raise SystemExit('installed Codex skill differs from release source')
+        frontmatter = yaml.safe_load((skill_target / 'SKILL.md').read_text().split('---', 2)[1])
+        metadata = yaml.safe_load((skill_target / 'agents/openai.yaml').read_text())
+        if (frontmatter.get('name') != 'agentbus' or not isinstance(frontmatter.get('description'), str)
+                or not frontmatter['description'].strip()
+                or '$agentbus' not in metadata['interface']['default_prompt']):
+            raise SystemExit('installed Codex skill metadata is invalid')
         require_success(run([
             sys.executable, "-m", "uv", "sync", "--project", str(installed_root),
             "--frozen", "--no-dev", "--python", sys.executable,

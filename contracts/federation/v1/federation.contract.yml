@@ -90,8 +90,13 @@ contracts:
     admission: exact_integer_1_through_1000_before_binding_or_provider_work
     provider_page_events: 100
     provider_page_ceiling: 10
-    coverage: complete_history_after_existing_checkpoint_before_advancing_to_actual_observed_reference
-    overflow: retain_custody_checkpoint_and_attempt_budget_no_automatic_reset_or_partial_coverage_claim
+    coverage: complete_reverse_scan_before_admitting_oldest_prefix_then_checkpoint_only_actual_admitted_reference
+    continuation: process_local_exclusive_latest_timestamp_and_oldest_candidates_resume_across_cycles_restart_rescans_unchanged_durable_checkpoint
+    scan_budget: at_most_ten_pages_and_fifteen_seconds_per_cycle_with_eight_MiB_retained_candidates
+    prefix_budget: retain_at_most_history_limit_oldest_events_reduce_prefix_for_byte_budget_refetch_discarded_newer_events
+    submission_during_catchup: unattempted_only_filtered_before_pending_page_limit_no_uncertain_retry
+    uncertain_retry: complete_coverage_and_exact_attempt_generation_captured_before_scan_no_retry_of_attempt_created_during_scan
+    overflow: no_checkpoint_reset_or_bounds_increase_no_schema_change_provider_retention_and_repeated_restarts_remain_limits
   custody_capacity:
     retained_rows_per_table: 1024
     tables: [bridge_obligations, federation_origin_messages, federated_messages]

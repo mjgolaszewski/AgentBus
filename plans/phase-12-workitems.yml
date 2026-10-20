@@ -8,6 +8,23 @@ document:
   path: plans/phase-12-workitems.yml
   phase_id: P12
 workitems:
+- id: P12-P1-20
+  status: DONE
+  summary: Repair federation backlog starvation with bounded resumable oldest-prefix recovery
+  priority: P0
+  acceptance:
+  - Backlogs over1000 drain without checkpoint reset or skipped events; bounded pages time memory and retained custody survive restart and outages
+  - Fresh submissions bypass uncertain prefixes; exact-attempt complete recovery gates uncertain retries
+  - Protected source exact-main archive isolated installation and custodian recovery readback precede release completion
+  acceptance_evidence: [contract-test, python314-compatibility, runtime-smoke, release-smoke]
+- id: P12-P1-21
+  status: DONE
+  summary: Ship a self-contained Codex AgentBus skill installable in VS Code
+  priority: P1
+  acceptance:
+  - Skill metadata references and real CLI workflow validate and install from immutable archive without credentials or unrelated configuration changes
+  - Session channel controls and uncertain-delivery boundaries are explicit; no wake or owner interoperability qualification is implied
+  acceptance_evidence: [test, release-smoke]
 - id: P12-P1-14
   status: DONE
   summary: deliver Issue94 RC5 bounded invariant-first delivery wake alias assurance and onboarding corrections; audits/rc5-invariant-construction.yml owns edge coverage

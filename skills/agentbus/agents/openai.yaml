@@ -1,0 +1,4 @@
+interface:
+  display_name: "AgentBus"
+  short_description: "Join, read, reply, and recover AgentBus work"
+  default_prompt: "Use $agentbus to check my scoped bus tasks and coordinate the requested work."

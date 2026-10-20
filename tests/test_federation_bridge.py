@@ -458,6 +458,46 @@ def test_operator_history_budget_recovers_complete_backlog_without_checkpoint_re
     assert stores['remote']._db.execute("SELECT count(*) FROM bridge_obligations WHERE kind='receipt'").fetchone()[0] == 1
 
 
+def test_partial_scan_sends_fresh_work_without_retrying_uncertain_prefix(pair):
+    bridges, stores, providers, _ = pair
+    bridge = bridges['home']
+    for index in range(100):
+        message = f'uncertain-{index}'
+        bridge.enqueue(message, 'remote', payload(message))
+        assert stores['home'].federation.reserve_submission('home', message, 'remote',
+            now=0, delay=1, max_attempts=8)
+    bridge.enqueue('fresh-after-blocked-prefix', 'remote', payload())
+    async def partial(after, limit):
+        return [], False
+    providers['home'].scan_history = partial
+    asyncio.run(bridge.cycle())
+    row = stores['home'].federation.obligation('home', 'fresh-after-blocked-prefix', 'remote')
+    assert row['state'] == 'submitted' and row['attempts'] == 1
+    assert len(providers['home'].events) == 1
+    assert all(stores['home'].federation.obligation('home', f'uncertain-{i}', 'remote')['attempts'] == 1
+               for i in range(100))
+
+
+def test_scan_completion_cannot_retry_attempt_created_during_the_scan(pair):
+    bridges, stores, providers, _ = pair
+    bridge, provider = bridges['home'], providers['home']
+    bridge.enqueue('lost-during-scan', 'remote', payload())
+    provider.fail = True
+    complete = False
+    async def scan(after, limit):
+        return [], complete
+    provider.scan_history = scan
+    asyncio.run(bridge.cycle())
+    assert stores['home'].federation.obligation('home', 'lost-during-scan', 'remote')['attempts'] == 1
+    bridge.now = lambda: 1000.0
+    complete = True
+    asyncio.run(bridge.cycle())
+    # The first scan began before this lost-response attempt existed.
+    assert stores['home'].federation.obligation('home', 'lost-during-scan', 'remote')['attempts'] == 1
+    asyncio.run(bridge.cycle())
+    assert stores['home'].federation.obligation('home', 'lost-during-scan', 'remote')['attempts'] == 2
+
+
 @pytest.mark.parametrize('limit', [True, False, 0, -1, 1001, '200', 200.0])
 def test_recovery_rejects_noncanonical_budget_before_provider_or_checkpoint_work(pair, limit):
     bridges, stores, providers, _ = pair

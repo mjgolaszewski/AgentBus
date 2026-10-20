@@ -443,12 +443,18 @@ def test_maximum_history_budget_requires_all_ten_provider_pages_before_checkpoin
             'response_metadata': {'next_cursor': str(page+1) if more else ''}})
     async def scenario():
         async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            from types import SimpleNamespace
+
             old = bridges['remote']
             bindings = dict(old.bindings)
             bindings['home'] = replace(bindings['home'], publisher_id='home/publisher/channel')
             target = MessageStore(tmp_path / 'history-reader.sqlite3')
+            provider = SlackFederationProvider(client, 'local-fake-token', 'channel')
+            # Characterize the retained complete-history port used by ordinary
+            # uncertain local posts, separately from RC6 resumable federation.
+            legacy_port = SimpleNamespace(history=provider.history, publish=provider.publish)
             receiver = FederationBridge(target.federation, old.identity, bindings,
-                SlackFederationProvider(client, 'local-fake-token', 'channel'), history_limit=1000)
+                legacy_port, history_limit=1000)
             # Observe only history; submission is separately owned and would post a receipt.
             reader = receiver.identity.instance_id + '/' + receiver.identity.publisher_id
             before = target.federation.checkpoint(reader)
@@ -465,3 +471,212 @@ def test_maximum_history_budget_requires_all_ten_provider_pages_before_checkpoin
             target.close()
     asyncio.run(scenario())
     assert len(calls) == 10 and all(c['limit'] == 100 for c in calls)
+
+
+class HistorySlack:
+    """Slack's documented newest-first, exclusive time pagination."""
+
+    def __init__(self, count):
+        self.messages = [{'ts': f'{i}.000001', 'text': f'event-{i}',
+                          'app_id': 'home', 'bot_id': 'publisher'} for i in range(1, count + 1)]
+        self.calls = []
+
+    def __call__(self, request):
+        from decimal import Decimal
+
+        body = json.loads(request.content)
+        self.calls.append(body)
+        assert request.url.path.endswith('conversations.history')
+        selected = sorted([m for m in self.messages
+            if Decimal(m['ts']) > Decimal(body['oldest'])
+            and ('latest' not in body or Decimal(m['ts']) < Decimal(body['latest']))],
+            key=lambda m: Decimal(m['ts']), reverse=True)
+        return httpx.Response(200, json={'ok': True, 'messages': selected[:body['limit']],
+            'has_more': len(selected) > body['limit']})
+
+
+def test_resumable_history_drains_more_than_one_thousand_events_without_skipping():
+    async def scenario():
+        slack = HistorySlack(1307)
+        async with httpx.AsyncClient(transport=httpx.MockTransport(slack)) as client:
+            provider = SlackFederationProvider(client, 'local-fake-token', 'channel')
+            after, observed, cycles = '0', [], 0
+            complete = False
+            while not complete:
+                before = len(slack.calls)
+                events, complete = await provider.scan_history(after, 100)
+                assert len(slack.calls) - before <= 10
+                assert len(events) <= 100
+                cycles += 1
+                assert cycles < 40
+                if events:
+                    observed.extend(e['text'] for e in events)
+                    after = events[-1]['ts']
+                else:
+                    assert not complete
+            assert observed == [f'event-{i}' for i in range(1, 1308)]
+            assert all('cursor' not in call and call['inclusive'] is False for call in slack.calls)
+    asyncio.run(scenario())
+
+
+def test_restart_and_new_arrivals_cannot_skip_oldest_recovery_batch():
+    async def scenario():
+        slack = HistorySlack(1101)
+        async with httpx.AsyncClient(transport=httpx.MockTransport(slack)) as client:
+            provider = SlackFederationProvider(client, 'local-fake-token', 'channel')
+            assert await provider.scan_history('0', 100) == ([], False)
+            slack.messages.append({'ts': '1102.000001', 'text': 'new-arrival'})
+            before = len(slack.calls)
+            events, complete = await provider.scan_history('0', 100)
+            assert events[0]['ts'] == '1.000001' and events[-1]['ts'] == '100.000001'
+            assert not complete and 'latest' in slack.calls[before]
+            # Lose all volatile scan state: no durable checkpoint was advanced.
+            restarted = SlackFederationProvider(client, 'local-fake-token', 'channel')
+            before = len(slack.calls)
+            assert await restarted.scan_history('0', 100) == ([], False)
+            assert 'latest' not in slack.calls[before]
+            recovered, complete = await restarted.scan_history('0', 100)
+            assert recovered == events and not complete
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize('failure', ['foreign', 'repeated', 'unordered', 'empty-more'])
+def test_resumable_history_rejects_foreign_or_nonprogressing_page_and_rescans(failure):
+    async def scenario():
+        slack = HistorySlack(101)
+        def respond(request):
+            body = json.loads(request.content)
+            if len(slack.calls) == 1:
+                bad = {'ts': '1.000001', 'text': 'untrusted'}
+                if failure == 'foreign':
+                    bad['channel'] = 'foreign'
+                elif failure == 'repeated':
+                    bad['ts'] = body['latest']
+                elif failure == 'unordered':
+                    return httpx.Response(200, json={'ok': True, 'messages': [bad, {'ts': '1.000002'}]})
+                return httpx.Response(200, json={'ok': True,
+                    'messages': [] if failure == 'empty-more' else [bad],
+                    'has_more': failure == 'empty-more'})
+            return slack(request)
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            provider = SlackFederationProvider(client, 'local-fake-token', 'channel')
+            with pytest.raises(ProviderUnavailable):
+                await provider.scan_history('0', 100)
+            assert provider._scan is None
+            client._transport = httpx.MockTransport(slack)
+            before = len(slack.calls)
+            events, complete = await provider.scan_history('0', 100)
+            assert 'latest' not in slack.calls[before]
+            assert events[0]['ts'] == '1.000001' and not complete
+    asyncio.run(scenario())
+
+
+def test_resumable_history_transient_failure_retains_last_valid_time_page():
+    async def scenario():
+        slack = HistorySlack(1101)
+        fail = True
+        def respond(request):
+            nonlocal fail
+            if fail and len(slack.calls) == 3:
+                fail = False
+                return httpx.Response(429, headers={'Retry-After': '120'})
+            return slack(request)
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            provider = SlackFederationProvider(client, 'local-fake-token', 'channel')
+            with pytest.raises(ProviderUnavailable) as caught:
+                await provider.scan_history('0', 100)
+            assert caught.value.retry_after == 120
+            continuation = provider._scan['latest']
+            before = len(slack.calls)
+            events, complete = await provider.scan_history('0', 100)
+            assert slack.calls[before]['latest'] == continuation
+            assert events[0]['ts'] == '1.000001' and not complete
+    asyncio.run(scenario())
+
+
+def test_resumable_history_deadline_retains_progress_without_returning_partial_events(monkeypatch):
+    from src import agentbus_federation_slack_service as adapter
+
+    async def scenario():
+        slack = HistorySlack(201)
+        delayed = False
+        async def respond(request):
+            nonlocal delayed
+            if len(slack.calls) == 1 and not delayed:
+                delayed = True
+                await asyncio.sleep(1)
+            return slack(request)
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            provider = SlackFederationProvider(client, 'local-fake-token', 'channel')
+            monkeypatch.setattr(adapter, 'HISTORY_SCAN_SECONDS', 0.01)
+            with pytest.raises(ProviderUnavailable):
+                await provider.scan_history('0', 100)
+            assert provider._scan['latest'] == '102.000001'
+            monkeypatch.setattr(adapter, 'HISTORY_SCAN_SECONDS', 15)
+            events, complete = await provider.scan_history('0', 100)
+            assert events[0]['ts'] == '1.000001' and events[-1]['ts'] == '100.000001'
+            assert not complete
+    asyncio.run(scenario())
+
+
+def test_resumable_history_byte_budget_keeps_oldest_prefix(monkeypatch):
+    from src import agentbus_federation_slack_service as adapter
+
+    async def scenario():
+        slack = HistorySlack(8)
+        async with httpx.AsyncClient(transport=httpx.MockTransport(slack)) as client:
+            provider = SlackFederationProvider(client, 'local-fake-token', 'channel')
+            # Bound retained normalized candidates independently of raw HTTP size.
+            monkeypatch.setattr(adapter, 'MAX_PROVIDER_RESPONSE_BYTES', 300)
+            request = provider._request
+            async def unbounded_raw(method, body):
+                monkeypatch.setattr(adapter, 'MAX_PROVIDER_RESPONSE_BYTES', 8_388_608)
+                result = await request(method, body)
+                monkeypatch.setattr(adapter, 'MAX_PROVIDER_RESPONSE_BYTES', 300)
+                return result
+            provider._request = unbounded_raw
+            events, complete = await provider.scan_history('0', 100)
+            assert not complete and 0 < len(events) < 8
+            assert [e['text'] for e in events] == [f'event-{i}' for i in range(1, len(events) + 1)]
+            assert sum(len(json.dumps(e, ensure_ascii=True).encode()) for e in events) <= 300
+    asyncio.run(scenario())
+
+
+def test_bridge_checkpoint_applies_only_oldest_admitted_prefix_after_full_scan(pair, tmp_path):
+    from dataclasses import replace
+
+    from src.agentbus_federation_bridge_service import FederationBridge
+
+    bridges, stores, _, _ = pair
+    for name in ('oldest', 'newest'):
+        bridges['home'].enqueue(name, 'remote', bridge_tests.payload(name))
+    slack = HistorySlack(1101)
+    for index, name in ((0, 'oldest'), (1100, 'newest')):
+        slack.messages[index]['text'] = stores['home'].federation.obligation('home', name, 'remote')['payload']
+    async def scenario():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(slack)) as client:
+            old = bridges['remote']
+            bindings = dict(old.bindings)
+            bindings['home'] = replace(bindings['home'], publisher_id='home/publisher/channel')
+            target = MessageStore(tmp_path / 'resumable-reader.sqlite3')
+            try:
+                receiver = FederationBridge(target.federation, old.identity, bindings,
+                    SlackFederationProvider(client, 'local-fake-token', 'channel'))
+                reader = receiver.identity.instance_id + '/' + receiver.identity.publisher_id
+                await receiver.recover_once()
+                assert target.federation.checkpoint(reader) == '0'
+                assert not receiver._recovery_complete
+                await receiver.recover_once()
+                assert target.federation.checkpoint(reader) == '100.000001'
+                assert target._db.execute('SELECT origin_message_id FROM federated_messages').fetchall()[0][0] == 'oldest'
+                for _ in range(30):
+                    await receiver.recover_once()
+                    if receiver._recovery_complete:
+                        break
+                assert receiver._recovery_complete
+                assert target.federation.checkpoint(reader) == '1101.000001'
+                assert {row[0] for row in target._db.execute('SELECT origin_message_id FROM federated_messages')} == {'oldest', 'newest'}
+                assert target._db.execute("SELECT count(*) FROM bridge_obligations WHERE kind='receipt'").fetchone()[0] == 2
+            finally:
+                target.close()
+    asyncio.run(scenario())

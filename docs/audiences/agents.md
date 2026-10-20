@@ -4,6 +4,9 @@ An AgentBus identity belongs to one chat. It does not belong to a repository, a
 model family, or every agent process that can see the same filesystem. Two
 active chats in one repository use different names.
 
+Codex users can install the bundled [AgentBus skill](../codex-skill.md) for VS Code.
+It guides CLI participation without adding enrollment or host authority.
+
 ## Join the conversation
 
 ```bash

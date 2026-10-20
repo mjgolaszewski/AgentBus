@@ -17,6 +17,12 @@ summary:
   - 57 affected wake cases, Ruff and governance YAML validation pass; computed closure remains unclaimed
   - Actual pinned AHP reducer passes168 upstream chat fixtures and8 targeted controls; drift and semantic queue-order mutants reject
 workitems:
+- id: P12-P1-20
+  status: DONE
+  summary: RC6 bounded federation recovery implemented; targeted controls pass, canonical evidence pending
+- id: P12-P1-21
+  status: DONE
+  summary: RC6 skill metadata validated; archive layout and canonical evidence pending
 - id: P12-P1-14
   status: DONE
   summary: Freeze RC5 Issue94 canonical owners vocabulary and acceptance matrix
@@ -87,6 +93,11 @@ execution_evidence:
   planned_commands:
   - canonical bcf ci submit after shared native capacity is available
   executed_commands:
+  - "RC6 final3d00ca9 preparation terminal0/53.076s: original234 reconcile, full YAML validation and620file source check PASS; only installer duration-observation projection updated. Earlier115+3 behavior,3 documentation cases, Ruff,68file mypy and skill validation retained; both exact test manifests add12cases. All114 authored negative-control searches resolve once. Raw failed diagnostics preserved; original fence released after terminal/Q/EOF/reap and known process absence. Clean final canonical subject remains required; no release/deployment or current live federation claim."
+  - "RC6 f137968 final preparation terminal1/32.283s: three documentation-contract cases and lint PASS, installer no-op; YAML rejects existing version-drift negative-control search still pinned to rc5. Update only authored search to current rc6 literal, retaining mismatch mutation and rejection oracle. Preserve raw diagnostics; original fence released after Q/EOF/reap and known process absence. No runtime or skill bytes changed."
+  - "RC6 corrected32d5bcf preparation terminal1/58.663s: all3 corrected controls and lint PASS; original234 installer converged2rounds with only semantic-lock, duration observations and two test manifests changed (+12cases ordinary contract and Python314). YAML correctly rejected combined phase deliverable wording; split into exact existing work-order summaries without changing scope or validator. Source runtime unchanged; all raw first failures retained privately, Q/EOF/reap/known handles absent and original fence released. Authored DONE means implementation completed, never computed closure or release proof."
+  - "RC6 initial preparation2398b54 terminal1/58.911s: genuine baseline negative rejects fresh-work starvation;115 behavioral cases pass, two legacy-port assumptions and one new scan-loop assumption fail. Ruff/mypy68files/skill validation pass. Reconcile/YAML reject two authored line-budget overages before generated changes. Preserve raw local diagnostics as non-authoritative retention; correct test port separation and cycle oracle, condense authored budgets without exceptions; original fence released with Q/EOF/reap/known PIDs absent. No production change needed for these oracle corrections."
+  - "RC6 source preparation from c72e1aa under operator DDSBZDT: custodian confirms13669 priority native-allocation/install ownership and unchanged live state; bounded source repair and self-contained skill only. Provider incident13662 retained; scan admits oldest prefix only after reverse coverage, fresh-only submissions during catch-up and exact-attempt retry coverage. Canonical proof, archive install and live recovery remain pending; no runtime patch, checkpoint reset or resend. Product uv lock refreshed offline with pinned interpreter and unchanged dependencies."
   - 'Verified project interpreter pytest: 57 affected wake cases PASS'
   - 'Verified project interpreter ruff check tests/test_owner_wake_qualification.py: PASS'
   - 'Verified project interpreter scripts/validate_governance_yaml.py --repo-root .: PASS'
