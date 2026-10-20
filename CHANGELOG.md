@@ -15,7 +15,7 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
-- Record immutable RC5 publication, final protected-source/archive/isolated-install proof, and verified archival retirement of nine historical worktrees; keep workspace upgrade and unfinished owner-wake qualification separate.
+- Record immutable RC5 publication, final protected-source/archive/isolated-install proof, and verified archival retirement of nine historical worktrees, and custodian-completed workspace upgrade; keep unfinished owner-wake qualification separate.
 
 - Include existing child-failure propagation and runtime-smoke namespace controls in ordinary and Python 3.14 assurance producers.
 

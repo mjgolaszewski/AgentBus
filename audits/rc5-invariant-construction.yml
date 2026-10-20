@@ -314,4 +314,5 @@ published_release:
   installation: frozen_SDK_absent_615_files_66_origins_queries_enrollment_and_corrective_smoke_pass
   remote_assets: all_three_bytes_and_immutable_tag_verified
   qualification: no_new_live_canary_owner_wake_or_federation_authority
-  deployment: separate_custodian_handback_required
+  deployment: custodian_verified_RC5_80_installed_hashes_zero_drift_73_local_checks_wake_enabled
+  consumer_record: PR12_9e5f89f_remote_certification_separate
