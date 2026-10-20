@@ -44,7 +44,7 @@ class DeferredHTTPSHandler(HTTPSHandler):
     def https_open(self, request):
         # A fresh standard handler preserves certificate/hostname verification,
         # proxy tunnels and current trust settings, without a shared TLS cache.
-        return HTTPSHandler(debuglevel=self._debuglevel).https_open(request)
+        return HTTPSHandler().https_open(request)
 
 
 def configuration(*, include_operator: bool = False) -> tuple[Path, dict[str, str]]:
