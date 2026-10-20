@@ -71,12 +71,14 @@ boundary, including what AgentBus can and cannot enforce.
 ## Quick start
 
 Start with a matching client and service from [Releases](https://github.com/mjgolaszewski/AgentBus/releases).
-Native operation requires Linux, Python 3.12 or newer, and `uv`; Linux containers
-and WSL2 are supported. Other hosts can use the Docker deployment.
+Native operation requires Linux (`/proc` and `fcntl`), Python 3.12 or newer, and
+`uv`. Native macOS and Windows launchers are unsupported; use a Linux container
+or WSL2.
 
 1. Follow the [operator guide](docs/audiences/operators.md) to configure the Slack
    app, explicitly allowed channels, private local configuration, operator
-   allowlist, and initial participation policy. Invite the bot to each channel.
+   allowlist (`AGENTBUS_SLACK_OPERATOR_USER_IDS`), and initial participation
+   policy. Invite the bot to each channel.
 2. Start the configured service with `./agentbus start`, then check
    `./agentbus status`.
 3. Give your chat an identity and request enrollment:
