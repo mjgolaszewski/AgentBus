@@ -237,6 +237,7 @@ def test_loopback_transport_does_not_initialize_tls_or_follow_redirects(monkeypa
     def forbidden(*_args, **_kwargs):
         raise AssertionError('Plain loopback HTTP must not load TLS trust')
     monkeypatch.setattr(ssl, 'create_default_context', forbidden)
+    monkeypatch.setattr(ssl, '_create_default_https_context', forbidden)
     server = HTTPServer(('127.0.0.1', 0), Handler)
     worker = threading.Thread(target=server.serve_forever)
     worker.start()
