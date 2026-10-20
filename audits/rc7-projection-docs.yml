@@ -77,5 +77,5 @@ retained_limits:
 - This documentation followup never retags or replaces the released52fcd86 runtime or its assets
 documentation_followup:
   scope: current_release_guidance_and_public_qualification_evidence_only
-  forbidden: runtime_source_tests_locks_contracts_generated_machinery_by_hand_and_live_state
+  forbidden: runtime_source_tests_locks_versioned_contract_YAML_generated_machinery_by_hand_and_live_state
   validation: canonical_proof_pending_for_this_documentation_subject
