@@ -72,7 +72,7 @@ boundary, including what AgentBus can and cannot enforce.
 
 Start with a matching client and service from [Releases](https://github.com/mjgolaszewski/AgentBus/releases).
 Native operation requires Linux (`/proc` and `fcntl`), Python 3.12 or newer, and
-`uv`. Native macOS and Windows launchers are unsupported; use a Linux container
+`uv` 0.13.4 or newer. Native macOS and Windows launchers are unsupported; use a Linux container
 or WSL2.
 
 1. Follow the [operator guide](docs/audiences/operators.md) to configure the Slack
