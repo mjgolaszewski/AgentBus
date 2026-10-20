@@ -10,9 +10,8 @@ from functools import lru_cache
 from pathlib import Path
 
 import pytest
-import yaml
 
-from scripts.verify_provider_canary import verify_evidence
+from scripts.verify_provider_canary import load_evidence, verify_evidence
 
 PATH = Path(__file__).resolve().parents[1] / 'audits/p11-provider-canary-07b9ecb.yml'
 
@@ -20,7 +19,7 @@ PATH = Path(__file__).resolve().parents[1] / 'audits/p11-provider-canary-07b9ecb
 @lru_cache(maxsize=1)
 def released_runtime_bytes():
     """Immutable historical inputs; never substitute them for candidate proof."""
-    corpus = yaml.safe_load(PATH.with_name('p11-provider-canary-00eecbe.yml').read_text())
+    corpus = load_evidence(PATH.with_name('p11-provider-canary-00eecbe.yml'))
     source = '8f2dbf5ced0f591bec21d561f3a39308bc3f373b'
     archive = subprocess.check_output(
         ['git', 'archive', '--format=tar', source, '--', *corpus['runtime_files']],
@@ -44,7 +43,7 @@ def historical_runtime(monkeypatch):
 
 
 def evidence():
-    return yaml.safe_load(PATH.read_text())
+    return load_evidence(PATH)
 
 
 def test_historical_real_provider_carriers_and_receipts_authenticate_all_six_directions():
@@ -92,7 +91,7 @@ def test_historical_provider_proof_rejects_forgery_omission_and_scope_promotion(
 
 
 def qualified_evidence():
-    return yaml.safe_load(PATH.with_name('p11-provider-canary-00eecbe.yml').read_text())
+    return load_evidence(PATH.with_name('p11-provider-canary-00eecbe.yml'))
 
 
 def test_released_wire3_canary_authenticates_replies_recovery_and_complete_withdrawal():
@@ -237,3 +236,37 @@ def test_current_channel_runtime_cannot_inherit_historical_live_qualification(hi
     monkeypatch.setattr(Path, 'read_bytes', historical_runtime)
     with pytest.raises(ValueError, match='mixed or unsupported release metadata'):
         verify_evidence(qualified_evidence())
+
+
+@pytest.mark.parametrize('fault', ['digest', 'source', 'path'])
+def test_public_evidence_reference_rejects_changed_custody(tmp_path, fault):
+    import yaml
+
+    data = yaml.safe_load(PATH.read_text())
+    values = {'digest': ('sha256', '0' * 64), 'source': ('source', '0' * 40),
+              'path': ('path', '../outside.yml')}
+    field, value = values[fault]
+    data['retained_evidence'][field] = value
+    reference = tmp_path / 'reference.yml'
+    reference.write_text(yaml.safe_dump(data))
+    with pytest.raises(ValueError):
+        load_evidence(reference)
+
+
+def test_public_documentation_omits_live_installation_and_coordination_details():
+    import re
+
+    root = PATH.parents[1]
+    # Product docs and authored product logs; BCF machinery has another owner.
+    files = [*root.glob('*.md'), root / 'MEMORY.yml', root / '.env.example',
+             *root.glob('docs/**/*.md'), *root.glob('audits/**/*.yml'),
+             *root.glob('plans/*.yml'), *root.glob('phases/*.yml'),
+             *root.glob('contracts/**/*.yml')]
+    forbidden = re.compile(
+        r'\b[A-Z]0C[A-Z0-9]{7,}\b|/docker/|/home/vscode/|/tmp/agentbus-'
+        r'|\bAgentBus\s*\d{4,}|\bPID\d{4,}'
+    )
+    for path in files:
+        if path.name in {'AGENTS.md', 'CLAUDE.md'}:
+            continue
+        assert forbidden.search(path.read_text()) is None, str(path.relative_to(root))

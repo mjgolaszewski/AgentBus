@@ -108,8 +108,8 @@ class FederationBridge:
         self.project_submission: Callable[[str, str, str], bool] | None = None
         self.ordinary_channel: str | None = None
         self.submission_thread: Callable[[str, str], str | None] | None = None
-        self.project_ordinary: Callable[[str, str, str, str, str | None], None] | None = None
-        self.project_message: Callable[[str, str, str, str, str | None], None] | None = None
+        self.project_ordinary: Callable[[str, str, str, str, str | None, str | None], None] | None = None
+        self.project_message: Callable[[str, str, str, str, str | None, str | None], None] | None = None
         publishers = {identity.publisher_id: identity.instance_id}
         prefixes = {identity.route_prefix: identity.instance_id}
         for origin, binding in self.bindings.items():
@@ -266,13 +266,13 @@ class FederationBridge:
             payload = frame['payload']
             self.store.accept_destination(origin_instance_id=origin, publisher_id=event['publisher_id'],
                 origin_message_id=message_id, destination_instance_id=self.identity.instance_id, payload=payload)
-            self.project_ordinary(origin, message_id, self.identity.instance_id, payload, event.get('ts'))
+            self.project_ordinary(origin, message_id, self.identity.instance_id, payload, event.get('ts'), event['text'])
         else:
             payload = self._message(frame['payload'], origin, self.identity.instance_id)
             self.store.accept_destination(origin_instance_id=origin, publisher_id=event['publisher_id'],
                 origin_message_id=message_id, destination_instance_id=self.identity.instance_id, payload=payload)
             if self.project_message is not None:
-                self.project_message(origin, message_id, self.identity.instance_id, payload, event.get('ts'))
+                self.project_message(origin, message_id, self.identity.instance_id, payload, event.get('ts'), event['text'])
         receipt = canonical({'origin': origin, 'message': message_id,
             'destination': self.identity.instance_id, 'payload_hash': hashlib.sha256(payload.encode()).hexdigest()})
         receipt_id = 'receipt-' + hashlib.sha256(canonical([origin, message_id, self.identity.instance_id]).encode()).hexdigest()

@@ -15,8 +15,8 @@ commands or Slack into an executor.
 
 ```mermaid
 flowchart LR
-  A["BCF chat"] -->|messages and inbox| Bus["AgentBus service"]
-  B["Racecar chat"] -->|messages and inbox| Bus
+  A["Planner chat"] -->|messages and inbox| Bus["AgentBus service"]
+  B["Builder chat"] -->|messages and inbox| Bus
   C["Other chats"] -->|messages and inbox| Bus
   Op["Operator<br/>separate capability"] -->|policy and controls| Bus
   Bus <-->|Socket Mode and Web API| Slack["Slack channel<br/>human-visible"]
@@ -43,10 +43,13 @@ Released experimental [0.9.1rc6](https://github.com/mjgolaszewski/AgentBus/relea
 [bounded federation backlog recovery](docs/federation.md) and a
 [Codex participation skill for VS Code](docs/codex-skill.md). Protected PR/exact-main
 proof, reproducible archive and SDK-free installation passed on `c5c7335`.
-The custodian completed the backed-up RC6 upgrade; the original blocked request
-reached destination custody after one recorded attempt while its checkpoint advances.
-This is distinct from execution or semantic ACK. The 1,307-event offline check
-is not a new general federation canary.
+Destination custody is distinct from execution or semantic ACK. The 1,307-event
+offline check is not a new general federation canary. The bundled skill requires
+installation in the execution client's supported skill directory.
+
+RC7 is under construction: recovery of authenticated carriers already retained
+as raw history, plus removal of installation-specific documentation. It has not
+yet passed exact-source release qualification.
 [RC5](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc5), subject
 `ce31aa5`, remains the preceding corrective baseline.
 
@@ -55,7 +58,7 @@ adds a quieter, grouped private health dashboard and
 `/agentbus workers`, `doctor`, `pending [ID]` and `explain CURSOR`. Existing
 service-task observations reset on restart; external poll/wake workers and
 remote health remain unobserved. Exact protected-source, archive/install and
-bounded two-channel checks passed; the operator confirmed the grouped layout readable and private.
+bounded two-channel checks passed.
 See [operator guidance](docs/audiences/operators.md).
 
 Released experimental RC3 [message lifecycle behavior](docs/message-lifecycle.md) separates

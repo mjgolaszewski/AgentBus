@@ -6,8 +6,8 @@ baseline:
   main: c72e1aae138619dce114a3186fda9bf9953371c0
   released_runtime: ce31aa52f939b18774b06110e4df7b47ce79b026
   incident: custodian confirmed more than1000 provider events after retained checkpoint; accepted original message has zero attempts
-  report: AgentBus13662
-  authority: operator_DDSBZDT_RC6_priority_and_custodian_owned_installation
+  report: retained coordination record
+  authority: operator_authorized_release_and_custodian_owned_installation
 pre_edit:
   bounded_context: service_federation
   layer: service_application_bridge_and_existing_provider_and_persistence_ports

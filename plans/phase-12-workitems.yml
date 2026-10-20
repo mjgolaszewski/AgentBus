@@ -8,6 +8,22 @@ document:
   path: plans/phase-12-workitems.yml
   phase_id: P12
 workitems:
+- id: P12-P1-22
+  status: IN_PROGRESS
+  summary: Recover raw signed carriers without timestamp reassignment
+  priority: P0
+  acceptance:
+  - Preserve raw records and exact authenticated custody; one scoped notification survives rollback restart and duplicate recovery without observation theft or checkpoint skip
+  - Protected exact-source proof reproducible archive and isolated installation precede publication and custodian deployment
+  acceptance_evidence: [contract-test, python314-compatibility, runtime-smoke, release-smoke]
+- id: P12-P1-23
+  status: IN_PROGRESS
+  summary: Remove installation-specific public documentation and retain historical proof
+  priority: P1
+  acceptance:
+  - Inventory every product document and record disposition; omit installation identifiers bus notices and local paths while retaining exact original signed evidence through immutable references
+  - Behavioral negative controls preserve evidence verification and reject changed references; current release and experimental claims stay subject-specific
+  acceptance_evidence: [contract-test, python314-compatibility, release-smoke]
 - id: P12-P1-20
   status: DONE
   summary: Repair federation backlog starvation with bounded resumable oldest-prefix recovery

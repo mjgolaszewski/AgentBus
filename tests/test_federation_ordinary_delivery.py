@@ -1,5 +1,6 @@
 """Own signed carriers resolve accepted cursors without inventing remote custody."""
 import asyncio
+import json
 import sys
 from pathlib import Path
 from uuid import uuid4
@@ -420,3 +421,23 @@ def test_versioned_reply_parent_mapping_survives_destination_store_restart(pair)
     projected = stores['home'].read(CHANNEL).messages[-1]
     assert projected.reply_to_cursor == root.cursor and projected.sender_assurance == 'legacy'
     assert store.message(CHANNEL, reply.cursor).reply_to_cursor == remote_root.cursor
+
+
+def test_ordinary_raw_carrier_recovery_retains_origin_parent_for_reply(pair):
+    bridges, stores, providers, events = ordinary_network(pair)
+    key, _ = accept_remote(bridges, stores)
+    asyncio.run(bridges['home'].submit_once())
+    event = dict(events[0])
+    store = stores['remote']
+    raw = store.append(CHANNEL, event['ts'], SendMessage(
+        sender='slack:bot', audience='unrouted', text=event['text']))
+    bridges['remote'].receive(event)
+    notification = store.read(CHANNEL).messages[-1]
+    assert notification.cursor != raw.cursor and notification.slack_ts == ''
+    reply_key, _ = accept_reply(store, bridges['remote'], notification, 'remote:agentbus:receiver')
+    asyncio.run(bridges['remote'].submit_once())
+    reply = next(item for item in events if json.loads(item['text'])['origin_message_id'] == reply_key)
+    bridges['home'].receive(reply)
+    received = stores['home'].read(CHANNEL).messages[-1]
+    assert received.reply_to_cursor == stores['home'].read(CHANNEL).messages[0].cursor
+    assert json.loads(json.loads(reply['text'])['payload'])['parent']['origin_message_id'] == key

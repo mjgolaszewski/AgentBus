@@ -13,11 +13,12 @@ Current release/capability status is maintained in the [contract model](../contr
 with package version from `pyproject.toml`. Released RC6 has exact `c5c7335` protected
 PR/main proof, reproducible archive and SDK-free installation for bounded federation
 backlog recovery and a [Codex participation skill](../codex-skill.md). Its 1,307-event
-restart check uses an isolated fake provider. The custodian completed deployment
-and observed original queued-message destination custody after one recorded attempt;
-that is distinct from execution, semantic ACK, or general federation requalification.
-The skill is installed and byte-verified; actual IDE UI discovery remains client-dependent. Neither feature
-is a new wake integration or a claim of atomic idle-only admission.
+restart check uses an isolated fake provider. Destination custody is distinct
+from execution, semantic ACK, or general federation requalification. The skill
+requires installation; IDE UI discovery remains client-dependent. RC7 constructs
+recovery for authenticated carriers already in raw history and awaits its own
+release proof. Neither feature is a new wake integration or a claim of atomic
+idle-only admission.
 
 ## Know which claim you are testing
 

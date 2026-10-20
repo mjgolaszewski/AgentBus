@@ -1,0 +1,25 @@
+document:
+  kind: rc7_construction_audit
+  path: audits/rc7-projection-docs.yml
+  status: construction_not_qualified
+baseline:
+  source: b1a46af9efa95ada6151b3c923bca962fca9dfc6
+  immutable_runtime: c5c73354dae71d45a8f5177a605c215b90306a23
+pre_edit:
+  bounded_context: service_federation
+  layer: application_projection_through_existing_store_ports
+  sides: [authenticated_projection_command, documentation]
+  owners: [src/agentbus_federation_inbox_service.py, src/agentbus_federation_bridge_service.py]
+  expected_tests: [raw_carrier_collision, arbitrary_collision_rejection, duplicate_restart, rollback_checkpoint, foreign_scope, ordinary_ancestry]
+  forbidden: [live_database, live_configuration, credentials, checkpoints_by_hand, timestamp_guard_removal, generated_BCF_files_by_hand, immutable_releases]
+repair:
+  rule: preserve_raw_history_and_allocate_one_distinct_scoped_local_notification_only_for_exact_authenticated_carrier
+  custody: original_origin_message_destination_identity_and_payload_hash_remain_unchanged
+  checkpoint: no_progress_or_receipt_until_projection_transaction_commits
+  qualification: focused_89PASS_and_genuine_RC6_baseline_reproduction_canonical_pending
+editorial:
+  scope: all_product_documentation_including_historical_audits_and_logs
+  exclusion: BCF_owned_machinery_and_generated_files
+  policy: remove_local_operational_notices_channel_and_personal_identifiers_internal_bus_cursors_and_machine_paths_from_public_prose
+  evidence: preserve_original_signed_evidence_without_rewriting_signatures_or_historical_claims
+  status: current_inventory_and_changed_spans_reviewed_release_proof_pending

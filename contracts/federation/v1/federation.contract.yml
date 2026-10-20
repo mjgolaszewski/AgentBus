@@ -117,6 +117,8 @@ contracts:
     foreign_ancestry: thread_and_reply_cursor_retained_in_custody_but_not_projected_as_local_references
     recovery: duplicate_and_restart_reuse_first_projection_without_changing_its_cursor
     conflicts: fail_closed_without_overwriting_existing_local_message_or_mapping
+    raw_carrier_recovery: exact_authenticated_carrier_in_legacy_unrouted_history_may_allocate_distinct_local_notification_no_provider_observation_reassignment
+    recovery_reference: deterministic_local_only_reference_never_fabricated_provider_timestamp
   directory: {revisioning: monotonic_per_origin, payload: allowlisted_metadata_only, freshness: explicit, stale_default: unknown, resync: bounded_snapshot_then_deltas}
   wake: {admission: owner_confirmed_idle_only, epoch_recheck: required, active_owner: defer, queued_work: never_acknowledged, remote_authority: none}
   prohibited_edges: [remote_message_to_local_execution, remote_directory_to_session_creation, provider_receipt_to_destination_acceptance, queued_wake_to_agent_ack, stale_directory_to_wakeability]
