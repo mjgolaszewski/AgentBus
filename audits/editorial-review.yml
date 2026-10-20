@@ -70,9 +70,9 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
-    - 920
-  line_count: 920
-  sha256: 0292d883f633e7cc3ee372ec3306d9ed3a7a6ff939a1e4c66df88fad2b76956e
+    - 925
+  line_count: 925
+  sha256: b89f428fd7b13d55c175e35d6de5643ad80984d6a825ac8a9e668f21a23b6e76
   baseline_sha256: b7013d36852333861ccd7453ecce16cc28d4c7baf7c2ac7db3aa39fba4f06931
   disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
@@ -675,9 +675,9 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
-    - 325
-  line_count: 325
-  sha256: 6508fc7dd12eef7b6112c94186a31c7b338b9db6ddb587fb781824a9733ce4e2
+    - 326
+  line_count: 326
+  sha256: c2c944ee5d4db6a70de8c7d3b249b625c92857516f08d76b68eb06b63927dece
   baseline_sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
