@@ -257,9 +257,8 @@ separate operations; the release does not enable federation or wake by default.
   or deletes service messages. Existing bindings begin from their last semantic
   acknowledgement; the full inbox remains available to the chat.
 - Wake status reports the scan cursor, whether it caught up, and whether its
-  bounded local candidate projection was compacted. This release does not fix
-  a separately unavailable Codex app-server proxy on the shared host; the
-  operator must configure a supported host endpoint before saved-thread resumes can work.
+  bounded local candidate projection was compacted. A supported owning-host endpoint is required; wake discovery alone does not
+  establish live interoperability.
 
 ### Remaining risk
 

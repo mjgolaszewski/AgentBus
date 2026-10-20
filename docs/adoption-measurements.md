@@ -10,13 +10,13 @@ The repository now uses released BCF 2.3.4; see the
 
 ## Inherited baseline
 
-Source identity: `superworkspace-tools` commit
-`aa8bba92e54b5d005c90c51d30556ab0858958b6`.
+The inherited source was embedded in a separate workspace repository. Its
+installation inventory and internal repository identity are omitted here.
 
 The source repository had no BCF installation, GitHub ruleset, environment, tag,
 or release. Its single CI workflow ran `make check` and `make test` in parallel
-Python 3.12 and 3.14 jobs. AgentBus shared those jobs with Weed, the installer,
-and workspace maintenance tests.
+Python 3.12 and 3.14 jobs. AgentBus shared those jobs with unrelated installer
+and workspace-maintenance tests.
 
 | Observation | Baseline |
 | --- | ---: |
@@ -134,17 +134,11 @@ AgentBus v0.3.0 was published from commit
 `f33b9e7be7e484ded2f073945cc12dbef42b3319`. Its 3,133,999-byte source archive
 has SHA-256
 `d29b22066ccae21f54e46c9d85d1ddb53c996f670935e998333eb7a54e269e59`
-and passed GitHub artifact attestation verification. The superworkspace now
-consumes that archive through an exact lock containing archive, member, and
-mode hashes. Its final main run passed on Python 3.12 and 3.14.
-
-The live expand/contract cutover preserved the existing `.env`, SQLite inbox,
-454 messages, maximum cursor 886, one claim, the inbox UUID, and all six local
-persona profiles with their identities, chat IDs, and acknowledgement cursors.
-The restarted v0.3.0 service passed SQLite integrity, Slack connectivity, and a
-30-file drift audit. The embedded superworkspace source was removed only after
-that proof. Release media and the rollback snapshot remain on the shared
-network filesystem.
+and passed GitHub artifact attestation verification. A historical consumer cutover
+used exact archive, member and mode hashes and retained existing database and
+profile state. Installation integrity and source-drift checks passed. Detailed
+workspace inventories, local counters, host state and backup locations are
+operational records, omitted from this public adoption analysis.
 
 ## Governance amplification
 

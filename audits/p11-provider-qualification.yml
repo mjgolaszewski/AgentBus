@@ -100,5 +100,4 @@ qualified_wire3_candidate:
     combined_authenticated_proof_sha256: 8a2e084ff4fbebef236ac3959478ca4fba4d0e7e78f817a1fc1198ba2151d205
   failed_prior_window: 02:23-02:35 root-only run missed25:15 receipt gate; no outage or replies; eventual
     root acceptance and actual shutdown latency retained separately
-  operator_stand_down: operator9527 delegated relay; remote9541 acknowledged/read back and ended foreground
-    work; runtime/evidence unchanged
+  operator_stand_down: acknowledged; runtime and original evidence preserved
