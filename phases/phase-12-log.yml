@@ -12,11 +12,15 @@ phase:
 summary:
   outcome: active
   highlights:
+  - RC8 diagnosis reproduced repeated default certificate-store initialization in standard opener construction; defer HTTPS setup without changing polling or wake authority. See audits/rc8-wake-cpu.yml for scope and acceptance.
   - Pinned upstream sources and local installed builds; actual AHP owner remains unverified
   - Four new adapter boundary controls pass; no AHP implementation or live probe
   - 57 affected wake cases, Ruff and governance YAML validation pass; computed closure remains unclaimed
   - Actual pinned AHP reducer passes168 upstream chat fixtures and8 targeted controls; drift and semantic queue-order mutants reject
 workitems:
+- id: P12-P1-24
+  status: DONE
+  summary: Defer TLS context construction for loopback client requests; runtime and final proof pending
 - id: P12-P1-22
   status: DONE
   summary: Recover raw signed carriers without timestamp reassignment

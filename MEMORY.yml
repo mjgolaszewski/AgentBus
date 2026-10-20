@@ -14,6 +14,7 @@ regression_shield:
     - update high-signal entries instead of duplicating them
     - never record secrets or local environment values here
 stable_decisions:
+  client_tls_initialization: Standard HTTPS handler creation is deferred until HTTPS use; loopback requests must not reload system trust, while HTTPS remains freshly verified and redirects denied. No polling or wake authority is inferred.
   canonical_repo_root: "."
   canonical_governance_guide: AGENTS.yml
   canonical_product_spec: plans/product-spec.yml

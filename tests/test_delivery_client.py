@@ -211,3 +211,68 @@ def test_transport_negotiation_checks_exact_acceptance_headers(monkeypatch, conf
     assert requests[-1].get_header('Idempotency-key') == key
     assert requests[-1].get_header('X-agentbus-delivery-version') == '1'
     assert requests[-1].get_header('X-agentbus-session-token') == 'session'
+
+
+def test_loopback_transport_does_not_initialize_tls_or_follow_redirects(monkeypatch):
+    import ssl
+    import threading
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
+    from src import agentbus_transport_client as transport
+
+    paths = []
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            paths.append(self.path)
+            if self.path == '/redirect':
+                self.send_response(302)
+                self.send_header('Location', '/unexpected')
+                self.end_headers()
+            else:
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b'{"status":"ok"}')
+        def log_message(self, *_args):
+            pass
+    def forbidden(*_args, **_kwargs):
+        raise AssertionError('Plain loopback HTTP must not load TLS trust')
+    monkeypatch.setattr(ssl, 'create_default_context', forbidden)
+    server = HTTPServer(('127.0.0.1', 0), Handler)
+    worker = threading.Thread(target=server.serve_forever)
+    worker.start()
+    values = {'AGENTBUS_URL': f'http://127.0.0.1:{server.server_port}', 'AGENTBUS_API_TOKEN': 'test'}
+    try:
+        for _ in range(3):
+            assert transport.api(values, '/healthz') == {'status':'ok'}
+        with pytest.raises(ClientError, match='HTTP 302'):
+            transport.api(values, '/redirect')
+        with pytest.raises(ClientError, match='Use HTTPS'):
+            transport.api({**values, 'AGENTBUS_URL':'http://remote.invalid'}, '/healthz')
+        assert paths == ['/healthz'] * 3 + ['/redirect']
+    finally:
+        server.shutdown()
+        worker.join(2)
+        server.server_close()
+
+
+def test_https_transport_defers_but_preserves_fresh_standard_verified_tls(monkeypatch):
+    import ssl
+    from urllib.request import Request
+
+    from src import agentbus_transport_client as transport
+
+    original = transport.HTTPSHandler
+    handlers = []
+    def standard(**kwargs):
+        handler = original(**kwargs)
+        assert handler._context.verify_mode == ssl.CERT_REQUIRED
+        assert handler._context.check_hostname is True
+        handlers.append(handler)
+        handler.https_open = lambda request: request.full_url
+        return handler
+    monkeypatch.setattr(transport, 'HTTPSHandler', standard)
+    deferred = transport.DeferredHTTPSHandler()
+    assert handlers == []
+    for _ in range(2):
+        assert deferred.https_open(Request('https://service.invalid/healthz')) == 'https://service.invalid/healthz'
+    assert len(handlers) == 2 and handlers[0]._context is not handlers[1]._context

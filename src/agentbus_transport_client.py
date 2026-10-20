@@ -9,7 +9,7 @@ import shlex
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
-from urllib.request import HTTPRedirectHandler, Request, build_opener
+from urllib.request import AbstractHTTPHandler, HTTPRedirectHandler, HTTPSHandler, Request, build_opener
 from uuid import UUID
 
 
@@ -33,6 +33,18 @@ def local_prefix(values: dict[str, str], *, required: bool = False) -> str | Non
 class NoRedirects(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
+
+
+class DeferredHTTPSHandler(HTTPSHandler):
+    """Load default TLS trust only when this request actually uses HTTPS."""
+
+    def __init__(self):
+        AbstractHTTPHandler.__init__(self)
+
+    def https_open(self, request):
+        # A fresh standard handler preserves certificate/hostname verification,
+        # proxy tunnels and current trust settings, without a shared TLS cache.
+        return HTTPSHandler(debuglevel=self._debuglevel).https_open(request)
 
 
 def configuration(*, include_operator: bool = False) -> tuple[Path, dict[str, str]]:
@@ -125,7 +137,7 @@ def api(values: dict[str, str], path: str, payload: dict | None = None, *,
         headers['Idempotency-Key'] = delivery_key
     request = Request(base + path, data=body, headers=headers)
     try:
-        with build_opener(NoRedirects).open(
+        with build_opener(NoRedirects, DeferredHTTPSHandler).open(
             request, timeout=timeout_seconds or (3 if path == "/healthz" else 35)
         ) as response:
             if path == '/v1/info':

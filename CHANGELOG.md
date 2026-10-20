@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.9.1rc8] - 2026-10-20
+
+- Defer standard TLS trust initialization until an HTTP client request actually uses HTTPS, eliminating certificate-store reloads for loopback polling and wake scans. Certificate/hostname verification, no-redirect behavior, scope checks and wake cadence remain intact.
+- Clarify that new sends/replies generate and stage their request identity; explicit `--message-id` recovers an identical existing stage.
+- No schema migration, new wake adapter or atomic idle-only admission qualification. Final protected-source, installation and runtime measurements remain required.
+
 ## [0.9.1rc7] - 2026-10-20
 
 Published as immutable `v0.9.1rc7` from `52fcd86` after protected PR/exact-main proof, reproducible archive and SDK-free installation. Historical runtime and asset identities remain fixed.

@@ -1,7 +1,7 @@
 document:
   kind: editorial_audit
   path: audits/editorial-review.yml
-  status: rc7_release_record_review_canonical_pending
+  status: rc8_transport_review_canonical_pending
 request:
   scope: Every product document, authored historical log, contract, audience guide, skill and current changelog;
     installation identifiers and internal coordination notices removed.
@@ -59,9 +59,9 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
-    - 105
-  line_count: 105
-  sha256: 54997e5c0cb59cbe74d16b292ba15c1d00b6b58d004fb44e32bc0542bc1db194
+    - 106
+  line_count: 106
+  sha256: f91bf23406f03db4cf515ccbd792bbb74d4a30eded58c120e28bd7e7e0857b30
   baseline_sha256: 486989ca8ea9e296a2dce9fe025313aa5c5f73606531fb405a0c338ee953b4c3
   disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
@@ -675,9 +675,9 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
-    - 321
-  line_count: 321
-  sha256: 79b3aece63bc982cf3b3be28573357ec0f2630b0aa1d125bb59e03b87124d0ba
+    - 325
+  line_count: 325
+  sha256: 6508fc7dd12eef7b6112c94186a31c7b338b9db6ddb587fb781824a9733ce4e2
   baseline_sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
@@ -950,9 +950,9 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
-    - 253
-  line_count: 253
-  sha256: 8aee498ffd73dbfbb0022dc6ebd4bd5276285a43267612e20830e09793dffa80
+    - 262
+  line_count: 262
+  sha256: 102be30d751d02e04442cda5c7f202d864d1cc72f47e49a30e76d348a6d08510
   baseline_sha256: 1c632ee46d55ab7ba403af50842aa97a1a733cadd8798eb694257d3f6e53cfbc
   disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
@@ -1079,12 +1079,12 @@ documents:
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
     inspected in section context. New records reviewed in full.
 - document: skills/agentbus/references/participation.md
-  review_status: hash_verified_prior_full_document_review
+  review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
-    - 106
-  line_count: 106
-  sha256: beadce2918bde7b360dfc4b6510d77e3a31071dacf1eaaffce7e933e3df3c70c
+    - 112
+  line_count: 112
+  sha256: c27b36485fee67de01146ccd1d25a48f0dcd15617ac083cc25e622e44aa73ba2
   baseline_sha256: beadce2918bde7b360dfc4b6510d77e3a31071dacf1eaaffce7e933e3df3c70c
   disposition: retained
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
@@ -1104,9 +1104,9 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
-    - 549
-  line_count: 549
-  sha256: 8b64ed61e8de4b056d5cbcb074359454f600fb9b8cb1ef8a9db0782db89d5411
+    - 555
+  line_count: 555
+  sha256: e64a026adbf39fbf1603eebec1e0fd986fb940a2fe678e8d0a54dec005f711a7
   baseline_sha256: 089d7b76fe9d53eddc539da2141fb02b0b7502354f7ff75661dad2c5a87cfaf0
   disposition: updates
   review_basis: Entire changelog read for RC7, including all historical sections; local host notices removed, historical
@@ -1135,3 +1135,11 @@ release_record_review:
     unchanged
   scope: documentation_only
   qualification: new_documentation_subject_requires_own_canonical_proof
+
+- document: audits/rc8-wake-cpu.yml
+  review_status: reviewed_in_full
+  reviewed_lines: [[1, 24]]
+  line_count: 24
+  sha256: afd6134b6f44d9deb69e95b210866d37bb81943d6833c5f17e4aa0051979e4e6
+  disposition: new
+  review_basis: RC8 transport scope diagnosis acceptance and disclosed limits reviewed in full

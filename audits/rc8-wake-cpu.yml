@@ -1,0 +1,24 @@
+document:
+  kind: engineering_audit
+  path: audits/rc8-wake-cpu.yml
+  status: construction
+scope:
+  context: participation client
+  layer: infrastructure HTTP transport
+  side: query and command transport, no authority decision
+  production: [src/agentbus_transport_client.py]
+  controls: [tests/test_delivery_client.py, tests/test_codex_wake_client.py, tests/test_wake_intent_lifecycle.py, tests/test_wake_owner_eligibility.py]
+  forbidden: [live service or configuration changes during construction, wake binding changes, admission changes, custody resets, generated BCF hand edits, dependency changes]
+diagnosis:
+  observation: Wake supervisor exhibited sustained CPU use; this alone does not establish causation for editor disconnections
+  reproduced: Standard opener construction initializes default TLS trust for every plain loopback HTTP request
+  repair: Defer standard HTTPS handler construction until https_open; do not cache trust or reuse mutable handlers across threads
+  limits: Original wake scan cadence remains; no new AHP native queue or atomic idle-only admission qualification
+acceptance:
+  - Loopback requests initialize no TLS context; remote plaintext is denied
+  - HTTPS uses fresh standard context with certificate and hostname verification
+  - Redirects remain denied and scope headers unchanged
+  - Wake recovery concurrency shutdown and authorization controls pass
+  - Protected PR exact-main archive SDK-free install and custodian CPU readback required
+proof:
+  status: pending
