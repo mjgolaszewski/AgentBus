@@ -19,8 +19,8 @@ summary:
   - Actual pinned AHP reducer passes168 upstream chat fixtures and8 targeted controls; drift and semantic queue-order mutants reject
 workitems:
 - id: P12-P1-27
-  status: TODO
-  summary: Stage patched project trust dependencies after actual canonical audit failure; safe materialization pending
+  status: DONE
+  summary: Patched project trust dependencies materialized and audited; container guard and final canonical proof pending
 - id: P12-P1-25
   status: DONE
   summary: Recognized legacy wake scope recovery implemented; qualification pending
@@ -112,6 +112,7 @@ execution_evidence:
   planned_commands:
   - canonical bcf ci submit after shared native capacity is available
   executed_commands:
+  - "RC9 security6 terminal0/37.705s under unchanged1GiB address-space cap: explicit verified3.12 interpreter bounded concurrency and Linux allocator controls; targeted lock changes only uv0.13.4/certifi2026.10.19, original234 dependency projection and content-addressed environment PASS. Actual patched CA bundle excludes compromised root;118focused and full dependency/vulnerability gates PASS with no advisory ignore. Cache-deserialization warnings retained, not hidden. Clean-TLS official uv0.13.4 registry index9f130421 authenticated; Dockerfile pins it and distrusts exact compromised root before downloads with fresh-context assertion. Only lock/projection changed during run; Q/EOF/reap and original fence released. A later local shell guard mishandled Docker line continuation and committed only package files; checked follow-up records evidence before final submission. Container/protected/exact-main/archive/install/runtime proof pending; no SDK or live changes."
   - "RC9 security materialization2a7759 stopped at first lock command: UV aborted on allocation under1GiB address-space limit after implicitly selecting Python3.14.5; driver terminal250/1.194s, no source lock projection environment or registry change. Retain exact stderr; Q/EOF/reap known handles absent and original fence released. Next operator harness explicitly selects verified3.12 interpreter and uses documented bounded UV concurrency and Linux jemalloc settings within the same resource cap; this is not a BCF or qualification result."
   - "RC9 first canonicalfcc1632 terminal1/330.7989175s on actual security-vulnerability-scan: uv0.12.18 GHSA-hq85-5cpj-mr62; failure bundlea9ab86ea retained. No PR or remote source branch exists. Known6handles absent sourceclean and original fencefree; independent owner handback accepted. Primary upstream notices recommend uv0.13.4 and certifi2026.10.19. Read-only inventory confirms affected G3 root in project and OS bundles. Stage authored pins; dependency projection remains installer-owned. Hold affected-tool network fetches pending custodian patched-tool receipt; report original234 pip26.2.1 constraint to owner without SDK edits or invented successor requirement. No audit ignore, exploitation claim, live change or release qualification."
   - "RC9 final local preparationfaf1a0a terminal0/56.671s: original234 reconciliation governance validation source624 Ruff and mypy68files PASS; runtime/test blobs remain identical to118PASS subject29eaaf7. Only installer-owned duration observations changed. All44wake-intent nodes appear in ordinary245 contract579 and Python314680 manifests. Q/EOF/reap known handles absent and original fence released; prior failures preserved. Canonical protected exact-main archive installation and owner-controlled live recovery remain pending; no release or host qualification inferred."

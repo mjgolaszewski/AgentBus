@@ -9,14 +9,14 @@ document:
   phase_id: P12
 workitems:
 - id: P12-P1-27
-  status: TODO
+  status: DONE
   summary: Remove affected project tool and CA bundle pins without bypassing dependency assurance
   priority: P0
   acceptance:
   - Update authored uv and certifi pins to patched released versions and regenerate dependency projections and lock through their owners
   - Pin patched container uv image and distrust only the exact compromised emSign root before dependency downloads; prove fresh installed and container trust excludes it without disabling certificate or hostname checks
   - Preserve original certified BCF runtime bytes; disclose independently owned host and vendored installer trust stores rather than claiming an application update repairs them
-  acceptance_evidence: [security-dependency-audit, security-sbom, security-vulnerability-scan, python314-compatibility, release-smoke]
+  acceptance_evidence: [security-dependency-audit, security-sbom, security-vulnerability-scan, python314-compatibility, runtime-smoke, release-smoke]
 - id: P12-P1-25
   status: DONE
   summary: Recover recognized legacy wake scope without resetting intent or attempt facts

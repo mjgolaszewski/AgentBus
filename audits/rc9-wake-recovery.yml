@@ -34,10 +34,12 @@ security_followup:
   advisories:
   - https://github.com/astral-sh/uv/security/advisories/GHSA-hq85-5cpj-mr62
   - https://github.com/certifi/python-certifi/security/advisories/GHSA-6q48-6c7w-9gw2
-  observed: Existing project certifi 2026.7.22 and system CA bundle retain emSign ECC Root CA - G3; no exploitation claimed
+  initial_observation: Project certifi 2026.7.22 and initial system CA bundle retained emSign ECC Root CA - G3; no exploitation claimed
+  current_project_bundle: {certifi: 2026.10.19, sha256: 50f79f98dac192b20dbf73f35c56f0b0c557ab267ff5199d1117cc1180b70785, compromised_root_absent: true}
+  container_uv_index: sha256:9f130421e930bfbdc563c00740466603f8723158e90297d07957c2294640262b
   targeted_versions: {uv: 0.13.4, certifi: 2026.10.19}
   container: Pin patched official uv image by verified registry digest; distrust exact compromised root fingerprint before dependencies and assert fresh SSL context excludes it
   ownership: Project metadata is authored; dependency projection remains installer-owned; host trust and shared tools remain custodian-owned
   original_BCF: Released 2.3.4 unchanged; pip 26.2.1 installer constraint reported to owner, not silently patched or promoted to a new blocker
   bootstrap: Use independently verified patched shared uv and clean CA bundle; materialize project environment through original BCF owner with explicit clean install trust
-  qualification: New lock materialization exact dependency audit bundle inspection and final canonical proof pending; no advisory ignore
+  qualification: Targeted lock environment materialization actual bundle inspection 118 focused tests and full dependency/vulnerability audits PASS; container protected exact-main archive installation and runtime proof pending; no advisory ignore
