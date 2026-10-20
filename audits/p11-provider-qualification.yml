@@ -34,7 +34,7 @@ qualified_historical_candidate:
   - all six directed root pairs and extra5392-byte signed carrier reached destination custody
   - late history recovery and restart preserved exact request identities/cursors
   - all three revision2 rename snapshots converged with unchanged registration UUIDs
-  initial_residual: Moran revision3 published after the original bound; not counted as original-window
+  initial_residual: Remote revision3 published after the original bound; not counted as original-window
     convergence
   separate_recovery_window: 2026-10-17T00:25:00Z/2026-10-17T00:30:00Z
   recovery:
@@ -43,7 +43,7 @@ qualified_historical_candidate:
   - no registration, message origin, revision reset or checkpoint reset
   recovery_custody_id: p11-withdrawal-recovery-20261017
   recovery_summary_sha256: d3a49b50d3c73e98375f99f1a49a45336570adc31ecd68a520f905b8fff13c2c
-  remote_final_receipt_cursor: 8840
+  remote_final_receipt: retained_original_custody_evidence
 authenticated_root_evidence:
   snapshot: audits/p11-provider-canary-07b9ecb.yml
   snapshot_sha256: 5ba9fdfa7155871748c735c978971de1d422704d9dc87453cb122bc042eec7b2
@@ -100,5 +100,4 @@ qualified_wire3_candidate:
     combined_authenticated_proof_sha256: 8a2e084ff4fbebef236ac3959478ca4fba4d0e7e78f817a1fc1198ba2151d205
   failed_prior_window: 02:23-02:35 root-only run missed25:15 receipt gate; no outage or replies; eventual
     root acceptance and actual shutdown latency retained separately
-  operator_stand_down: operator9527 delegated relay; remote9541 acknowledged/read back and ended foreground
-    work; runtime/evidence unchanged
+  operator_stand_down: acknowledged; runtime and original evidence preserved

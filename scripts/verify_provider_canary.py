@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
@@ -359,16 +360,36 @@ def verify_evidence(data: dict) -> dict:
     return _verify_historical(data)
 
 
+def load_evidence(path: Path) -> dict:
+    """Resolve a public reference without relabelling signed historical bytes."""
+    if path.stat().st_size > 65536:
+        raise ValueError('evidence exceeds byte budget')
+    data = yaml.safe_load(path.read_text())
+    if not isinstance(data, dict) or data.get('document', {}).get('kind') != 'historical_evidence_reference':
+        return data
+    reference = data.get('retained_evidence', {})
+    if (set(reference) != {'source', 'path', 'sha256'}
+            or reference['source'] != 'b1a46af9efa95ada6151b3c923bca962fca9dfc6'
+            or reference['path'] not in {'audits/p11-provider-canary-07b9ecb.yml',
+                                         'audits/p11-provider-canary-00eecbe.yml'}):
+        raise ValueError('unsupported historical evidence reference')
+    root = Path(__file__).resolve().parents[1]
+    result = subprocess.run(['git', 'show', reference['source'] + ':' + reference['path']],
+                            cwd=root, capture_output=True, check=True, timeout=15)
+    content = result.stdout
+    if len(content) > 65536 or hashlib.sha256(content).hexdigest() != reference['sha256']:
+        raise ValueError('historical evidence digest mismatch')
+    return yaml.safe_load(content)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--path', type=Path, default=Path('audits/p11-provider-canary-07b9ecb.yml'))
     args = parser.parse_args()
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     try:
-        if args.path.stat().st_size > 65536:
-            raise ValueError('evidence exceeds byte budget')
-        result = verify_evidence(yaml.safe_load(args.path.read_text()))
-    except (ValueError, OSError, KeyError, TypeError, InvalidOperation, yaml.YAMLError):
+        result = verify_evidence(load_evidence(args.path))
+    except (ValueError, OSError, KeyError, TypeError, InvalidOperation, yaml.YAMLError, subprocess.SubprocessError):
         print('provider-canary-evidence-invalid', file=sys.stderr)
         return 1
     print(json.dumps(result, sort_keys=True))

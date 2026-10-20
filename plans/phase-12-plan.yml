@@ -19,6 +19,8 @@ phase:
   - MEMORY.yml
 delivery_contract:
   tightly_scoped_deliverables:
+  - Recover raw signed carriers without timestamp reassignment
+  - Remove installation-specific public documentation and retain historical proof
   - Repair federation backlog starvation with bounded resumable oldest-prefix recovery
   - Ship a self-contained Codex AgentBus skill installable in VS Code
   - Issue94 RC5 bounded invariant-first delivery wake alias assurance and onboarding corrections; audits/rc5-invariant-construction.yml owns edge coverage

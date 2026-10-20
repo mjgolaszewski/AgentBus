@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1rc7] - 2026-10-20
+
+Construction candidate; protected-source, archive and isolated-installation proof pending.
+
+- Preserve raw signed-carrier history when recovering a separate authenticated channel-scoped notification; keep timestamp ownership, original custody identities and fail-closed checkpoints.
+- Remove installation-specific channel/publisher details and internal coordination notices from current documentation. Preserve signed historical evidence by exact hash-pinned Git references, without rewriting signatures or history.
+
 ## [0.9.1rc6] - 2026-10-19
 
 - Recover federation backlogs larger than the per-cycle budget through bounded resumable time pagination and oldest-prefix checkpointing, without dropping custody or resetting checkpoints.
@@ -24,7 +31,6 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 - Record immutable RC6 publication at `c5c7335`, exact protected PR/main proof, matching reproducible archive, SDK-free installation and Codex skill layout verification; preserve actual first failures and unfinished owner-wake qualification.
 
-- Record immutable RC5 publication, final protected-source/archive/isolated-install proof, and verified archival retirement of nine historical worktrees, and custodian-completed workspace upgrade; keep unfinished owner-wake qualification separate.
 
 - Include existing child-failure propagation and runtime-smoke namespace controls in ordinary and Python 3.14 assurance producers.
 
@@ -32,9 +38,7 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 - Record exact RC5 candidate proof, reproducible archive and SDK-free installation; complete the five corrective work orders while keeping publication, deployment and P12 owner-wake qualification separate.
 
-- Record operator acceptance of RC4 grouped private health and completion of the requested safe cleanup; close the authored RC4 diagnostics workitem while keeping owner-wake qualification open.
 
-- Record RC4 publication, exact-subject certification, workspace upgrade and verified safe cleanup; preserve experimental owner-wake limits and record completed human UI acceptance.
 
 - Record the immutable RC3 release, exact-subject proof, isolated installation and bounded lifecycle canary, retaining the initial probe failure and unqualified owner-wake limits.
 
@@ -42,7 +46,7 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [0.9.1rc4] - 2026-10-18
 
-Published as immutable `v0.9.1rc4` after protected PR and exact-main proof, archive installation, and a bounded two-channel canary. The workspace upgrade is complete; the operator confirmed that grouped health and Workers are readable and private.
+Published as immutable `v0.9.1rc4` after protected PR and exact-main proof, archive installation, and a bounded two-channel canary.
 
 - Group health and roster output with spaced sections and textual states instead of repeated colored dots; preserve numeric code styling and escaped Slack rich text.
 - Observe the existing service delivery task and delivery/federation cycle attempts, completion, backoff and sanitized failures in bounded process-local memory. External poll/wake workers and remote health remain explicitly unobserved.
@@ -253,9 +257,8 @@ separate operations; the release does not enable federation or wake by default.
   or deletes service messages. Existing bindings begin from their last semantic
   acknowledgement; the full inbox remains available to the chat.
 - Wake status reports the scan cursor, whether it caught up, and whether its
-  bounded local candidate projection was compacted. This release does not fix
-  a separately unavailable Codex app-server proxy on the shared host; the
-  custodian must restore that proxy before actual saved-thread resumes work.
+  bounded local candidate projection was compacted. A supported owning-host endpoint is required; wake discovery alone does not
+  establish live interoperability.
 
 ### Remaining risk
 

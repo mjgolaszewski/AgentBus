@@ -15,12 +15,11 @@ Released [RC5](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc5)
 closes [#94](https://github.com/mjgolaszewski/AgentBus/issues/94) at runtime subject
 `ce31aa5` after protected PR/exact-main proof, reproducible archive and SDK-free
 installation; its [qualification record](../audits/rc5-invariant-construction.yml)
-retains older candidate evidence under its own subjects. RC5 workspace installation is historical evidence; it does not authenticate RC6
-bytes or deployment. The custodian completed RC6 installation and observed the
-original blocked request reach destination custody after one recorded attempt,
-with checkpoint progress and no reset. These observations are separate from
-source qualification and do not imply execution or semantic ACK. Released RC4 (`6a1c672`)
-also has its own protected, archive/install and bounded two-channel evidence.
+retains older candidate evidence under its own subjects. Deployment observations
+are separate from source qualification and never imply execution or semantic ACK.
+Released RC4 (`6a1c672`) also has protected, archive/install and bounded two-channel
+evidence. RC7 raw-carrier recovery is a construction candidate pending its own
+protected-source, archive and installation proof.
 
 Protocol-2 Slack envelopes and endpoint paths stay stable. Updated clients and
 explicit offline migration are required from released 0.9.0; RC5 and RC6 add no

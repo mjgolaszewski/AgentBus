@@ -143,8 +143,7 @@ neither. See [Experimenters](audiences/experimenters.md).
 
 The protected `35f0950ec01f34e49caeb2c13b4806e249989f82` tree was exercised
 between two independently managed installations with operator-pinned Ed25519
-origins and a shared recovery baseline at Slack timestamp
-`1792106938.528509`. Each direction produced one durable obligation, one
+origins and a shared retained recovery baseline. Each direction produced one durable obligation, one
 destination row, and a signed receipt. Identical origin/message replays stayed
 deduplicated; a conflicting payload with the same ID was rejected; altered
 signed content failed before persistence; and the isolated ACK-withholding
@@ -199,15 +198,19 @@ lacks these recovery guarantees. Keep its bridge disabled and retain revision
 state. Live cutovers require a separately agreed bounded window and custodian.
 
 The retained wire-3 qualification in
-[`p11-provider-canary-00eecbe.yml`](../audits/p11-provider-canary-00eecbe.yml)
-covers the certified `00eecbe8` runtime and its 02:45–03:05 UTC window. It contains
-the actual signed origins, replies, receipts and empty directory withdrawals,
+[historical evidence reference](../audits/p11-provider-canary-00eecbe.yml)
+covers the certified `00eecbe8` runtime and its 02:45–03:05 UTC window. The hash-pinned original contains
+the signed origins, replies, receipts and empty directory withdrawals,
 including identical physical retries. The late service stopped, restarted with
 its latest database and checkpoint, and recovered both replies with the original
 local parents. All dedicated sessions then acknowledged STOP; both prior cores
 were healthy with federation disabled before the window ended.
 
-Replay its evidence from a development checkout:
+Installation-specific carriers are omitted from current documentation. The verifier
+resolves the exact original from immutable Git history in a full development
+checkout. An archive-only checkout needs an operator-retained original file; it
+cannot manufacture this evidence. This removal does not erase existing Git history
+or change published archives. Replay from a full development checkout:
 
 ```bash
 uv run --frozen --extra dev python scripts/verify_provider_canary.py \
@@ -299,11 +302,22 @@ operator-approved archive/retention procedure before capacity is exhausted.
 An installation may opt into normal inbox notification projection with
 `inbox_projection: 1` in its existing federation configuration. Only a verified
 message already retained in destination custody can be projected. Its authenticated
-origin/message/destination tuple maps to one local cursor, using the actual
-provider event timestamp. Repeated provider posts, concurrent readers, and service
+origin/message/destination tuple maps to one local cursor. Normally the notification
+uses the actual provider event timestamp. Repeated provider posts, concurrent readers, and service
 restart reuse that first cursor. The ordinary message and mapping commit together
 before a new custody receipt is queued; mapping storage failure or a collision
-with an existing local timestamp withholds the receipt and recovery checkpoint.
+with an unrelated local timestamp withholds the receipt and recovery checkpoint.
+
+If the exact authenticated signed carrier is already stored as legacy, unrouted
+raw history at that timestamp, recovery preserves that row unchanged and creates
+one separate channel-scoped notification. Its deterministic local reference is
+not a fabricated Slack timestamp; no provider observation is reassigned. Replies
+use the actual retained carrier timestamp as their thread reference; versioned
+origin-parent custody continues to determine the logical reply parent. Duplicate
+frames and restarts reuse the notification. The original origin/message/destination
+identity remains unchanged. A changed, truncated, assured, or routed raw record
+does not qualify for this exception. A projection/storage failure still withholds
+receipts and checkpoint progress; do not delete raw history or reset checkpoints.
 The additive mapping is capped at 1,024 rows and is never automatically pruned.
 
 Protocol 2 response shapes remain unchanged. A foreign sender retains `legacy`
