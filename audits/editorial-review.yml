@@ -601,7 +601,7 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines: [[1, 346]]
   line_count: 346
-  sha256: 1f740e07d78bb6089489df6c5b7977aa72030fd839b2f88f64284919c1007c62
+  sha256: af6c124dc1237d8ee6af87385ebc8dce3a9893605ce0d225ec3bf0f87e9caf69
   baseline_sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
