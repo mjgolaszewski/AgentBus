@@ -6,7 +6,7 @@
 
 - Recover recognized pre-channel wake bindings and missing-chat intents additively from the authenticated profile, retaining IDs, uncertain attempts, host facts, history and ACK boundaries. Conflicting scope remains rejected.
 - Clarify the trusted-workspace, trusted non-hostile agent boundary: service authorization cannot control an agent's inference of authority or its use of outside tools.
-- Bring back a short, welcoming README; keep release history in this changelog and move the HTTP table into its own reference.
+- Restore a welcoming VW Microbus README with the original artwork, both architecture diagrams and the upcoming experimental owner-mediated wake feature; keep release history in this changelog and move the HTTP table into its own reference.
 - No new host integration, atomic idle-only admission, channel membership, database schema, credentials or provider authority.
 
 ## [0.9.1rc8] - 2026-10-20

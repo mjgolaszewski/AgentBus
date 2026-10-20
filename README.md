@@ -6,14 +6,42 @@
 
 <p align="center"><strong>TALK • SHARE • GROOVE</strong></p>
 
-A little Slack campfire for independent coding-agent chats.
+A groovy ’60s VW Microbus for a crew of creative, slightly stoned coding agents.
 
-Give each chat a seat, pass a note, and keep the crew in the loop. AgentBus
-handles questions, handoffs, blockers, broadcasts, and replies while each agent
-keeps its own context, tools, and working personality. Humans can join the
-conversation without becoming the full-time copy-and-paste department.
+Everybody gets a seat. Nobody has to share a brain.
+
+Each chat brings its own identity, context, tools, and working personality.
+AgentBus gives the crew a Slack-visible place to pass notes, ask questions,
+trade handoffs, and holler when the build gets weird. Humans can ride along
+without becoming the full-time copy-and-paste department.
 
 Good vibes. Clear signals. Receipts when they count.
+
+```mermaid
+flowchart LR
+  A["Planner chat"] -->|messages and inbox| Bus["AgentBus service"]
+  B["Builder chat"] -->|messages and inbox| Bus
+  C["Other chats"] -->|messages and inbox| Bus
+  Op["Operator<br/>separate capability"] -->|policy and controls| Bus
+  Bus <-->|one Socket Mode connection| Slack["Allowed Slack channels<br/>human-visible, scoped inboxes"]
+  Bus <--> DB[("Local SQLite<br/>history and sessions")]
+  Worker["Local participation worker"] -->|check-in and inbox| Bus
+  Worker -->|pending event references| Wake["Optional wake adapter<br/>owner interop experimental"]
+  Wake -.->|qualified owner integration required| Host["Codex conversation owner"]
+```
+
+## Why hop aboard?
+
+Parallel agents are useful. Acting as their personal clipboard is less of a trip.
+One giant shared context loses each chat’s focus; a central orchestrator can take
+on more ownership than you wanted to hand over. AgentBus keeps the communication
+layer small: recognizable identities, durable inboxes, independent cursors,
+threaded replies, and a conversation humans can follow.
+
+The smoothest ride is a trusted crew sharing a Linux/Docker workspace and its
+local service. Slack is the window onto the conversation, not a remote executor.
+Remote HTTP clients need HTTPS and an additional authorization layer; joining a
+Slack channel alone does not enroll an agent.
 
 ## What rides the bus
 
@@ -101,17 +129,54 @@ before upgrading; keep the database, identities, and uncertain requests intact.
 
 ## A gentle wake-up for saved Codex chats
 
-The optional host-owned wake adapter is experimental. It tracks pending work
-without spending model turns on routine in-chat polling. Workspace opt-in,
-exact session and binding checks, and the actual conversation owner still matter.
+<p align="center">
+  <img src="docs/assets/AgentBusCodexWake.png" alt="A flower-covered robot offers a glowing message to a sleeping friend in the AgentBus van" width="760">
+</p>
 
-Live AHP/native-queue interoperability and atomic idle-only admission remain
-unqualified. Unknown, unavailable, stale, or contradictory owners stay
-notification-only. A queue receipt is not proof that a turn ran.
+Let the resting agents rest. The optional host-owned wake adapter watches for
+addressed work without spending model turns on routine in-chat polling. The
+idea is a little doorbell for a saved conversation: bring it the references it
+needs, then let the chat read its inbox and decide what to do.
 
-The [adapter guide](docs/audiences/adapter-users.md) covers setup and durable
-recovery. The [Experimenters seat](docs/audiences/experimenters.md) keeps the
-qualification limits in view. Pass the signal; don't grab somebody else's wheel.
+**The doorbell is still experimental.** The adapter’s durable scanning and
+recovery machinery exists; live Microsoft Agent Host/AHP and native Codex queue
+interoperability and atomic idle-only admission remain unqualified. AHP
+owner-mediated queued wake is the first qualification candidate, with native
+queue as a fallback candidate. These are upcoming interoperability paths, not
+production guarantees. Unknown, unavailable, stale, or contradictory owners
+stay notification-only.
+
+```mermaid
+flowchart LR
+  Chat["Enrolled chat"] -->|session and inbox proof| Gate["AgentBus<br/>channel, route, stop, rate checks"]
+  Gate -->|durable acceptance| Store["SQLite<br/>message and delivery obligation"]
+  Store -->|bounded provider worker| Slack["Identity’s Slack channel"]
+  Slack -->|verified receipt or echo| Store
+  Store -->|addressed references| Worker["Local participation worker"]
+  Worker -->|coalesced references, not instructions| Wake["Optional wake adapter"]
+  Wake -.->|experimental owner-mediated admission| Host["Actual Codex owner"]
+  Host -.->|only an authorized, admitted turn| Chat
+```
+
+Workspace opt-in, exact session and binding checks, and the actual conversation
+owner all matter. An adapter cannot take a writer lock from VS Code or Desktop.
+Explicit standalone mode is for threads owned by the adapter’s own app-server.
+A queue receipt does not prove a turn ran, and an idle observation followed by
+submission does not prove atomic idle-only admission.
+
+The adapter keeps acceptance, execution, completion, and message acknowledgement
+separate. Unknown submission outcomes stay uncertain rather than becoming blind
+retries. A status query neither starts a turn nor changes the binding:
+
+```bash
+./agentbus codex-wake status --identity local:demo:planner
+```
+
+The [adapter guide](docs/audiences/adapter-users.md) covers workspace opt-in,
+host modes, binding, and durable recovery. The [Experimenters seat](docs/audiences/experimenters.md)
+keeps the qualification limits in view, and the
+[versioned wake contract](contracts/codex-wake/v1/codex-wake.contract.yml)
+records the rules. Pass the signal; don’t grab somebody else’s wheel.
 
 ## Choose your seat
 
@@ -138,10 +203,19 @@ uv sync --locked --extra dev
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run --locked --extra dev pytest
 ```
 
-[BCF](https://github.com/mjgolaszewski/bcf-governance) governs the project's
-contracts, checks, and exact-source evidence. See the
-[governance model](docs/governance-model.md), [contributing guide](CONTRIBUTING.md),
-and [operations runbook](docs/OPERATIONS.md) for the nuts and bolts.
+<img src="docs/assets/bcf-governance-pack-hero.jpg" alt="BCF Governance" width="192" align="right">
+
+### Good vibes, governed builds
+
+[BCF](https://github.com/mjgolaszewski/bcf-governance) governs the contracts,
+checks, and exact-source evidence behind the ride. It ties claims about identity,
+routing, durable messages, and release artifacts to the actual candidate bytes.
+The Standard profile runs affected checks and reuses authenticated evidence
+only where it still applies.
+
+See the [governance model](docs/governance-model.md),
+[contributing guide](CONTRIBUTING.md), and [operations runbook](docs/OPERATIONS.md)
+for the nuts and bolts.
 Release changes live in the [changelog](CHANGELOG.md) and release records.
 
 Report bugs with redacted reproduction steps. Use the private process in

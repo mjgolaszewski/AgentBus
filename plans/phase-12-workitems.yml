@@ -32,7 +32,7 @@ workitems:
   priority: P1
   acceptance:
   - Current security contract audience and skill guidance distinguish AgentBus service checks from agent interpretation and outside tools under trusted non-hostile workspace assumptions
-  - README introduces product usage without RC chronology; technical links remain valid and experimental capabilities remain disclosed
+  - README introduces product usage without RC chronology while preserving the groovy VW Microbus personality all three original images both architecture diagrams and prominent upcoming owner-mediated wake feature; technical links remain valid and experimental capabilities remain disclosed
   - Quick start names the operator allowlist before service startup and retains native platform limits; contract proof declares the five onboarding files the existing check reads
   acceptance_evidence: [contract-test, release-smoke]
 - id: P12-P1-24
