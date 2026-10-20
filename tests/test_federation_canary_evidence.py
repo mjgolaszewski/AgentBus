@@ -261,7 +261,8 @@ def test_public_documentation_omits_live_installation_and_coordination_details()
     files = [*root.glob('*.md'), root / 'MEMORY.yml', root / '.env.example',
              *root.glob('docs/**/*.md'), *root.glob('audits/**/*.yml'),
              *root.glob('plans/*.yml'), *root.glob('phases/*.yml'),
-             *root.glob('contracts/**/*.yml')]
+             *root.glob('contracts/**/*.yml'), *root.glob('skills/**/*.md'),
+             *root.glob('skills/**/*.yaml')]
     forbidden = re.compile(
         r'\b[A-Z]0C[A-Z0-9]{7,}\b|/docker/|/home/vscode/|/tmp/agentbus-'
         r'|\bAgentBus\s*\d{4,}|\bPID\d{4,}'

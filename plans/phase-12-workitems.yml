@@ -9,7 +9,7 @@ document:
   phase_id: P12
 workitems:
 - id: P12-P1-22
-  status: IN_PROGRESS
+  status: DONE
   summary: Recover raw signed carriers without timestamp reassignment
   priority: P0
   acceptance:
@@ -17,7 +17,7 @@ workitems:
   - Protected exact-source proof reproducible archive and isolated installation precede publication and custodian deployment
   acceptance_evidence: [contract-test, python314-compatibility, runtime-smoke, release-smoke]
 - id: P12-P1-23
-  status: IN_PROGRESS
+  status: DONE
   summary: Remove installation-specific public documentation and retain historical proof
   priority: P1
   acceptance:

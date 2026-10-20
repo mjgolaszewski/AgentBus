@@ -18,10 +18,10 @@ summary:
   - Actual pinned AHP reducer passes168 upstream chat fixtures and8 targeted controls; drift and semantic queue-order mutants reject
 workitems:
 - id: P12-P1-22
-  status: IN_PROGRESS
+  status: DONE
   summary: Recover raw signed carriers without timestamp reassignment
 - id: P12-P1-23
-  status: IN_PROGRESS
+  status: DONE
   summary: Remove installation-specific public documentation and retain historical proof
 - id: P12-P1-20
   status: DONE
