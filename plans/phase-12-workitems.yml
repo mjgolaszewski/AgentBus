@@ -24,7 +24,7 @@ workitems:
   acceptance:
   - Current security contract audience and skill guidance distinguish AgentBus service checks from agent interpretation and outside tools under trusted non-hostile workspace assumptions
   - README introduces product usage without RC chronology; technical links remain valid and experimental capabilities remain disclosed
-  acceptance_evidence: [governance-validate, contract-test, release-smoke]
+  acceptance_evidence: [contract-test, release-smoke]
 - id: P12-P1-24
   status: DONE
   summary: Remove redundant TLS setup from loopback wake and polling requests
