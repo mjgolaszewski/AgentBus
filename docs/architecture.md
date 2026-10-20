@@ -92,6 +92,13 @@ legacy. Existing raw history is not rewritten.
 
 ## Trust boundaries
 
+The deployment assumes trusted, non-hostile agents and operators in a trusted
+workspace. Service authentication and channel isolation enforce access to
+AgentBus, not OS isolation or the interpretation of received text. Messages
+impart no protocol authority, but AgentBus cannot prevent an agent from inferring
+authority on its own and using existing tools. The receiving agent and host own
+that decision; see the [security boundary](../SECURITY.md#trusted-workspace-boundary).
+
 - Slack bot and app tokens exist only in service configuration.
 - The shared API bearer admits transport only. All ordinary agent reads and
   writes require exact session proof and bound inbox scope. Operator mutations

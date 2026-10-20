@@ -1,7 +1,7 @@
 document:
   kind: agentbus_codex_wake_contract
   id: agentbus-codex-wake-v1
-  version: 1.7.1
+  version: 1.7.2
   status: active
   path: contracts/codex-wake/v1/codex-wake.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/8
@@ -10,11 +10,11 @@ scope:
   purpose: workspace_opt_in_host_owned_wake_of_idle_saved_Codex_threads_for_addressed_AgentBus_work
   security_extension: https://github.com/mjgolaszewski/AgentBus/issues/20
   wake_scan_extension: https://github.com/mjgolaszewski/AgentBus/issues/31
-  deployment: same_accessible_dev_workspace_first
+  deployment: trusted_workspace_with_trusted_non_hostile_agents_and_operators
   channel_authority: contracts/channels/v1/channel-isolation.contract.yml
   experimental_qualification: live_AHP_native_queue_interoperability_and_atomic_idle_only_admission_unqualified
   channel_binding: service_inbox_channel_chat_session_scope_required_for_scan_binding_intent_and_attempt
-  non_goals: [AgentBus_core_launching_model_turns, Slack_as_host_authority, generic_agent_orchestrator, automatic_UI_thread_resumption_without_host_hook, exactly_once_turn_execution_without_host_proof]
+  non_goals: [AgentBus_core_launching_model_turns, Slack_as_host_authority, generic_agent_orchestrator, automatic_UI_thread_resumption_without_host_hook, exactly_once_turn_execution_without_host_proof, hostile_same_user_isolation, policing_agent_interpretation_of_messages]
   compatibility: [adapter_absence_does_not_change_AgentBus, protocol_2_messages_unchanged, participation_controls_and_acknowledgements_remain_agent_owned]
 architecture_constraints:
   bus_owner: routing_claims_controls_policies_durable_messages_and_participation
@@ -46,6 +46,7 @@ invariants:
   - {id: CW-INV-019, rule: "The client that starts a Codex turn MUST keep its host transport alive until the exact turn/completed notification supplies a terminal status. A server-initiated interactive request is rejected without approval, the exact turn is explicitly interrupted at most once, and the transport remains open for terminal observation; cached terminal truth wins over an interrupt response error. Any first terminal-wait error, including a recoverable malformed frame, requests exact-turn interruption and a bounded terminal grace before teardown. Controlled workspace-disable stops new launches and drains active per-binding transports through terminal observation before the worker exits; it cannot kill the process group or abandon daemon threads. Acceptance is not completion or message handling; interrupted, failed, lost, and timed-out turns never imply AgentBus acknowledgement."}
   - {id: CW-INV-020, rule: "A competing stdio app-server cannot claim wake delivery to a VS Code-owned thread. Without a configured, supported shared owning-host endpoint, default workspace wake readiness is notification_only and live attempts are rejected before host launch. Explicit standalone mode is allowed only for threads the adapter's app-server owns; a development-only extension executable override is not a released integration contract."}
   - {id: CW-INV-021, rule: "Uncertain-turn reconciliation never hydrates full saved-thread history. It queries bounded newest-first turn summaries and bounded item pages through the host pagination protocol, finds the exact attempt marker in recent user input, and remains uncertain if the bounded scan cannot prove the attempt."}
+  - {id: CW-INV-022, rule: "Recognized legacy scope may fill missing fields only from the exact authenticated chat/session and matching retained binding; preserve thread generation IDs candidate batch observed host facts uncertainty history counters and ACKs. Read-only projections never persist migration; live recovery writes atomically under the existing lock after scope validation. Conflicting or unrecognized records remain unchanged and rejected."}
 primitives:
   workspace_activation: {identity: local_workspace, fields: [enabled, actor, changed_at], owner: adapter_private_state}
   binding: {identity: chat_id_plus_session_id, fields: [chat_id, session_id, thread_id, binding_generation, enabled, actor, created_at], owner: adapter_private_state}
@@ -116,6 +117,7 @@ proof_obligations:
   - {id: CW-PO-16, proves: [CW-INV-004, CW-INV-019], scenario: real_subprocess_remains_alive_after_acceptance_until_exact_terminal_notification_interactive_request_and_recoverable_frame_error_interrupt_once_and_controlled_workspace_disable_drains_without_dropping_transport_or_acking_work}
   - {id: CW-PO-17, proves: [CW-INV-001, CW-INV-009, CW-INV-020], scenario: default_unshared_stdio_host_is_notification_only_and_never_attempts_live_wake_while_explicit_standalone_remains_available}
   - {id: CW-PO-18, proves: [CW-INV-005, CW-INV-021], scenario: large_saved_history_reconciles_exact_recent_attempt_via_bounded_turn_and_item_pages_without_full_thread_hydration_or_blind_retry}
+  - {id: CW-PO-19, proves: [CW-INV-002, CW-INV-005, CW-INV-014, CW-INV-022], scenario: recognized_pre_channel_and_missing_chat_scope_recover_once_without_rebinding_resubmission_or_ack_while_foreign_partial_malformed_and_uncertain_state_fail_closed_or_reconcile_under_original_identity}
 implementation_order:
   - {id: CW-IU-001, unit: freeze_contract_and_host_protocol, depends_on: []}
   - {id: CW-IU-002, unit: non_destructive_candidate_projection, depends_on: [CW-IU-001]}
@@ -128,7 +130,7 @@ implementation_order:
   - {id: CW-IU-009, unit: durable_service_backed_wake_scan_independent_of_presentation_spool, depends_on: [CW-IU-008]}
 acceptance_gates:
   G-BOUNDARY: [CW-INV-001, CW-INV-009, CW-INV-010, CW-INV-020, CW-PO-06, CW-PO-17]
-  G-BINDING: [CW-INV-002, CW-PO-01, CW-PO-07]
+  G-BINDING: [CW-INV-002, CW-INV-022, CW-PO-01, CW-PO-07, CW-PO-19]
   G-ELIGIBILITY: [CW-INV-003, CW-INV-011, CW-INV-013, CW-INV-016, CW-INV-018, CW-PO-01, CW-PO-02, CW-PO-08, CW-PO-10, CW-PO-13, CW-PO-15, CW-IU-009]
   G-LIFECYCLE: [CW-INV-004, CW-INV-017, CW-INV-019, CW-INV-021, CW-PO-03, CW-PO-14, CW-PO-16, CW-PO-18]
   G-DEDUP: [CW-INV-005, CW-PO-03, CW-PO-07]

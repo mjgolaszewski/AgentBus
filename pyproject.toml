@@ -1,9 +1,10 @@
 [project]
 name = "superworkspace-agentbus"
-version = "0.9.1rc8"
+version = "0.9.1rc9"
 description = "Slack-backed coordination transport and durable inbox for coding-agent chats"
 requires-python = ">=3.12"
 dependencies = [
+    "certifi==2026.10.19",
     "cryptography==50.0.2",
     "fastapi==0.141.1",
     "httpx==0.28.1",
@@ -23,7 +24,7 @@ dev = [
     "pytest==9.1.1",
     "pyyaml==6.0.3",
     "ruff==0.16.9",
-    "uv==0.12.18",
+    "uv==0.13.4",
 ]
 
 [tool.pytest.ini_options]

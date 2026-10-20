@@ -1,0 +1,45 @@
+document:
+  kind: engineering_audit
+  path: audits/rc9-wake-recovery.yml
+  status: construction
+scope:
+  context: client wake adapter and authored consumer documentation
+  layer: existing infrastructure state loader with pure intent compatibility projection
+  production: [src/agentbus_codex_wake_client.py, src/agentbus_codex_wake_intent_client.py]
+  controls: [tests/test_wake_intent_lifecycle.py, tests/test_codex_wake_contract.py, tests/test_channel_projection.py]
+  forbidden: [live state hand edits, host rebind, writer takeover, forced turns, evidence deletion, generated BCF hand edits, unrelated dependency changes]
+recovery:
+  accepted_shapes:
+  - Full binding with an otherwise valid retained intent missing only chat_id
+  - Pre-channel binding missing service_url inbox_id and channel with matching retained chat/session and recognized intent/attempt records
+  authority: Fresh authenticated profile must agree with every retained identity and scope value before live persistence
+  persistence: Existing binding lock and atomic JSON; one additive write before normal live processing; no query writes
+  preserved: [intent_id, attempt_id, thread, generation, state, candidate_batch, transitions, host_facts, counters, ack_boundaries]
+  rejected: [partial_unknown_shapes, explicit_nulls, conflicting_scope, malformed_records, foreign_inbox_projections]
+trust:
+  assumption: trusted workspace with trusted non-hostile agents and operators
+  enforcement: AgentBus service session channel routing control and rate checks
+  outside_boundary: Agent interpretation of authority and exercise of existing host tools; hostile shared-account isolation
+editorial:
+  README: New product introduction and usage paths; RC chronology remains in changelog and release records
+  HTTP_reference: Existing endpoint descriptions moved to docs/http-api.md without path or authorization changes
+  guides: Current security contract architecture audience and skill boundaries aligned; history remains historical
+qualification:
+  status: pending focused canonical protected exact-main archive install and custodian recovery evidence
+  limitations: Actual owner interoperability and atomic idle-only admission remain unqualified; migration grants neither
+security_followup:
+  trigger: Actual canonical security-vulnerability-scan failed on project uv 0.12.18
+  first_subject: fcc163290c3e10196dd1635847d2f61b848dda58
+  first_failure_bundle: a9ab86eaee5d331c39705e77ba3ecf10e3124cf3fce7806d18214e26f298fe4a
+  advisories:
+  - https://github.com/astral-sh/uv/security/advisories/GHSA-hq85-5cpj-mr62
+  - https://github.com/certifi/python-certifi/security/advisories/GHSA-6q48-6c7w-9gw2
+  initial_observation: Project certifi 2026.7.22 and initial system CA bundle retained emSign ECC Root CA - G3; no exploitation claimed
+  current_project_bundle: {certifi: 2026.10.19, sha256: 50f79f98dac192b20dbf73f35c56f0b0c557ab267ff5199d1117cc1180b70785, compromised_root_absent: true}
+  container_uv_index: sha256:9f130421e930bfbdc563c00740466603f8723158e90297d07957c2294640262b
+  targeted_versions: {uv: 0.13.4, certifi: 2026.10.19}
+  container: Pin patched official uv image by verified registry digest; distrust exact compromised root fingerprint before dependencies and assert fresh SSL context excludes it
+  ownership: Project metadata is authored; dependency projection remains installer-owned; host trust and shared tools remain custodian-owned
+  original_BCF: Released 2.3.4 unchanged; pip 26.2.1 installer constraint reported to owner, not silently patched or promoted to a new blocker
+  bootstrap: Use independently verified patched shared uv and clean CA bundle; materialize project environment through original BCF owner with explicit clean install trust
+  qualification: Targeted lock environment materialization actual bundle inspection 118 focused tests and full dependency/vulnerability audits PASS; container protected exact-main archive installation and runtime proof pending; no advisory ignore

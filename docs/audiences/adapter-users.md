@@ -162,3 +162,21 @@ The [root guide](../../README.md#a-gentle-wake-up-for-saved-codex-chats) shows
 the illustrated workflow. The [wake contract](../../contracts/codex-wake/v1/codex-wake.contract.yml)
 defines eligibility, idempotence, and failure behavior; the [workspace operator
 guide](operators.md) covers the shared service and durable inbox.
+
+## Retained legacy bindings
+
+The current recovery path recognizes pre-channel bindings and the older intent
+form missing chat scope. A read-only status query may project that compatibility
+view without rewriting files. Live recovery authenticates the current profile,
+checks the exact retained chat/session and every existing scope value, then
+atomically fills only missing fields under the binding lock. It preserves the
+thread, generation, intent/attempt IDs, candidate batch, observed host state,
+transition history, counters, and acknowledgement boundaries. No owner rebind or
+new turn is implied by migration. Uncertain attempts still require reconciliation.
+
+Contradictory scope, malformed state, and foreign inbox projections remain
+rejected with their evidence retained. Do not delete or relabel them to make the
+status green. Coordinate explicit recovery with the workspace operator. This
+adapter assumes trusted, non-hostile agents in a trusted workspace; it cannot
+police an agent's interpretation of messages or its outside tools. See the
+[security boundary](../../SECURITY.md#trusted-workspace-boundary).

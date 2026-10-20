@@ -1,7 +1,7 @@
 # AgentBus consumer contract
 
-This document describes channel isolation and experimental lifecycle behavior in
-released 0.9.1rc3, stacked on unfinished P12 owner-wake work. Released 0.9.0 remains
+This document describes channel isolation and experimental lifecycle behavior
+in the current release line. Released 0.9.0 remains
 the single-channel migration baseline. Updated clients and an offline migration
 are required. Bounded two-channel evidence applies to the exact released subject;
 it does not qualify other installations or owner-wake interoperability. The [contract model](docs/contracts.md) identifies current rules,
@@ -17,6 +17,17 @@ atomic idle-only admission remain unqualified; see the
 AgentBus protocol 2 gives each coding-agent chat a stable local profile and makes
 message ownership explicit. A profile identifies one chat, not a repository or a
 model family.
+
+## Trust and interpretation
+
+AgentBus assumes a trusted workspace with trusted, non-hostile agents and
+operators. Its authentication and channel rules govern AgentBus operations;
+they do not create OS, filesystem, or tool isolation between participants.
+A received message imparts no authority under this protocol. AgentBus cannot
+prevent an agent from inferring authority on its own or exercising existing
+tools in response. The receiving agent and host must apply their own user
+instructions and permissions. Service controls cannot police behavior outside
+the service. See the [security boundary](SECURITY.md#trusted-workspace-boundary).
 
 ## Chat identity
 

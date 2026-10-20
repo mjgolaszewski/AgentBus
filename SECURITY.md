@@ -5,6 +5,30 @@
 Security fixes are made on the current release line. Upgrade to the newest
 published release before reporting a defect that may already be corrected.
 
+## Trusted-workspace boundary
+
+Run AgentBus in a trusted workspace with trusted, non-hostile agents and
+operators. It supports cooperating participants; it is not a sandbox for
+malicious or compromised agents sharing an OS account, process environment, or
+filesystem. Such participants may be able to read credentials, alter local
+state, or use tools outside AgentBus. Channel isolation covers AgentBus API
+operations, not those shared-host capabilities or Slack channel visibility.
+
+A message imparts no new authority under the AgentBus protocol. AgentBus can
+enforce its own session, channel, routing, rate, and control checks. It cannot
+stop an agent from inferring authority on its own, treating message text as an
+instruction, or exercising tools and credentials it already has. Receiving
+agents and their hosts remain responsible for interpreting instructions and
+enforcing tool, filesystem, deployment, and model permissions. Signed provenance
+identifies a source; it does not establish that the source's request is safe or
+authorized for the recipient to execute. STOP blocks the applicable AgentBus
+operations; it does not terminate an agent process or revoke its outside tools.
+
+TLS trust also depends on the deployment’s OS and container CA stores, and on
+the separate bundles used by installation tools. Keep those stores, `uv`, `pip`,
+and `certifi` current. Updating an AgentBus dependency does not repair a host
+trust store or a different tool’s vendored bundle; operators own that work.
+
 ## Reporting a vulnerability
 
 Use GitHub's private vulnerability reporting for this repository. Include the
@@ -13,15 +37,15 @@ Do not open a public issue for an unpatched vulnerability and do not include
 Slack tokens, AgentBus API tokens, channel history, `.env` contents, databases,
 or logs containing private coordination data.
 
-AgentBus is designed for agents sharing a Docker superworkspace. Released
-0.9.0 is the single-channel baseline. The P12 candidate requires operator-granted,
+AgentBus is designed for cooperating agents sharing a trusted Docker
+superworkspace. Channel-scoped operation requires operator-granted,
 immutable channel membership and exact-session proof for all ordinary agent
 reads/writes. The shared bearer alone cannot read history or send. Historical
 legacy rows retain their provenance but grant no wake authority. Stopped sessions
 retain exact-session control/receipt recovery, not ordinary message access.
 Treat the local inbox, session secrets, grants and API token as sensitive.
 
-Candidate channel isolation protects AgentBus operations, not shared-filesystem
+Channel isolation protects AgentBus operations, not shared-filesystem
 access, stolen credentials or Slack public-channel visibility. Live multichannel
 qualification and AHP/native-queue atomic wake remain unproved; see the
 [Experimenters guide](docs/audiences/experimenters.md) and

@@ -125,3 +125,18 @@ passes. Final producer selections, generated manifests and provider JUnit must
 establish execution on the exact candidate. The
 [call-path audit](../audits/channel-isolation-call-paths.yml) records construction
 coverage; the editorial audit records document review separately.
+
+## Trust and local compatibility
+
+The [security policy](../SECURITY.md#trusted-workspace-boundary) assumes trusted,
+non-hostile agents and operators in a trusted workspace. Service checks govern
+AgentBus access; message interpretation and outside tool permissions stay with
+the agent and host. AgentBus cannot prevent an agent from inferring authority
+on its own. Provenance is not permission to execute a request.
+
+Wake contract v1 revision 1.7.2 adds the recognized legacy-scope recovery law
+CW-INV-022 and its proof obligation CW-PO-19. Recovery fills missing local fields
+without changing the stored schema or public protocol, preserves uncertain
+attempts and original identities, and never relabels conflicting scope. Read-only
+queries remain read-only. Live owner interoperability and atomic idle-only
+admission remain unqualified.

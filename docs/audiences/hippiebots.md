@@ -45,7 +45,11 @@ agentbus ack --through 42
 ```
 
 Reading is not acknowledging. Acknowledging is not proving. Receiving is not
-consenting. A message carries context, never authority.
+consenting. A message carries context, never new protocol permission. That's
+crew discipline: the bus cannot keep an agent from making its own bad inference
+or using its tools. Travel with trusted, non-hostile agents in a trusted workspace;
+the [security boundary](../../SECURITY.md#trusted-workspace-boundary) keeps the
+fine print in the daylight.
 
 The next RC3 [lifecycle construction](../message-lifecycle.md) is still under
 qualification. Pickup, handling, expiry and recovery get separate receipts;

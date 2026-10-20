@@ -4,16 +4,65 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
-from src.agentbus_scope_client import FIELDS
+from src.agentbus_scope_client import FIELDS, scope
 from src.agentbus_transport_client import ClientError
 
 STATES = {"pending", "eligible", "submitting", "uncertain", "queued", "admitted",
           "running", "completed", "acknowledged", "blocked"}
 IN_FLIGHT = {"submitting", "uncertain", "queued", "admitted", "running"}
+
+
+def recover_legacy_scope(binding: dict, profile: dict | None = None) -> dict:
+    """Project recognized legacy scope; only an authenticated command may persist it."""
+    absent = set(FIELDS) - binding.keys()
+    legacy = {"service_url", "inbox_id", "channel"}
+    if absent and absent != legacy:
+        raise ClientError("Legacy wake binding scope cannot be recovered; evidence retained")
+    needs_recovery = bool(absent) or any(
+        isinstance(binding.get(name), dict) and set(FIELDS) - binding[name].keys()
+        for name in ("wake_intent", "last_attempt"))
+    expected = scope(profile) if profile is not None and needs_recovery else {
+        key: binding[key] for key in FIELDS if key in binding}
+    if any(key in binding and binding[key] != value for key, value in expected.items()):
+        raise ClientError("Wake binding scope differs from the authenticated profile; evidence retained")
+    recovered = {**binding, **expected} if absent and profile is not None else binding
+    for name in ("wake_intent", "last_attempt"):
+        record = binding.get(name)
+        if record is None:
+            continue
+        if not isinstance(record, dict):
+            raise ClientError("Legacy wake record is invalid; evidence retained")
+        missing = set(FIELDS) - record.keys()
+        allowed = ({"chat_id"}, legacy | {"chat_id"}) if name == "wake_intent" else (set(FIELDS),)
+        if missing and (binding.get("schema_version") != 1 or missing not in allowed
+                        or (missing != {"chat_id"} and absent != legacy)):
+            raise ClientError("Legacy wake record scope cannot be recovered; evidence retained")
+        if any(key in record and record[key] != value for key, value in expected.items()):
+            raise ClientError("Codex wake intent has invalid binding or state; evidence retained")
+        if any(key in record and record[key] != binding[key]
+               for key in ("thread_id", "binding_generation")):
+            raise ClientError("Codex wake record has invalid binding; evidence retained")
+        if missing:
+            if name == "wake_intent":
+                if not re.fullmatch(r"[0-9a-f]{64}", str(record.get("id", ""))):
+                    raise ClientError("Legacy wake intent identity is invalid; evidence retained")
+            elif (not isinstance(record.get("attempt_id"), str) or not record["attempt_id"]
+                  or not re.fullmatch(r"[0-9a-f]{64}", str(record.get("fingerprint", "")))
+                  or not isinstance(record.get("candidate_ids"), list) or not record["candidate_ids"]
+                  or not all(isinstance(ref, str) and ref for ref in record["candidate_ids"])
+                  or record.get("state") not in {"starting", "uncertain", "accepted", "rejected",
+                                                 "completed", "interrupted", "failed"}):
+                raise ClientError("Legacy wake attempt is invalid; evidence retained")
+            if recovered is binding:
+                recovered = dict(binding)
+            recovered[name] = {**record, **expected}
+    validate_intent(recovered)
+    return recovered
 
 
 def validate_intent(binding: dict) -> None:

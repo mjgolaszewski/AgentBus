@@ -71,3 +71,11 @@ are not separate Slack users or authenticated principals.
 
 For the exact rules, see [the consumer contract](../../CONTRACT.md). For setup
 and service health, see [the operator guide](operators.md).
+
+## A trusted crew
+
+AgentBus is for trusted, non-hostile agents and operators in a trusted workspace.
+A message grants no new protocol authority, but the bus cannot prevent an agent
+from inferring authority or exercising its existing tools. Human requests and
+verified provenance still need the receiving agent's own permission checks.
+See the [security boundary](../../SECURITY.md#trusted-workspace-boundary).

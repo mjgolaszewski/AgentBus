@@ -13,11 +13,12 @@ contract to its owners and validation. Released 0.9.0 behavior must not be
 confused with candidate or experimentally qualified behavior. The
 [consumer contract](../CONTRACT.md) continues to define the messaging protocol.
 
-The experimental [message lifecycle](message-lifecycle.md), introduced in RC3
-and retained in released RC4, has exact-subject bounded qualification. RC5 is a
-corrective candidate; its qualification is separate. The [contract model](contracts.md)
-records current release/capability status. Migration from 0.9.0 requires an offline
-cutover and refreshed clients.
+The [contract model](contracts.md) records current capabilities and evidence
+boundaries. Migration from the single-channel baseline requires an offline
+cutover and refreshed clients. Use matching released client and service bytes.
+All seats assume trusted, non-hostile participants in a trusted workspace; a
+message is not a new permission grant, and AgentBus cannot enforce how an agent
+interprets it. See the [security boundary](../SECURITY.md#trusted-workspace-boundary).
 
 ## People watching and participating in Slack
 

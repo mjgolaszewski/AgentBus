@@ -35,7 +35,7 @@ from src.agentbus_codex_wake_intent_client import (
     observe_host,
     record_intent,
     record_result,
-    validate_intent,
+    recover_legacy_scope,
 )
 from src.agentbus_poll_client import ensure_worker, worker_running
 from src.agentbus_scope_client import FIELDS, scope, scoped_api, verify_projection
@@ -47,6 +47,8 @@ HostFactory = Callable[[], CodexAppServer]
 
 class WakeBinding(dict[str, Any]):
     """Validated private state for one stable chat's host binding."""
+
+    legacy_scope_recovered: bool = False
 
 
 MAX_WAKES_PER_HOUR = 12
@@ -182,7 +184,7 @@ def _locked(path: Path) -> Iterator[None]:
         yield
 
 
-def _load(path: Path) -> WakeBinding:
+def _load(path: Path, *, profile: dict | None = None) -> WakeBinding:
     if path.is_symlink():
         raise ClientError("Refusing symlinked Codex wake state")
     try:
@@ -208,8 +210,10 @@ def _load(path: Path) -> WakeBinding:
             not isinstance(state["wake_history"], list) or
             not isinstance(state["same_fingerprint_retries"], int)):
         raise ClientError("Codex wake state has invalid rate or epoch fields")
-    validate_intent(state)
-    return WakeBinding(state)
+    recovered = recover_legacy_scope(state, profile)
+    binding = WakeBinding(recovered)
+    binding.legacy_scope_recovered = recovered is not state
+    return binding
 
 
 def local_binding_projection(values: dict[str, str], chat_id: str, session_id: str) -> dict | None:
@@ -255,26 +259,13 @@ def bind(values: dict[str, str], identity: str, thread_id: str,
         raise ClientError("An ephemeral Codex thread cannot be a durable wake target")
     enabled = auto_enable and workspace_status(values)["enabled"]
     with _locked(path):
-        prior = _load(path) if path.exists() else None
+        prior = _load(path, profile=profile) if path.exists() else None
         if prior and (prior.get("last_attempt") or {}).get("state") in {"starting", "uncertain"}:
             raise ClientError("Resolve the uncertain prior wake before rebinding")
         if prior:
-            expected = scope(profile)
-            legacy = any(key not in prior for key in FIELDS)
-            if legacy and all(key not in prior or prior[key] == expected[key] for key in FIELDS):
-                attempt = prior.get("last_attempt")
-                if attempt and any(key in attempt and attempt[key] != expected[key] for key in FIELDS):
-                    raise ClientError("Foreign wake attempt scope; evidence retained")
-                intent = prior.get("wake_intent")
-                if intent and any(key in intent and intent[key] != expected[key] for key in FIELDS):
-                    raise ClientError("Foreign wake intent scope; evidence retained")
-                prior.update(expected)
-                if attempt:
-                    attempt.update(expected)
-                if intent:
-                    intent.update(expected)
-                _save(path, prior)
             verify_projection(prior, profile)
+            if prior.legacy_scope_recovered:
+                _save(path, prior)
         if prior and prior["chat_id"] == profile["chat_id"] and prior["session_id"] == session["session_id"] and prior["thread_id"] == thread_id:
             if enabled and not prior["enabled"]:
                 prior["enabled"] = True
@@ -309,7 +300,7 @@ def enroll_current(values: dict[str, str], identity: str,
 def set_enabled(values: dict[str, str], identity: str, enabled: bool) -> dict:
     profile, session, path = _profile(values, identity, allow_stopped=not enabled)
     with _locked(path):
-        state = _load(path)
+        state = _load(path, profile=profile)
         _validate_binding(state, profile, session)
         if (state.get("last_attempt") or {}).get("state") in {"starting", "uncertain"} and enabled:
             raise ClientError("Resolve the uncertain prior wake before enabling")
@@ -364,7 +355,7 @@ def status(values: dict[str, str], identity: str) -> dict:
                 "wake_readiness": "ineligible",
                 "reason": "not_joined", "service_presence": None}
     path = _state_path(values, profile["chat_id"])
-    state = _load(path) if path.exists() else None
+    state = _load(path, profile=profile) if path.exists() else None
     binding_matches = bool(state and state.get("chat_id") == profile["chat_id"] and
                            state.get("session_id") == session["session_id"])
     workspace_enabled = workspace_status(values)["enabled"]
@@ -465,8 +456,11 @@ def run_once(values: dict[str, str], identity: str, *, live: bool = False,
              host_factory: HostFactory = CodexAppServer) -> dict:
     profile, session, path = _profile(values, identity)
     with _locked(path):
-        state = _load(path)
+        state = _load(path, profile=profile)
         _validate_binding(state, profile, session)
+
+        if live and state.legacy_scope_recovered:
+            _save(path, state)
 
         def finish(result: dict) -> dict:
             if live and record_result(state, profile, refs, result):

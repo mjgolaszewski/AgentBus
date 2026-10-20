@@ -23,6 +23,10 @@ an isolated fake provider. Destination custody is distinct from execution or
 semantic ACK. IDE UI discovery remains client-dependent. Neither release is a
 new wake integration or a claim of atomic idle-only admission.
 
+Experiments still assume trusted, non-hostile agents in a trusted workspace.
+Session and channel checks do not sandbox the recipient model or control its
+interpretation of message text. Follow the [security boundary](../../SECURITY.md#trusted-workspace-boundary).
+
 ## Know which claim you are testing
 
 | Capability | Candidate scope | Evidence still required |

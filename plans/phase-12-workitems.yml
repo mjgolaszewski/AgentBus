@@ -8,6 +8,33 @@ document:
   path: plans/phase-12-workitems.yml
   phase_id: P12
 workitems:
+- id: P12-P1-27
+  status: DONE
+  summary: Remove affected project tool and CA bundle pins without bypassing dependency assurance
+  priority: P0
+  acceptance:
+  - Update authored uv and certifi pins to patched released versions and regenerate dependency projections and lock through their owners
+  - Pin patched container uv image and distrust only the exact compromised emSign root before dependency downloads; prove fresh installed and container trust excludes it without disabling certificate or hostname checks
+  - Preserve original certified BCF runtime bytes; disclose independently owned host and vendored installer trust stores rather than claiming an application update repairs them
+  acceptance_evidence: [security-dependency-audit, security-sbom, security-vulnerability-scan, python314-compatibility, runtime-smoke, release-smoke]
+- id: P12-P1-25
+  status: DONE
+  summary: Recover recognized legacy wake scope without resetting intent or attempt facts
+  priority: P0
+  acceptance:
+  - Exact authenticated chat/session fills only missing known legacy scope under existing locks; IDs generations candidate batches uncertainty history host facts counters and ACKs are preserved
+  - Read-only views do not persist; partial malformed or conflicting state stays rejected without host contact or evidence loss; uncertain attempts reconcile without duplicate submission
+  - Protected exact-main archive isolated installation and owner-controlled runtime recovery precede release completion
+  acceptance_evidence: [test, contract-test, python314-compatibility, runtime-smoke, release-smoke]
+- id: P12-P1-26
+  status: DONE
+  summary: Clarify trusted workspace boundaries and restore a welcoming product README
+  priority: P1
+  acceptance:
+  - Current security contract audience and skill guidance distinguish AgentBus service checks from agent interpretation and outside tools under trusted non-hostile workspace assumptions
+  - README introduces product usage without RC chronology; technical links remain valid and experimental capabilities remain disclosed
+  - Quick start names the operator allowlist before service startup and retains native platform limits; contract proof declares the five onboarding files the existing check reads
+  acceptance_evidence: [contract-test, release-smoke]
 - id: P12-P1-24
   status: DONE
   summary: Remove redundant TLS setup from loopback wake and polling requests
