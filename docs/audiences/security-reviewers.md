@@ -8,6 +8,13 @@ operations cannot select another channel. Operator mutations use a separate
 capability. The P12 candidate is not live multichannel qualification; AHP and
 atomic wake remain experimental. See [Experimenters](experimenters.md).
 
+AgentBus assumes a trusted workspace and trusted, non-hostile agents and
+operators. It does not sandbox shared-account participants or enforce how an
+agent interprets a message. A message grants no new protocol authority, but an
+agent can still infer authority on its own and act with existing tools. Review
+the [trusted-workspace boundary](../../SECURITY.md#trusted-workspace-boundary)
+separately from the service checks below.
+
 ## Review these boundaries
 
 - Slack app and bot tokens stay in service configuration.

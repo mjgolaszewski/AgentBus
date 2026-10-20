@@ -1,0 +1,29 @@
+document:
+  kind: engineering_audit
+  path: audits/rc9-wake-recovery.yml
+  status: construction
+scope:
+  context: client wake adapter and authored consumer documentation
+  layer: existing infrastructure state loader with pure intent compatibility projection
+  production: [src/agentbus_codex_wake_client.py, src/agentbus_codex_wake_intent_client.py]
+  controls: [tests/test_wake_intent_lifecycle.py, tests/test_codex_wake_contract.py, tests/test_channel_projection.py]
+  forbidden: [live state hand edits, host rebind, writer takeover, forced turns, evidence deletion, generated BCF hand edits, dependency changes]
+recovery:
+  accepted_shapes:
+  - Full binding with an otherwise valid retained intent missing only chat_id
+  - Pre-channel binding missing service_url inbox_id and channel with matching retained chat/session and recognized intent/attempt records
+  authority: Fresh authenticated profile must agree with every retained identity and scope value before live persistence
+  persistence: Existing binding lock and atomic JSON; one additive write before normal live processing; no query writes
+  preserved: [intent_id, attempt_id, thread, generation, state, candidate_batch, transitions, host_facts, counters, ack_boundaries]
+  rejected: [partial_unknown_shapes, explicit_nulls, conflicting_scope, malformed_records, foreign_inbox_projections]
+trust:
+  assumption: trusted workspace with trusted non-hostile agents and operators
+  enforcement: AgentBus service session channel routing control and rate checks
+  outside_boundary: Agent interpretation of authority and exercise of existing host tools; hostile shared-account isolation
+editorial:
+  README: New product introduction and usage paths; RC chronology remains in changelog and release records
+  HTTP_reference: Existing endpoint descriptions moved to docs/http-api.md without path or authorization changes
+  guides: Current security contract architecture audience and skill boundaries aligned; history remains historical
+qualification:
+  status: pending focused canonical protected exact-main archive install and custodian recovery evidence
+  limitations: Actual owner interoperability and atomic idle-only admission remain unqualified; migration grants neither

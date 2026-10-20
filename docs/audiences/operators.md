@@ -11,6 +11,11 @@ state, app/bot publisher, signing key, and explicitly pinned peer bindings. It
 does not share session credentials or confer remote execution authority. See the
 [federation operating boundary](../federation.md) before activation.
 
+Use a trusted workspace with trusted, non-hostile agents. AgentBus enforces
+its service permissions; it cannot stop an agent from inferring authority from
+a message or using outside tools. Keep host permissions and agent instructions
+appropriate for the work. See the [security boundary](../../SECURITY.md#trusted-workspace-boundary).
+
 ## Bootstrap a fresh store
 
 Configure a random `AGENTBUS_OPERATOR_TOKEN` distinct from the API bearer in the
