@@ -14,7 +14,7 @@ workitems:
   priority: P0
   acceptance:
   - Update authored uv and certifi pins to patched released versions and regenerate dependency projections and lock through their owners
-  - Retain the actual failed security audit and prove patched installed bundle excludes the compromised root while keeping certificate and hostname verification enabled
+  - Pin patched container uv image and distrust only the exact compromised emSign root before dependency downloads; prove fresh installed and container trust excludes it without disabling certificate or hostname checks
   - Preserve original certified BCF runtime bytes; disclose independently owned host and vendored installer trust stores rather than claiming an application update repairs them
   acceptance_evidence: [security-dependency-audit, security-sbom, security-vulnerability-scan, python314-compatibility, release-smoke]
 - id: P12-P1-25

@@ -36,7 +36,8 @@ security_followup:
   - https://github.com/certifi/python-certifi/security/advisories/GHSA-6q48-6c7w-9gw2
   observed: Existing project certifi 2026.7.22 and system CA bundle retain emSign ECC Root CA - G3; no exploitation claimed
   targeted_versions: {uv: 0.13.4, certifi: 2026.10.19}
+  container: Pin patched official uv image by verified registry digest; distrust exact compromised root fingerprint before dependencies and assert fresh SSL context excludes it
   ownership: Project metadata is authored; dependency projection remains installer-owned; host trust and shared tools remain custodian-owned
   original_BCF: Released 2.3.4 unchanged; pip 26.2.1 installer constraint reported to owner, not silently patched or promoted to a new blocker
-  bootstrap: No affected-tool network fetches; wait for independently verified patched shared tool and trust receipt
+  bootstrap: Use independently verified patched shared uv and clean CA bundle; materialize project environment through original BCF owner with explicit clean install trust
   qualification: New lock materialization exact dependency audit bundle inspection and final canonical proof pending; no advisory ignore

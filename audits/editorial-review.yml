@@ -850,7 +850,7 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines: [[1, 288]]
   line_count: 288
-  sha256: 2b9a0dc51c3b09c5419395f28de9d779a8bbc1dde1d8b3bd1ac9c6e60b31694e
+  sha256: faaa659b60b141a0d09671f221ab3acb8f484f53358ec781fc63ce63f21671f4
   baseline_sha256: 1c632ee46d55ab7ba403af50842aa97a1a733cadd8798eb694257d3f6e53cfbc
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
@@ -1020,9 +1020,9 @@ documents:
   review_basis: New RC9 document reviewed in full; current capabilities and limits checked against implementation.
 - document: audits/rc9-wake-recovery.yml
   review_status: reviewed_in_full
-  reviewed_lines: [[1, 42]]
-  line_count: 42
-  sha256: 8cce83fb3aba608fb65c3883052f27b5983bc1367b70a428c0269512699d4b4f
+  reviewed_lines: [[1, 43]]
+  line_count: 43
+  sha256: d427590877edb6af6ee55bf69f3951262c288a0b54fbfa2066c4e2c77f125ae1
   disposition: new
   review_basis: New RC9 document reviewed in full; current capabilities and limits checked against implementation.
 
