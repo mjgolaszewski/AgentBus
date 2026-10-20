@@ -1122,9 +1122,17 @@ documents:
   disposition: new
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
     inspected in section context. New records reviewed in full.
+- document: audits/rc8-wake-cpu.yml
+  review_status: reviewed_in_full
+  reviewed_lines: [[1, 34]]
+  line_count: 34
+  sha256: 2dedb90075b344b2d7cd0281d7d3dc5d3133c0ebcd664332cd5ef80b0f1343c1
+  disposition: new
+  review_basis: RC8 transport scope diagnosis acceptance and disclosed limits reviewed in full
+
 summary:
-  documents: 100
-  new: 1
+  documents: 101
+  new: 2
   updated: 27
   retained: 72
   verification: Privacy regression and exact-source proof pending
@@ -1135,11 +1143,3 @@ release_record_review:
     unchanged
   scope: documentation_only
   qualification: new_documentation_subject_requires_own_canonical_proof
-
-- document: audits/rc8-wake-cpu.yml
-  review_status: reviewed_in_full
-  reviewed_lines: [[1, 34]]
-  line_count: 34
-  sha256: 2dedb90075b344b2d7cd0281d7d3dc5d3133c0ebcd664332cd5ef80b0f1343c1
-  disposition: new
-  review_basis: RC8 transport scope diagnosis acceptance and disclosed limits reviewed in full
