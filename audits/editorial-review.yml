@@ -1031,9 +1031,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 308
-  line_count: 308
-  sha256: cc20732f8da43388352cf353afd57ea5442d7ec5cade7da1b2b7ee0ddb8f58bb
+    - 309
+  line_count: 309
+  sha256: ea5c0b992c881d8d4bd2c27137d062401825a110cbd3f6045195b1dbfbd9bafb
   disposition: updates
   findings:
   - RC5 publication record reviewed against exact ce31aa5 proof; runtime authority remains bound to that released subject.
@@ -1108,8 +1108,10 @@ documents:
     budgets; no evidence or authority exception.'
   - 'RC6 final construction context reviewed: exact work-order coverage and current RC5 release identity; candidate proof
     remains separate from authored implementation status.'
+  - Retained actual final-preparation version-oracle failure and narrow authored correction; no runtime or qualification
+    outcome relabelled.
   verification: RC6 changed text reviewed; exact-source proof and custodian rollout pending
-  baseline_review_sha256: 111e46658e91a5766b5e989013fec48427c486734a533ea220567e5fa81048bc
+  baseline_review_sha256: cc20732f8da43388352cf353afd57ea5442d7ec5cade7da1b2b7ee0ddb8f58bb
   review_basis: Unchanged full-line baseline verified at c72e1aa; RC6 changes reviewed in context
 - document: plans/build-plan.yml
   review_status: line_by_line_reviewed
@@ -1687,9 +1689,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 55
-  line_count: 55
-  sha256: e708c91ef372527765bb729a55ebc3c8a8ce6ab05906906289630cf32229f91a
+    - 56
+  line_count: 56
+  sha256: c289d56322fccb18b69dd9dc83a6c99a2baa7bf6f8c43a95a549e0eb060ebce3
   disposition: new
   verification: RC6 changed text reviewed; exact-source proof and custodian rollout pending
   findings:
@@ -1699,7 +1701,9 @@ documents:
     budgets; no evidence or authority exception.'
   - 'RC6 final construction context reviewed: exact work-order coverage and current RC5 release identity; candidate proof
     remains separate from authored implementation status.'
-  baseline_review_sha256: d080c4fb4ea9ae960aeecd5d82ffaa36afa7042b64ed0374276d2a1e05871017
+  - Retained actual final-preparation version-oracle failure and narrow authored correction; no runtime or qualification
+    outcome relabelled.
+  baseline_review_sha256: e708c91ef372527765bb729a55ebc3c8a8ce6ab05906906289630cf32229f91a
 summary:
   documents_reviewed: 98
   pending_line_reviews: 0

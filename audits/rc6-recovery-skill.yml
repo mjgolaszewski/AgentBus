@@ -53,3 +53,4 @@ assurance:
   - Reconcile and YAML rejected two authored line budgets before writes; raw private diagnostics retained without provider or live effects
   - Corrected32d5bcf preparation passes3 prior failures and lint; original234 reconcile converged2rounds and adds12cases to both manifests
   - Authored phase wording then rejected by YAML coverage; split into exact work-order summaries, retain raw diagnostics and require canonical proof
+  - f137968 doc-contract3PASS and lint PASS; YAML identifies old rc5 version-drift mutation literal, updated to rc6 without weakening the consistency oracle
