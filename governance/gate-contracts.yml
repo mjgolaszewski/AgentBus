@@ -27,6 +27,7 @@ claim_model:
     workflow: [.github/workflows/**, governance/ci-graph.yml]
     security-config: [&id004 SECURITY.md, *id002, uv.lock, *id003]
     documentation: [&id061 README.md, docs/**, skills/**, CHANGELOG.md, CONTRACT.md, CONTRIBUTING.md, LICENSE, *id004]
+    onboarding-docs: [README.md, SECURITY.md, docs/contracts.md, docs/README.md, .env.example]
     no-files: [.bcf-no-files]
     whole-tree: ['**']
   execution_groups:
@@ -273,7 +274,7 @@ claim_model:
       execution_group: service-contract
       legacy_gate: *id025
       dependencies:
-        subject: [*id013, *id012, participation-contract, codex-wake-contract]
+        subject: [*id013, *id012, participation-contract, codex-wake-contract, onboarding-docs]
         detector: [*id014]
         test_population: [service-tests]
         toolchain: [*id011]

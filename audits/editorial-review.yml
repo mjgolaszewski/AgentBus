@@ -599,9 +599,9 @@ documents:
 
 - document: phases/phase-12-log.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 348]]
-  line_count: 348
-  sha256: 3509b6856b9f5ab7cd8c78713822eb26b0b1c2ce92e12b0e913a4e6e510520da
+  reviewed_lines: [[1, 349]]
+  line_count: 349
+  sha256: 669de34319b43f9d6301d9f9298f94bf318c3dacf25909ad4bd54cde54f83565
   baseline_sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
@@ -850,7 +850,7 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines: [[1, 289]]
   line_count: 289
-  sha256: 9cc786f76d1f00e8ce21e6597609879a3dc234bdcee27f2bb5a246ee9cb2762e
+  sha256: 163517bc80b18adf4efb7fad5bd09ef1d80da893db7d6c33d84ec7c16e7652cf
   baseline_sha256: 1c632ee46d55ab7ba403af50842aa97a1a733cadd8798eb694257d3f6e53cfbc
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
