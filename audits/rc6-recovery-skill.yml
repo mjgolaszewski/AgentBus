@@ -1,7 +1,7 @@
 document:
   kind: rc6_construction_audit
   path: audits/rc6-recovery-skill.yml
-  status: targeted_controls_passed_canonical_pending
+  status: source_preflight_passed_canonical_pending
 baseline:
   main: c72e1aae138619dce114a3186fda9bf9953371c0
   released_runtime: ce31aa52f939b18774b06110e4df7b47ce79b026
@@ -54,3 +54,4 @@ assurance:
   - Corrected32d5bcf preparation passes3 prior failures and lint; original234 reconcile converged2rounds and adds12cases to both manifests
   - Authored phase wording then rejected by YAML coverage; split into exact work-order summaries, retain raw diagnostics and require canonical proof
   - f137968 doc-contract3PASS and lint PASS; YAML identifies old rc5 version-drift mutation literal, updated to rc6 without weakening the consistency oracle
+  - Final3d00ca9 source preparation terminal0 and original234 reconcile YAML620file source check PASS; only duration observation updated; canonical proof still pending

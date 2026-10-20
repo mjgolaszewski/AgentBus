@@ -1031,9 +1031,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 309
-  line_count: 309
-  sha256: ea5c0b992c881d8d4bd2c27137d062401825a110cbd3f6045195b1dbfbd9bafb
+    - 310
+  line_count: 310
+  sha256: 6212ddbfe02380decb49348fcfd2ff55eebc1cb80e07d4e88276f4ffd6cc9b6e
   disposition: updates
   findings:
   - RC5 publication record reviewed against exact ce31aa5 proof; runtime authority remains bound to that released subject.
@@ -1110,8 +1110,10 @@ documents:
     remains separate from authored implementation status.'
   - Retained actual final-preparation version-oracle failure and narrow authored correction; no runtime or qualification
     outcome relabelled.
+  - Reviewed source-preflight success and retained earlier actual failures; current source remains pending canonical
+    proof, with no release or deployment claim.
   verification: RC6 changed text reviewed; exact-source proof and custodian rollout pending
-  baseline_review_sha256: cc20732f8da43388352cf353afd57ea5442d7ec5cade7da1b2b7ee0ddb8f58bb
+  baseline_review_sha256: ea5c0b992c881d8d4bd2c27137d062401825a110cbd3f6045195b1dbfbd9bafb
   review_basis: Unchanged full-line baseline verified at c72e1aa; RC6 changes reviewed in context
 - document: plans/build-plan.yml
   review_status: line_by_line_reviewed
@@ -1689,9 +1691,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 56
-  line_count: 56
-  sha256: c289d56322fccb18b69dd9dc83a6c99a2baa7bf6f8c43a95a549e0eb060ebce3
+    - 57
+  line_count: 57
+  sha256: 0f811ebcc7ac4125970c4e0c6926088d3e603ac3e0ce59c0dbc2e088298a7add
   disposition: new
   verification: RC6 changed text reviewed; exact-source proof and custodian rollout pending
   findings:
@@ -1703,7 +1705,9 @@ documents:
     remains separate from authored implementation status.'
   - Retained actual final-preparation version-oracle failure and narrow authored correction; no runtime or qualification
     outcome relabelled.
-  baseline_review_sha256: e708c91ef372527765bb729a55ebc3c8a8ce6ab05906906289630cf32229f91a
+  - Reviewed source-preflight success and retained earlier actual failures; current source remains pending canonical
+    proof, with no release or deployment claim.
+  baseline_review_sha256: c289d56322fccb18b69dd9dc83a6c99a2baa7bf6f8c43a95a549e0eb060ebce3
 summary:
   documents_reviewed: 98
   pending_line_reviews: 0
