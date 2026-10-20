@@ -21,4 +21,14 @@ acceptance:
   - Wake recovery concurrency shutdown and authorization controls pass
   - Protected PR exact-main archive SDK-free install and custodian CPU readback required
 proof:
-  status: pending
+  focused_controls: 116 passed
+  offline_same_interpreter_loopback:
+    requests: 30
+    baseline_cpu_seconds: 1.231197748
+    candidate_cpu_seconds: 0.065184030
+    reduction_percent: 94.7056409
+    baseline_tls_initializations: 30
+    candidate_tls_initializations: 0
+    limits: Synthetic same-process local server measurement; actual watcher and editor connection causation still unproved
+  preparation: Corrected diagnostic instrumentation to actual urllib TLS factory and live interpreter; initial invalid benchmark retained privately. Original installer then rejected a one-line memory budget overrun, corrected without changing its budget.
+  final_status: pending protected exact-main archive install and runtime readback
