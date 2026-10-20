@@ -1,7 +1,7 @@
 document:
   kind: editorial_audit
   path: audits/editorial-review.yml
-  status: rc6_changed_bytes_reviewed_prior_full_line_audit_retained
+  status: rc6_release_record_changed_bytes_reviewed
 request:
   scope: Complete product documentation review, including historical records and product contracts; line-by-line
     coverage and disposition per file
@@ -95,7 +95,7 @@ documents:
   - - 1
     - 105
   line_count: 105
-  sha256: 0b47d7d2f9494bccb82fec4947f1e96b8bf115388ef73b5f0ac98bbaa5a88494
+  sha256: 486989ca8ea9e296a2dce9fe025313aa5c5f73606531fb405a0c338ee953b4c3
   disposition: updates
   findings:
   - RC5 publication record reviewed against exact ce31aa5 proof; runtime authority remains bound to that released subject.
@@ -142,16 +142,20 @@ documents:
     remains distinct from this candidate.
   - RC6 complete new text or changed lines reviewed in surrounding context; preserve immutable RC5 evidence, channel
     authority, bounded recovery and unqualified host wake.
-  verification: RC6 changed text reviewed; exact-source proof and custodian rollout pending
-  baseline_review_sha256: 764911728c91601d8a9f60a5baa553de235acc6ba90f79e562bde0cc163ab32b
+  - 'Reviewed all changed release/installation text in context: immutable c5 runtime and assets remain bound, actual
+    original-request destination custody and skill byte verification are distinct from execution/IDE UI claims; private
+    consumer URLs and identities omitted.'
+  verification: RC6 publication and installation facts reviewed against exact c5 source/provider/archive/private custodian
+    receipts; docs-only subject pending canonical proof
+  baseline_review_sha256: 0b47d7d2f9494bccb82fec4947f1e96b8bf115388ef73b5f0ac98bbaa5a88494
   review_basis: Unchanged full-line baseline verified at c72e1aa; RC6 changes reviewed in context
 - document: README.md
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 907
-  line_count: 907
-  sha256: a56613d1d2ed1f5baaec252e87f8c4a779a749169d298470379bda799e4c2e5c
+    - 912
+  line_count: 912
+  sha256: b7013d36852333861ccd7453ecce16cc28d4c7baf7c2ac7db3aa39fba4f06931
   disposition: updates
   findings:
   - RC4 follow-up changed lines reviewed in context against hash-verified 6a1c6720; released runtime evidence stays bound
@@ -182,8 +186,12 @@ documents:
     remains distinct from this candidate.
   - 'RC6 final construction context reviewed: exact work-order coverage and current RC5 release identity; candidate proof
     remains separate from authored implementation status.'
-  verification: RC5 targeted characterization; canonical exact-source proof pending
-  baseline_review_sha256: bb09322f431ee87ff7becb2e9cede3da84f1ef241662383c3c8ba7fb2ba73cc3
+  - 'Reviewed all changed release/installation text in context: immutable c5 runtime and assets remain bound, actual
+    original-request destination custody and skill byte verification are distinct from execution/IDE UI claims; private
+    consumer URLs and identities omitted.'
+  verification: RC6 publication and installation facts reviewed against exact c5 source/provider/archive/private custodian
+    receipts; docs-only subject pending canonical proof
+  baseline_review_sha256: a56613d1d2ed1f5baaec252e87f8c4a779a749169d298470379bda799e4c2e5c
   review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed in surrounding
     context
 - document: SECURITY.md
@@ -580,9 +588,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 89
-  line_count: 89
-  sha256: bf8b001723955819edc3f8ced92f5e32b53005dfb33b70ef3e35d10a8b92a80f
+    - 93
+  line_count: 93
+  sha256: 244689c58ec180c480b4bcd2747824aaa343de8fc215cd1482bc67ae01d256d9
   disposition: updates
   findings:
   - RC4 follow-up changed lines reviewed in context against hash-verified 7d175943; released runtime evidence stays bound
@@ -606,8 +614,12 @@ documents:
     remains distinct from this candidate.
   - RC6 complete new text or changed lines reviewed in surrounding context; preserve immutable RC5 evidence, channel
     authority, bounded recovery and unqualified host wake.
-  verification: RC6 changed text reviewed; exact-source proof and custodian rollout pending
-  baseline_review_sha256: ab3767351940e80ab9fcd7441320f7a5f1f843d4253947e1d88422963420a23f
+  - 'Reviewed all changed release/installation text in context: immutable c5 runtime and assets remain bound, actual
+    original-request destination custody and skill byte verification are distinct from execution/IDE UI claims; private
+    consumer URLs and identities omitted.'
+  verification: RC6 publication and installation facts reviewed against exact c5 source/provider/archive/private custodian
+    receipts; docs-only subject pending canonical proof
+  baseline_review_sha256: bf8b001723955819edc3f8ced92f5e32b53005dfb33b70ef3e35d10a8b92a80f
   review_basis: Unchanged full-line baseline verified at c72e1aa; RC6 changes reviewed in context
 - document: docs/audiences/hippiebots.md
   review_status: line_by_line_reviewed
@@ -744,9 +756,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 116
-  line_count: 116
-  sha256: e4b3aca401cb6c04e378d1c05e3581d7364051da7e937aa4078727d7c5eb6693
+    - 121
+  line_count: 121
+  sha256: e1339ee0338de7e0976fd09f3cb48891371068323d5e5bbd59987caacd310f70
   disposition: updates
   findings:
   - RC5 qualification closeout changed lines reviewed against exact946445c; runtime proof stays bound to that immutable
@@ -771,8 +783,12 @@ documents:
     remains distinct from this candidate.
   - 'RC6 final construction context reviewed: exact work-order coverage and current RC5 release identity; candidate proof
     remains separate from authored implementation status.'
-  verification: RC5 targeted characterization; canonical exact-source proof pending
-  baseline_review_sha256: cea2e519870c848e9bc753257c8ede1aaab6abe3fe838eef56e85e6a7f5f6688
+  - 'Reviewed all changed release/installation text in context: immutable c5 runtime and assets remain bound, actual
+    original-request destination custody and skill byte verification are distinct from execution/IDE UI claims; private
+    consumer URLs and identities omitted.'
+  verification: RC6 publication and installation facts reviewed against exact c5 source/provider/archive/private custodian
+    receipts; docs-only subject pending canonical proof
+  baseline_review_sha256: e4b3aca401cb6c04e378d1c05e3581d7364051da7e937aa4078727d7c5eb6693
   review_basis: Immutable full-document review inherited by exact baseline hash; all RC3 changed lines reviewed in surrounding
     context
 - document: docs/federation.md
@@ -1031,9 +1047,9 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 310
-  line_count: 310
-  sha256: 6212ddbfe02380decb49348fcfd2ff55eebc1cb80e07d4e88276f4ffd6cc9b6e
+    - 313
+  line_count: 313
+  sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
   findings:
   - RC5 publication record reviewed against exact ce31aa5 proof; runtime authority remains bound to that released subject.
@@ -1112,8 +1128,12 @@ documents:
     outcome relabelled.
   - Reviewed source-preflight success and retained earlier actual failures; current source remains pending canonical
     proof, with no release or deployment claim.
-  verification: RC6 changed text reviewed; exact-source proof and custodian rollout pending
-  baseline_review_sha256: ea5c0b992c881d8d4bd2c27137d062401825a110cbd3f6045195b1dbfbd9bafb
+  - 'Reviewed all changed release/installation text in context: immutable c5 runtime and assets remain bound, actual
+    original-request destination custody and skill byte verification are distinct from execution/IDE UI claims; private
+    consumer URLs and identities omitted.'
+  verification: RC6 publication and installation facts reviewed against exact c5 source/provider/archive/private custodian
+    receipts; docs-only subject pending canonical proof
+  baseline_review_sha256: 6212ddbfe02380decb49348fcfd2ff55eebc1cb80e07d4e88276f4ffd6cc9b6e
   review_basis: Unchanged full-line baseline verified at c72e1aa; RC6 changes reviewed in context
 - document: plans/build-plan.yml
   review_status: line_by_line_reviewed
@@ -1691,11 +1711,12 @@ documents:
   review_status: line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 57
-  line_count: 57
-  sha256: 0f811ebcc7ac4125970c4e0c6926088d3e603ac3e0ce59c0dbc2e088298a7add
+    - 107
+  line_count: 107
+  sha256: 0d208b24e90a01034aa60e6094dc71d4986d938921a38369aac11b2b96092ac2
   disposition: new
-  verification: RC6 changed text reviewed; exact-source proof and custodian rollout pending
+  verification: RC6 publication and installation facts reviewed against exact c5 source/provider/archive/private custodian
+    receipts; docs-only subject pending canonical proof
   findings:
   - RC6 complete new text or changed lines reviewed in surrounding context; preserve immutable RC5 evidence, channel
     authority, bounded recovery and unqualified host wake.
@@ -1707,11 +1728,14 @@ documents:
     outcome relabelled.
   - Reviewed source-preflight success and retained earlier actual failures; current source remains pending canonical
     proof, with no release or deployment claim.
-  baseline_review_sha256: c289d56322fccb18b69dd9dc83a6c99a2baa7bf6f8c43a95a549e0eb060ebce3
+  - 'Reviewed all changed release/installation text in context: immutable c5 runtime and assets remain bound, actual
+    original-request destination custody and skill byte verification are distinct from execution/IDE UI claims; private
+    consumer URLs and identities omitted.'
+  baseline_review_sha256: 0f811ebcc7ac4125970c4e0c6926088d3e603ac3e0ce59c0dbc2e088298a7add
 summary:
   documents_reviewed: 98
   pending_line_reviews: 0
-  validation: All 98 included documents retain exact hashes and full-line baseline coverage; RC6 new skill and install guide are fully reviewed, changed product text reviewed in context. Current exact-source proof and custodian rollout pending; immutable RC5 evidence remains historical.
+  validation: All 98 current product documents retain exact hashes and full-line baseline coverage; changed RC6 release-record bytes reviewed in context. Public c5 release qualification and private custodian installation receipts verified; private consumer identifiers omitted. This docs-only subject awaits canonical proof and never replaces runtime or archive identities.
   consolidation: No historical record merged or removed; new models consolidate current authority without deleting
     evidence
   experimental_disclosures: Current product and audience guides name live multichannel and owner-wake qualification

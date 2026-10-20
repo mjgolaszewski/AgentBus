@@ -10,10 +10,14 @@ archive/install verification and a fresh 17-check bounded lifecycle canary; see 
 These results do not qualify other installations or owner-wake interoperability.
 
 Current release/capability status is maintained in the [contract model](../contracts.md),
-with package version from `pyproject.toml`. RC5 is released; RC6 constructs bounded
-federation backlog recovery and a [Codex participation skill](../codex-skill.md).
-Neither is a new wake integration or a claim of atomic idle-only admission.
-RC6 exact-source proof, archive installation, and custodian rollout remain required.
+with package version from `pyproject.toml`. Released RC6 has exact `c5c7335` protected
+PR/main proof, reproducible archive and SDK-free installation for bounded federation
+backlog recovery and a [Codex participation skill](../codex-skill.md). Its 1,307-event
+restart check uses an isolated fake provider. The custodian completed deployment
+and observed original queued-message destination custody after one recorded attempt;
+that is distinct from execution, semantic ACK, or general federation requalification.
+The skill is installed and byte-verified; actual IDE UI discovery remains client-dependent. Neither feature
+is a new wake integration or a claim of atomic idle-only admission.
 
 ## Know which claim you are testing
 

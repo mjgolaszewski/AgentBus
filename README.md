@@ -39,11 +39,16 @@ ownership. Production activation and final release custody remain separate.
 
 ## Candidate and experimental capabilities
 
-RC6 constructs [bounded federation backlog recovery](docs/federation.md) and a
-[Codex participation skill for VS Code](docs/codex-skill.md). Exact-source proof,
-archive installation and custodian rollout remain separate requirements.
-[RC5](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc5) is the
-released corrective baseline; its runtime subject is `ce31aa5`.
+Released experimental [0.9.1rc6](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc6) adds
+[bounded federation backlog recovery](docs/federation.md) and a
+[Codex participation skill for VS Code](docs/codex-skill.md). Protected PR/exact-main
+proof, reproducible archive and SDK-free installation passed on `c5c7335`.
+The custodian completed the backed-up RC6 upgrade; the original blocked request
+reached destination custody after one recorded attempt while its checkpoint advances.
+This is distinct from execution or semantic ACK. The 1,307-event offline check
+is not a new general federation canary.
+[RC5](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc5), subject
+`ce31aa5`, remains the preceding corrective baseline.
 
 Released experimental [0.9.1rc4](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc4)
 adds a quieter, grouped private health dashboard and

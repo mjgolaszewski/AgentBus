@@ -19,10 +19,10 @@ summary:
 workitems:
 - id: P12-P1-20
   status: DONE
-  summary: RC6 bounded federation recovery implemented; targeted controls pass, canonical evidence pending
+  summary: Released RC6 recovery exact-main archive installation and original-request destination custody verified
 - id: P12-P1-21
   status: DONE
-  summary: RC6 skill metadata validated; archive layout and canonical evidence pending
+  summary: Released RC6 Codex skill installed with exact three-file byte verification; live IDE UI discovery separate
 - id: P12-P1-14
   status: DONE
   summary: Freeze RC5 Issue94 canonical owners vocabulary and acceptance matrix
@@ -93,6 +93,9 @@ execution_evidence:
   planned_commands:
   - canonical bcf ci submit after shared native capacity is available
   executed_commands:
+  - "RC6 immutable publication c5c73354/tree94b730e9 after original234 canonical61b1bab terminal0/773.906714s, protectedPR99/run39372929164 all6SUCCESS normal merge and exact-main39373443569/1 all6SUCCESS. All6ZIPdigests per run authenticated; independent original234 truth matches PRe328df3b on actual synthetic46300e10 and main41e59455 on exactc5, PASS/pr/issues empty. Both new items20/21 close verified eligible workitem-only, P12 remains active. Provider JUnit208ordinary/520contract/610Python314 plus8architecture baselines covers all528file-qualified top-level functions and24new case records. First readback query omitted8separate architecture producers; corrected analysis includes them, no provider failure or evidence retry."
+  - "RC6 two reproducible archive builds match authenticated-main release-smoke SHA3cceab4c/6561373bytes; offline SDK-free install620files/modes66module origins, entrypoint help,7read-only operator queries, fresh staged enrollment and inherited controls PASS. Isolated fake-provider1307event/115page restart traversal with no checkpoint reset and exact three-file Codex layout/metadata PASS; no live IDE or general provider claim. Package terminal0/6.883s,620source hashes unchanged, Q/EOF/reap/known process absence/original fence fresh free, custodian independent handback accepted. Receipt9ef61b75 retained private HOLD; original native failure diagnostics preserved."
+  - "RC6 tagv0.9.1rc6 exactc5 and all3 actual remote asset bytes independently downloaded/verified: archive3cceab4c,manifest9bcd0059,SUMSa0f22acb. OperatorDDSBZDT priority ACK/readback by custodian and peers; custodian owns backed-up upgrade and observed80runtime hashes/zero installer drift, exact pre-start DB/env/consumerJSON continuity,15worker specs restored, existing wake enabled/activation unchanged, healthy Slack-connected service. Independent live66module+4entrypoint/package hashes and publichealth OK; first local status parser wrongly expectedJSON from text, corrected via canonical health API without mutation. Actual Codex skill directory all3files independently byte-matched, no editor restart/enrollment. Private consumer source and exact-main Python312/314 checks passed with exact identifiers retained privately. Original retained federation UUID reached destination custody after1recorded attempt/provider unchanged/no failure while checkpoint advances without reset or replacement; receiptce31d670 private. No execution/semanticACK/full-backlog-drained/new fanout/owner-wake claim. Documentation follow-up preserves immutable runtime and archive identities."
   - "RC6 final3d00ca9 preparation terminal0/53.076s: original234 reconcile, full YAML validation and620file source check PASS; only installer duration-observation projection updated. Earlier115+3 behavior,3 documentation cases, Ruff,68file mypy and skill validation retained; both exact test manifests add12cases. All114 authored negative-control searches resolve once. Raw failed diagnostics preserved; original fence released after terminal/Q/EOF/reap and known process absence. Clean final canonical subject remains required; no release/deployment or current live federation claim."
   - "RC6 f137968 final preparation terminal1/32.283s: three documentation-contract cases and lint PASS, installer no-op; YAML rejects existing version-drift negative-control search still pinned to rc5. Update only authored search to current rc6 literal, retaining mismatch mutation and rejection oracle. Preserve raw diagnostics; original fence released after Q/EOF/reap and known process absence. No runtime or skill bytes changed."
   - "RC6 corrected32d5bcf preparation terminal1/58.663s: all3 corrected controls and lint PASS; original234 installer converged2rounds with only semantic-lock, duration observations and two test manifests changed (+12cases ordinary contract and Python314). YAML correctly rejected combined phase deliverable wording; split into exact existing work-order summaries without changing scope or validator. Source runtime unchanged; all raw first failures retained privately, Q/EOF/reap/known handles absent and original fence released. Authored DONE means implementation completed, never computed closure or release proof."
@@ -306,5 +309,5 @@ known_constraints:
 - Installed OpenAI extension bundles0.162.0-alpha.17.2; release0.163 changes are upstream context
 - P12 channel construction changes production source and authorization contracts; dependencies, live credentials, deployment and historical release proof stay unchanged
 next_work:
-- Maintain policy backoff polling and assist the custodian when requested; RC4 UI acceptance and requested cleanup are complete
+- Maintain policy backoff polling and finish RC6 documentation custody; publication upgrade skill installation and original-request destination custody are verified
 - Remain offline at operator instruction; actual owner interoperability and atomic admission stay unqualified in Issue75
