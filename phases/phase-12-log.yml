@@ -18,6 +18,9 @@ summary:
   - 57 affected wake cases, Ruff and governance YAML validation pass; computed closure remains unclaimed
   - Actual pinned AHP reducer passes168 upstream chat fixtures and8 targeted controls; drift and semantic queue-order mutants reject
 workitems:
+- id: P12-P1-27
+  status: TODO
+  summary: Stage patched project trust dependencies after actual canonical audit failure; safe materialization pending
 - id: P12-P1-25
   status: DONE
   summary: Recognized legacy wake scope recovery implemented; qualification pending
@@ -109,6 +112,7 @@ execution_evidence:
   planned_commands:
   - canonical bcf ci submit after shared native capacity is available
   executed_commands:
+  - "RC9 first canonicalfcc1632 terminal1/330.7989175s on actual security-vulnerability-scan: uv0.12.18 GHSA-hq85-5cpj-mr62; failure bundlea9ab86ea retained. No PR or remote source branch exists. Known6handles absent sourceclean and original fencefree; independent owner handback accepted. Primary upstream notices recommend uv0.13.4 and certifi2026.10.19. Read-only inventory confirms affected G3 root in project and OS bundles. Stage authored pins; dependency projection remains installer-owned. Hold affected-tool network fetches pending custodian patched-tool receipt; report original234 pip26.2.1 constraint to owner without SDK edits or invented successor requirement. No audit ignore, exploitation claim, live change or release qualification."
   - "RC9 final local preparationfaf1a0a terminal0/56.671s: original234 reconciliation governance validation source624 Ruff and mypy68files PASS; runtime/test blobs remain identical to118PASS subject29eaaf7. Only installer-owned duration observations changed. All44wake-intent nodes appear in ordinary245 contract579 and Python314680 manifests. Q/EOF/reap known handles absent and original fence released; prior failures preserved. Canonical protected exact-main archive installation and owner-controlled live recovery remain pending; no release or host qualification inferred."
   - "RC9 preparationf55a770 terminal1/25.586s: original234 reconcile PASS with no diff; governance exposed inherited secret-scan mutation anchored to removed README token placeholder. Retarget only authored search to retained credential guidance while preserving injected credential-shaped bytes and rejection oracle. Source624 unchanged, Q/EOF/reap and original fence released. Static checks remain pending; no BCF defect or successor requirement."
   - "RC9 corrected29eaaf7 preparation terminal1/51.222s:118 focused tests PASS; original234 reconciliation converged2rounds and owns five generated output changes. Governance then rejected P12-P1-26 authored governance-validate evidence because preflight cannot establish workitem closure; remove only that ineligible evidence selector, retaining contract-test and release-smoke. No SDK defect or later static-check result inferred; original failure and Q/EOF/reap handback retained."

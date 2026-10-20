@@ -7,7 +7,7 @@ scope:
   layer: existing infrastructure state loader with pure intent compatibility projection
   production: [src/agentbus_codex_wake_client.py, src/agentbus_codex_wake_intent_client.py]
   controls: [tests/test_wake_intent_lifecycle.py, tests/test_codex_wake_contract.py, tests/test_channel_projection.py]
-  forbidden: [live state hand edits, host rebind, writer takeover, forced turns, evidence deletion, generated BCF hand edits, dependency changes]
+  forbidden: [live state hand edits, host rebind, writer takeover, forced turns, evidence deletion, generated BCF hand edits, unrelated dependency changes]
 recovery:
   accepted_shapes:
   - Full binding with an otherwise valid retained intent missing only chat_id
@@ -27,3 +27,16 @@ editorial:
 qualification:
   status: pending focused canonical protected exact-main archive install and custodian recovery evidence
   limitations: Actual owner interoperability and atomic idle-only admission remain unqualified; migration grants neither
+security_followup:
+  trigger: Actual canonical security-vulnerability-scan failed on project uv 0.12.18
+  first_subject: fcc163290c3e10196dd1635847d2f61b848dda58
+  first_failure_bundle: a9ab86eaee5d331c39705e77ba3ecf10e3124cf3fce7806d18214e26f298fe4a
+  advisories:
+  - https://github.com/astral-sh/uv/security/advisories/GHSA-hq85-5cpj-mr62
+  - https://github.com/certifi/python-certifi/security/advisories/GHSA-6q48-6c7w-9gw2
+  observed: Existing project certifi 2026.7.22 and system CA bundle retain emSign ECC Root CA - G3; no exploitation claimed
+  targeted_versions: {uv: 0.13.4, certifi: 2026.10.19}
+  ownership: Project metadata is authored; dependency projection remains installer-owned; host trust and shared tools remain custodian-owned
+  original_BCF: Released 2.3.4 unchanged; pip 26.2.1 installer constraint reported to owner, not silently patched or promoted to a new blocker
+  bootstrap: No affected-tool network fetches; wait for independently verified patched shared tool and trust receipt
+  qualification: New lock materialization exact dependency audit bundle inspection and final canonical proof pending; no advisory ignore

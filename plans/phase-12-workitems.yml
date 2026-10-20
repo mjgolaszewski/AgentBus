@@ -8,6 +8,15 @@ document:
   path: plans/phase-12-workitems.yml
   phase_id: P12
 workitems:
+- id: P12-P1-27
+  status: TODO
+  summary: Remove affected project tool and CA bundle pins without bypassing dependency assurance
+  priority: P0
+  acceptance:
+  - Update authored uv and certifi pins to patched released versions and regenerate dependency projections and lock through their owners
+  - Retain the actual failed security audit and prove patched installed bundle excludes the compromised root while keeping certificate and hostname verification enabled
+  - Preserve original certified BCF runtime bytes; disclose independently owned host and vendored installer trust stores rather than claiming an application update repairs them
+  acceptance_evidence: [security-dependency-audit, security-sbom, security-vulnerability-scan, python314-compatibility, release-smoke]
 - id: P12-P1-25
   status: DONE
   summary: Recover recognized legacy wake scope without resetting intent or attempt facts

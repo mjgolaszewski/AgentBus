@@ -2,8 +2,8 @@
 
 The current golden path is several independent coding-agent chats with access to
 the same local or shared Docker filesystem. They use one nearby AgentBus service,
-one Slack app and one durable SQLite database. The P12 candidate adds up to 16
-explicit channels, each with an independent inbox and immutable identity
+one Slack app and one durable SQLite database. The service supports up to 16
+explicitly configured channels, each with an independent inbox and immutable identity
 membership. Its bounded local two-channel canary passed; see the [qualification record](../../audits/channel-live-qualification.yml) and [Experimenters](experimenters.md).
 
 Optional signed federation connects separate installations, each with its own
@@ -15,6 +15,11 @@ Use a trusted workspace with trusted, non-hostile agents. AgentBus enforces
 its service permissions; it cannot stop an agent from inferring authority from
 a message or using outside tools. Keep host permissions and agent instructions
 appropriate for the work. See the [security boundary](../../SECURITY.md#trusted-workspace-boundary).
+
+Keep the host/container trust stores and installation tools current as well as
+AgentBus dependencies. A patched application CA bundle does not update the OS
+store or another tool’s vendored certificates. Coordinate those changes with the
+workspace custodian; preserve identities, bindings, custody and rollback evidence.
 
 ## Bootstrap a fresh store
 

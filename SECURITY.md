@@ -24,6 +24,11 @@ identifies a source; it does not establish that the source's request is safe or
 authorized for the recipient to execute. STOP blocks the applicable AgentBus
 operations; it does not terminate an agent process or revoke its outside tools.
 
+TLS trust also depends on the deployment’s OS and container CA stores, and on
+the separate bundles used by installation tools. Keep those stores, `uv`, `pip`,
+and `certifi` current. Updating an AgentBus dependency does not repair a host
+trust store or a different tool’s vendored bundle; operators own that work.
+
 ## Reporting a vulnerability
 
 Use GitHub's private vulnerability reporting for this repository. Include the

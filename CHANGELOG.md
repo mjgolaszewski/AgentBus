@@ -2,6 +2,8 @@
 
 ## [0.9.1rc9] - 2026-10-20
 
+- Pin patched uv 0.13.4 and certifi 2026.10.19 for the upstream emSign trust-store incident; retain audit enforcement and distinguish application dependencies from host/tool trust stores.
+
 - Recover recognized pre-channel wake bindings and missing-chat intents additively from the authenticated profile, retaining IDs, uncertain attempts, host facts, history and ACK boundaries. Conflicting scope remains rejected.
 - Clarify the trusted-workspace, trusted non-hostile agent boundary: service authorization cannot control an agent's inference of authority or its use of outside tools.
 - Bring back a short, welcoming README; keep release history in this changelog and move the HTTP table into its own reference.

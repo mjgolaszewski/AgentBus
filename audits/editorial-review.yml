@@ -55,7 +55,7 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines: [[1, 105]]
   line_count: 105
-  sha256: 5f5b6a965f52d9d36442aed866e247ac41eb0918901515a4728cd4ec45c1442c
+  sha256: d9ad1ee46d871b316db58975e2afc9539291b53ea6d06fe3b07d7ce99ae667bc
   baseline_sha256: 486989ca8ea9e296a2dce9fe025313aa5c5f73606531fb405a0c338ee953b4c3
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
@@ -71,9 +71,9 @@ documents:
 
 - document: SECURITY.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 86]]
-  line_count: 86
-  sha256: 833751720c96e895b63e3946423d2d8bb619e2f88841361bd8ceae07aa3a443a
+  reviewed_lines: [[1, 91]]
+  line_count: 91
+  sha256: 489981f34949e3b3b03aada2cc1321a1e89e5f06f9d2ec21cdcf2b5c34f8b51e
   baseline_sha256: d75b80e963f2271691a434e27eadfb8fbcf419e9f468cad506d5c90d9754c75e
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
@@ -362,9 +362,9 @@ documents:
 
 - document: docs/audiences/operators.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 301]]
-  line_count: 301
-  sha256: 4f9e53d47fe6927b55506c528b1b1707abdfc4a69b4cbc6c542e674a5afac789
+  reviewed_lines: [[1, 306]]
+  line_count: 306
+  sha256: 02ff9be92638a367a3826c9b309419fb4d2360fae406775505fe8df3bb3a5499
   baseline_sha256: 70857225e20bb29293faef6cae5383e4f703f9665d3362a055ee61179d59c1ef
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
@@ -599,9 +599,9 @@ documents:
 
 - document: phases/phase-12-log.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 339]]
-  line_count: 339
-  sha256: dad550ed9e680a4259ddee668053ba693633040e9ad035086146e1769b16d1d5
+  reviewed_lines: [[1, 343]]
+  line_count: 343
+  sha256: 30ce9cb83d849fd56a6d6e78f34f4689b8623d1e57db640d294bd987376f92a3
   baseline_sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
@@ -848,9 +848,9 @@ documents:
 
 - document: plans/phase-12-workitems.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 279]]
-  line_count: 279
-  sha256: 1704fd2c9f390c94d1499ef5257ac0bc7d38a584b242c23b9da77f9e3ee87b71
+  reviewed_lines: [[1, 288]]
+  line_count: 288
+  sha256: 2b9a0dc51c3b09c5419395f28de9d779a8bbc1dde1d8b3bd1ac9c6e60b31694e
   baseline_sha256: 1c632ee46d55ab7ba403af50842aa97a1a733cadd8798eb694257d3f6e53cfbc
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
@@ -986,9 +986,9 @@ documents:
 
 - document: CHANGELOG.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 562]]
-  line_count: 562
-  sha256: ddeb5334a088b38b268e297830eff2e69062003d6bc43b34feefc9757948424e
+  reviewed_lines: [[1, 564]]
+  line_count: 564
+  sha256: 775b8dc03d9cbf96153e8306b627d51a92ce156c733cc03b0fa5c39cf0b54ebc
   baseline_sha256: 089d7b76fe9d53eddc539da2141fb02b0b7502354f7ff75661dad2c5a87cfaf0
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
@@ -1020,9 +1020,9 @@ documents:
   review_basis: New RC9 document reviewed in full; current capabilities and limits checked against implementation.
 - document: audits/rc9-wake-recovery.yml
   review_status: reviewed_in_full
-  reviewed_lines: [[1, 29]]
-  line_count: 29
-  sha256: 8e8beed795380852bc48ade8cb255cd9865e2e7b0272deeab3b6fbd57793c4c8
+  reviewed_lines: [[1, 42]]
+  line_count: 42
+  sha256: 8cce83fb3aba608fb65c3883052f27b5983bc1367b70a428c0269512699d4b4f
   disposition: new
   review_basis: New RC9 document reviewed in full; current capabilities and limits checked against implementation.
 
