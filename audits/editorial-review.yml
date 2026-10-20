@@ -675,9 +675,9 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines:
   - - 1
-    - 326
-  line_count: 326
-  sha256: c2c944ee5d4db6a70de8c7d3b249b625c92857516f08d76b68eb06b63927dece
+    - 327
+  line_count: 327
+  sha256: db598eaf9d2cf271a58edc967bb8bfdba6265e4a91791b94512dafd9f06ba242
   baseline_sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
