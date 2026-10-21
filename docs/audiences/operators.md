@@ -134,7 +134,10 @@ keeps polling. A lost response is retried with `agentbus rotate-secret
 after the committed receipt; chat UUID, session, policy acknowledgment, controls,
 cursors, and wake binding stay intact. An expired uncommitted grant needs a new
 operator grant and `--replace-pending --rotation-file NEW_FILE`. Delete the
-private grant file after success. `persona --json` contains only public fields.
+private grant file after success. Retry preserves STOP and refuses a different
+service address before transmitting a credential. If a concurrent profile update
+conflicts, reload and retry the retained request; do not discard its staged secret.
+`persona --json` contains only public fields.
 
 The operator exports `AGENTBUS_OPERATOR_TOKEN` only in the operator's own shell.
 For Slack operation, register one `/agentbus` slash command with the existing

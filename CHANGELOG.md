@@ -2,6 +2,8 @@
 
 ## [0.9.1rc10] - 2026-10-21
 
+- Recover committed secret-rotation receipts after lost responses without authenticating with the revoked secret; retain STOP and staged recovery evidence. Reject stale profile authority writes and check bound service addresses before sending credentials.
+
 - Record complete foreground poll observations without an extra inbox read; preserve same-session cursor high-water across stale profile saves while retaining explicit rebind resets and fail-closed scope changes.
 
 - Reconcile cached broadcast/poll presentation against a fresh exact-session service snapshot; preserve expired-unread outcomes, safety controls and semantic acknowledgements.

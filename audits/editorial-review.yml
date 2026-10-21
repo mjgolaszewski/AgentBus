@@ -260,9 +260,9 @@ documents:
 
 - document: contracts/participation/v2/participation.contract.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 186]]
-  line_count: 186
-  sha256: 9adc0d9e31b158a00dd690e60227a090c4a3bd190d289ccdd6af799215f2ac16
+  reviewed_lines: [[1, 198]]
+  line_count: 198
+  sha256: d4a538a92dd24a49d9794e0abafec1741423fc94de887e8a1cee524f3093c3a6
   baseline_sha256: 718d8b378c90b29101e5df00c10538cccb0b5bccce874c893a8114e49b4580a6
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -360,9 +360,9 @@ documents:
 
 - document: docs/audiences/operators.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 302]]
-  line_count: 302
-  sha256: 11fc2df8920019e4c14c5729d7c5af2bf4fe944634591daacb934d46ac48420f
+  reviewed_lines: [[1, 305]]
+  line_count: 305
+  sha256: e137702c3210ad780134ff031b1a0b7b344ab1d0695e8f2d3d3a6203243b70e1
   baseline_sha256: 70857225e20bb29293faef6cae5383e4f703f9665d3362a055ee61179d59c1ef
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -595,9 +595,9 @@ documents:
 
 - document: phases/phase-12-log.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 371]]
-  line_count: 371
-  sha256: d5f1726b65006406caa4f9a83ba2a14e5624a9db920a6c7b3e3fb562844e75ef
+  reviewed_lines: [[1, 375]]
+  line_count: 375
+  sha256: e466816ca175fec71ecb928d05b5629f6b4a7196de1e01747ad54e5781f1947c
   baseline_sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -844,9 +844,9 @@ documents:
 
 - document: plans/phase-12-workitems.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 326]]
-  line_count: 326
-  sha256: fb2c58a4ea0c6fc668f9054f085f108e22cc29bcee03a8ce3db1ced8d4f26dc9
+  reviewed_lines: [[1, 336]]
+  line_count: 336
+  sha256: c981e2d50d96ff1fe62f3a9c23a6198454a5daaa25672710adc6b7b8762aa0da
   baseline_sha256: 1c632ee46d55ab7ba403af50842aa97a1a733cadd8798eb694257d3f6e53cfbc
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -982,9 +982,9 @@ documents:
 
 - document: CHANGELOG.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 577]]
-  line_count: 577
-  sha256: 7161741e8f5e50ce5a56bc1ae1d0d211e2bf06eacb66f669a7f3b4efdbd2eb64
+  reviewed_lines: [[1, 579]]
+  line_count: 579
+  sha256: adada61619dc3426858073cea54c43c33b00b011b4cb9c2582afda4cd5b3d9e1
   baseline_sha256: 089d7b76fe9d53eddc539da2141fb02b0b7502354f7ff75661dad2c5a87cfaf0
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -1033,9 +1033,9 @@ documents:
 
 - document: audits/rc10-bug-inventory.yml
   review_status: full_document_review
-  reviewed_lines: [[1, 54]]
-  line_count: 54
-  sha256: d175396634e9802ccab9336bf81d1817b0672e1dacf3cd655537564f1022ddf5
+  reviewed_lines: [[1, 69]]
+  line_count: 69
+  sha256: 7bb9790bab9ed18f2e851b5273e7397b58a5e569db90073dd7926434920dd854
   baseline_sha256: null
   disposition: new
   review_basis: Full new bug-disposition inventory reviewed; reproduced defects distinguished from expected denials and accepted future limitations.

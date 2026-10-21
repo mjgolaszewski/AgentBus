@@ -18,6 +18,7 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 from src.agentbus_delivery_client import send_command
+from src.agentbus_profile_client import Profile, save_profile
 from src.agentbus_transport_client import ClientError, api, configuration, profile_session_token
 
 NAME_RE = r"^[a-z0-9][a-z0-9-]{0,31}$"
@@ -85,6 +86,7 @@ def current_repo() -> str:
 
 def load_profile(values: dict[str, str], identity: str, *, save_migration: bool = True) -> dict:
     path = identity_path(values, identity)
+    source_path = path
     if path.is_symlink():
         raise ClientError(f"Refusing symlinked AgentBus profile {path}.")
     try:
@@ -97,6 +99,7 @@ def load_profile(values: dict[str, str], identity: str, *, save_migration: bool 
             raise ClientError(f"Unknown AgentBus identity {identity!r}; run `agentbus onboard`.") from None
         try:
             profile = json.loads(legacy_path.read_text())
+            source_path = legacy_path
         except (ValueError, OSError):
             raise ClientError(f"Cannot read valid profile {legacy_path}.") from None
         if not isinstance(profile, dict) or profile.get("identity") != identity:
@@ -105,6 +108,7 @@ def load_profile(values: dict[str, str], identity: str, *, save_migration: bool 
         raise ClientError(f"Cannot read valid profile {path}.") from None
     if not isinstance(profile, dict):
         raise ClientError(f"Cannot read valid profile {path}.")
+    disk_profile = profile
     if profile.get("schema_version") == 1:
         legacy = dict(profile)
         repo = str(profile.get("repo") or identity.split(":")[-2])
@@ -122,33 +126,7 @@ def load_profile(values: dict[str, str], identity: str, *, save_migration: bool 
         }
         if save_migration:
             raise ClientError("Legacy profile requires operator-granted enrollment; no automatic inbox binding")
-    return profile
-
-
-def save_profile(values: dict[str, str], profile: dict, *, reset_cursors: bool = False) -> None:
-    profile["updated_at"] = now()
-    path = identity_path(values, profile["identity"])
-    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    with (path.parent / f".{path.name}.lock").open("a") as lock:
-        os.chmod(lock.name, 0o600)
-        fcntl.flock(lock, fcntl.LOCK_EX)
-        if not reset_cursors and path.exists():
-            from src.agentbus_scope_client import scope
-
-            try:
-                current = json.loads(path.read_text())
-                same_scope = current.get("identity") == profile["identity"] and scope(current) == scope(profile)
-            except ClientError:
-                same_scope = False  # Unjoined enrollment has no session scope yet.
-            except (OSError, ValueError, AttributeError):
-                raise ClientError("Cannot safely update unreadable AgentBus profile") from None
-            if same_scope:
-                try:
-                    profile.update({field: max(int(profile.get(field, 0)), int(current.get(field, 0)))
-                                    for field in ("ack_cursor", "observed_cursor")})
-                except (TypeError, ValueError):
-                    raise ClientError("Cannot safely update invalid AgentBus cursors") from None
-        atomic_json(path, profile)
+    return Profile(profile, baseline=disk_profile, source_path=source_path)
 
 
 def record_observed_cursor(values: dict[str, str], profile: dict, cursor: int) -> dict:
@@ -176,6 +154,8 @@ def record_observed_cursor(values: dict[str, str], profile: dict, cursor: int) -
 
 def checked_profile(values: dict[str, str], identity: str) -> tuple[dict, dict]:
     profile = load_profile(values, identity)
+    if profile.get("service_url") != values.get("AGENTBUS_URL"):
+        raise ClientError("Profile service differs; no credentials sent; no automatic rebinding")
     info = api(values, "/v1/info", session_token=profile_session_token(profile), inbox_id=profile.get("inbox_id"))
     required = {"session-required", "channel-isolation-v1", "channel-local-cursors-v1"}
     if not required <= set(info.get("features", [])):
@@ -498,10 +478,7 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
                   "presentation_messages_retired": retired}
     elif ns.command == "rebind":
         identity = resolve_identity(ns.identity)
-        profile = load_profile(values, identity, save_migration=False)
-        info = api(values, "/v1/info", session_token=profile_session_token(profile), inbox_id=profile.get("inbox_id"))
-        if (profile.get("channel") != info["channel"] or profile.get("inbox_id") != info["inbox_id"] or profile.get("service_url") != values["AGENTBUS_URL"]):
-            raise ClientError("Rebind cannot switch channel or service membership")
+        profile, info = checked_profile(values, identity)
         cursor = 0 if ns.start_from == "beginning" else info["high_water_cursor"]
         profile.update(inbox_id=info["inbox_id"], channel=info["channel"],
                        service_url=values["AGENTBUS_URL"], ack_cursor=cursor,

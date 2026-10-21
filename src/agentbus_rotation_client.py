@@ -6,7 +6,7 @@ import os
 import secrets
 from pathlib import Path
 
-from src.agentbus_client import checked_profile, save_profile
+from src.agentbus_client import checked_profile, load_profile, save_profile
 from src.agentbus_transport_client import ClientError, api
 
 
@@ -45,11 +45,20 @@ def issue_rotation(identity: str, output: str, values: dict[str, str]) -> int:
 def rotate_secret(identity: str, rotation_file: str | None, replace_pending: bool,
                   values: dict[str, str]) -> int:
     """Stage the new secret before sending so lost responses are retryable."""
-    profile, _ = checked_profile(values, identity)
-    session = profile.get("participation")
-    if not session or session.get("stopped"):
-        raise ClientError("This chat has no live participation session.")
+    profile = load_profile(values, identity, save_migration=False)
+    if profile.get("service_url") != values.get("AGENTBUS_URL"):
+        raise ClientError("Profile service differs; rotation evidence retained")
     pending = profile.get("participation_rotation_pending")
+    if pending is None or replace_pending:
+        profile, _ = checked_profile(values, identity)
+        pending = profile.get("participation_rotation_pending")
+    session = profile.get("participation")
+    if not session or (session.get("stopped") and (pending is None or replace_pending)):
+        raise ClientError("This chat has no live participation session.")
+    if pending is not None and (not isinstance(pending, dict) or any(
+            not isinstance(pending.get(key), str) or len(pending[key]) < 32
+            for key in ("rotation_token", "new_session_secret"))):
+        raise ClientError("Pending rotation is invalid; recovery evidence retained")
     if replace_pending and not rotation_file:
         raise ClientError("Replacing a pending rotation requires --rotation-file.")
     if pending is not None and pending.get("session_id") != session["session_id"]:
@@ -67,7 +76,7 @@ def rotate_secret(identity: str, rotation_file: str | None, replace_pending: boo
                   "new_session_secret": pending["new_session_secret"]})
     if result["session_id"] != session["session_id"]:
         raise ClientError("Rotation receipt belongs to a different session.")
-    session["session_secret"] = pending["new_session_secret"]
+    profile["participation"]["session_secret"] = pending["new_session_secret"]
     profile.pop("participation_rotation_pending", None)
     save_profile(values, profile)
     print(f"ACK {result['receipt']} SESSION_CREDENTIAL_ROTATED")

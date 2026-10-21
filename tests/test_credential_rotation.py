@@ -92,6 +92,7 @@ def test_client_stages_new_credential_before_uncertain_response(tmp_path, monkey
     profile = {"chat_id": "chat-id", "identity": "agentbus:flower",
                "participation": {"session_id": "session-id", "session_secret": "old-secret"}}
     monkeypatch.setattr(agentbus_rotation_client, "checked_profile", lambda values, identity: (profile, {}))
+    monkeypatch.setattr(agentbus_rotation_client, "load_profile", lambda *args, **kwargs: profile)
     monkeypatch.setattr(agentbus_rotation_client, "save_profile", lambda values, data: None)
     seen = []
 
@@ -113,7 +114,8 @@ def test_client_stages_new_credential_before_uncertain_response(tmp_path, monkey
     assert "receipt-1" in capsys.readouterr().out
 
 
-def test_client_recovers_committed_rotation_after_old_secret_is_revoked(tmp_path, monkeypatch):
+@pytest.mark.parametrize("stopped", [False, True])
+def test_client_recovers_committed_rotation_after_old_secret_is_revoked(tmp_path, monkeypatch, stopped):
     db, store = _open(tmp_path / 'rotation.sqlite3')
     store.set_policy(scope='global', scope_key='*', values=POLICY, actor='operator')
     old = 'old-test-rotation-credential'.ljust(40, 'x')
@@ -158,6 +160,15 @@ def test_client_recovers_committed_rotation_after_old_secret_is_revoked(tmp_path
         with pytest.raises(ClientError, match='response lost'):
             agentbus_rotation_client.rotate_secret('agentbus:flower', str(grant), False, values)
         staged = json.loads(path.read_text())['participation_rotation_pending']
+        if stopped:
+            stopped_profile = agentbus_client.load_profile(values, 'agentbus:flower')
+            stopped_profile['participation']['stopped'] = True
+            agentbus_client.save_profile(values, stopped_profile)
+        before = path.read_bytes()
+        with pytest.raises(ClientError, match='service differs'):
+            agentbus_rotation_client.rotate_secret('agentbus:flower', None, False,
+                {**values, 'AGENTBUS_URL': 'http://127.0.0.1:9999'})
+        assert path.read_bytes() == before and len(rotations) == 1
         with pytest.raises(PermissionError):
             store.authorize_session(session, old)
         assert agentbus_rotation_client.rotate_secret('agentbus:flower', None, False, values) == 0
@@ -166,5 +177,6 @@ def test_client_recovers_committed_rotation_after_old_secret_is_revoked(tmp_path
         assert current['participation']['session_secret'] == staged['new_session_secret']
         assert 'participation_rotation_pending' not in current
         assert current['ack_cursor'] == 8 and current['observed_cursor'] == 10
+        assert bool(current['participation'].get('stopped')) == stopped
     finally:
         db.close()

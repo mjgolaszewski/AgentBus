@@ -1022,9 +1022,10 @@ def test_cursor_merge_never_copies_another_session_epoch(launcher, tmp_path):
     other.update(ack_cursor=100, observed_cursor=200)
     path = state / 'tools:weed.json'
     path.write_text(json.dumps(other))
-    launcher.save_profile(values, incoming)
-    current = json.loads(path.read_text())
-    assert current['ack_cursor'] == 8 and current['observed_cursor'] == 10
+    before = path.read_bytes()
+    with pytest.raises(launcher.ClientError):
+        launcher.save_profile(values, incoming)
+    assert path.read_bytes() == before
 
 
 @pytest.mark.parametrize('change', ['session', 'secret', 'stopped'])
@@ -1064,3 +1065,70 @@ def test_bound_service_mismatch_is_denied_before_sending_credentials(launcher, t
     else:
         assert launcher.main(['rebind', '--identity', 'tools:weed', '--from', 'beginning']) == 1
     assert calls == []
+
+
+def test_profile_snapshot_merges_metadata_and_cursors_without_losing_rotation_intent(launcher, tmp_path):
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(tmp_path)}
+    path = tmp_path / 'tools:weed.json'
+    path.write_text(json.dumps({**joined_profile(), 'schema_version': 2, 'ack_cursor': 2,
+                                'observed_cursor': 4, 'role': 'maintainer'}))
+    metadata = launcher.load_profile(values, 'tools:weed')
+    stage = launcher.load_profile(values, 'tools:weed')
+    stage['participation_rotation_pending'] = {'session_id': 's1', 'rotation_token': 'test-grant',
+                                               'new_session_secret': 'test-staged-secret'}
+    stage['observed_cursor'] = 8
+    launcher.save_profile(values, stage)
+    metadata['role'] = 'reviewer'
+    launcher.save_profile(values, metadata)
+    current = json.loads(path.read_text())
+    assert current['role'] == 'reviewer'
+    assert current['observed_cursor'] == 8
+    assert current['participation_rotation_pending'] == stage['participation_rotation_pending']
+    assert 'baseline' not in current
+    rival = launcher.load_profile(values, 'tools:weed')
+    stage['participation_rotation_pending']['new_session_secret'] = 'first-new-stage'
+    rival['participation_rotation_pending']['new_session_secret'] = 'second-new-stage'
+    launcher.save_profile(values, stage)
+    before = path.read_bytes()
+    with pytest.raises(launcher.ClientError, match='conflict'):
+        launcher.save_profile(values, rival)
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize('change', ['session', 'secret', 'stopped'])
+def test_loaded_snapshot_rejects_changed_authority_without_writes(launcher, tmp_path, change):
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(tmp_path)}
+    path = tmp_path / 'tools:weed.json'
+    path.write_text(json.dumps({**joined_profile(), 'schema_version': 2}))
+    stale = launcher.load_profile(values, 'tools:weed')
+    current = launcher.load_profile(values, 'tools:weed')
+    if change == 'session':
+        current['participation']['session_id'] = 'replacement-session'
+    elif change == 'secret':
+        current['participation']['session_secret'] = 'replacement-test-secret'.ljust(40, 'x')
+    else:
+        current['participation']['stopped'] = True
+    launcher.save_profile(values, current)
+    before = path.read_bytes()
+    stale['role'] = 'stale-reviewer'
+    with pytest.raises(launcher.ClientError, match='authority changed'):
+        launcher.save_profile(values, stale)
+    assert path.read_bytes() == before
+
+
+
+def test_file_grant_join_checks_service_before_sending_staged_proof(launcher, tmp_path, monkeypatch):
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(tmp_path), 'AGENTBUS_URL': 'http://127.0.0.1:9999'}
+    profile = {**joined_profile(), 'schema_version': 2}
+    profile.pop('participation')
+    path = tmp_path / 'tools:weed.json'
+    path.write_text(json.dumps(profile))
+    before = path.read_bytes()
+    grant = tmp_path / 'grant'
+    grant.write_text('private-test-enrollment-grant'.ljust(40, 'x'))
+    grant.chmod(0o600)
+    calls = []
+    monkeypatch.setattr(launcher, 'api', lambda *args, **kwargs: calls.append(True))
+    monkeypatch.setattr(launcher, 'configuration', lambda **kwargs: (Path('/unused'), values))
+    assert launcher.main(['join', '--identity', 'tools:weed', '--enrollment-file', str(grant)]) == 1
+    assert calls == [] and path.read_bytes() == before

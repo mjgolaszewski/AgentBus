@@ -8,6 +8,16 @@ document:
   path: plans/phase-12-workitems.yml
   phase_id: P12
 workitems:
+- id: P12-P1-32
+  status: IN_PROGRESS
+  summary: Recover committed credential rotations and reject stale profile authority or foreign-service egress
+  priority: P1
+  acceptance:
+  - Recover the original canonical rotation receipt with the identical retained grant and staged secret after old-secret revocation; preserve STOP and current cursors
+  - Compare fresh session authority under the profile lock; preserve unrelated metadata and pending recovery intents, reject conflicting writers before disk mutation
+  - Deny changed service addresses before credential-bearing info rebind enrollment or rotation requests; no automatic rebinding or discarded staging
+  - Keep client modules below800LOC through a narrow profile-persistence owner; preserve original behavioral oracles and qualify final source canonically
+  acceptance_evidence: [test, python314-compatibility, release-smoke]
 - id: P12-P1-31
   status: IN_PROGRESS
   summary: Record complete poll observations and preserve same-session cursor high-water
