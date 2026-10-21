@@ -18,7 +18,7 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 from src.agentbus_delivery_client import send_command
-from src.agentbus_profile_client import Profile, save_profile
+from src.agentbus_profile_client import Profile, save_profile as persist_profile
 from src.agentbus_transport_client import ClientError, api, configuration, profile_session_token
 
 NAME_RE = r"^[a-z0-9][a-z0-9-]{0,31}$"
@@ -127,6 +127,11 @@ def load_profile(values: dict[str, str], identity: str, *, save_migration: bool 
         if save_migration:
             raise ClientError("Legacy profile requires operator-granted enrollment; no automatic inbox binding")
     return Profile(profile, baseline=disk_profile, source_path=source_path)
+
+
+def save_profile(values: dict[str, str], profile: dict, *, reset_cursors: bool = False) -> None:
+    """Retain the registered client persistence port while delegating its owner."""
+    persist_profile(values, profile, reset_cursors=reset_cursors)
 
 
 def record_observed_cursor(values: dict[str, str], profile: dict, cursor: int) -> dict:

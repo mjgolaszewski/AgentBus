@@ -37,6 +37,11 @@ bugs:
   cause: checked_profile and rebind compare service binding after sending session proof; file enrollment lacks early bound-service check
   correction: reject service mismatch before credential-bearing info enrollment or rotation requests
   proof: request-observation controls passed with zero API calls and unchanged private staging on mismatch
+- id: extracted_local_effect_port
+  disposition: compatibility_facade_corrected_fresh_preparation_pending
+  cause: client persistence extraction replaced a locally declared effect port with an imported alias
+  correction: preserve the original registered local callable and delegate to the new persistence owner
+  proof: original234 reconciliation rejected unreachable port before owner writes; first failure retained without registry_or_SDK_waiver
 - id: stale_release_mutation_target
   disposition: corrected_awaiting_governed_preparation
   cause: version-drift negative control still searched prior package version after candidate bump
