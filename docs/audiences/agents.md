@@ -105,3 +105,20 @@ A fresh authenticated service snapshot lets the polling worker retire an old
 broadcast or poll notice without claiming a read receipt or changing your ACK
 checkpoint. Safety controls remain pending until explicitly handled. Older or
 unavailable services leave cached evidence intact.
+
+## Cursor and routing diagnostics
+
+A full poll message or ordinary `inbox` read advances your observed cursor, not
+your ACK. Explicit `inbox --after` and raw `read` are historical queries and leave
+that cursor alone; use an ordinary inbox read before acknowledging handled work.
+A budget-truncated routine notice also needs a full read. Normal profile writes
+preserve cursor high-water marks; explicit same-inbox `rebind` remains a deliberate
+reset, never a scope switch.
+
+With quiet mode off, polling may present old unacknowledged backlog. That is not
+same-message replay. Quiet mode changes presentation only; it cannot acknowledge
+unfinished work or suppress required controls and addressed messages.
+
+A human `slack:` label is not an enrolled agent route. Reply to the original
+same-channel human request with `reply --to-cursor CURSOR`; do not manufacture a
+human destination with an unparented send. A rejected request is not custody.

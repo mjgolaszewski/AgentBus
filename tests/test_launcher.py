@@ -805,9 +805,11 @@ def test_poll_cli_uses_budgeted_default_and_full_json_on_demand(launcher, tmp_pa
     queue(1)
     assert launcher.main(["poll", "--identity", identity]) == 0
     assert len(capsys.readouterr().out.strip().encode("utf-8")) <= 32
+    assert json.loads(path.read_text()).get("observed_cursor", 0) == 0
     queue(2)
     assert launcher.main(["poll", "--identity", identity, "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["message"]["text"] == "🌼" * 100
+    assert json.loads(path.read_text())["observed_cursor"] == 2
 
 
 def test_auxiliary_control_ack_does_not_stop_client_polling(launcher, tmp_path, monkeypatch, capsys):
@@ -985,3 +987,41 @@ def test_explicit_same_inbox_rebind_still_resets_cursors(launcher, tmp_path, mon
     assert launcher.main(['rebind', '--identity', 'tools:weed', '--from', 'beginning']) == 0
     current = json.loads(path.read_text())
     assert current['ack_cursor'] == current['observed_cursor'] == 0
+
+
+@pytest.mark.parametrize('change', ['channel', 'session', 'secret', 'stopped'])
+def test_observation_rejects_changed_profile_before_mutation(launcher, tmp_path, change):
+    state = tmp_path / 'profiles'
+    state.mkdir()
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(state)}
+    old = {**joined_profile(), 'ack_cursor': 8, 'observed_cursor': 10}
+    current = json.loads(json.dumps(old))
+    if change == 'channel':
+        current['channel'] = 'C999'
+    elif change == 'session':
+        current['participation']['session_id'] = 'new-session'
+    elif change == 'secret':
+        current['participation']['session_secret'] = 'replacement-test-secret'.ljust(40, 'x')
+    else:
+        current['participation']['stopped'] = True
+    path = state / 'tools:weed.json'
+    path.write_text(json.dumps(current))
+    before = path.read_bytes()
+    with pytest.raises(launcher.ClientError, match='scope changed'):
+        launcher.record_observed_cursor(values, old, 90)
+    assert path.read_bytes() == before
+
+
+def test_cursor_merge_never_copies_another_session_epoch(launcher, tmp_path):
+    state = tmp_path / 'profiles'
+    state.mkdir()
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(state)}
+    incoming = {**joined_profile(), 'ack_cursor': 8, 'observed_cursor': 10}
+    other = json.loads(json.dumps(incoming))
+    other['participation']['session_id'] = 'other-session'
+    other.update(ack_cursor=100, observed_cursor=200)
+    path = state / 'tools:weed.json'
+    path.write_text(json.dumps(other))
+    launcher.save_profile(values, incoming)
+    current = json.loads(path.read_text())
+    assert current['ack_cursor'] == 8 and current['observed_cursor'] == 10

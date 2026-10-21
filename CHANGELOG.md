@@ -2,6 +2,8 @@
 
 ## [0.9.1rc10] - 2026-10-21
 
+- Record complete foreground poll observations without an extra inbox read; preserve same-session cursor high-water across stale profile saves while retaining explicit rebind resets and fail-closed scope changes.
+
 - Reconcile cached broadcast/poll presentation against a fresh exact-session service snapshot; preserve expired-unread outcomes, safety controls and semantic acknowledgements.
 - Replace release and phase chronology in current product guides with present behavior, qualification limits and links to retained engineering evidence.
 - No schema migration, new host integration, changed ACK deadline or safety-control expiry. Exact-source release and installation proof remain required.

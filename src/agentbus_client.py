@@ -125,14 +125,53 @@ def load_profile(values: dict[str, str], identity: str, *, save_migration: bool 
     return profile
 
 
-def save_profile(values: dict[str, str], profile: dict) -> None:
+def save_profile(values: dict[str, str], profile: dict, *, reset_cursors: bool = False) -> None:
     profile["updated_at"] = now()
     path = identity_path(values, profile["identity"])
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (path.parent / f".{path.name}.lock").open("a") as lock:
         os.chmod(lock.name, 0o600)
         fcntl.flock(lock, fcntl.LOCK_EX)
+        if not reset_cursors and path.exists():
+            from src.agentbus_scope_client import scope
+
+            try:
+                current = json.loads(path.read_text())
+                same_scope = current.get("identity") == profile["identity"] and scope(current) == scope(profile)
+            except ClientError:
+                same_scope = False  # Unjoined enrollment has no session scope yet.
+            except (OSError, ValueError, AttributeError):
+                raise ClientError("Cannot safely update unreadable AgentBus profile") from None
+            if same_scope:
+                try:
+                    profile.update({field: max(int(profile.get(field, 0)), int(current.get(field, 0)))
+                                    for field in ("ack_cursor", "observed_cursor")})
+                except (TypeError, ValueError):
+                    raise ClientError("Cannot safely update invalid AgentBus cursors") from None
         atomic_json(path, profile)
+
+
+def record_observed_cursor(values: dict[str, str], profile: dict, cursor: int) -> dict:
+    """Record complete foreground observation, without acknowledging or stale-profile writes."""
+    from src.agentbus_scope_client import scope
+
+    if type(cursor) is not int or cursor < 1:
+        raise ClientError("Message observation requires a positive public cursor")
+    path = identity_path(values, profile["identity"])
+    with (path.parent / f".{path.name}.lock").open("a") as lock:
+        os.chmod(lock.name, 0o600)
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        current = load_profile(values, profile["identity"], save_migration=False)
+        if (scope(current) != scope(profile) or current.get("identity") != profile["identity"]
+                or profile_session_token(current) != profile_session_token(profile)
+                or current["participation"].get("stopped")):
+            raise ClientError("Message observation scope changed; evidence retained")
+        if type(current.get("observed_cursor", 0)) is not int:
+            raise ClientError("Message observation cursor is invalid; evidence retained")
+        current["observed_cursor"] = max(current.get("observed_cursor", 0), cursor)
+        current["updated_at"] = now()
+        atomic_json(path, current)
+        return current
 
 
 def checked_profile(values: dict[str, str], identity: str) -> tuple[dict, dict]:
@@ -341,6 +380,9 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
             if event is not None:
                 budget = session["policy_values"].get("presentation_budget_bytes")
                 rendered = render_event(event, json_mode=ns.json, budget_bytes=budget)
+                if event["kind"] == "MESSAGE" and (ns.json or budget is None or
+                        rendered == render_event(event, json_mode=False, budget_bytes=None)):
+                    profile = record_observed_cursor(values, profile, event["message"]["cursor"])
                 if rendered:
                     print(rendered)
                 if event["kind"] == "MESSAGE":
@@ -431,9 +473,8 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
             query["context"] = "true"
         result = api(values, "/v1/inbox?" + urlencode(query), session_token=profile_session_token(profile), inbox_id=profile["inbox_id"])
         if not historical and result["messages"]:
-            profile["observed_cursor"] = max(int(profile.get("observed_cursor", 0)),
+            profile = record_observed_cursor(values, profile,
                                              max(item["cursor"] for item in result["messages"]))
-            save_profile(values, profile)
         result["ack_cursor"] = profile["ack_cursor"]
     elif ns.command == "ack":
         identity = resolve_identity(ns.identity)
@@ -465,7 +506,7 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
         profile.update(inbox_id=info["inbox_id"], channel=info["channel"],
                        service_url=values["AGENTBUS_URL"], ack_cursor=cursor,
                        observed_cursor=cursor)
-        save_profile(values, profile)
+        save_profile(values, profile, reset_cursors=True)
         result = {"identity": identity, "inbox_id": info["inbox_id"], "ack_cursor": cursor}
     elif ns.command == "claim":
         identity = resolve_identity(ns.identity)

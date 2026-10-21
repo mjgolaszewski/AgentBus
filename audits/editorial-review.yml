@@ -35,9 +35,9 @@ documents:
 
 - document: CONTRACT.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 234]]
-  line_count: 234
-  sha256: 24cfbda8c342a4e8d3ce1d667d1d685cf64b5a4e67bebc16d33d72866bfcc939
+  reviewed_lines: [[1, 239]]
+  line_count: 239
+  sha256: 11c83c1ff7f2e5c1a7c2cc7bb71ce65abbcfa54d949b56642131f6fca3c8274c
   baseline_sha256: 482ea3731d62fb14307e4bbc0507abe8a2e77287c4abf8f58064cc0aaa750d7c
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -260,9 +260,9 @@ documents:
 
 - document: contracts/participation/v2/participation.contract.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 177]]
-  line_count: 177
-  sha256: 5d2754f623f2bd00e4662ead8f5e106678fb3c8572577e95770b74b3ad5eab42
+  reviewed_lines: [[1, 186]]
+  line_count: 186
+  sha256: 9adc0d9e31b158a00dd690e60227a090c4a3bd190d289ccdd6af799215f2ac16
   baseline_sha256: 718d8b378c90b29101e5df00c10538cccb0b5bccce874c893a8114e49b4580a6
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -315,9 +315,9 @@ documents:
 
 - document: docs/audiences/agents.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 107]]
-  line_count: 107
-  sha256: d53ea6070f7decb3d4052cfbfd0ff10e23dba7e3996e3bdf57bb79e4a8f6580b
+  reviewed_lines: [[1, 124]]
+  line_count: 124
+  sha256: 8fc37e88476b6905013836d479f15adc7d925a836d7718db12fa78ce4ddeedfd
   baseline_sha256: 742b9bbdf762f37ccdd2f72ad7bb1bd7ecf35c27264f6319380dbbca33f723f9
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -595,9 +595,9 @@ documents:
 
 - document: phases/phase-12-log.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 367]]
-  line_count: 367
-  sha256: e95d4ab8318ff9618bd0a1e54b9e72a3da46318ce695b11449224867ff70b7bf
+  reviewed_lines: [[1, 371]]
+  line_count: 371
+  sha256: d5f1726b65006406caa4f9a83ba2a14e5624a9db920a6c7b3e3fb562844e75ef
   baseline_sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -844,9 +844,9 @@ documents:
 
 - document: plans/phase-12-workitems.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 316]]
-  line_count: 316
-  sha256: aedba22cbeef31e0409876b5a695a4f6e5d328bca8d11e24ab268ef455f3a32a
+  reviewed_lines: [[1, 326]]
+  line_count: 326
+  sha256: fb2c58a4ea0c6fc668f9054f085f108e22cc29bcee03a8ce3db1ced8d4f26dc9
   baseline_sha256: 1c632ee46d55ab7ba403af50842aa97a1a733cadd8798eb694257d3f6e53cfbc
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -982,9 +982,9 @@ documents:
 
 - document: CHANGELOG.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 575]]
-  line_count: 575
-  sha256: cebc8fdc8c25dd144fa64c3dfb918427cd97a35d0507f8e411787ce0c6b1dc76
+  reviewed_lines: [[1, 577]]
+  line_count: 577
+  sha256: 7161741e8f5e50ce5a56bc1ae1d0d211e2bf06eacb66f669a7f3b4efdbd2eb64
   baseline_sha256: 089d7b76fe9d53eddc539da2141fb02b0b7502354f7ff75661dad2c5a87cfaf0
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -1031,9 +1031,18 @@ documents:
   disposition: new
   review_basis: New bounded repair audit reviewed in full; source assertions distinguished from unexecuted qualification.
 
+- document: audits/rc10-bug-inventory.yml
+  review_status: full_document_review
+  reviewed_lines: [[1, 54]]
+  line_count: 54
+  sha256: d175396634e9802ccab9336bf81d1817b0672e1dacf3cd655537564f1022ddf5
+  baseline_sha256: null
+  disposition: new
+  review_basis: Full new bug-disposition inventory reviewed; reproduced defects distinguished from expected denials and accepted future limitations.
+
 summary:
-  documents: 104
-  new: 5
+  documents: 105
+  new: 6
   updated: 36
   retained: 63
   verification: Privacy regression and exact-source proof pending

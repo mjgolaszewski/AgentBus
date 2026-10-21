@@ -18,6 +18,9 @@ summary:
   - 57 affected wake cases, Ruff and governance YAML validation pass; computed closure remains unclaimed
   - Actual pinned AHP reducer passes168 upstream chat fixtures and8 targeted controls; drift and semantic queue-order mutants reject
 workitems:
+- id: P12-P1-31
+  status: IN_PROGRESS
+  summary: Poll observation and stale cursor regression reproduced two failures one rebind preservation pass; source fix awaits GREEN
 - id: P12-P1-29
   status: DONE
   summary: Expired-control repair focused tests lint and typing passed; canonical release proof pending
@@ -121,6 +124,7 @@ execution_evidence:
   planned_commands:
   - canonical bcf ci submit after shared native capacity is available
   executed_commands:
+  - "Operator broadens repair to known/discovered defects. Audit current open issues and coordination reports: owner interoperability and stronger security guarantees remain future accepted limitations; old ordinary polling is confirmed advancing unacknowledged backlog, not replay; historical query ACK rejection and unparented human422 are expected and resolved through supported operations. Added red launcher cases on eb212041:actual2FAIL/1PASS in0.31s, guardian terminal1/0.794s independently reconciled before source edits. Poll omitted observed_cursor update; stale whole-profile saves regressed ACK/observation. Fix complete-observation scope/credential/stop recheck under existing profile lock, preserve normal same-session cursor maxima, retain explicit same-inbox rebind reset. Keep main client below800LOC and all original negative oracles. New GREEN and full canonical qualification pending; inventory in audits/rc10-bug-inventory.yml."
   - "Repair candidate2c058085 preparation terminal1/47.049s:offline uv lock changed only root package rc9 to rc10; original234 reconcile generated semantic/timing and3manifests with all4new cases selected. Governance stopped because authored version-drift mutation search still targetedrc9; update only its search to currentrc10, retaining mutant9.9.9 and exact rejection oracle. Later checks UNRUN; positive inherited guardian QEOF/reap/cleanup and authored/dependency/environment continuity independently accepted before freeze released. Preserve negative output and six owner-written files; rerun owner reconciliation under fresh admission, no SDK or live-state change."
   - "Corrected source0139a55 focusedv3 terminal0/18.025s:88 tests PASS, Ruff PASS and typing2owners PASS. Qualified inherited resource guardian retains original kernel fence through parent-loss cleanup; QEOF/reap/all3handles absent/source and installed environment unchanged independently accepted15100 before source freeze released. First negative16.826s output retained. Package repair as0.9.1rc10 without retagging immutableRC9; version root lock and BCF projections remain owner-generated in next preparation. Mark29/30 implementation DONE only; P12/Issue75 and owner interoperability remain unqualified."
   - "Focused control repair f820aea terminal1/16.826s:87PASS and one new test expected stored expiry before explicit settlement. Service correctly returned409 without settlement; correct test to assert unread/no receipt first, then explicitly settle and assert expired_unread/no receipt. Source and environment retained unchanged through qualified inherited guardian QEOF/reap and fence release. No lint/type stage executed after first failure; original output retained. No SDK live state or deadline policy correction required."

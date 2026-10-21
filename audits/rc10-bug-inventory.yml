@@ -1,0 +1,54 @@
+document:
+  kind: bug_disposition_audit
+  path: audits/rc10-bug-inventory.yml
+  status: candidate_validation_pending
+scope:
+  owner: AgentBus current released behavior and source candidate
+  evidence: reported incidents plus source traces and behavioral reproductions
+  excluded: new hostile-workspace guarantees or unqualified owner-host integrations
+bugs:
+- id: expired_announcement_projection
+  disposition: fixed_focused_accepted_canonical_pending
+  cause: cached ordinary control outlives service read deadline and demands rejected late ACK
+  correction: fresh authenticated service snapshot retires prior cached broadcast_poll_presentation_only
+  proof: existing poll and message-lifecycle populations; 88 focused cases passed
+- id: poll_observation_missing
+  disposition: reproduced_fix_awaiting_green
+  cause: foreground poll displays and consumes message without advancing observation high_water
+  correction: complete foreground observation under fresh exact-scope credential-bound profile lock
+  proof: new launcher red case fails before repair; no extra inbox read should be required
+- id: stale_cursor_save
+  disposition: reproduced_fix_awaiting_green
+  cause: serialized stale whole-profile save can overwrite newer ACK and observed cursors
+  correction: merge cursor maxima for matching session scope; explicit rebind keeps intentional reset
+  proof: new launcher red case fails before repair; existing rebind preservation case passes
+- id: stale_release_mutation_target
+  disposition: corrected_awaiting_governed_preparation
+  cause: version-drift negative control still searched prior package version after candidate bump
+  correction: target current package literal while retaining wrong-version mutant and rejection oracle
+  proof: actual owner preparation failed governance before correction; first output retained
+- id: current_guide_chronology
+  disposition: updated_current_guides_exact_source_checks_pending
+  correction: present behavior and limits in product guides; retain historical subjects in release and engineering evidence
+  proof: per-document digests dispositions and changed-span review in editorial inventory
+not_bugs:
+- report: historical_query_ACK_guard
+  disposition: expected_stateless_query_semantics_supported_recovery_verified
+  evidence: ordinary inbox advanced observation and explicit handled ACK succeeded without reset
+- report: old_ordinary_poll_message
+  disposition: expected_unacknowledged_backlog_with_quiet_off
+  evidence: successive scoped polls advanced distinct old cursors without transport alarm or repeated cursor
+- report: unparented_human_recipient_422
+  disposition: expected_canonical_route_validation_before_custody
+  evidence: read-only custody lookup found no accepted record; same-channel human-parent reply succeeded
+accepted_limits:
+- issue: 75
+  scope: owner-host interoperability and atomic idle-only wake remain unqualified
+  disposition: keep_open_notification_only_for_unqualified_owners
+- issue: 76
+  scope: stronger credential audit governance-producer and hostile-workspace guarantees
+  disposition: retain_explicit_trusted_workspace_boundary_and_separately_govern_future_guarantees
+release:
+  candidate: 0.9.1rc10
+  immutable_previous_release: preserved
+  prerequisites: fresh_canonical_protected_exact_main_archive_isolated_install_and_custodian_live_readback

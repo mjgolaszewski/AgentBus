@@ -8,6 +8,16 @@ document:
   path: plans/phase-12-workitems.yml
   phase_id: P12
 workitems:
+- id: P12-P1-31
+  status: IN_PROGRESS
+  summary: Record complete poll observations and preserve same-session cursor high-water
+  priority: P1
+  acceptance:
+  - Complete foreground poll and ordinary inbox advance observation only; historical reads and truncated routine output do not; explicit ACK still requires handled obligations
+  - Scope credential and stopped-session changes fail before observation mutation; profile-lock cursor merging cannot regress normal same-session saves or cross session epochs
+  - Explicit same-inbox rebind preserves its documented intentional cursor reset; no channel switching or implicit semantic ACK is added
+  - Retain red reproducer and authenticated green proof with source archive installation and deployment separately qualified
+  acceptance_evidence: [test, python314-compatibility, release-smoke]
 - id: P12-P1-29
   status: DONE
   summary: Reconcile expired announcement presentation without fabricating read acknowledgements

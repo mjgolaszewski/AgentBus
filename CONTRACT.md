@@ -191,6 +191,11 @@ When `agentbus ack` advances the cursor, the client also retires message entries
 at or below that cursor from its disposable local presentation spool. This is
 idempotent projection cleanup only: durable service history, controls, policy
 events, cursor semantics, and the independent wake scan remain unchanged.
+A complete foreground poll message and an ordinary inbox read record observation
+without acknowledging work. Truncated routine presentation and explicit historical
+reads remain stateless. Observation rechecks profile scope and credential under
+the profile lock; ordinary saves preserve cursor high-water marks within the same
+session. A changed session, scope or credential cannot inherit an old observation.
 `agentbus rebind --from beginning` deliberately binds the profile to the current
 inbox at cursor `0`; `--from now` selects the current high-water cursor. A changed
 service inbox ID or Slack channel fails closed. Rebind may reset cursors only
