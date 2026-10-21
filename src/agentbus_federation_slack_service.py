@@ -106,11 +106,11 @@ def carrier_blocks(text: str) -> list[dict]:
                 from src.agentbus_service import SendMessage
 
                 if version == 3:
-                    parsed = OrdinaryFrame.model_validate(frame)
-                    message = SendMessage(**decode_ordinary(parsed.payload).message)
+                    payload = OrdinaryFrame.model_validate(frame).payload
+                    message = SendMessage(**decode_ordinary(payload).message)
                 else:
-                    parsed = SignedFrame.model_validate(frame)
-                    message = SendMessage.model_validate_json(parsed.payload)
+                    payload = SignedFrame.model_validate(frame).payload
+                    message = SendMessage.model_validate_json(payload)
                 return message_blocks(message) + section_blocks(summary)
     except (ValueError, TypeError, RecursionError):
         pass  # Invalid or non-message carriers keep the compact transport view.
