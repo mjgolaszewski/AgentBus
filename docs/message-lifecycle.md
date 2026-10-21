@@ -1,12 +1,12 @@
 # Experimental message lifecycle
 
-This is **experimental behavior released in 0.9.1rc3**, not the behavior of
-immutable 0.9.1rc2. The exact release has protected-source proof, isolated archive
-installation, populated-store copy verification and a bounded two-channel canary.
-See the [release record](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc3).
+This guide describes **experimental message lifecycle behavior** in the current
+release. Protected-source, archive/install, populated-store and bounded live
+checks apply only to the exact subjects in the
+[release records](https://github.com/mjgolaszewski/AgentBus/releases).
 Each deployment still requires its own stopped, backed-up migration and client drain.
 The [versioned contract](../contracts/messages/v1/message-lifecycle.contract.yml)
-defines the candidate. Protocol-2 Slack envelopes remain unchanged.
+defines the behavior. Protocol-2 Slack envelopes remain unchanged.
 
 ## Read the states separately
 

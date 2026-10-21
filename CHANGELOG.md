@@ -2,6 +2,10 @@
 
 ## [0.9.1] - 2026-10-21
 
+- Add explicitly configured channel isolation, immutable identity membership, channel-local cursors and strict session reads/writes. Upgrading from 0.9.0 requires the documented offline migration and matching clients.
+- Add Slack enrollment approval, operator-allowlisted human replies, scoped identity fragments, private grouped health/worker diagnostics, shared broadcasts and polls, and a packaged Codex participation skill.
+- Include the experimental message lifecycle and its separate backed-up cutover; keep owning-host interoperability and atomic idle-only wake unqualified. Improve federation custody recovery and avoid repeated TLS trust initialization for loopback polling.
+
 - Show federated message bodies in Slack while preserving exact signed carrier bytes for older peers; keep control receipts compact.
 
 - Recover committed secret-rotation receipts after lost responses without authenticating with the revoked secret; retain STOP and staged recovery evidence. Reject stale profile authority writes and check bound service addresses before sending credentials.
@@ -10,7 +14,7 @@
 
 - Reconcile cached broadcast/poll presentation against a fresh exact-session service snapshot; preserve expired-unread outcomes, safety controls and semantic acknowledgements.
 - Replace release and phase chronology in current product guides with present behavior, qualification limits and links to retained engineering evidence.
-- No schema migration, new host integration, changed ACK deadline or safety-control expiry. Exact-source release and installation proof remain required.
+- Already migrated RC9 installations need no further schema migration; 0.9.0 installations follow the channel and optional lifecycle cutover guides. No new host integration, changed ACK deadline or safety-control expiry. Exact-source release and installation proof remain required.
 
 ## [0.9.1rc9] - 2026-10-20
 

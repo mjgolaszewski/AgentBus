@@ -11,9 +11,10 @@ from src.agentbus_transport_client import ClientError
 
 
 def test_first_join_stages_credential_then_adopts_service_identity(monkeypatch, tmp_path, capsys):
-    profile = {"identity": "agentbus:new-chat", "repo": "agentbus",
-               "display_name": "New Chat", "chat_id": "old-local-uuid"}
     values = {"AGENTBUS_URL": "http://example.invalid", "AGENTBUS_API_TOKEN": "test"}
+    profile = {"identity": "agentbus:new-chat", "repo": "agentbus",
+               "display_name": "New Chat", "chat_id": "old-local-uuid",
+               "service_url": values["AGENTBUS_URL"]}
     attempts = []
     monkeypatch.setattr(client, "load_profile", lambda *_args, **_kwargs: profile)
     monkeypatch.setattr(client, "save_profile", lambda *_: None)
@@ -45,3 +46,25 @@ def test_first_join_stages_credential_then_adopts_service_identity(monkeypatch, 
     assert profile["chat_id"] == "server-issued-uuid"
     assert profile["participation"]["session_id"] == "session-one"
     assert "session_secret" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize('service_url', [None, 'http://foreign.invalid'])
+def test_file_grant_join_rejects_missing_or_foreign_service_before_staging(monkeypatch, tmp_path, service_url):
+    profile = {'identity': 'agentbus:new-chat', 'repo': 'agentbus',
+               'display_name': 'New Chat', 'chat_id': 'local-profile-uuid'}
+    if service_url is not None:
+        profile['service_url'] = service_url
+    before = dict(profile)
+    values = {'AGENTBUS_URL': 'http://example.invalid', 'AGENTBUS_API_TOKEN': 'test'}
+    monkeypatch.setattr(client, 'load_profile', lambda *_args, **_kwargs: profile)
+    effects = []
+    monkeypatch.setattr(client, 'save_profile', lambda *_args, **_kwargs: effects.append('save'))
+    monkeypatch.setattr(client, 'api', lambda *_args, **_kwargs: effects.append('network'))
+    grant = tmp_path / 'enrollment-grant'
+    grant.write_text('g' * 40)
+    grant.chmod(0o600)
+    ns = Namespace(command='join', identity='agentbus:new-chat', handoff_file=None, enrollment_file=str(grant))
+    with pytest.raises(ClientError, match='Enrollment service differs'):
+        client._execute_command(ns, Path(tmp_path), values)
+    assert profile == before and effects == []
+    assert 'participation_pending' not in profile
