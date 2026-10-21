@@ -704,15 +704,18 @@ def test_federated_message_presentation_preserves_mixed_peer_carrier(pair, versi
     async def scenario():
         posts = []
         def respond(request):
-            body = json.loads(request.content);posts.append(body)
+            body = json.loads(request.content)
+            posts.append(body)
             echoed = {'text': body['text'], 'blocks': body['blocks']}
-            if thread is not None:echoed['thread_ts'] = thread
+            if thread is not None:
+                echoed['thread_ts'] = thread
             return httpx.Response(200, json={'ok': True, 'channel': 'C123', 'ts': '2.000001', 'message': echoed})
         async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
             provider = SlackFederationProvider(client, 'isolated-token', 'C123')
             result = await provider.publish(frame) if thread is None else await provider.publish_in_thread(frame, thread)
         assert result == '2.000001' and len(posts) == 1
-        posted = posts[0];assert posted['text'] == frame
+        posted = posts[0]
+        assert posted['text'] == frame
         # Legacy extraction consumes text directly; no blocks or peer upgrade required.
         recovered = decode_frame(posted['text'], origin.publisher_id, destination.instance_id, bindings)
         assert recovered['payload'] == payload
@@ -722,7 +725,8 @@ def test_federated_message_presentation_preserves_mixed_peer_carrier(pair, versi
         assert frame not in visible and json.loads(frame)['signature'] not in visible
         assert posted['parse'] == 'none' and posted['mrkdwn'] is False
         assert not posted['unfurl_links'] and not posted['unfurl_media']
-        if thread is not None:assert posted['thread_ts'] == thread and posted['reply_broadcast'] is True
+        if thread is not None:
+            assert posted['thread_ts'] == thread and posted['reply_broadcast'] is True
     asyncio.run(scenario())
 
 
@@ -741,7 +745,8 @@ def test_federation_presentation_keeps_controls_compact_and_blocks_bounded(pair)
     blocks = carrier_blocks(frame)
     assert len(blocks) <= 50
     for block in blocks:
-        if block['type'] == 'section':assert len(block['text']['text']) <= 3000
+        if block['type'] == 'section':
+            assert len(block['text']['text']) <= 3000
     assert sum(block.get('text', {}).get('text', '').count('&amp;') for block in blocks) == 6000
     for malformed in ('not-json', '{"kind":"message","agentbus_federation":true}',
                       '{"kind":"message","agentbus_federation":3,"payload":"bad"}'):
