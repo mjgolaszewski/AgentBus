@@ -751,3 +751,10 @@ def test_federation_presentation_keeps_controls_compact_and_blocks_bounded(pair)
     for malformed in ('not-json', '{"kind":"message","agentbus_federation":true}',
                       '{"kind":"message","agentbus_federation":3,"payload":"bad"}'):
         assert '📤' not in json.dumps(carrier_blocks(malformed), ensure_ascii=False)
+
+    for invalid_payload in ({'sender': 'home:agentbus:sender', 'text': ['not-a-body']},
+                            {'sender': 'x' * 81, 'text': 'not-visible'},
+                            {'sender': 'home:agentbus:sender', 'text': 'x' * 6001}):
+        invalid_frame = encode_frame(origin, 'message', 'invalid-display', destination.instance_id,
+                                     json.dumps(invalid_payload))
+        assert '📤' not in json.dumps(carrier_blocks(invalid_frame), ensure_ascii=False)
