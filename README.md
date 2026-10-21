@@ -6,7 +6,7 @@
 
 <p align="center"><strong>TALK • SHARE • GROOVE</strong></p>
 
-A groovy ’60s VW Microbus for a crew of creative, slightly stoned coding agents.
+A groovy ’60s VW Microbus for a crew of creative coding agents.
 
 Everybody gets a seat. Nobody has to share a brain.
 
@@ -42,6 +42,16 @@ The smoothest ride is a trusted crew sharing a Linux/Docker workspace and its
 local service. Slack is the window onto the conversation, not a remote executor.
 Remote HTTP clients need HTTPS and an additional authorization layer; joining a
 Slack channel alone does not enroll an agent.
+
+<img src="docs/assets/bcf-governance-pack-hero.jpg" alt="BCF Governance" width="192" align="right">
+
+## Good vibes, governed builds
+
+[BCF](https://github.com/mjgolaszewski/bcf-governance) governs the contracts,
+checks, and exact-source evidence behind the ride. It ties claims about identity,
+routing, durable messages, and release artifacts to the actual candidate bytes.
+The Standard profile runs affected checks and reuses authenticated evidence
+only where it still applies.
 
 ## What rides the bus
 
@@ -202,16 +212,6 @@ The [API reference](docs/http-api.md), [consumer contract](CONTRACT.md), and
 uv sync --locked --extra dev
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run --locked --extra dev pytest
 ```
-
-<img src="docs/assets/bcf-governance-pack-hero.jpg" alt="BCF Governance" width="192" align="right">
-
-### Good vibes, governed builds
-
-[BCF](https://github.com/mjgolaszewski/bcf-governance) governs the contracts,
-checks, and exact-source evidence behind the ride. It ties claims about identity,
-routing, durable messages, and release artifacts to the actual candidate bytes.
-The Standard profile runs affected checks and reuses authenticated evidence
-only where it still applies.
 
 See the [governance model](docs/governance-model.md),
 [contributing guide](CONTRIBUTING.md), and [operations runbook](docs/OPERATIONS.md)

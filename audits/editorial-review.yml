@@ -64,10 +64,10 @@ documents:
   review_status: full_document_review
   reviewed_lines: [[1, 227]]
   line_count: 227
-  sha256: d633240e67b571126cce6f950f98f59a8e1a37e6ed98ce980adb4b6a975a1785
+  sha256: 0c6e2134e4e49c1c6e998143fe3826c85327ae10a1246578d179b5ce87e6b2ab
   baseline_sha256: b7013d36852333861ccd7453ecce16cc28d4c7baf7c2ac7db3aa39fba4f06931
   disposition: updates
-  review_basis: Full corrected README reviewed line by line against prior visuals and feature explanation; all three original image paths and both Mermaid diagrams restored with current channel and experimental owner boundaries. Quick start and local links preserved.
+  review_basis: Full corrected README reviewed line by line against prior visuals and feature explanation; all three original image paths and both Mermaid diagrams restored with current channel and experimental owner boundaries. Quick start and local links preserved. Subsequent operator copy correction removes explicit intoxication wording from line 9; the Microbus tone remains implied. The unchanged BCF introduction and artwork return ahead of What rides the bus, matching their earlier placement.
 
 - document: SECURITY.md
   review_status: changed_spans_reviewed_in_context
@@ -986,9 +986,9 @@ documents:
 
 - document: CHANGELOG.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 566]]
-  line_count: 566
-  sha256: 9a3c632407225287e0f3bcb06e284c0281fddc85d60217e21b5d268813636140
+  reviewed_lines: [[1, 570]]
+  line_count: 570
+  sha256: 11fac0421d8fb4b654ee667c048f353bc1ce56aa5124ea1225855c9e418acc37
   baseline_sha256: 089d7b76fe9d53eddc539da2141fb02b0b7502354f7ff75661dad2c5a87cfaf0
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.

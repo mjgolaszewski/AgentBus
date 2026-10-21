@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- Restore the BCF introduction to its earlier README position and keep the Microbus tone implicit.
+
 ## [0.9.1rc9] - 2026-10-20
 
 - Keep recipient elapsed flags true after explicit expiry/recovery settlement; preserve query-only behavior, late completion and expired-parent rejection.
