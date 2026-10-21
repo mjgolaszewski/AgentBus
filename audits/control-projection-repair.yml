@@ -22,6 +22,8 @@ repair:
 proof:
   populations: [tests/test_poll_client.py, tests/test_message_lifecycle.py, tests/test_poll_projection_recovery.py, tests/test_control_store.py]
   status: focused_88_lint_and_two_owner_typing_passed_independently_accepted_canonical_pending
+  preparation: offline root-version lock and original owner reconciliation passed; authored stale version-mutation target corrected after failed governance and independent handback
+  generated_population: ordinary three new client controls; contract one new service control; compatibility all four
 editorial:
   rule: current guides describe present behavior and limits; chronology belongs to release and engineering records
   coverage: changed spans reviewed in section context against retained full-document baseline; whole-file current digests in editorial inventory
