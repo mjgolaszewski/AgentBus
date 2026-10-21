@@ -27,7 +27,7 @@ stable_decisions:
   delivery_architecture:
     backend: "flat client and service contexts with closed operation mappings"
     frontend: "not_applicable"
-    data: "SQLite inbox and local JSON consumer profiles; snapshot-based session-authority CAS preserves independent metadata and cursor maxima, rejects conflicting recovery intents; retained rotation receipt precedes revoked-secret preflight; service binding precedes credential egress and STOP stays intact"
+    data: "SQLite inbox and local JSON consumer profiles; snapshot-based session-authority CAS preserves independent metadata and cursor maxima, rejects conflicting recovery intents; retained rotation receipt precedes revoked-secret preflight; service binding precedes credential egress and STOP stays intact; registered client save_profile effect port remains a local delegating callable"
     observability: reference_templates_for_OpenTelemetry_and_structured_logs_not_a_qualified_collector_or_immutable_audit
   governance_process:
     semantic_validator: scripts/validate_governance_yaml.py

@@ -18,7 +18,8 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 from src.agentbus_delivery_client import send_command
-from src.agentbus_profile_client import Profile, save_profile as persist_profile
+from src.agentbus_profile_client import Profile
+from src.agentbus_profile_client import save_profile as persist_profile
 from src.agentbus_transport_client import ClientError, api, configuration, profile_session_token
 
 NAME_RE = r"^[a-z0-9][a-z0-9-]{0,31}$"
