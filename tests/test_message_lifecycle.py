@@ -1232,8 +1232,11 @@ def test_eligibility_refresh_cannot_project_foreign_payload_through_shared_reque
 
 def test_check_in_snapshot_reconciles_expired_announcements_without_ack(lifecycle, monkeypatch):
     from pathlib import Path
+
     from fastapi.testclient import TestClient
+
     from src.agentbus_service import Settings, create_app
+
     store, p = lifecycle
     recipient = p['recipient']
     secret = 'lifecycle-private-recipient'.ljust(40, 'x')
@@ -1260,6 +1263,9 @@ def test_check_in_snapshot_reconciles_expired_announcements_without_ack(lifecycl
                           headers=headers, json={})
         assert ack.status_code == 409
         assert 'expired' in ack.json()['detail']
+        outcome = store.controls.status(control, channel='C111')[0]
+        assert outcome['lifecycle_state'] == 'unread' and outcome['receipt'] is None
+        store.lifecycle.settle(111)
         outcome = store.controls.status(control, channel='C111')[0]
         assert outcome['lifecycle_state'] == 'expired_unread' and outcome['receipt'] is None
         stop, _ = store.controls.issue_stop(routes=None, session_ids=[recipient.session_id],

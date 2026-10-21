@@ -353,6 +353,7 @@ def test_client_cadence_rejects_every_domain_invalid_policy_value():
 
 def test_fresh_snapshot_retires_only_observed_ordinary_controls(tmp_path):
     path, profile = profile_at(tmp_path)
+
     def event(name, kind):
         return {"kind": "CONTROL", "id": name,
                 "control": {"control_id": name, "kind": kind, "read_deadline": 1}}
@@ -373,7 +374,9 @@ def test_fresh_snapshot_retires_only_observed_ordinary_controls(tmp_path):
 
 def test_legacy_and_malformed_snapshots_preserve_poll_evidence(tmp_path):
     import pytest
+
     from src.agentbus_transport_client import ClientError
+
     path, profile = profile_at(tmp_path)
     event = {"kind": "CONTROL", "id": "expired", "control": {"kind": "poll", "read_deadline": 1}}
     poll.change_spool(path, profile, lambda state: state["events"].append(event))
@@ -389,7 +392,9 @@ def test_legacy_and_malformed_snapshots_preserve_poll_evidence(tmp_path):
 
 def test_foreign_snapshot_projection_is_rejected_before_retirement(tmp_path):
     import pytest
+
     from src.agentbus_transport_client import ClientError
+
     path, profile = profile_at(tmp_path)
     poll.change_spool(path, profile, lambda state: state["events"].append(
         {"kind": "CONTROL", "id": "expired", "control": {"kind": "broadcast"}}))

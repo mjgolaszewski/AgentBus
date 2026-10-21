@@ -178,12 +178,14 @@ def reconcile_announcement_snapshot(profile_path: Path, profile: dict, response:
             or any(not isinstance(item, str) or not item or len(item) > 80 for item in pending)
             or len(set(pending)) != len(pending)):
         raise ClientError("Invalid announcement snapshot; poll evidence retained")
+    pending_ids = set(pending)
+
     def reconcile(state: dict) -> None:
         state["events"] = [event for event in state["events"] if not (
             event.get("kind") == "CONTROL" and event.get("id") in observed_ids
             and isinstance(event.get("control"), dict)
             and event["control"].get("kind") in {"broadcast", "poll"}
-            and event["id"] not in pending
+            and event["id"] not in pending_ids
         )]
     change_spool(profile_path, profile, reconcile)
 
