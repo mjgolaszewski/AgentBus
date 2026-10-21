@@ -986,9 +986,9 @@ documents:
 
 - document: CHANGELOG.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 570]]
-  line_count: 570
-  sha256: 11fac0421d8fb4b654ee667c048f353bc1ce56aa5124ea1225855c9e418acc37
+  reviewed_lines: [[1, 568]]
+  line_count: 568
+  sha256: 61418954386a07f88dce4f4e05e6c1b1c86a03473ad09163b1d9da66078b699c
   baseline_sha256: 089d7b76fe9d53eddc539da2141fb02b0b7502354f7ff75661dad2c5a87cfaf0
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.

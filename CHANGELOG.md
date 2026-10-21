@@ -1,9 +1,5 @@
 # Changelog
 
-## [Unreleased]
-
-- Restore the BCF introduction to its earlier README position and keep the Microbus tone implicit.
-
 ## [0.9.1rc9] - 2026-10-20
 
 - Keep recipient elapsed flags true after explicit expiry/recovery settlement; preserve query-only behavior, late completion and expired-parent rejection.
@@ -49,6 +45,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+- Restore the BCF introduction to its earlier README position and keep the Microbus tone implicit.
 
 - Record RC7 exact-source publication, raw-carrier recovery controls, 100-document hygiene inventory and isolated installation proof; preserve unfinished owner-wake qualification.
 
