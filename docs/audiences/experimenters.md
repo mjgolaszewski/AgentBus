@@ -1,27 +1,19 @@
 # AgentBus for experimenters
 
-This seat is for people qualifying capabilities that are still under construction.
+This seat is for people qualifying experimental behavior or a new deployment.
 It does not authorize deployment, channel provisioning, credentials, host access,
-or a live wake attempt. Released 0.9.0 is the single-channel baseline. The 0.9.1 RC train adds channel
-isolation and retains unfinished P12 owner-wake research. Its protected construction
-passed a bounded local two-channel canary. Released RC4 has exact-subject
-archive/install verification and a fresh 17-check bounded lifecycle canary; see its
-[release record](https://github.com/mjgolaszewski/AgentBus/releases/tag/v0.9.1rc4).
-These results do not qualify other installations or owner-wake interoperability.
+or a live wake attempt. Use the [contract model](../contracts.md) to identify the
+behavior under test and the package version in `pyproject.toml` to identify the
+source. Exact subjects and historical checks belong in
+[release records](https://github.com/mjgolaszewski/AgentBus/releases) and their linked
+qualification reports, rather than serving as blanket capability guarantees.
 
-Current release/capability status is maintained in the [contract model](../contracts.md),
-with package version from `pyproject.toml`. Released RC7 has exact `52fcd86`
-protected PR/main proof, reproducible archive and SDK-free installation for
-raw-carrier recovery. Its isolated checks preserve raw history, deny unrelated
-collisions and recover the same notification after restart. The exception requires
-a complete legacy/unrouted carrier matching authenticated custody; altered,
-truncated, assured and routed collisions remain blocked.
-
-RC6 qualified bounded federation backlog recovery and the bundled
-[Codex participation skill](../codex-skill.md). Its 1,307-event restart check uses
-an isolated fake provider. Destination custody is distinct from execution or
-semantic ACK. IDE UI discovery remains client-dependent. Neither release is a
-new wake integration or a claim of atomic idle-only admission.
+Channel isolation and local operator features have bounded two-channel evidence.
+Federation recovery and raw-carrier projection have isolated restart checks.
+These results do not qualify another installation, indefinite provider recovery,
+or owner-wake interoperability. AHP/native-queue integration and atomic idle-only
+wake admission remain unqualified. The [Codex participation skill](../codex-skill.md)
+provides client instructions, not a new host integration.
 
 Experiments still assume trusted, non-hostile agents in a trusted workspace.
 Session and channel checks do not sandbox the recipient model or control its
@@ -31,9 +23,9 @@ interpretation of message text. Follow the [security boundary](../../SECURITY.md
 
 | Capability | Candidate scope | Evidence still required |
 | --- | --- | --- |
-| RC7 raw-carrier recovery | Preserve raw history and one distinct scoped notification without timestamp reassignment | Exact source `52fcd86`, archive and SDK-free installation passed; deployed incidents still require owner readback, and this is not general federation requalification |
-| RC4 operator inspection | Grouped health, existing-task observations and private workers/doctor/pending/explain reads | Protected source, archive/install and bounded two-channel checks passed on exact release `6a1c672`; the operator confirmed readable, private grouped health including Workers. Observations reset on restart and never establish external poll/wake health, execution or automatic repair |
-| RC3 message lifecycle | Scoped epochs, private retry staging, exact-session pickup/handling, shared read expiry and bounded archive/purge | Exact RC3 source/archive/install and bounded lifecycle checks passed; each deployment needs a backed-up cutover and any applicable migration; unknown legacy and federation references remain pinned |
+| Raw-carrier recovery | Preserve raw history and one distinct scoped notification without timestamp reassignment | Exact-source, archive and isolated-installation proof must apply to the selected package; deployed incidents still require owner readback, and this is not general federation requalification |
+| Operator inspection | Grouped health, existing-task observations and private workers/doctor/pending/explain reads | Revalidate private grouped health and Workers against the chosen installation. Observations reset on restart and never establish external poll/wake health, execution or automatic repair |
+| Experimental message lifecycle | Scoped epochs, private retry staging, exact-session pickup/handling, shared read expiry and bounded archive/purge | Each deployment needs applicable exact-source, archive and isolated-installation evidence plus a backed-up cutover and any applicable migration; unknown legacy and federation references remain pinned |
 | Slack enrollment approval | File-free pending request, private operator approval in the intended channel, canonical staged-secret redemption | Exact protected source, legacy grant compatibility, archive installs and bounded live human approval; pending requests have no message authority |
 | Multiple channels | One service, database, Slack app and socket; explicit allowlist of at most 16 channels | Bounded local two-channel canary passed on the protected construction; each release subject requires fresh canonical custody and archive/install verification |
 | Channel authorization | One immutable channel per identity; grant-backed enrollment; exact-session reads and writes; channel-local public cursors | Protected construction includes negative controls and populated-store migration/restart continuity; see the exact [qualification record](../../audits/channel-live-qualification.yml) |
@@ -47,10 +39,9 @@ owners. Workspace opt-in, a saved thread UUID, an accessible backend, and a loca
 lock do not independently establish owner-side atomic admission. Backend identity,
 owner incarnation and connection/binding generation matter alongside thread ID.
 No message, queue acceptance or custody receipt proves execution or completion.
-After channel migration, inherited bindings that lack the new scope fields stay
-fail-closed even when workspace wake remains enabled. Projection migration does
-not rewrite those bindings or qualify their owner; retain them for explicit
-verified binding rather than silently adopting a scope.
+Recognized legacy bindings can recover missing scope only from an exact authenticated
+profile with matching retained identities. Conflicting or unknown bindings stay
+fail-closed even when workspace wake is enabled; recovery never qualifies their owner.
 
 ## Work offline first
 
@@ -72,7 +63,7 @@ replay and lost responses, aliases, reply ancestry, disabled channels, outages,
 provider echoes, federation containment, and profile/spool/wake scope mismatch.
 No negative control may acquire another channel by editing local profile fields.
 
-For [lifecycle construction](../message-lifecycle.md), exercise pickup/expiry and
+For [experimental message lifecycle](../message-lifecycle.md), exercise pickup/expiry and
 ACK races, stopped/rotated credentials, unknown provider outcomes, old-epoch and
 legacy replay, archive corruption/interruption, foreign scope, reference closure,
 cursor/ingress retirement and cached wake references. A shared read deadline must

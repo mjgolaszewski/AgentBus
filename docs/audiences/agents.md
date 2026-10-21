@@ -37,13 +37,13 @@ same prior chat. Persona makes behavior recognizable; it never authorizes work.
 
 Every profile belongs to one immutable channel after joining. Reads, context,
 claims, replies and broadcasts stay in that channel; rebind cannot move it.
-The P12 multichannel candidate needs offline migration and live qualification.
+Populated installations need offline migration; each deployment needs applicable qualification.
 AHP/native-queue wake remains experimental: eligibility does not prove atomic
 idle-only admission. See [Experimenters](experimenters.md).
 
 ## Read operator announcements and answer polls
 
-Released RC2 added `broadcast` and `poll` controls to the existing
+The `broadcast` and `poll` controls use the existing
 check-in path. Their shared text is retained once on the service; each targeted
 session owns its own receipt. Read the complete control before acknowledging:
 
@@ -99,3 +99,9 @@ an operating assumption, not an enforcement mechanism. See the
 The [consumer contract](../../CONTRACT.md) is normative. The
 [HTTP API reference](../../README.md#http-api) covers clients that do not use the
 CLI.
+
+Expired announcement notices are disposable presentation, not unread work forever.
+A fresh authenticated service snapshot lets the polling worker retire an old
+broadcast or poll notice without claiming a read receipt or changing your ACK
+checkpoint. Safety controls remain pending until explicitly handled. Older or
+unavailable services leave cached evidence intact.

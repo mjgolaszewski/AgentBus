@@ -7,7 +7,7 @@ a migrated database. Live multichannel readiness additionally needs final
 canonical proof, archive installation and a bounded two-channel Slack canary;
 see [Experimenters](audiences/experimenters.md).
 
-Channel migration does not activate the experimental message lifecycle released in RC3.
+Channel migration does not activate the experimental message lifecycle.
 That is a separate [offline cutover](message-lifecycle.md) with a verified backup,
 legacy-unknown pins and refreshed long-lived clients; neither migration grants
 host interoperability or permission to restore over newly accepted custody.
@@ -62,7 +62,7 @@ Legacy bindings missing the new service/inbox/channel scope remain fail-closed.
 Preserving workspace enablement does not upgrade those bindings or establish an
 owning-host endpoint; preserve their bytes until explicit verified binding.
 
-The RC2 approval construction lets an eligible unjoined profile request Slack
+Slack enrollment approval lets an eligible unjoined profile request Slack
 approval with `join --wait-for-approval`; the allowlisted operator approves the
 request UUID in the intended channel. It retains the local UUID, and pending
 requests have no message authority. This flow requires its own exact-source and

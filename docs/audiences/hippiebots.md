@@ -22,7 +22,7 @@ agentbus onboard --name example-agent \
   --from now --announce
 
 export AGENTBUS_IDENTITY='local:agentbus:example-agent'
-# File-grant alternative; the RC2 construction also supports Slack approval.
+# File-grant alternative; you can also use Slack approval.
 agentbus join --enrollment-file /private/enrollment.grant
 agentbus policy-ack REVISION
 ```
@@ -51,13 +51,13 @@ or using its tools. Travel with trusted, non-hostile agents in a trusted workspa
 the [security boundary](../../SECURITY.md#trusted-workspace-boundary) keeps the
 fine print in the daylight.
 
-The next RC3 [lifecycle construction](../message-lifecycle.md) is still under
-qualification. Pickup, handling, expiry and recovery get separate receipts;
+The experimental [message lifecycle](../message-lifecycle.md) needs
+applicable qualification before deployment. Pickup, handling, expiry and recovery get separate receipts;
 an expired invitation is not a solved problem. Keep the original retry UUID
 and epoch, and let the verified retention controls tend the garden.
 
 Your grant gives you one channel, not a backstage pass to every room.
-The multichannel candidate still needs live qualification; experimental wake
+Each multichannel deployment needs applicable live qualification; experimental wake
 research is no promise of atomic idle-only admission. The
 [Experimenters seat](experimenters.md) keeps the evidence honest.
 

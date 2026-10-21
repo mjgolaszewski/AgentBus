@@ -1,0 +1,31 @@
+document:
+  kind: construction_audit
+  path: audits/control-projection-repair.yml
+  status: source_candidate_validation_pending
+scope:
+  bounded_context: participation
+  layers: [client_projection, http_translation]
+  command_query: authenticated_check_in_command_and_disposable_projection_cleanup
+  targets: [src/agentbus_poll_client.py, src/agentbus_participation_api_service.py]
+  forbidden: [SDK_changes, generated_BCF_hand_edits, live_DB_or_spool_edits, ACK_fabrication, checkpoint_resets, safety_control_expiry, wake_or_membership_changes]
+defect:
+  trigger: expired broadcast remains cached after service read window closes
+  effect: poll prioritizes obsolete CONTROL and prompts an acknowledgement the service correctly rejects with HTTP409
+  cause: successful_ack_only_retirement_without_service_snapshot_reconciliation
+repair:
+  authority: complete pending_announcement_ids from a fresh exact-session inbox-bound check-in
+  candidates: cached broadcasts and polls observed before request only
+  effect: remove obsolete presentation only; no server read or answer receipt
+  preservation: [STOP, pause, checkpoint, unknown_shapes, post_request_arrivals, missed_read_outcomes, original_receipts, semantic_ACKs, profile_scope, durable_history]
+  fail_closed: [legacy_server_without_snapshot, transport_failure, invalid_snapshot, foreign_projection]
+  compatibility: additive check-in response; unchanged paths Slack protocol and database schema
+proof:
+  populations: [tests/test_poll_client.py, tests/test_message_lifecycle.py, tests/test_poll_projection_recovery.py, tests/test_control_store.py]
+  status: not_executed
+editorial:
+  rule: current guides describe present behavior and limits; chronology belongs to release and engineering records
+  coverage: changed spans reviewed in section context against retained full-document baseline; whole-file current digests in editorial inventory
+  retained: historical proof subjects signatures qualification limits and valid verification commands
+rollout:
+  immutable_RC9: do_not_retag_or_replace_published_assets
+  delivery: coordinate separately with runtime custodian after exact-source proof and isolated installation

@@ -1,7 +1,7 @@
 document:
   kind: editorial_audit
   path: audits/editorial-review.yml
-  status: rc9_recovery_and_trust_review_canonical_pending
+  status: control_projection_and_editorial_followup_pending
 request:
   scope: Every product document, authored historical log, contract, audience guide, skill and current changelog;
     installation identifiers and internal coordination notices removed.
@@ -36,10 +36,10 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines: [[1, 234]]
   line_count: 234
-  sha256: 16f86166afa7a5d0c0f49799b7e7379b0823abfacf453993c19566a0f1dc14a6
+  sha256: 24cfbda8c342a4e8d3ce1d667d1d685cf64b5a4e67bebc16d33d72866bfcc939
   baseline_sha256: 482ea3731d62fb14307e4bbc0507abe8a2e77287c4abf8f58064cc0aaa750d7c
   disposition: updates
-  review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: CONTRIBUTING.md
   review_status: hash_verified_prior_full_document_review
@@ -258,24 +258,22 @@ documents:
     inspected in section context. New records reviewed in full.
 
 - document: contracts/participation/v2/participation.contract.yml
-  review_status: hash_verified_prior_full_document_review
-  reviewed_lines: [[1, 171]]
-  line_count: 171
-  sha256: 718d8b378c90b29101e5df00c10538cccb0b5bccce874c893a8114e49b4580a6
+  review_status: changed_spans_reviewed_in_context
+  reviewed_lines: [[1, 177]]
+  line_count: 177
+  sha256: 5d2754f623f2bd00e4662ead8f5e106678fb3c8572577e95770b74b3ad5eab42
   baseline_sha256: 718d8b378c90b29101e5df00c10538cccb0b5bccce874c893a8114e49b4580a6
-  disposition: retained
-  review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
-    inspected in section context. New records reviewed in full.
+  disposition: updates
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: docs/OPERATIONS.md
-  review_status: hash_verified_prior_full_document_review
+  review_status: changed_spans_reviewed_in_context
   reviewed_lines: [[1, 337]]
   line_count: 337
-  sha256: 61fb559367efea157edf6ddc41f679cc8b4b5e4d8220a71253aca717b861895e
+  sha256: ec8b2261338bfb73a8e4bc1189bb81486c0007cbff5fb8c3cc5e55d51d54169d
   baseline_sha256: 61fb559367efea157edf6ddc41f679cc8b4b5e4d8220a71253aca717b861895e
-  disposition: retained
-  review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
-    inspected in section context. New records reviewed in full.
+  disposition: updates
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: docs/README.md
   review_status: changed_spans_reviewed_in_context
@@ -300,112 +298,109 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines: [[1, 157]]
   line_count: 157
-  sha256: a062fbceace86755fda72b17cc6a10535791f318c30ad726d1ac34e719a623a2
+  sha256: 3e3111797f4d6b1908d8242fae419d41ce8d46bd3c393b022a6d6ca6429bb8a9
   baseline_sha256: 11e972fe653bbe1b69944ee1fbb93d384506628eff443c561854af95b94d04b4
   disposition: updates
-  review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: docs/audiences/adapter-users.md
   review_status: changed_spans_reviewed_in_context
   reviewed_lines: [[1, 182]]
   line_count: 182
-  sha256: 69b69a342693f0d193fb0b9c4bb31fd8a8ce646080f64f8f95eccd6db4c665f8
+  sha256: 61449c047dccb0bf08334679ea8c3e183904fa209e4cff1e1d037c439b93df97
   baseline_sha256: 3ad5b209d1a5476a35adaffc618a84e5c2d53d3f80cf22b76b8b8d6241dbdace
   disposition: updates
-  review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: docs/audiences/agents.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 101]]
-  line_count: 101
-  sha256: 7a71ff6862f89703b8cd754f607dc578dfcb9bb2e543598b86629271f2c6ae8d
+  reviewed_lines: [[1, 107]]
+  line_count: 107
+  sha256: d53ea6070f7decb3d4052cfbfd0ff10e23dba7e3996e3bdf57bb79e4a8f6580b
   baseline_sha256: 742b9bbdf762f37ccdd2f72ad7bb1bd7ecf35c27264f6319380dbbca33f723f9
   disposition: updates
-  review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: docs/audiences/experimenters.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 102]]
-  line_count: 102
-  sha256: ab7a1c91f74575026bf5aef6f1b1a963f8de4fd6f5aaf5f9afdfc70c9bff6f04
+  reviewed_lines: [[1, 93]]
+  line_count: 93
+  sha256: 72314578db1c391b7999451c66687f337762659de46d92952a8d496c0ce1676e
   baseline_sha256: 244689c58ec180c480b4bcd2747824aaa343de8fc215cd1482bc67ae01d256d9
   disposition: updates
-  review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: docs/audiences/hippiebots.md
   review_status: changed_spans_reviewed_in_context
   reviewed_lines: [[1, 80]]
   line_count: 80
-  sha256: 15946e9cb428c40139504b8de71b2bf0d4bc22b3da5d0145f25443d33aeaa07f
+  sha256: d26aa69ce4e7ccccdb6127277fcca1224863a95db41253a6043b4e4cdb17e217
   baseline_sha256: 7f215a85e9784d1ed5081a8ae4843120042956d5bed8926edd283c55a49c12dc
   disposition: updates
-  review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: docs/audiences/humans.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 81]]
-  line_count: 81
-  sha256: f0023796c4aa52a412c04293d99cae3b47b6168cd4ee2878103d0029f35c3d97
+  reviewed_lines: [[1, 79]]
+  line_count: 79
+  sha256: 224d62a0caba8f1d94913658f521bc4a6bc3f194462058b69565dd6e16fc5a43
   baseline_sha256: 7b67a8e3b9e5ed46795be81e320aa964956b777178f8e7e40bb184bfa9acb968
   disposition: updates
-  review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: docs/audiences/maintainers.md
-  review_status: hash_verified_prior_full_document_review
+  review_status: changed_spans_reviewed_in_context
   reviewed_lines: [[1, 33]]
   line_count: 33
-  sha256: fb0ceda5d0a7dd05441f2c795891c330c32c8cf7c0a27f2be813f48703cd6603
+  sha256: 5cf29024d71e939eb15dc0e6299a622221a4341cc27210b59b8515c3a8461ba7
   baseline_sha256: fb0ceda5d0a7dd05441f2c795891c330c32c8cf7c0a27f2be813f48703cd6603
-  disposition: retained
-  review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
-    inspected in section context. New records reviewed in full.
+  disposition: updates
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: docs/audiences/operators.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 306]]
-  line_count: 306
-  sha256: 02ff9be92638a367a3826c9b309419fb4d2360fae406775505fe8df3bb3a5499
+  reviewed_lines: [[1, 302]]
+  line_count: 302
+  sha256: 11fc2df8920019e4c14c5729d7c5af2bf4fe944634591daacb934d46ac48420f
   baseline_sha256: 70857225e20bb29293faef6cae5383e4f703f9665d3362a055ee61179d59c1ef
   disposition: updates
-  review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: docs/audiences/security-reviewers.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 58]]
-  line_count: 58
-  sha256: 2091f207f64ebba02670ec485b6828a0ffa0a784f526cd4f92c91e367c13ad2f
+  reviewed_lines: [[1, 57]]
+  line_count: 57
+  sha256: ebaefa026953bfa63a94984a7b5787afe118638a2fd7b64d5b4ee56126b2c001
   baseline_sha256: ccbc92fc172dfe5e72897a458d5db514202a9e8f03a58c3712d206ae228f4729
   disposition: updates
-  review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: docs/channel-migration.md
   review_status: changed_spans_reviewed_in_context
   reviewed_lines: [[1, 88]]
   line_count: 88
-  sha256: eafc821d05775c86c9bd652012ecb5646d9091f2316a196599ef201e867c87f4
+  sha256: f3907bbc66c19d3ce0ca880f571cfc38d5c0414097deb42fa4086f5be86e9109
   baseline_sha256: d415b49b0d9ff0b29e06d8ac883bdede7c736df7309cdac0ccb610d4e12d33d2
   disposition: updates
-  review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
-    inspected in section context. New records reviewed in full.
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: docs/contracts.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 142]]
-  line_count: 142
-  sha256: 4720c44700424d0448ba16ec7fb21b4d624b318e6832e469695e5006f9959c51
+  reviewed_lines: [[1, 127]]
+  line_count: 127
+  sha256: bf0fb381bf60b21824926d6ba4b139037d4c97c10faf68e6f2d56cbdb9abae15
   baseline_sha256: e1339ee0338de7e0976fd09f3cb48891371068323d5e5bbd59987caacd310f70
   disposition: updates
-  review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: docs/federation.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 441]]
-  line_count: 441
-  sha256: 3953f58e8c594606812cc4647bec9bf0985ce0e68d77c960e8c16e4e064d52da
+  reviewed_lines: [[1, 440]]
+  line_count: 440
+  sha256: f2cde9aa0d2f0569fa849c230c8229b751de561da3f8f7502ad847759e29fc31
   baseline_sha256: 240d6f30536b0cb6680c5d73d79c501d5f389fc73b3470cece99dff8fa704cf2
   disposition: updates
-  review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
-    inspected in section context. New records reviewed in full.
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: docs/governance-model.md
   review_status: hash_verified_prior_full_document_review
@@ -599,12 +594,12 @@ documents:
 
 - document: phases/phase-12-log.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 357]]
-  line_count: 357
-  sha256: 204444a7bf04cc048c8aa1e3d518d003c03538d686db290f62881fe76f79b53f
+  reviewed_lines: [[1, 364]]
+  line_count: 364
+  sha256: 9bd67c86e771b45882d5770e33ccb686f82b2d675ae9633dc9611bbbecfe603e
   baseline_sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
-  review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: plans/build-plan.yml
   review_status: changed_spans_reviewed_in_context
@@ -848,12 +843,12 @@ documents:
 
 - document: plans/phase-12-workitems.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 298]]
-  line_count: 298
-  sha256: 643a91cf9a53b5de2552240f439eb0918e97732ff805a5bdbe29bb7feec670c0
+  reviewed_lines: [[1, 316]]
+  line_count: 316
+  sha256: a7847d60e7d39fb8e8749462bc0b8c9167c5850337bf3188e0904cfff87b3e25
   baseline_sha256: 1c632ee46d55ab7ba403af50842aa97a1a733cadd8798eb694257d3f6e53cfbc
   disposition: updates
-  review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: plans/phase-history.yml
   review_status: hash_verified_prior_full_document_review
@@ -986,12 +981,12 @@ documents:
 
 - document: CHANGELOG.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 568]]
-  line_count: 568
-  sha256: 61418954386a07f88dce4f4e05e6c1b1c86a03473ad09163b1d9da66078b699c
+  reviewed_lines: [[1, 571]]
+  line_count: 571
+  sha256: eb402a04bf2de209e07cc92e5722ee85948526ded07d1abb1986e06066c3cd1b
   baseline_sha256: 089d7b76fe9d53eddc539da2141fb02b0b7502354f7ff75661dad2c5a87cfaf0
   disposition: updates
-  review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
+  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 
 - document: audits/rc7-projection-docs.yml
   review_status: changed_spans_reviewed_in_context
@@ -1026,11 +1021,20 @@ documents:
   disposition: new
   review_basis: New RC9 document reviewed in full; current capabilities and limits checked against implementation.
 
+- document: audits/control-projection-repair.yml
+  review_status: full_document_review
+  reviewed_lines: [[1, 31]]
+  line_count: 31
+  sha256: 2d418f734fe1a6691d84109f868e4de6746f4d8550031840756af066a4deee04
+  baseline_sha256: null
+  disposition: new
+  review_basis: New bounded repair audit reviewed in full; source assertions distinguished from unexecuted qualification.
+
 summary:
-  documents: 103
-  new: 4
-  updated: 33
-  retained: 66
+  documents: 104
+  new: 5
+  updated: 36
+  retained: 63
   verification: Privacy regression and exact-source proof pending
 release_record_review:
   runtime_source: 52fcd8608994d69f1108eabc0e58769c815c037e

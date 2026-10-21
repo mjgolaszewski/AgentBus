@@ -79,7 +79,7 @@ one surface while remaining absent from the other inventory.
 | Optional Codex wake | Local binding, worker projection, and host-owned resume adapter |
 | Slack delivery | `SlackPoster`, `SlackReceiver`, and `normalize_event` |
 | Lifecycle and configuration | `Settings`, CLI configuration, and lifecycle operations |
-| Experimental message lifecycle (released in RC3) | `MessageLifecycleStore`, `AnnouncementLifecycle`, receipt API/client, `RetentionStore` and offline lifecycle migration; existing SQLite writer only |
+| Experimental message lifecycle | `MessageLifecycleStore`, `AnnouncementLifecycle`, receipt API/client, `RetentionStore` and offline lifecycle migration; existing SQLite writer only |
 
 Protocol translations are explicit at Slack ingestion. Startup authenticates
 the configured bot token with Slack and binds routed protocol 1 and 2 envelopes
@@ -147,7 +147,7 @@ the client retains local credential custody and compact presentation. An
 operator credential and session-specific proof separate control authority
 from the existing shared message bearer.
 
-The RC2 approval construction keeps pending enrollment requests in the existing
+Slack enrollment approval keeps pending enrollment requests in the existing
 SQLite writer under `agentbus_enrollment_approval_service`. It stores only a
 staged-secret digest and a bounded immutable request subject. The existing
 session-enrollment HTTP command stages or redeems the request; no new endpoint

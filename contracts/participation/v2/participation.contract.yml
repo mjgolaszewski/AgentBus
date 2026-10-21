@@ -1,6 +1,6 @@
 document:
   kind: participation_authorization_contract
-  version: 2.0.1
+  version: 2.0.2
   status: active
   path: contracts/participation/v2/participation.contract.yml
 extends: contracts/participation/v1/participation.contract.yml
@@ -140,6 +140,12 @@ mandatory_announcements:
   representation: one_operator_control_payload; per_session_target_receipts_only; no_message_fanout
   targets: fixed_snapshot_of_non_stopped_sessions_in_invoking_channel; no_late_join_expansion
   delivery: control_check_before_ordinary_inbox; redeliver_until_explicit_acknowledgement_or_declared_optional_lifecycle_read_expiry
+  presentation_reconciliation:
+    authority: fresh_exact_session_inbox_authenticated_check_in_pending_announcement_ids_complete_snapshot
+    scope: only_pre_request_cached_broadcast_and_poll_notices_absent_from_snapshot
+    preserved: safety_controls_unknown_shapes_concurrent_new_notices_server_outcomes_ACK_receipts_and_checkpoints
+    unavailable_or_legacy_server: retain_cached_evidence_without_local_clock_expiry
+    effect: disposable_projection_cleanup_only_never_read_acknowledgement
   broadcast_ack: exact_session_explicit_read_receipt; delivery_or_rendering_does_not_ack
   poll_ack: exact_session_explicit_bounded_answer_required; read_without_answer_remains_pending
   recovery: stable_Slack_trigger_identity; same_request_returns_original_control; changed_request_fails_closed

@@ -78,8 +78,7 @@ oldest pending requests that are unassigned or approved in the invoking channel;
 approved requests remain listed until the chat retries.
 
 Private file grants remain supported for automation or installations without
-Slack operator commands. The approval flow was released in RC2 with bounded human qualification;
-later subjects still require their own exact-source proof and installation checks. Keep the existing backup and repair
+Slack operator commands. Enrollment approval requires applicable exact-source proof and installation checks. Keep the existing backup and repair
 forward rules when installing its additive request table.
 
 ## The shape of the deployment
@@ -158,8 +157,7 @@ the resume control. AgentBus does not intercept Codex tools or cancel an
 in-flight call; the active chat acts on the hold at its next checkpoint.
 `/agentbus health` is a private, read-only operator-wide dashboard. It reports
 version, process/runtime, Slack connection, configured and retained channels,
-custody, and local federation configuration. Released experimental RC4 adds spaced sections
-and bounded process-local observations of the existing delivery task and its
+custody, and local federation configuration. The dashboard groups related sections and includes bounded process-local observations of the existing delivery task and its
 delivery/lifecycle and federation cycles. Last attempt and completed-cycle times,
 backoff and fixed error codes are observations, not delivery or execution proof.
 They reset on restart. External workspace poll workers and the host wake
@@ -169,7 +167,7 @@ interrupted or failed; it never manufactures a completed cycle.
 The operator-authenticated `/v1/status` exposes the same read model; shared
 bearer status remains minimal. No credential or private path is included.
 
-Released experimental RC3 adds rich help/roster, a copyable
+Rich help and roster include a copyable
 `/agentbus approve REQUEST_UUID` line per enrollment and distinct lifecycle
 states in health. `/agentbus lifecycle` inspects the invoking channel;
 `lifecycle settle`, `lifecycle archive` and `lifecycle purge` preview a bounded
@@ -181,9 +179,7 @@ Read the [lifecycle migration guide](../message-lifecycle.md) before cutover.
 without deleting custody or running a vacuum. This explicit physical-maintenance
 scope spans the one database; it does not change agent membership or access.
 
-RC4 has exact protected-source, archive/install and bounded two-channel evidence.
-The operator confirmed that grouped health, including Workers, is readable and
-visible only to them. Its private inspections are:
+Private inspection commands group current observations without granting repair authority:
 
 - `/agentbus workers` shows the existing service task and cycle observations;
   it does not scan processes, invoke providers or inspect another host.
@@ -200,10 +196,10 @@ visible only to them. Its private inspections are:
   execution, and reading never acknowledges work.
 
 All four require the existing Slack operator allowlist and return privately.
-There is no new daemon, credential, schema migration or automatic repair. RC4
-preserves RC3 lifecycle and host-wake limitations; see [Experimenters](experimenters.md).
+These inspections add no daemon, credential or automatic repair. Experimental
+lifecycle and host-wake limits still apply; see [Experimenters](experimenters.md).
 
-RC4 retains the separation of unresolved local deliveries from retained
+Unresolved local deliveries remain separate from retained
 request history. `AGENTBUS_LOCAL_DELIVERY_OUTSTANDING_LIMIT` defaults to 1,024;
 submitted records do not consume this budget. Unknown, blocked, uncertain and
 federated states remain unresolved. `AGENTBUS_LOCAL_DELIVERY_RETAINED_LIMIT`
@@ -218,7 +214,7 @@ Private health/status shows each utilization and limit, warning at 80%.
 Investigate unresolved delivery failures and provision approved storage/capacity
 before exhaustion. The separate history limit still eventually backpressures:
 the admission-only baseline has no supported archive/retention lifecycle.
-RC3's experimental retention requires explicit offline migration and qualified
+Experimental retention requires explicit offline migration and qualified
 operator application; legacy unknown rows stay pinned. Request UUIDs,
 fingerprints and results never silently expire. Do not delete submitted rows to
 make room; an exact authenticated retry within its applicable replay window must return its retained result,

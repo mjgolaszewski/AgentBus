@@ -18,6 +18,12 @@ summary:
   - 57 affected wake cases, Ruff and governance YAML validation pass; computed closure remains unclaimed
   - Actual pinned AHP reducer passes168 upstream chat fixtures and8 targeted controls; drift and semantic queue-order mutants reject
 workitems:
+- id: P12-P1-29
+  status: IN_PROGRESS
+  summary: Source-only expired-control projection repair; focused and canonical validation pending
+- id: P12-P1-30
+  status: IN_PROGRESS
+  summary: Current guide chronology removal and editorial dispositions; verification pending
 - id: P12-P1-28
   status: DONE
   summary: Preserve truthful elapsed outcome flags after expiry settlement; qualification pending
@@ -115,6 +121,7 @@ execution_evidence:
   planned_commands:
   - canonical bcf ci submit after shared native capacity is available
   executed_commands:
+  - "Pre-edit control repair: participation transport additive check-in snapshot and scoped poll projection owner only; snapshot from authenticated service, no client clock expiry. Reconcile only pre-request known broadcast/poll events; preserve unknown STOP pause checkpoint and concurrent arrivals, durable expired-unread outcomes, original receipts and semantic cursors. Behavioral controls live in existing poll and message-lifecycle populations already selected by producers. No provider request DB mutation migration wake change SDK edit generated artifact repair or release retag. Operator assigns second priority after recovery ahead of BCF2.5; validation waits fixed packet admission. Current product guides rewritten around present behavior with historical qualification retained in linked audit records."
   - "Corrected README and status subject3c4a422 preparation10 terminal0/73.687s:126focused lifecycle/client/onboarding/wake cases PASS; original234 reconcile governance source625 Ruff and mypy66 PASS. Only owner-generated semantic lock timing and3test manifests changed; all4new cases appear in ordinary249 contract583 and Python314684 populations. Original fence nonblocking allocation and owned-tree2CPU/AS1GiB guard retained terminal Q/EOF/reap all4known handles absent and fencefree. Operator transferred local priority for bug triage/docs; no SDK/provider/live change or release qualification inferred. Freeze exact source plus owner outputs for canonical proof; original failed archive parent and cache diagnostic retained."
   - "Pre-edit status repair scope: message lifecycle service read model and versioned lifecycle contract; command authorization/expiry admission and ACK semantics stay unchanged. Trace shows deadline_elapsed used by recipient outcome and ACK batch, lease_elapsed consumed by wake filtering; keep picked-up/handled semantics while preserving true elapsed flags for settled expired_unclaimed/recovery_required. New focused test module avoids enlarging existing oversized lifecycle tests; wire producer and declared node selections, owner-generated manifests only. No live clocks leases custody checkpoints or expired-parent policy edits. Expected tests cover boundary settlement restart query nonmutation foreign scope late completion and intentional expired-parent410 with genuinely new report allowed."
   - "Operator corrective review rejected initial RC9 README as over-cut: restore the groovy60s VW Microbus creative coder crew, all3 original images, both Mermaid diagrams and prominent upcoming AHP/native-queue wake candidate. Keep explicit trusted non-hostile workspace boundary, critical onboarding facts, exact-session scope and unqualified live atomic-admission limits; RC chronology remains in changelog. Documentation-only follow-up on merged87266e1; runtime tests pins SDK generated artifacts and live state forbidden. Review full corrected README and update editorial hashes; existing3 onboarding cases plus canonical graph are the expected checks."

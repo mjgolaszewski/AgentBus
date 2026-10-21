@@ -38,7 +38,7 @@ and route prefixes.
 
 The optional trusted `history_limit` setting selects an exact integer from 1
 through 1,000 events to admit per recovery batch; the default remains 100.
-RC6 separates that batch from the size of the provider backlog. Each worker
+The recovery batch is independent of provider backlog size. Each worker
 cycle reads at most ten 100-event pages within a 15-second scan deadline.
 Slack's newest-first time pagination resumes with the last observed timestamp
 as an exclusive `latest` boundary, so fresh traffic cannot displace older pages.
@@ -126,9 +126,9 @@ unsupported expiry assumptions. Discovery never bootstraps trust
 or grants local execution authority. Deterministic fake-provider tests establish
 adapter behavior; they do not establish live multi-installation delivery.
 
-## Candidate channel containment
+## Channel containment
 
-The P12 channel-isolation candidate retains one explicitly configured federation
+Channel isolation retains one explicitly configured federation
 channel. Additional channels are local-only: they cannot enqueue federation,
 export registrations, or receive another channel's local identity projection.
 Ordinary delivery, directory sharing and parent mappings remain bound to that
@@ -320,9 +320,8 @@ does not qualify for this exception. A projection/storage failure still withhold
 receipts and checkpoint progress; do not delete raw history or reset checkpoints.
 The additive mapping is capped at 1,024 rows and is never automatically pruned.
 
-This repair is qualified on released RC7 `52fcd86`; see the
-[exact-source record](../audits/rc7-projection-docs.yml). It adds no schema
-migration. Preserve the latest database after accepting new custody. If restoring
+The [exact-source qualification record](../audits/rc7-projection-docs.yml)
+retains the bounded recovery evidence. This mapping requires no schema migration. Preserve the latest database after accepting new custody. If restoring
 older code that cannot reconcile a raw-carrier collision, keep its bridge disabled
 and retain the raw record, notification mapping and checkpoint for repair forward.
 An unchanged schema does not authorize deleting history or rewinding recovery.
@@ -343,7 +342,7 @@ and local cursor history; do not reset checkpoints to manufacture backfill.
 ## Negotiated ordinary delivery custody
 
 This section describes delivery v1 for compatibility. The experimental
-[message lifecycle released in RC3](message-lifecycle.md) also supports delivery v2 with
+[experimental message lifecycle](message-lifecycle.md) also supports delivery v2 with
 original channel/inbox epochs after explicit offline cutover. It does not change
 signed federation wire versions, qualify remote expiry/retirement, or infer
 destination handling from silence. Federation references remain pinned.
@@ -434,7 +433,7 @@ cannot safely resume their obligations. Runtime activation and complete rollback
 qualification remain gated separately.
 
 Historical provider proof is retained in
-[audits/p11-provider-qualification.yml](../audits/p11-provider-qualification.yml).
+[provider qualification record](../audits/p11-provider-qualification.yml).
 `python scripts/verify_provider_canary.py` checks the pinned source, original
 carrier signatures, publishers and exact destination receipt hashes. Its
 historical wire-1 observations do not certify a later source or wire-3 threaded

@@ -312,15 +312,17 @@ def api_session_check_in(
             body.current_backoff_seconds if body else None,
         )
         controls = request.app.state.store.controls.deliver(session_id, session_token or "")
+        snapshot = {"pending_announcement_ids": [control["control_id"] for control in controls
+                    if control["kind"] in {"broadcast", "poll"}]}
         if controls:
-            return {"controls": controls, "last_client_contact_at": contacted}
+            return {**snapshot, "controls": controls, "last_client_contact_at": contacted}
         policy = request.app.state.store.participation.deliver_policy(session_id, session_token or "")
         state = request.app.state.store.participation.session_state(session_id)
     except PermissionError:
         raise HTTPException(401, "Session authorization required") from None
     except (ValueError, KeyError) as exc:
         raise HTTPException(409, str(exc)) from None
-    return {"last_client_contact_at": contacted, "revision": policy.revision,
+    return {**snapshot, "last_client_contact_at": contacted, "revision": policy.revision,
             "values": policy.values, "sources": policy.sources,
             "ack_required": state["acknowledged_policy_revision"] != policy.revision}
 

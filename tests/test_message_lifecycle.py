@@ -1228,3 +1228,44 @@ def test_eligibility_refresh_cannot_project_foreign_payload_through_shared_reque
         assert store._db.execute('SELECT attempts FROM local_delivery_obligations WHERE channel=? AND request_id=?',('C111',shared)).fetchone()[0] == 0
     finally:
         assert store._db.execute('PRAGMA foreign_key_check').fetchall() == []
+
+
+def test_check_in_snapshot_reconciles_expired_announcements_without_ack(lifecycle, monkeypatch):
+    from pathlib import Path
+    from fastapi.testclient import TestClient
+    from src.agentbus_service import Settings, create_app
+    store, p = lifecycle
+    recipient = p['recipient']
+    secret = 'lifecycle-private-recipient'.ljust(40, 'x')
+    control, _ = store.controls.issue_auxiliary(kind='broadcast', routes=None,
+        session_ids=[recipient.session_id], reason='Read this', actor='operator')
+    app = create_app(Settings(api_token='snapshot-test-bearer', slack_bot_token='xoxb-test',
+        slack_app_token='xapp-test', slack_channel='', slack_channels=('C111', 'C222'),
+        db_path=Path(store._db.execute('PRAGMA database_list').fetchone()[2])))
+    app.state.store = store
+    headers = {'Authorization': 'Bearer snapshot-test-bearer',
+        'X-AgentBus-Session-Token': secret, 'X-AgentBus-Inbox-ID': recipient.inbox_id}
+    client = TestClient(app)  # Never enter lifespan: no Slack connection.
+    path = f'/v1/sessions/{recipient.session_id}/check-in'
+    try:
+        response = client.post(path, headers=headers, json={})
+        assert response.status_code == 200
+        assert response.json()['pending_announcement_ids'] == [control]
+        foreign = {**headers, 'X-AgentBus-Inbox-ID': p['foreign'].inbox_id}
+        assert client.post(path, headers=foreign, json={}).status_code == 403
+        monkeypatch.setattr('src.agentbus_message_lifecycle_service.time.time', lambda: 111.0)
+        response = client.post(path, headers=headers, json={})
+        assert response.status_code == 200 and response.json()['pending_announcement_ids'] == []
+        ack = client.post(f'/v1/controls/{control}/targets/{recipient.session_id}/ack',
+                          headers=headers, json={})
+        assert ack.status_code == 409
+        assert 'expired' in ack.json()['detail']
+        outcome = store.controls.status(control, channel='C111')[0]
+        assert outcome['lifecycle_state'] == 'expired_unread' and outcome['receipt'] is None
+        stop, _ = store.controls.issue_stop(routes=None, session_ids=[recipient.session_id],
+                                          reason='Stop now', actor='operator')
+        response = client.post(path, headers=headers, json={})
+        assert response.json()['pending_announcement_ids'] == []
+        assert stop in [item['control_id'] for item in response.json()['controls']]
+    finally:
+        client.close()

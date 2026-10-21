@@ -251,9 +251,9 @@ matching hotfix lane records leave active governance with their related phase.
 With no phase-retention switch, cleanup keeps existing historical triplet and
 hotfix behavior.
 
-## Candidate channels and experimental wake
+## Channels and experimental wake
 
-The P12 candidate requires an explicit offline [channel migration](channel-migration.md)
+Multichannel operation requires an explicit offline [channel migration](channel-migration.md)
 before opening a populated 0.9 database. Keep one process/database/app/socket;
 configure one channel or an allowlist of at most 16. Grants bind each identity
 permanently to one channel. Update clients before access; bearer-only history

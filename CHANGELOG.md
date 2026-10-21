@@ -46,6 +46,9 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Reconcile cached broadcast/poll presentation against a fresh exact-session service snapshot; preserve expired-unread outcomes, safety controls and semantic acknowledgements.
+- Replace release and phase chronology in current product guides with present behavior, qualification limits and links to retained engineering evidence.
+
 - Restore the BCF introduction to its earlier README position and keep the Microbus tone implicit.
 
 - Record RC7 exact-source publication, raw-carrier recovery controls, 100-document hygiene inventory and isolated installation proof; preserve unfinished owner-wake qualification.
