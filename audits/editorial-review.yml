@@ -55,19 +55,19 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines: [[1, 105]]
   line_count: 105
-  sha256: d9ad1ee46d871b316db58975e2afc9539291b53ea6d06fe3b07d7ce99ae667bc
+  sha256: 7eea33e4a5d4c189d7bf1c24dafa768424bd85c8a954674ee5838ab3176ec570
   baseline_sha256: 486989ca8ea9e296a2dce9fe025313aa5c5f73606531fb405a0c338ee953b4c3
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
 
 - document: README.md
-  review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 153]]
-  line_count: 153
-  sha256: c97a7b382a7ea6880428aa8bfef755bf103a36d2db01d6bd34ac78362c5826cc
+  review_status: full_document_review
+  reviewed_lines: [[1, 227]]
+  line_count: 227
+  sha256: d633240e67b571126cce6f950f98f59a8e1a37e6ed98ce980adb4b6a975a1785
   baseline_sha256: b7013d36852333861ccd7453ecce16cc28d4c7baf7c2ac7db3aa39fba4f06931
   disposition: updates
-  review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
+  review_basis: Full corrected README reviewed line by line against prior visuals and feature explanation; all three original image paths and both Mermaid diagrams restored with current channel and experimental owner boundaries. Quick start and local links preserved.
 
 - document: SECURITY.md
   review_status: changed_spans_reviewed_in_context
@@ -599,9 +599,9 @@ documents:
 
 - document: phases/phase-12-log.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 350]]
-  line_count: 350
-  sha256: e875c17d5c7c15b8103daf48aeec453420f4478d667928c022ea92557d744230
+  reviewed_lines: [[1, 357]]
+  line_count: 357
+  sha256: 204444a7bf04cc048c8aa1e3d518d003c03538d686db290f62881fe76f79b53f
   baseline_sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
@@ -848,9 +848,9 @@ documents:
 
 - document: plans/phase-12-workitems.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 289]]
-  line_count: 289
-  sha256: 163517bc80b18adf4efb7fad5bd09ef1d80da893db7d6c33d84ec7c16e7652cf
+  reviewed_lines: [[1, 298]]
+  line_count: 298
+  sha256: 643a91cf9a53b5de2552240f439eb0918e97732ff805a5bdbe29bb7feec670c0
   baseline_sha256: 1c632ee46d55ab7ba403af50842aa97a1a733cadd8798eb694257d3f6e53cfbc
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
@@ -907,9 +907,9 @@ documents:
 
 - document: contracts/messages/v1/message-lifecycle.contract.yml
   review_status: hash_verified_prior_full_document_review
-  reviewed_lines: [[1, 110]]
-  line_count: 110
-  sha256: 2223963b98aee1fbba1945ed31fa3bdaa0f0cb62273a17d32969ee718c8d426f
+  reviewed_lines: [[1, 112]]
+  line_count: 112
+  sha256: a44fa56b09e4b3470be30874140577e41c18a76e6c72e3ac895c5abdc5b584dd
   baseline_sha256: 2223963b98aee1fbba1945ed31fa3bdaa0f0cb62273a17d32969ee718c8d426f
   disposition: retained
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
@@ -917,9 +917,9 @@ documents:
 
 - document: docs/message-lifecycle.md
   review_status: hash_verified_prior_full_document_review
-  reviewed_lines: [[1, 175]]
-  line_count: 175
-  sha256: c2155fd26f2887873d3b5b858426103aee0fc71dcc992ab8c8705582210e9758
+  reviewed_lines: [[1, 181]]
+  line_count: 181
+  sha256: 60751d6494b51ef95a91ee15ce69e48669ffb6ccfe01cf6eca6f2f52dbb08ea2
   baseline_sha256: c2155fd26f2887873d3b5b858426103aee0fc71dcc992ab8c8705582210e9758
   disposition: retained
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans
@@ -986,9 +986,9 @@ documents:
 
 - document: CHANGELOG.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 564]]
-  line_count: 564
-  sha256: 775b8dc03d9cbf96153e8306b627d51a92ce156c733cc03b0fa5c39cf0b54ebc
+  reviewed_lines: [[1, 566]]
+  line_count: 566
+  sha256: 9a3c632407225287e0f3bcb06e284c0281fddc85d60217e21b5d268813636140
   baseline_sha256: 089d7b76fe9d53eddc539da2141fb02b0b7502354f7ff75661dad2c5a87cfaf0
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
@@ -1020,9 +1020,9 @@ documents:
   review_basis: New RC9 document reviewed in full; current capabilities and limits checked against implementation.
 - document: audits/rc9-wake-recovery.yml
   review_status: reviewed_in_full
-  reviewed_lines: [[1, 45]]
-  line_count: 45
-  sha256: ac18d6650655d68695e007d9b1dd7397cbb68626f85429d9c5d77e58e52fd6b3
+  reviewed_lines: [[1, 54]]
+  line_count: 54
+  sha256: 7ad2e5b0de96c9cb06c5ebfd63e2c873f166197cbdad113509db5a5a00744709
   disposition: new
   review_basis: New RC9 document reviewed in full; current capabilities and limits checked against implementation.
 

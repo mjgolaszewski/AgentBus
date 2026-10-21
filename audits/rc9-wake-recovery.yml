@@ -3,9 +3,9 @@ document:
   path: audits/rc9-wake-recovery.yml
   status: construction
 scope:
-  context: client wake adapter and authored consumer documentation
+  context: client wake adapter message lifecycle outcome read model and authored consumer documentation
   layer: existing infrastructure state loader with pure intent compatibility projection
-  production: [src/agentbus_codex_wake_client.py, src/agentbus_codex_wake_intent_client.py]
+  production: [src/agentbus_codex_wake_client.py, src/agentbus_codex_wake_intent_client.py, src/agentbus_message_lifecycle_service.py]
   controls: [tests/test_wake_intent_lifecycle.py, tests/test_codex_wake_contract.py, tests/test_channel_projection.py]
   forbidden: [live state hand edits, host rebind, writer takeover, forced turns, evidence deletion, generated BCF hand edits, unrelated dependency changes]
 recovery:
@@ -16,16 +16,25 @@ recovery:
   persistence: Existing binding lock and atomic JSON; one additive write before normal live processing; no query writes
   preserved: [intent_id, attempt_id, thread, generation, state, candidate_batch, transitions, host_facts, counters, ack_boundaries]
   rejected: [partial_unknown_shapes, explicit_nulls, conflicting_scope, malformed_records, foreign_inbox_projections]
+outcome_status_repair:
+  defect: Elapsed flags became false when explicit settlement materialized expired_unclaimed or recovery_required
+  correction: Preserve the applicable elapsed condition in its settled state; picked-up work does not use its old pickup deadline and handled work has no pending elapsed condition
+  consumers_traced: [recipient_outcome, ACK_batch, wake_reference_filter]
+  preserved: [read_only_queries, session_channel_scope, late_completion, expired_parent_rejection, original_request_identity]
+  controls: tests/test_lifecycle_outcome_clock.py plus existing lifecycle client and wake controls; declared in all producers with two negative mutations
 trust:
   assumption: trusted workspace with trusted non-hostile agents and operators
   enforcement: AgentBus service session channel routing control and rate checks
   outside_boundary: Agent interpretation of authority and exercise of existing host tools; hostile shared-account isolation
 editorial:
-  README: New product introduction and usage paths; RC chronology remains in changelog and release records
+  README: Groovy VW Microbus and creative coder crew introduction; preserve all three original images both Mermaid diagrams and prominent upcoming owner-mediated wake while keeping RC chronology in changelog and release records
   HTTP_reference: Existing endpoint descriptions moved to docs/http-api.md without path or authorization changes
   guides: Current security contract architecture audience and skill boundaries aligned; history remains historical
 qualification:
-  status: pending focused canonical protected exact-main archive install and custodian recovery evidence
+  initial_subject: Protected PR104 and exact-main run39513072909 PASS on 87266e1; original234 independently recomputed PR and main truth PASS with no issues
+  first_archive_attempt: Two deterministic archives matched authenticated main producer; SDK-free installation stopped because the newer UV cache lacked the pinned Certifi wheel, with no network attempted; original diagnostic and isolated parent retained
+  corrective_review: Operator rejected the over-cut initial README; restore product artwork diagrams and upcoming feature before new exact-source proof
+  status: Corrected documentation candidate requires fresh canonical protected exact-main archive install and custodian recovery evidence
   limitations: Actual owner interoperability and atomic idle-only admission remain unqualified; migration grants neither
 security_followup:
   trigger: Actual canonical security-vulnerability-scan failed on project uv 0.12.18
