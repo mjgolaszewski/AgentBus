@@ -595,9 +595,9 @@ documents:
 
 - document: phases/phase-12-log.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 386]]
-  line_count: 386
-  sha256: 9270cace3c74012312667bfb49a1bf29c350aaaafd89e5a6823849156266c5db
+  reviewed_lines: [[1, 387]]
+  line_count: 387
+  sha256: dc4619e69c512481cdcb2352d1f4e2faf5debdd7a6c04b0d93b019f9b555fdbc
   baseline_sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.

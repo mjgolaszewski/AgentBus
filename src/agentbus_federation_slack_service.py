@@ -10,7 +10,7 @@ from decimal import Decimal, InvalidOperation
 import httpx
 
 from src.agentbus_federation_bridge_service import ProviderCarrierRejected, ProviderUnavailable
-from src.agentbus_presentation_service import message_blocks, section_blocks, visible_text
+from src.agentbus_presentation_service import message_fields_blocks, section_blocks, visible_text
 
 MAX_PROVIDER_RESPONSE_BYTES = 8_388_608
 HISTORY_SCAN_SECONDS = 15
@@ -102,16 +102,17 @@ def carrier_blocks(text: str) -> list[dict]:
             version = frame.get('agentbus_federation')
             if frame.get('kind') == 'message' and type(version) is int and version in {1, 3}:
                 from src.agentbus_federation_ordinary_service import decode_ordinary
-                from src.agentbus_federation_wire_service import OrdinaryFrame, SignedFrame
-                from src.agentbus_service import SendMessage
+                from src.agentbus_federation_wire_service import _validate
 
-                if version == 3:
-                    payload = OrdinaryFrame.model_validate(frame).payload
-                    message = SendMessage(**decode_ordinary(payload).message)
-                else:
-                    payload = SignedFrame.model_validate(frame).payload
-                    message = SendMessage.model_validate_json(payload)
-                return message_blocks(message) + section_blocks(summary)
+                _validate(frame)  # Existing wire owner validates shape; display grants no signature authority.
+                fields = (decode_ordinary(frame['payload']).message if version == 3
+                          else json.loads(frame['payload']))
+                if not isinstance(fields, dict) or 'sender' not in fields or 'text' not in fields:
+                    raise ValueError('No scalar message presentation')
+                view = {'sender': fields['sender'], 'recipient': fields.get('recipient', 'all'),
+                        'text': fields['text'], 'kind': fields.get('kind', 'message'),
+                        'audience': fields.get('audience'), 'repo': fields.get('repo')}
+                return message_fields_blocks(**view) + section_blocks(summary)
     except (ValueError, TypeError, RecursionError):
         pass  # Invalid or non-message carriers keep the compact transport view.
     return section_blocks(summary)
