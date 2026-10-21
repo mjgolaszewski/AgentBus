@@ -92,6 +92,7 @@ def test_client_stages_new_credential_before_uncertain_response(tmp_path, monkey
     profile = {"chat_id": "chat-id", "identity": "agentbus:flower",
                "participation": {"session_id": "session-id", "session_secret": "old-secret"}}
     monkeypatch.setattr(agentbus_rotation_client, "checked_profile", lambda values, identity: (profile, {}))
+    monkeypatch.setattr(agentbus_rotation_client, "load_profile", lambda *args, **kwargs: profile)
     monkeypatch.setattr(agentbus_rotation_client, "save_profile", lambda values, data: None)
     seen = []
 
@@ -111,3 +112,71 @@ def test_client_stages_new_credential_before_uncertain_response(tmp_path, monkey
     assert profile["participation"]["session_secret"] == staged["new_session_secret"]
     assert "participation_rotation_pending" not in profile
     assert "receipt-1" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("stopped", [False, True])
+def test_client_recovers_committed_rotation_after_old_secret_is_revoked(tmp_path, monkeypatch, stopped):
+    db, store = _open(tmp_path / 'rotation.sqlite3')
+    store.set_policy(scope='global', scope_key='*', values=POLICY, actor='operator')
+    old = 'old-test-rotation-credential'.ljust(40, 'x')
+    chat, session, revision = store.enroll(repo='agentbus', route='agentbus:flower',
+        display_name='Flower', session_secret=old)
+    store.acknowledge_policy(session, old, revision)
+    token = store.issue_session_rotation(chat_id=chat, session_id=session, actor='operator')
+    grant = tmp_path / 'grant'
+    grant.write_text(token)
+    grant.chmod(0o600)
+    profiles = tmp_path / 'profiles'
+    profiles.mkdir()
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(profiles), 'AGENTBUS_URL': 'http://127.0.0.1:8766'}
+    profile = {'schema_version': 2, 'identity': 'agentbus:flower', 'chat_id': chat,
+        'service_url': values['AGENTBUS_URL'], 'channel': 'C123', 'inbox_id': 'rotation-inbox',
+        'ack_cursor': 8, 'observed_cursor': 10,
+        'participation': {'session_id': session, 'session_secret': old}}
+    path = profiles / 'agentbus:flower.json'
+    path.write_text(json.dumps(profile))
+    rotations = []
+
+    def transport(_values, route, body=None, **kwargs):
+        if route == '/v1/info':
+            try:
+                store.authorize_session(session, kwargs.get('session_token'))
+            except PermissionError:
+                raise ClientError('Old credential revoked', status=403) from None
+            return {'chat_id': chat, 'session_id': session, 'channel': 'C123',
+                'inbox_id': 'rotation-inbox', 'features': ['session-required', 'channel-isolation-v1',
+                                                         'channel-local-cursors-v1']}
+        assert route == f'/v1/sessions/{session}/rotate-secret'
+        receipt = store.rotate_session_secret(session_id=session, token=body['rotation_token'],
+                                             new_secret=body['new_session_secret'])
+        rotations.append((dict(body), receipt))
+        if len(rotations) == 1:
+            raise ClientError('response lost after actual service commit')
+        return {'session_id': session, 'receipt': receipt}
+
+    monkeypatch.setattr(agentbus_client, 'api', transport)
+    monkeypatch.setattr(agentbus_rotation_client, 'api', transport)
+    try:
+        with pytest.raises(ClientError, match='response lost'):
+            agentbus_rotation_client.rotate_secret('agentbus:flower', str(grant), False, values)
+        staged = json.loads(path.read_text())['participation_rotation_pending']
+        if stopped:
+            stopped_profile = agentbus_client.load_profile(values, 'agentbus:flower')
+            stopped_profile['participation']['stopped'] = True
+            agentbus_client.save_profile(values, stopped_profile)
+        before = path.read_bytes()
+        with pytest.raises(ClientError, match='service differs'):
+            agentbus_rotation_client.rotate_secret('agentbus:flower', None, False,
+                {**values, 'AGENTBUS_URL': 'http://127.0.0.1:9999'})
+        assert path.read_bytes() == before and len(rotations) == 1
+        with pytest.raises(PermissionError):
+            store.authorize_session(session, old)
+        assert agentbus_rotation_client.rotate_secret('agentbus:flower', None, False, values) == 0
+        assert rotations[0] == rotations[1]
+        current = json.loads(path.read_text())
+        assert current['participation']['session_secret'] == staged['new_session_secret']
+        assert 'participation_rotation_pending' not in current
+        assert current['ack_cursor'] == 8 and current['observed_cursor'] == 10
+        assert bool(current['participation'].get('stopped')) == stopped
+    finally:
+        db.close()

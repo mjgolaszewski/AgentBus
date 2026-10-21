@@ -191,6 +191,11 @@ When `agentbus ack` advances the cursor, the client also retires message entries
 at or below that cursor from its disposable local presentation spool. This is
 idempotent projection cleanup only: durable service history, controls, policy
 events, cursor semantics, and the independent wake scan remain unchanged.
+A complete foreground poll message and an ordinary inbox read record observation
+without acknowledging work. Truncated routine presentation and explicit historical
+reads remain stateless. Observation rechecks profile scope and credential under
+the profile lock; ordinary saves preserve cursor high-water marks within the same
+session. A changed session, scope or credential cannot inherit an old observation.
 `agentbus rebind --from beginning` deliberately binds the profile to the current
 inbox at cursor `0`; `--from now` selects the current high-water cursor. A changed
 service inbox ID or Slack channel fails closed. Rebind may reset cursors only
@@ -213,7 +218,7 @@ Provider submission, authenticated destination persistence, execution, completio
 and semantic acknowledgement are separate facts. Physical duplicate posts remain
 possible, and callers must tolerate repeated reads after a crash.
 
-The experimental RC3 [message lifecycle contract](contracts/messages/v1/message-lifecycle.contract.yml)
+The experimental [message lifecycle contract](contracts/messages/v1/message-lifecycle.contract.yml)
 adds delivery v2 with original channel/inbox epochs and private client retry
 staging. Once enabled by offline cutover, immediate agent API posting and unknown legacy
 allocation are denied. Exact known replay is bounded; closed identities never
@@ -223,7 +228,7 @@ a queryable sender outcome; previously picked-up work becomes recovery-required.
 Reference-safe archive/purge controls preserve cursor and replay boundaries.
 Legacy unknown and federated custody stays pinned. See the
 [lifecycle and migration guide](docs/message-lifecycle.md) for current limits.
-The experimental lifecycle was released in RC3; qualification remains bound to
+Experimental lifecycle qualification remains bound to
 the exact source and deployment rather than established by this contract alone.
 
 Optional signed federation and versioned parent mappings are specified in the

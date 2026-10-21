@@ -10,7 +10,7 @@ from decimal import Decimal, InvalidOperation
 import httpx
 
 from src.agentbus_federation_bridge_service import ProviderCarrierRejected, ProviderUnavailable
-from src.agentbus_presentation_service import section_blocks, visible_text
+from src.agentbus_presentation_service import message_fields_blocks, section_blocks, visible_text
 
 MAX_PROVIDER_RESPONSE_BYTES = 8_388_608
 HISTORY_SCAN_SECONDS = 15
@@ -88,6 +88,36 @@ def validate_carrier_echo(data: dict, text: str, reference: str, *, locator: str
             raise ProviderCarrierRejected('missing_echo', reference)
 
 
+def carrier_blocks(text: str) -> list[dict]:
+    """Render outbound message content without changing the signed carrier."""
+    summary = 'AgentBus federation transport'
+    try:
+        frame = json.loads(text)
+        if isinstance(frame, dict):
+            kind = visible_text(str(frame.get('kind', 'frame')))[:32]
+            origin = visible_text(str(frame.get('origin_instance_id', 'unknown')))[:80]
+            destination = visible_text(str(frame.get('destination_instance_id', 'unknown')))[:80]
+            message_id = visible_text(str(frame.get('origin_message_id', 'unknown')))[:128]
+            summary = f'AgentBus {kind}: {origin} → {destination}\nID {message_id}'
+            version = frame.get('agentbus_federation')
+            if frame.get('kind') == 'message' and type(version) is int and version in {1, 3}:
+                from src.agentbus_federation_ordinary_service import decode_ordinary
+                from src.agentbus_federation_wire_service import _validate
+
+                _validate(frame)  # Existing wire owner validates shape; display grants no signature authority.
+                fields = (decode_ordinary(frame['payload']).message if version == 3
+                          else json.loads(frame['payload']))
+                if not isinstance(fields, dict) or 'sender' not in fields or 'text' not in fields:
+                    raise ValueError('No scalar message presentation')
+                view = {'sender': fields['sender'], 'recipient': fields.get('recipient', 'all'),
+                        'text': fields['text'], 'kind': fields.get('kind', 'message'),
+                        'audience': fields.get('audience'), 'repo': fields.get('repo')}
+                return message_fields_blocks(**view) + section_blocks(summary)
+    except (ValueError, TypeError, RecursionError):
+        pass  # Invalid or non-message carriers keep the compact transport view.
+    return section_blocks(summary)
+
+
 class SlackFederationProvider:
     def __init__(self, client: httpx.AsyncClient, token: str, channel: str):
         self._client, self._token, self.channel = client, token, channel
@@ -115,18 +145,7 @@ class SlackFederationProvider:
         return await self._publish(text, thread)
 
     async def _publish(self, text: str, thread: str | None) -> str:
-        summary = 'AgentBus federation transport'
-        try:
-            frame = json.loads(text)
-        except ValueError:
-            frame = None
-        if isinstance(frame, dict):
-            kind = visible_text(str(frame.get('kind', 'frame')))[:32]
-            origin = visible_text(str(frame.get('origin_instance_id', 'unknown')))[:80]
-            destination = visible_text(str(frame.get('destination_instance_id', 'unknown')))[:80]
-            message = visible_text(str(frame.get('origin_message_id', 'unknown')))[:128]
-            summary = f'AgentBus {kind}: {origin} → {destination}\nID {message}'
-        blocks = section_blocks(summary)
+        blocks = carrier_blocks(text)
         body = {'channel': self.channel, 'text': text, 'blocks': blocks,
             'parse': 'none', 'mrkdwn': False, 'unfurl_links': False, 'unfurl_media': False}
         if thread is not None:

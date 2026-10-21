@@ -9,8 +9,8 @@ runtime, schemas, generated workflows, evidence planning, and eligibility
 machinery. The repository retains direct project authority and does not adopt a
 persistent trusted controller.
 
-The 0.9.1 RC train is stacked on preserved P12 wake research. A bounded local
-two-channel canary passed on the protected construction subject. AHP/native-queue
+Channel-isolated operation has bounded local two-channel evidence tied to its
+protected source. Each changed subject still needs applicable qualification. AHP/native-queue
 interoperability and atomic wake remain separate, unqualified claims.
 Use the [contract model](../contracts.md) and [Experimenters guide](experimenters.md)
 when reviewing capability descriptions. The editorial audit records per-document

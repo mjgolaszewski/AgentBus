@@ -1,0 +1,90 @@
+document:
+  kind: bug_disposition_audit
+  path: audits/rc10-bug-inventory.yml
+  status: candidate_validation_pending
+scope:
+  owner: AgentBus current released behavior and source candidate
+  evidence: reported incidents plus source traces and behavioral reproductions
+  excluded: new hostile-workspace guarantees or unqualified owner-host integrations
+bugs:
+- id: federation_message_body_hidden_by_transport_summary
+  disposition: scalar_message_blocks_130behavior_and_semantic_preparation_independently_accepted_canonical_pending
+  cause: provider blocks showed transport metadata while readable payload stayed inside machine carrier
+  correction: render message sender_recipient_body and compact footer; preserve exact signed text and control summary
+  proof: legacy_and_ordinary_mixed_peer_echo_thread_escape_and_maximum_body_controls_passed_in130test_cohort; Ruff_typing_original234_reconciliation_semantic_ownership_governance_source_passed_after_boundary_correction
+- id: expired_announcement_projection
+  disposition: fixed_focused_accepted_canonical_pending
+  cause: cached ordinary control outlives service read deadline and demands rejected late ACK
+  correction: fresh authenticated service snapshot retires prior cached broadcast_poll_presentation_only
+  proof: existing poll and message-lifecycle populations included in188 accepted focused cases; final lint typing source and governance preparation accepted
+- id: poll_observation_missing
+  disposition: focused_green188_independently_accepted_canonical_pending
+  cause: foreground poll displays and consumes message without advancing observation high_water
+  correction: complete foreground observation under fresh exact-scope credential-bound profile lock
+  proof: new launcher red case fails before repair; no extra inbox read should be required
+- id: stale_cursor_save
+  disposition: focused_green188_independently_accepted_canonical_pending
+  cause: serialized stale whole-profile save can overwrite newer ACK and observed cursors
+  correction: merge cursor maxima for matching session scope; explicit rebind keeps intentional reset
+  proof: new launcher red case fails before repair; existing rebind preservation case passes
+- id: stale_profile_authority
+  disposition: focused_green188_independently_accepted_canonical_pending
+  cause: stale whole-profile writer can replace newer session secret STOP or staged recovery intent
+  correction: private read-snapshot compare_and_swap under existing lock; independent metadata merge and conflicting intent rejection
+  proof: all six original RED failures reproduced; loaded-snapshot and concurrent-intent controls pass in independently accepted188test cohort
+- id: committed_rotation_lost_response
+  disposition: focused_green188_independently_accepted_canonical_pending
+  cause: old revoked secret info preflight prevents recovery of already committed rotation receipt
+  correction: exact retained grant and staged secret recover canonical receipt directly; new rotation still requires valid current session
+  proof: isolated actual ParticipationStore revokes old secret before retry; identical retained request and receipt plus STOP preservation passed in188test cohort
+- id: bound_service_check_after_credential_egress
+  disposition: focused_green188_independently_accepted_canonical_pending
+  cause: checked_profile and rebind compare service binding after sending session proof; file enrollment lacks early bound-service check
+  correction: reject service mismatch before credential-bearing info enrollment or rotation requests
+  proof: request-observation controls passed with zero API calls and unchanged private staging on mismatch
+- id: extracted_architecture_inventory
+  disposition: explicit_client_ownership_registered_8architecture_controls_independently_accepted_canonical_pending
+  cause: new profile persistence module was omitted from existing exhaustive executable module inventory
+  correction: add client_layer_and_client_context_mapping; retain equality_oracle_and_all_boundary_gates
+  proof: required canonical architecture producer rejected omitted module; failed exact-subject bundle retained and no SDK waiver applied
+- id: extracted_local_effect_port
+  disposition: registered_port92behavior_and_final_static_preparation_independently_accepted
+  cause: client persistence extraction replaced a locally declared effect port with an imported alias
+  correction: preserve the original registered local callable and delegate to the new persistence owner
+  proof: original234 rejected the removed port; restored facade passed92affected tests and owner reconciliation without registry_or_SDK_waiver; first failure retained
+- id: stale_release_mutation_target
+  disposition: corrected_governed_preparation_accepted_canonical_pending
+  cause: version-drift negative control still searched prior package version after candidate bump
+  correction: target current package literal while retaining wrong-version mutant and rejection oracle
+  proof: actual owner preparation failed governance before correction; first output retained
+- id: current_guide_chronology
+  disposition: current_guides_and_editorial_dispositions_prepared_final_canonical_pending
+  correction: present behavior and limits in product guides; retain historical subjects in release and engineering evidence
+  proof: per-document digests dispositions and changed-span review in editorial inventory
+not_bugs:
+- report: positive_first_join_fixture_omitted_onboarding_service_address
+  disposition: fixture_corrected_to_actual_matching_onboarding_origin; production_guard_retained
+  proof: lost_response_same_secret_server_UUID_and_missing_foreign_zero_egress_controls_passed_in7case_cohort; original_canonical_failure_retained
+- report: caller_selects_another_valid_local_profile
+  disposition: selected_session_credential_possession_is_the_current_authority_boundary
+  evidence: service_authenticates_supplied_exact_session_not_originating_OS_process_or_conversation; shared_file_credential_isolation_is_not_claimed
+- report: historical_query_ACK_guard
+  disposition: expected_stateless_query_semantics_supported_recovery_verified
+  evidence: ordinary inbox advanced observation and explicit handled ACK succeeded without reset
+- report: old_ordinary_poll_message
+  disposition: expected_unacknowledged_backlog_with_quiet_off
+  evidence: successive scoped polls advanced distinct old cursors without transport alarm or repeated cursor
+- report: unparented_human_recipient_422
+  disposition: expected_canonical_route_validation_before_custody
+  evidence: read-only custody lookup found no accepted record; same-channel human-parent reply succeeded
+accepted_limits:
+- issue: 75
+  scope: owner-host interoperability and atomic idle-only wake remain unqualified
+  disposition: keep_open_notification_only_for_unqualified_owners
+- issue: 76
+  scope: stronger credential audit governance-producer and hostile-workspace guarantees
+  disposition: retain_explicit_trusted_workspace_boundary_and_separately_govern_future_guarantees
+release:
+  candidate: 0.9.1rc10
+  immutable_previous_release: preserved
+  prerequisites: fresh_canonical_protected_exact_main_archive_isolated_install_and_custodian_live_readback

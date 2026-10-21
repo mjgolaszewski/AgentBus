@@ -805,9 +805,11 @@ def test_poll_cli_uses_budgeted_default_and_full_json_on_demand(launcher, tmp_pa
     queue(1)
     assert launcher.main(["poll", "--identity", identity]) == 0
     assert len(capsys.readouterr().out.strip().encode("utf-8")) <= 32
+    assert json.loads(path.read_text()).get("observed_cursor", 0) == 0
     queue(2)
     assert launcher.main(["poll", "--identity", identity, "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["message"]["text"] == "🌼" * 100
+    assert json.loads(path.read_text())["observed_cursor"] == 2
 
 
 def test_auxiliary_control_ack_does_not_stop_client_polling(launcher, tmp_path, monkeypatch, capsys):
@@ -933,3 +935,200 @@ def test_new_approval_request_preserves_old_private_stage_and_denies_service_swi
     values['AGENTBUS_URL'] = 'http://different-service:8766'
     assert launcher.main(['join', '--identity', identity]) == 1
     assert len(attempts) == 1 and json.loads(path.read_text())['participation_pending'] == pending
+
+
+def test_poll_message_observation_permits_explicit_ack_without_extra_inbox(launcher, tmp_path, monkeypatch, capsys):
+    from src import agentbus_poll_client as poll
+
+    state = tmp_path / 'profiles'
+    state.mkdir()
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(state), 'AGENTBUS_URL': 'http://127.0.0.1:8766'}
+    profile = {**joined_profile(), 'schema_version': 2, 'ack_cursor': 8, 'observed_cursor': 10}
+    profile['participation']['policy_values'] = {'presentation_budget_bytes': None}
+    path = state / 'tools:weed.json'
+    path.write_text(json.dumps(profile))
+    monkeypatch.setattr(launcher, 'configuration', lambda **kwargs: (Path('/unused'), values))
+    monkeypatch.setattr(launcher, 'api', lambda *args, **kwargs: scope_info())
+    monkeypatch.setattr(poll, 'ensure_worker', lambda *args: None)
+    poll.change_spool(path, profile, lambda spool: poll._append(spool, {
+        'kind': 'MESSAGE', 'id': '90', 'message': {'cursor': 90, 'sender': 'tools:peer',
+            'recipient': 'tools:weed', 'kind': 'message', 'text': 'Observed through poll',
+            'audience': 'direct', 'actionable': True},
+    }))
+    assert launcher.main(['poll', '--identity', 'tools:weed', '--check', '--json']) == 0
+    assert json.loads(capsys.readouterr().out)['message']['cursor'] == 90
+    observed = json.loads(path.read_text())
+    assert observed['observed_cursor'] == 90 and observed['ack_cursor'] == 8
+    assert launcher.main(['ack', '--identity', 'tools:weed', '--through', '90']) == 0
+    assert json.loads(path.read_text())['ack_cursor'] == 90
+
+
+def test_stale_profile_save_preserves_same_session_cursor_high_water(launcher, tmp_path):
+    state = tmp_path / 'profiles'
+    state.mkdir()
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(state)}
+    stale = {**joined_profile(), 'ack_cursor': 8, 'observed_cursor': 10}
+    path = state / 'tools:weed.json'
+    path.write_text(json.dumps({**stale, 'ack_cursor': 20, 'observed_cursor': 40}))
+    launcher.save_profile(values, stale)
+    current = json.loads(path.read_text())
+    assert current['ack_cursor'] == 20 and current['observed_cursor'] == 40
+
+
+def test_explicit_same_inbox_rebind_still_resets_cursors(launcher, tmp_path, monkeypatch):
+    state = tmp_path / 'profiles'
+    state.mkdir()
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(state), 'AGENTBUS_URL': 'http://127.0.0.1:8766'}
+    profile = {**joined_profile(), 'schema_version': 2, 'ack_cursor': 8, 'observed_cursor': 10}
+    path = state / 'tools:weed.json'
+    path.write_text(json.dumps(profile))
+    monkeypatch.setattr(launcher, 'configuration', lambda **kwargs: (Path('/unused'), values))
+    monkeypatch.setattr(launcher, 'api', lambda *args, **kwargs: scope_info())
+    assert launcher.main(['rebind', '--identity', 'tools:weed', '--from', 'beginning']) == 0
+    current = json.loads(path.read_text())
+    assert current['ack_cursor'] == current['observed_cursor'] == 0
+
+
+@pytest.mark.parametrize('change', ['channel', 'session', 'secret', 'stopped'])
+def test_observation_rejects_changed_profile_before_mutation(launcher, tmp_path, change):
+    state = tmp_path / 'profiles'
+    state.mkdir()
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(state)}
+    old = {**joined_profile(), 'ack_cursor': 8, 'observed_cursor': 10}
+    current = json.loads(json.dumps(old))
+    if change == 'channel':
+        current['channel'] = 'C999'
+    elif change == 'session':
+        current['participation']['session_id'] = 'new-session'
+    elif change == 'secret':
+        current['participation']['session_secret'] = 'replacement-test-secret'.ljust(40, 'x')
+    else:
+        current['participation']['stopped'] = True
+    path = state / 'tools:weed.json'
+    path.write_text(json.dumps(current))
+    before = path.read_bytes()
+    with pytest.raises(launcher.ClientError, match='scope changed'):
+        launcher.record_observed_cursor(values, old, 90)
+    assert path.read_bytes() == before
+
+
+def test_cursor_merge_never_copies_another_session_epoch(launcher, tmp_path):
+    state = tmp_path / 'profiles'
+    state.mkdir()
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(state)}
+    incoming = {**joined_profile(), 'ack_cursor': 8, 'observed_cursor': 10}
+    other = json.loads(json.dumps(incoming))
+    other['participation']['session_id'] = 'other-session'
+    other.update(ack_cursor=100, observed_cursor=200)
+    path = state / 'tools:weed.json'
+    path.write_text(json.dumps(other))
+    before = path.read_bytes()
+    with pytest.raises(launcher.ClientError):
+        launcher.save_profile(values, incoming)
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize('change', ['session', 'secret', 'stopped'])
+def test_stale_metadata_save_cannot_replace_current_session_authority(launcher, tmp_path, change):
+    state = tmp_path / 'profiles'
+    state.mkdir()
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(state)}
+    stale = {**joined_profile(), 'ack_cursor': 8, 'observed_cursor': 10}
+    current = json.loads(json.dumps(stale))
+    if change == 'session':
+        current['participation']['session_id'] = 'replacement-session'
+    elif change == 'secret':
+        current['participation']['session_secret'] = 'replacement-test-secret'.ljust(40, 'x')
+    else:
+        current['participation']['stopped'] = True
+    path = state / 'tools:weed.json'
+    path.write_text(json.dumps(current))
+    before = path.read_bytes()
+    with pytest.raises(launcher.ClientError):
+        launcher.save_profile(values, stale)
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize('operation', ['checked_profile', 'rebind'])
+def test_bound_service_mismatch_is_denied_before_sending_credentials(launcher, tmp_path, monkeypatch, operation):
+    state = tmp_path / 'profiles'
+    state.mkdir()
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(state), 'AGENTBUS_URL': 'http://127.0.0.1:9999'}
+    profile = {**joined_profile(), 'schema_version': 2, 'ack_cursor': 8, 'observed_cursor': 10}
+    (state / 'tools:weed.json').write_text(json.dumps(profile))
+    calls = []
+    monkeypatch.setattr(launcher, 'api', lambda *args, **kwargs: calls.append(True) or scope_info())
+    monkeypatch.setattr(launcher, 'configuration', lambda **kwargs: (Path('/unused'), values))
+    if operation == 'checked_profile':
+        with pytest.raises(launcher.ClientError):
+            launcher.checked_profile(values, 'tools:weed')
+    else:
+        assert launcher.main(['rebind', '--identity', 'tools:weed', '--from', 'beginning']) == 1
+    assert calls == []
+
+
+def test_profile_snapshot_merges_metadata_and_cursors_without_losing_rotation_intent(launcher, tmp_path):
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(tmp_path)}
+    path = tmp_path / 'tools:weed.json'
+    path.write_text(json.dumps({**joined_profile(), 'schema_version': 2, 'ack_cursor': 2,
+                                'observed_cursor': 4, 'role': 'maintainer'}))
+    metadata = launcher.load_profile(values, 'tools:weed')
+    stage = launcher.load_profile(values, 'tools:weed')
+    stage['participation_rotation_pending'] = {'session_id': 's1', 'rotation_token': 'test-grant',
+                                               'new_session_secret': 'test-staged-secret'}
+    stage['observed_cursor'] = 8
+    launcher.save_profile(values, stage)
+    metadata['role'] = 'reviewer'
+    launcher.save_profile(values, metadata)
+    current = json.loads(path.read_text())
+    assert current['role'] == 'reviewer'
+    assert current['observed_cursor'] == 8
+    assert current['participation_rotation_pending'] == stage['participation_rotation_pending']
+    assert 'baseline' not in current
+    rival = launcher.load_profile(values, 'tools:weed')
+    stage['participation_rotation_pending']['new_session_secret'] = 'first-new-stage'
+    rival['participation_rotation_pending']['new_session_secret'] = 'second-new-stage'
+    launcher.save_profile(values, stage)
+    before = path.read_bytes()
+    with pytest.raises(launcher.ClientError, match='conflict'):
+        launcher.save_profile(values, rival)
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize('change', ['session', 'secret', 'stopped'])
+def test_loaded_snapshot_rejects_changed_authority_without_writes(launcher, tmp_path, change):
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(tmp_path)}
+    path = tmp_path / 'tools:weed.json'
+    path.write_text(json.dumps({**joined_profile(), 'schema_version': 2}))
+    stale = launcher.load_profile(values, 'tools:weed')
+    current = launcher.load_profile(values, 'tools:weed')
+    if change == 'session':
+        current['participation']['session_id'] = 'replacement-session'
+    elif change == 'secret':
+        current['participation']['session_secret'] = 'replacement-test-secret'.ljust(40, 'x')
+    else:
+        current['participation']['stopped'] = True
+    launcher.save_profile(values, current)
+    before = path.read_bytes()
+    stale['role'] = 'stale-reviewer'
+    with pytest.raises(launcher.ClientError, match='authority changed'):
+        launcher.save_profile(values, stale)
+    assert path.read_bytes() == before
+
+
+
+def test_file_grant_join_checks_service_before_sending_staged_proof(launcher, tmp_path, monkeypatch):
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(tmp_path), 'AGENTBUS_URL': 'http://127.0.0.1:9999'}
+    profile = {**joined_profile(), 'schema_version': 2}
+    profile.pop('participation')
+    path = tmp_path / 'tools:weed.json'
+    path.write_text(json.dumps(profile))
+    before = path.read_bytes()
+    grant = tmp_path / 'grant'
+    grant.write_text('private-test-enrollment-grant'.ljust(40, 'x'))
+    grant.chmod(0o600)
+    calls = []
+    monkeypatch.setattr(launcher, 'api', lambda *args, **kwargs: calls.append(True))
+    monkeypatch.setattr(launcher, 'configuration', lambda **kwargs: (Path('/unused'), values))
+    assert launcher.main(['join', '--identity', 'tools:weed', '--enrollment-file', str(grant)]) == 1
+    assert calls == [] and path.read_bytes() == before

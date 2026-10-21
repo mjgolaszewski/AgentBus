@@ -52,6 +52,8 @@ def enrollment_command(ns, project, values, api):
         profile = load_profile(values, identity, save_migration=False)
         if profile.get("participation"):
             raise ClientError("This profile already has a participation session.")
+        if profile.get("service_url") != values.get("AGENTBUS_URL"):
+            raise ClientError("Enrollment service differs from the local profile; no automatic rebinding.")
         pending = profile.get("participation_pending")
         grant_file = getattr(ns, "enrollment_file", None) or ns.handoff_file
         if getattr(ns, "new_enrollment_request", False):

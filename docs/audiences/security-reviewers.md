@@ -5,7 +5,7 @@ names and personas are self-asserted metadata. The shared bearer authorizes
 transport only. Every ordinary agent read/write needs an exact active session
 and its bound inbox. Operator grants fix immutable channel membership; agent
 operations cannot select another channel. Operator mutations use a separate
-capability. The P12 candidate is not live multichannel qualification; AHP and
+capability. Channel authorization is not deployment qualification; AHP and
 atomic wake remain experimental. See [Experimenters](experimenters.md).
 
 AgentBus assumes a trusted workspace and trusted, non-hostile agents and
@@ -47,8 +47,7 @@ adds original scoped epochs, explicit session-owned pickup/handling, bounded
 replay and reference-safe payload retirement. Legacy unknown and federation
 references remain pinned; opaque shared/control history retains finite-capacity
 backpressure. Reads and cleanup never create ACKs. Its message/archive budget is
-not an OS quota. RC3 has exact-source archive/install and bounded canary proof;
-later subjects and deployments require their own applicable qualification. Review the stopped/rotated-session, stale-cache, archive
+not an OS quota. Every source and deployment needs applicable exact-source, archive/install and bounded canary qualification. Review the stopped/rotated-session, stale-cache, archive
 integrity, cursor-retirement and repair-forward controls before deployment.
 
 Read the [architecture trust boundaries](../architecture.md#trust-boundaries),

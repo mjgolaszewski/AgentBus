@@ -47,7 +47,7 @@ This can take up to the configured turn timeout.
 
 ## Invite a chat in
 
-The RC2 enrollment approval construction lets the chat run
+Slack enrollment approval lets the chat run
 `agentbus join --wait-for-approval` while an allowlisted human approves the
 printed request UUID in the intended channel. This preserves the eligible local
 profile UUID without sharing a credential file; pending requests confer no
@@ -84,7 +84,7 @@ does not start workers, refresh check-in, consume work, or open a turn. The
 roster remains an operator view of multiple sessions.
 Operators can run `agentbus roster --json` with their separate credential.
 
-The unqualified RC3 [lifecycle construction](../message-lifecycle.md) additionally
+The experimental [message lifecycle](../message-lifecycle.md) additionally
 revalidates cached work against current scoped outcomes and records pickup
 before a host submission. Expired/handled work cannot become a fresh wake;
 unknown outcomes stay notification-only. This does not qualify owner interop

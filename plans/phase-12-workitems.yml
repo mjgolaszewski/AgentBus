@@ -8,6 +8,44 @@ document:
   path: plans/phase-12-workitems.yml
   phase_id: P12
 workitems:
+- id: P12-P1-32
+  status: DONE
+  summary: Recover committed credential rotations and reject stale profile authority or foreign-service egress
+  priority: P1
+  acceptance:
+  - Recover the original canonical rotation receipt with the identical retained grant and staged secret after old-secret revocation; preserve STOP and current cursors
+  - Compare fresh session authority under the profile lock; preserve unrelated metadata and pending recovery intents, reject conflicting writers before disk mutation
+  - Deny changed service addresses before credential-bearing info rebind enrollment or rotation requests; no automatic rebinding or discarded staging
+  - Keep client modules below800LOC through a narrow profile-persistence owner; preserve original behavioral oracles and qualify final source canonically
+  acceptance_evidence: [test, python314-compatibility, release-smoke]
+- id: P12-P1-31
+  status: DONE
+  summary: Record complete poll observations and preserve same-session cursor high-water
+  priority: P1
+  acceptance:
+  - Complete foreground poll and ordinary inbox advance observation only; historical reads and truncated routine output do not; explicit ACK still requires handled obligations
+  - Scope credential and stopped-session changes fail before observation mutation; profile-lock cursor merging cannot regress normal same-session saves or cross session epochs
+  - Explicit same-inbox rebind preserves its documented intentional cursor reset; no channel switching or implicit semantic ACK is added
+  - Retain red reproducer and authenticated green proof with source archive installation and deployment separately qualified
+  acceptance_evidence: [test, python314-compatibility, release-smoke]
+- id: P12-P1-29
+  status: DONE
+  summary: Reconcile expired announcement presentation without fabricating read acknowledgements
+  priority: P1
+  acceptance:
+  - Fresh authenticated check-in snapshot retires only previously observed cached broadcast or poll notices no longer pending; missed outcomes receipts cursors and safety controls remain unchanged
+  - Legacy unavailable malformed or foreign scope snapshots retain evidence; newly queued controls and concurrent appends remain visible
+  - Exact-source canonical protected main archive installation and custodian-owned live readback precede delivery completion
+  acceptance_evidence: [test, contract-test, python314-compatibility, release-smoke]
+- id: P12-P1-30
+  status: DONE
+  summary: Replace phase and release chronology in current editorial guides with present capability descriptions
+  priority: P1
+  acceptance:
+  - Current product contract and audience guides describe behavior and limits without internal phase names or a sequence of release candidates
+  - Experimental owner wake and lifecycle limits stay explicit; exact historical subjects remain in engineering evidence and release records
+  - Editorial inventory records each changed document digest line coverage and disposition without rewriting historical proof
+  acceptance_evidence: [contract-test, release-smoke]
 - id: P12-P1-28
   status: DONE
   summary: Keep elapsed lifecycle outcome flags truthful across explicit settlement

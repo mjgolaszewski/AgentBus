@@ -19,6 +19,7 @@ def rename_chat(ns, values: dict[str, str]) -> int:
         atomic_json,
         checked_profile,
         identity_path,
+        load_profile,
         resolve_identity,
         save_profile,
     )
@@ -82,7 +83,7 @@ def rename_chat(ns, values: dict[str, str]) -> int:
                 atomic_json(new_path, existing)
         else:
             atomic_json(new_path, updated)
-    recover_rename_state(values, json.loads(new_path.read_text()))
+    recover_rename_state(values, load_profile(values, new_route, save_migration=False))
     print(f"ROUTE {old_route} -> {new_route}")
     return 0
 

@@ -34,14 +34,28 @@ def section_blocks(value: str) -> list[dict[str, object]]:
     return [{'type':'section','text':{'type':'mrkdwn','text':chunk,'verbatim':True}} for chunk in chunks]
 
 
-def message_blocks(message, *, locator: str | None = None) -> list[dict[str, object]]:
-    label=f'📤 `{message.sender}` → 📥 `{message.recipient}` · {message.kind} · {message.audience}'
-    if message.repo:
-        label+=f' · {message.repo}'
-    context: dict[str, object]={'type':'context','elements':[{'type':'mrkdwn','text':slack_escape(label),'verbatim':True}]}
+def message_fields_blocks(*, sender: str, recipient: str, text: str, kind: str = 'message',
+                         audience: str | None = None, repo: str | None = None,
+                         locator: str | None = None) -> list[dict[str, object]]:
+    """Bound escaped display scalars; this is no protocol decoder or authority."""
+    if (any(not isinstance(value, str) or len(value) > 80 for value in (sender, recipient, kind))
+            or not isinstance(text, str) or len(text) > 6000
+            or (audience is not None and (not isinstance(audience, str) or len(audience) > 80))
+            or (repo is not None and (not isinstance(repo, str) or len(repo) > 240))):
+        raise ValueError('Message presentation exceeds bounded scalar shape')
+    label = f'📤 `{sender}` → 📥 `{recipient}` · {kind} · {audience}'
+    if repo:
+        label += f' · {repo}'
+    context: dict[str, object] = {'type': 'context', 'elements': [
+        {'type': 'mrkdwn', 'text': slack_escape(label), 'verbatim': True}]}
     if locator is not None:
-        context['block_id']=locator
-    return [context,*section_blocks(message.text)]
+        context['block_id'] = locator
+    return [context, *section_blocks(text)]
+
+
+def message_blocks(message, *, locator: str | None = None) -> list[dict[str, object]]:
+    return message_fields_blocks(sender=message.sender, recipient=message.recipient, text=message.text,
+                                kind=message.kind, audience=message.audience, repo=message.repo, locator=locator)
 
 
 def command_blocks(text: str) -> list[dict[str, object]]:

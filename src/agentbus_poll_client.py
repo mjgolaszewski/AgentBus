@@ -164,6 +164,32 @@ def peek_event(profile_path: Path, profile: dict, *, quiet: bool = False) -> dic
     return change_spool(profile_path, profile, pick)
 
 
+def reconcile_announcement_snapshot(profile_path: Path, profile: dict, response: dict,
+                                    observed_ids: set[str]) -> None:
+    """Retire only prior ordinary notices absent from a fresh complete service snapshot.
+
+    This changes presentation only. Server outcomes and semantic ACKs stay intact;
+    safety controls and notices appended after the request are never retired here.
+    """
+    if "pending_announcement_ids" not in response:
+        return  # Older servers supply no authoritative reconciliation snapshot.
+    pending = response["pending_announcement_ids"]
+    if (not isinstance(pending, list) or len(pending) > 131072
+            or any(not isinstance(item, str) or not item or len(item) > 80 for item in pending)
+            or len(set(pending)) != len(pending)):
+        raise ClientError("Invalid announcement snapshot; poll evidence retained")
+    pending_ids = set(pending)
+
+    def reconcile(state: dict) -> None:
+        state["events"] = [event for event in state["events"] if not (
+            event.get("kind") == "CONTROL" and event.get("id") in observed_ids
+            and isinstance(event.get("control"), dict)
+            and event["control"].get("kind") in {"broadcast", "poll"}
+            and event["id"] not in pending_ids
+        )]
+    change_spool(profile_path, profile, reconcile)
+
+
 def retire_event(profile_path: Path, profile: dict, kind: str, event_id: str) -> None:
     def retire(state: dict) -> None:
         state["events"] = [event for event in state["events"]
@@ -279,10 +305,13 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
                 reported_backoff = min(float(policy["max_interval_seconds"]),
                                        max(float(policy["initial_interval_seconds"]),
                                            interval or float(policy["initial_interval_seconds"])))
+                observed_controls = {event["id"] for event in read_spool_events(profile_path, profile=profile)
+                                     if event.get("kind") == "CONTROL"}
                 response = scoped_api(values, f"/v1/sessions/{session['session_id']}/check-in", profile,
                                {"current_backoff_seconds": reported_backoff},
                                timeout_seconds=request_timeout, api_call=api)
                 service_healthy = True
+                reconcile_announcement_snapshot(profile_path, profile, response, observed_controls)
                 if "controls" in response:
                     def record_controls(state: dict) -> None:
                         for control in response["controls"]:

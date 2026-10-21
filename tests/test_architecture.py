@@ -29,6 +29,7 @@ MODULES = {
     "src/agentbus_scope_client.py": ("client", "client"),
     "src/agentbus_delivery_client.py": ("client", "client"),
     "src/agentbus_client.py": ("client", "client"),
+    "src/agentbus_profile_client.py": ("client", "client"),
     "src/agentbus_transport_client.py": ("client", "client"),
     "src/agentbus_poll_client.py": ("client", "client"),
     "src/agentbus_presentation_client.py": ("client", "client"),

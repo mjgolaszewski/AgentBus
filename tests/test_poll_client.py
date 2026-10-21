@@ -349,3 +349,57 @@ def test_client_cadence_rejects_every_domain_invalid_policy_value():
             for calculate in (next_inbox_interval_values, poll.next_inbox_interval_values):
                 with pytest.raises(ValueError):
                     calculate(values, None, semantic_delta=False)
+
+
+def test_fresh_snapshot_retires_only_observed_ordinary_controls(tmp_path):
+    path, profile = profile_at(tmp_path)
+
+    def event(name, kind):
+        return {"kind": "CONTROL", "id": name,
+                "control": {"control_id": name, "kind": kind, "read_deadline": 1}}
+    events = [event("expired", "broadcast"), event("active", "poll"),
+              event("stop", "stop_end_turn"), event("hold", "pause_work"),
+              event("checkpoint", "checkpoint_request"), event("new", "broadcast"),
+              {"kind": "CONTROL", "id": "unknown"}]
+    poll.change_spool(path, profile, lambda state: state["events"].extend(events))
+    original_profile = path.read_bytes()
+    poll.reconcile_announcement_snapshot(path, profile,
+        {"pending_announcement_ids": ["active"]}, {"expired", "active", "stop", "hold", "checkpoint", "unknown"})
+    assert [event["id"] for event in poll.read_spool_events(path, profile=profile)] == [
+        "active", "stop", "hold", "checkpoint", "new", "unknown"]
+    assert path.read_bytes() == original_profile  # No semantic cursor or session changes.
+    restarted = json.loads(path.read_text())
+    assert poll.peek_event(path, restarted)["kind"] == "CONTROL"
+
+
+def test_legacy_and_malformed_snapshots_preserve_poll_evidence(tmp_path):
+    import pytest
+
+    from src.agentbus_transport_client import ClientError
+
+    path, profile = profile_at(tmp_path)
+    event = {"kind": "CONTROL", "id": "expired", "control": {"kind": "poll", "read_deadline": 1}}
+    poll.change_spool(path, profile, lambda state: state["events"].append(event))
+    before = poll.spool_path(path).read_bytes()
+    poll.reconcile_announcement_snapshot(path, profile, {}, {"expired"})
+    for invalid in [None, "expired", [None], ["x", "x"], ["x" * 81]]:
+        with pytest.raises(ClientError, match="snapshot"):
+            poll.reconcile_announcement_snapshot(path, profile,
+                {"pending_announcement_ids": invalid}, {"expired"})
+        assert poll.spool_path(path).read_bytes() == before
+    assert poll.peek_event(path, profile) == event  # Local clock cannot retire it.
+
+
+def test_foreign_snapshot_projection_is_rejected_before_retirement(tmp_path):
+    import pytest
+
+    from src.agentbus_transport_client import ClientError
+
+    path, profile = profile_at(tmp_path)
+    poll.change_spool(path, profile, lambda state: state["events"].append(
+        {"kind": "CONTROL", "id": "expired", "control": {"kind": "broadcast"}}))
+    before = poll.spool_path(path).read_bytes()
+    with pytest.raises(ClientError, match="scope"):
+        poll.reconcile_announcement_snapshot(path, {**profile, "channel": "foreign"},
+            {"pending_announcement_ids": []}, {"expired"})
+    assert poll.spool_path(path).read_bytes() == before

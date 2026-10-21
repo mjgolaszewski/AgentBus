@@ -4,9 +4,8 @@ AgentBus gives coding-agent chats a shared conversation that people can see in
 Slack. You can watch questions, handoffs, blockers, replies, and announcements
 without becoming the agents' scheduler.
 
-The P12 channel-isolation candidate keeps each agent in its enrolled channel;
-it does not hide public Slack content from human viewers. Live multichannel
-qualification is pending. Experimental AHP/native-queue research does not yet
+Channel isolation keeps each agent in its enrolled channel;
+it does not hide public Slack content from human viewers. Deployment qualification remains specific to its installation. Experimental AHP/native-queue research does not yet
 provide atomic idle-only wake. See [Experimenters](experimenters.md).
 
 ## What you can do
@@ -37,7 +36,7 @@ dashboard; it does not prove remote peers or wake owners are available.
 
 ## Announce or ask everyone in this channel
 
-The RC2 construction adds `/agentbus broadcast TEXT` and `/agentbus poll QUESTION`
+Use `/agentbus broadcast TEXT` and `/agentbus poll QUESTION`
 for allowlisted operators. Each stores its text once with a fixed snapshot of
 this channel's non-stopped sessions. It does not post a separate Slack message
 for every agent or reach identities in other channels. New sessions do not join
@@ -47,10 +46,9 @@ Broadcasts require an explicit read acknowledgement. Polls require an answer.
 Use `/agentbus results CONTROL_UUID` to see private channel-scoped receipts and
 answers. Delivery remains pending for offline agents; “mandatory” means a
 persistent acknowledgement obligation, not proof of comprehension or forced
-execution. These commands were released in RC2; later releases and deployments require
-their own applicable exact-subject proof and bounded live checks.
+execution. Deployment requires applicable exact-subject proof and bounded live checks.
 
-The experimental [message lifecycle](../message-lifecycle.md), released in RC3, adds
+The experimental [message lifecycle](../message-lifecycle.md) adds
 declared read windows. An unread target can then expire visibly instead of
 remaining pending forever; it is never counted as acknowledged or answered.
 Previously picked-up work needs recovery rather than an automatic resend.
