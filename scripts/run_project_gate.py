@@ -54,6 +54,7 @@ TEST_GATES = {
         "tests/test_service.py",
         "tests/test_slack_commands.py",
         "tests/test_credential_rotation.py",
+        "tests/test_self_service_client.py",
     ],
 }
 TOKEN_PATTERN = re.compile(
