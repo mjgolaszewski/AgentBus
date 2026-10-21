@@ -595,9 +595,9 @@ documents:
 
 - document: phases/phase-12-log.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 380]]
-  line_count: 380
-  sha256: 9df67e705b33e27fae0352b6418c6365c5107ca35c144f46c88c7f60f1bd3366
+  reviewed_lines: [[1, 382]]
+  line_count: 382
+  sha256: 49dc4d04fb1b6295f93ba777d922bc7e16efc14a90855edb9b34c88c0cb97a8d
   baseline_sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -984,7 +984,7 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines: [[1, 579]]
   line_count: 579
-  sha256: adada61619dc3426858073cea54c43c33b00b011b4cb9c2582afda4cd5b3d9e1
+  sha256: 6b9c9f221acd54129e544a3868634346db596f87c7f6ba3430a01de2a5a0a9aa
   baseline_sha256: 089d7b76fe9d53eddc539da2141fb02b0b7502354f7ff75661dad2c5a87cfaf0
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -1035,7 +1035,7 @@ documents:
   review_status: full_document_review
   reviewed_lines: [[1, 82]]
   line_count: 82
-  sha256: 55bafe94a78e401d2d6a1f586193e8aae26b990f1d9e9daa7698456f4fcaff31
+  sha256: c5e480ebc4afe71ab14a824445b2fdb4c74df50b8b9364ec16f75d3e0e6fa184
   baseline_sha256: null
   disposition: new
   review_basis: Full new bug-disposition inventory reviewed; reproduced defects distinguished from expected denials and accepted future limitations.

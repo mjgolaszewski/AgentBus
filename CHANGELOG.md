@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.9.1rc10] - 2026-10-21
+## [0.9.1] - 2026-10-21
 
 - Recover committed secret-rotation receipts after lost responses without authenticating with the revoked secret; retain STOP and staged recovery evidence. Reject stale profile authority writes and check bound service addresses before sending credentials.
 

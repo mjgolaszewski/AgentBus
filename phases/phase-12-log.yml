@@ -12,6 +12,8 @@ phase:
 summary:
   outcome: active
   highlights:
+  - Operator directed stable0.9.1 promotion before publication; prior RCs stay immutable. Final stable-subject protected proof archive and isolated installation remain required; no owner-wake qualification implied.
+  - Architecture inventory correction passed all8 existing architecture controls plus Ruff original234 reconciliation governance and source628 checks in33.489s; independent handback accepted. Runtime188 and92 affected evidence retained without unrelated reruns.
   - RC8 diagnosis reproduced repeated default certificate-store initialization in standard opener construction; defer HTTPS setup without changing polling or wake authority. See audits/rc8-wake-cpu.yml for scope and acceptance.
   - Pinned upstream sources and local installed builds; actual AHP owner remains unverified
   - Four new adapter boundary controls pass; no AHP implementation or live probe

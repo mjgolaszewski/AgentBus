@@ -38,7 +38,7 @@ bugs:
   correction: reject service mismatch before credential-bearing info enrollment or rotation requests
   proof: request-observation controls passed with zero API calls and unchanged private staging on mismatch
 - id: extracted_architecture_inventory
-  disposition: explicit_client_ownership_registered_affected_architecture_proof_pending
+  disposition: explicit_client_ownership_registered_8architecture_controls_independently_accepted_canonical_pending
   cause: new profile persistence module was omitted from existing exhaustive executable module inventory
   correction: add client_layer_and_client_context_mapping; retain equality_oracle_and_all_boundary_gates
   proof: required canonical architecture producer rejected omitted module; failed exact-subject bundle retained and no SDK waiver applied
