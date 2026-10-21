@@ -1025,3 +1025,42 @@ def test_cursor_merge_never_copies_another_session_epoch(launcher, tmp_path):
     launcher.save_profile(values, incoming)
     current = json.loads(path.read_text())
     assert current['ack_cursor'] == 8 and current['observed_cursor'] == 10
+
+
+@pytest.mark.parametrize('change', ['session', 'secret', 'stopped'])
+def test_stale_metadata_save_cannot_replace_current_session_authority(launcher, tmp_path, change):
+    state = tmp_path / 'profiles'
+    state.mkdir()
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(state)}
+    stale = {**joined_profile(), 'ack_cursor': 8, 'observed_cursor': 10}
+    current = json.loads(json.dumps(stale))
+    if change == 'session':
+        current['participation']['session_id'] = 'replacement-session'
+    elif change == 'secret':
+        current['participation']['session_secret'] = 'replacement-test-secret'.ljust(40, 'x')
+    else:
+        current['participation']['stopped'] = True
+    path = state / 'tools:weed.json'
+    path.write_text(json.dumps(current))
+    before = path.read_bytes()
+    with pytest.raises(launcher.ClientError):
+        launcher.save_profile(values, stale)
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize('operation', ['checked_profile', 'rebind'])
+def test_bound_service_mismatch_is_denied_before_sending_credentials(launcher, tmp_path, monkeypatch, operation):
+    state = tmp_path / 'profiles'
+    state.mkdir()
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(state), 'AGENTBUS_URL': 'http://127.0.0.1:9999'}
+    profile = {**joined_profile(), 'schema_version': 2, 'ack_cursor': 8, 'observed_cursor': 10}
+    (state / 'tools:weed.json').write_text(json.dumps(profile))
+    calls = []
+    monkeypatch.setattr(launcher, 'api', lambda *args, **kwargs: calls.append(True) or scope_info())
+    monkeypatch.setattr(launcher, 'configuration', lambda **kwargs: (Path('/unused'), values))
+    if operation == 'checked_profile':
+        with pytest.raises(launcher.ClientError):
+            launcher.checked_profile(values, 'tools:weed')
+    else:
+        assert launcher.main(['rebind', '--identity', 'tools:weed', '--from', 'beginning']) == 1
+    assert calls == []
