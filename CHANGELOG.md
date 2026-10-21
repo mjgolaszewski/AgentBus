@@ -46,6 +46,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Restore the BCF introduction to its earlier README position and keep the Microbus tone implicit.
+
 - Record RC7 exact-source publication, raw-carrier recovery controls, 100-document hygiene inventory and isolated installation proof; preserve unfinished owner-wake qualification.
 
 - Record immutable RC6 publication at `c5c7335`, exact protected PR/main proof, matching reproducible archive, SDK-free installation and Codex skill layout verification; preserve actual first failures and unfinished owner-wake qualification.
