@@ -686,9 +686,9 @@ def test_bridge_checkpoint_applies_only_oldest_admitted_prefix_after_full_scan(p
 @pytest.mark.parametrize('thread', [None, '1.000001'])
 def test_federated_message_presentation_preserves_mixed_peer_carrier(pair, version, thread):
     """Old peers still receive the exact text; human blocks carry the message."""
-    from src.agentbus_federation_ordinary_service import encode_ordinary
     from dataclasses import replace
 
+    from src.agentbus_federation_ordinary_service import encode_ordinary
     from src.agentbus_federation_wire_service import decode_frame
     from src.agentbus_service import SendMessage
 
@@ -726,7 +726,7 @@ def test_federated_message_presentation_preserves_mixed_peer_carrier(pair, versi
     asyncio.run(scenario())
 
 
-def test_federation_presentation_keeps_control_payload_private_and_blocks_bounded(pair):
+def test_federation_presentation_keeps_controls_compact_and_blocks_bounded(pair):
     from src.agentbus_federation_slack_service import carrier_blocks
     from src.agentbus_service import SendMessage
 
