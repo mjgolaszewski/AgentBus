@@ -933,3 +933,55 @@ def test_new_approval_request_preserves_old_private_stage_and_denies_service_swi
     values['AGENTBUS_URL'] = 'http://different-service:8766'
     assert launcher.main(['join', '--identity', identity]) == 1
     assert len(attempts) == 1 and json.loads(path.read_text())['participation_pending'] == pending
+
+
+def test_poll_message_observation_permits_explicit_ack_without_extra_inbox(launcher, tmp_path, monkeypatch, capsys):
+    from src import agentbus_poll_client as poll
+
+    state = tmp_path / 'profiles'
+    state.mkdir()
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(state), 'AGENTBUS_URL': 'http://127.0.0.1:8766'}
+    profile = {**joined_profile(), 'schema_version': 2, 'ack_cursor': 8, 'observed_cursor': 10}
+    profile['participation']['policy_values'] = {'presentation_budget_bytes': None}
+    path = state / 'tools:weed.json'
+    path.write_text(json.dumps(profile))
+    monkeypatch.setattr(launcher, 'configuration', lambda **kwargs: (Path('/unused'), values))
+    monkeypatch.setattr(launcher, 'api', lambda *args, **kwargs: scope_info())
+    monkeypatch.setattr(poll, 'ensure_worker', lambda *args: None)
+    poll.change_spool(path, profile, lambda spool: poll._append(spool, {
+        'kind': 'MESSAGE', 'id': '90', 'message': {'cursor': 90, 'sender': 'tools:peer',
+            'recipient': 'tools:weed', 'kind': 'message', 'text': 'Observed through poll',
+            'audience': 'direct', 'actionable': True},
+    }))
+    assert launcher.main(['poll', '--identity', 'tools:weed', '--check', '--json']) == 0
+    assert json.loads(capsys.readouterr().out)['message']['cursor'] == 90
+    observed = json.loads(path.read_text())
+    assert observed['observed_cursor'] == 90 and observed['ack_cursor'] == 8
+    assert launcher.main(['ack', '--identity', 'tools:weed', '--through', '90']) == 0
+    assert json.loads(path.read_text())['ack_cursor'] == 90
+
+
+def test_stale_profile_save_preserves_same_session_cursor_high_water(launcher, tmp_path):
+    state = tmp_path / 'profiles'
+    state.mkdir()
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(state)}
+    stale = {**joined_profile(), 'ack_cursor': 8, 'observed_cursor': 10}
+    path = state / 'tools:weed.json'
+    path.write_text(json.dumps({**stale, 'ack_cursor': 20, 'observed_cursor': 40}))
+    launcher.save_profile(values, stale)
+    current = json.loads(path.read_text())
+    assert current['ack_cursor'] == 20 and current['observed_cursor'] == 40
+
+
+def test_explicit_same_inbox_rebind_still_resets_cursors(launcher, tmp_path, monkeypatch):
+    state = tmp_path / 'profiles'
+    state.mkdir()
+    values = {'AGENTBUS_CONSUMER_STATE_DIR': str(state), 'AGENTBUS_URL': 'http://127.0.0.1:8766'}
+    profile = {**joined_profile(), 'schema_version': 2, 'ack_cursor': 8, 'observed_cursor': 10}
+    path = state / 'tools:weed.json'
+    path.write_text(json.dumps(profile))
+    monkeypatch.setattr(launcher, 'configuration', lambda **kwargs: (Path('/unused'), values))
+    monkeypatch.setattr(launcher, 'api', lambda *args, **kwargs: scope_info())
+    assert launcher.main(['rebind', '--identity', 'tools:weed', '--from', 'beginning']) == 0
+    current = json.loads(path.read_text())
+    assert current['ack_cursor'] == current['observed_cursor'] == 0
