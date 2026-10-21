@@ -595,9 +595,9 @@ documents:
 
 - document: phases/phase-12-log.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 379]]
-  line_count: 379
-  sha256: 6db092d0abfccad47505d280cf80e7a1fac0d56524f69cb2defc99c0b0425ab7
+  reviewed_lines: [[1, 380]]
+  line_count: 380
+  sha256: 9df67e705b33e27fae0352b6418c6365c5107ca35c144f46c88c7f60f1bd3366
   baseline_sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -1033,9 +1033,9 @@ documents:
 
 - document: audits/rc10-bug-inventory.yml
   review_status: full_document_review
-  reviewed_lines: [[1, 77]]
-  line_count: 77
-  sha256: f79fe493d9ce47928a17766906a5a2c179d6f7d47d0456f3fde3cecd22a05f85
+  reviewed_lines: [[1, 82]]
+  line_count: 82
+  sha256: 55bafe94a78e401d2d6a1f586193e8aae26b990f1d9e9daa7698456f4fcaff31
   baseline_sha256: null
   disposition: new
   review_basis: Full new bug-disposition inventory reviewed; reproduced defects distinguished from expected denials and accepted future limitations.
