@@ -12,6 +12,7 @@ phase:
 summary:
   outcome: active
   highlights:
+  - First-join fixture and zero-egress controls passed all7 narrow self-service file-grant and participation cases; Ruff original234 reconciliation governance and source628 passed in49.522s with independent handback. No production binding relaxation; generated manifests now272_591_719 preserve and explicitly include the new origin controls.
   - Canonical ordinary tests exposed one stale positive first-join fixture without the service address that real onboarding always stores. Corrected fixture only and added missing_foreign address zero-egress controls; production binding remains strict, original lost-response and same-secret assertions retained, first failure preserved.
   - Stable0.9.1 notes cover the full train and distinguish RC9 no-additional-schema upgrade from 0.9.0 offline channel and optional lifecycle cutovers; current migration and lifecycle introductions no longer use RC chronology.
   - Corrected scalar federation and local presentation passed130 affected tests plus Ruff3files typing2owners original234 reconciliation semantic ownership with ZERO blocking violations governance and source628 in80.675s. Independent handback accepted; constructor registry and SDK unchanged. Final stable exact-subject canonical proof remains required.
