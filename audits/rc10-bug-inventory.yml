@@ -8,10 +8,10 @@ scope:
   excluded: new hostile-workspace guarantees or unqualified owner-host integrations
 bugs:
 - id: federation_message_body_hidden_by_transport_summary
-  disposition: readable_message_blocks_90behavior_and_static_preparation_independently_accepted_canonical_pending
+  disposition: scalar_message_blocks_130behavior_and_semantic_preparation_independently_accepted_canonical_pending
   cause: provider blocks showed transport metadata while readable payload stayed inside machine carrier
   correction: render message sender_recipient_body and compact footer; preserve exact signed text and control summary
-  proof: legacy_and_ordinary_mixed_peer_echo_thread_escape_and_maximum_body_controls_passed_in90test_cohort; Ruff_typing_reconciliation_governance_source_passed_after_formatting_only_correction
+  proof: legacy_and_ordinary_mixed_peer_echo_thread_escape_and_maximum_body_controls_passed_in130test_cohort; Ruff_typing_original234_reconciliation_semantic_ownership_governance_source_passed_after_boundary_correction
 - id: expired_announcement_projection
   disposition: fixed_focused_accepted_canonical_pending
   cause: cached ordinary control outlives service read deadline and demands rejected late ACK
