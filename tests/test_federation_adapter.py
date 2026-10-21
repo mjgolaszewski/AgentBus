@@ -680,3 +680,69 @@ def test_bridge_checkpoint_applies_only_oldest_admitted_prefix_after_full_scan(p
             finally:
                 target.close()
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize('version', [1, 3])
+@pytest.mark.parametrize('thread', [None, '1.000001'])
+def test_federated_message_presentation_preserves_mixed_peer_carrier(pair, version, thread):
+    """Old peers still receive the exact text; human blocks carry the message."""
+    from src.agentbus_federation_ordinary_service import encode_ordinary
+    from dataclasses import replace
+
+    from src.agentbus_federation_wire_service import decode_frame
+    from src.agentbus_service import SendMessage
+
+    bridges, _, _, bindings = pair
+    origin, destination = bridges['home'].identity, bridges['remote'].identity
+    bindings = {key: replace(binding, ordinary_version=3) for key, binding in bindings.items()}
+    message = SendMessage(sender='home:agentbus:sender', recipient='remote:agentbus:receiver',
+                          text='*Readable* & <@U123> <https://example.invalid|link>', audience='direct')
+    payload = message.model_dump_json() if version == 1 else encode_ordinary(message, None)
+    frame = (encode_frame(origin, 'message', 'visible-message', destination.instance_id, payload)
+             if version == 1 else encode_frame(origin, 'message', 'visible-message', destination.instance_id, payload, version=3))
+
+    async def scenario():
+        posts = []
+        def respond(request):
+            body = json.loads(request.content);posts.append(body)
+            echoed = {'text': body['text'], 'blocks': body['blocks']}
+            if thread is not None:echoed['thread_ts'] = thread
+            return httpx.Response(200, json={'ok': True, 'channel': 'C123', 'ts': '2.000001', 'message': echoed})
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            provider = SlackFederationProvider(client, 'isolated-token', 'C123')
+            result = await provider.publish(frame) if thread is None else await provider.publish_in_thread(frame, thread)
+        assert result == '2.000001' and len(posts) == 1
+        posted = posts[0];assert posted['text'] == frame
+        # Legacy extraction consumes text directly; no blocks or peer upgrade required.
+        recovered = decode_frame(posted['text'], origin.publisher_id, destination.instance_id, bindings)
+        assert recovered['payload'] == payload
+        visible = json.dumps(posted['blocks'], ensure_ascii=False)
+        assert '📤' in visible and message.sender in visible and message.recipient in visible
+        assert '*Readable* &amp; &lt;@U123&gt; &lt;https://example.invalid|link&gt;' in visible
+        assert frame not in visible and json.loads(frame)['signature'] not in visible
+        assert posted['parse'] == 'none' and posted['mrkdwn'] is False
+        assert not posted['unfurl_links'] and not posted['unfurl_media']
+        if thread is not None:assert posted['thread_ts'] == thread and posted['reply_broadcast'] is True
+    asyncio.run(scenario())
+
+
+def test_federation_presentation_keeps_control_payload_private_and_blocks_bounded(pair):
+    from src.agentbus_federation_slack_service import carrier_blocks
+    from src.agentbus_service import SendMessage
+
+    bridges, _, _, _ = pair
+    origin, destination = bridges['home'].identity, bridges['remote'].identity
+    receipt = encode_frame(origin, 'receipt', 'receipt-fixture', destination.instance_id,
+                           '{"private_control":"not-in-human-view"}')
+    rendered = json.dumps(carrier_blocks(receipt))
+    assert 'AgentBus receipt:' in rendered and 'not-in-human-view' not in rendered
+    message = SendMessage(sender='home:agentbus:sender', text='&' * 6000, audience='broadcast')
+    frame = encode_frame(origin, 'message', 'bounded-message', destination.instance_id, message.model_dump_json())
+    blocks = carrier_blocks(frame)
+    assert len(blocks) <= 50
+    for block in blocks:
+        if block['type'] == 'section':assert len(block['text']['text']) <= 3000
+    assert sum(block.get('text', {}).get('text', '').count('&amp;') for block in blocks) == 6000
+    for malformed in ('not-json', '{"kind":"message","agentbus_federation":true}',
+                      '{"kind":"message","agentbus_federation":3,"payload":"bad"}'):
+        assert '📤' not in json.dumps(carrier_blocks(malformed), ensure_ascii=False)

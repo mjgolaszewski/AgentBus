@@ -2,6 +2,8 @@
 
 ## [0.9.1] - 2026-10-21
 
+- Show federated message bodies in Slack while preserving exact signed carrier bytes for older peers; keep control receipts compact.
+
 - Recover committed secret-rotation receipts after lost responses without authenticating with the revoked secret; retain STOP and staged recovery evidence. Reject stale profile authority writes and check bound service addresses before sending credentials.
 
 - Record complete foreground poll observations without an extra inbox read; preserve same-session cursor high-water across stale profile saves while retaining explicit rebind resets and fail-closed scope changes.

@@ -396,9 +396,9 @@ documents:
 
 - document: docs/federation.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 440]]
-  line_count: 440
-  sha256: f2cde9aa0d2f0569fa849c230c8229b751de561da3f8f7502ad847759e29fc31
+  reviewed_lines: [[1, 454]]
+  line_count: 454
+  sha256: 21be1390f8c75afd5da1a9d8a98d3129ab547eeb5eac2c8f58d896661181b151
   baseline_sha256: 240d6f30536b0cb6680c5d73d79c501d5f389fc73b3470cece99dff8fa704cf2
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -595,9 +595,9 @@ documents:
 
 - document: phases/phase-12-log.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 383]]
-  line_count: 383
-  sha256: 78bdee22ff9fcc755ed3a866eeacb94a6f514e151cad6b6e9273afb3d16846ee
+  reviewed_lines: [[1, 384]]
+  line_count: 384
+  sha256: fb1812649da7020380b00a658da70984d142bc51aafb64f21c3d6c0e0cafcdb7
   baseline_sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -982,9 +982,9 @@ documents:
 
 - document: CHANGELOG.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 579]]
-  line_count: 579
-  sha256: 6b9c9f221acd54129e544a3868634346db596f87c7f6ba3430a01de2a5a0a9aa
+  reviewed_lines: [[1, 581]]
+  line_count: 581
+  sha256: 995ea131486fc383bbc9564ed4d0828d70977ef916b98adfaf0f0a8a5160f36e
   baseline_sha256: 089d7b76fe9d53eddc539da2141fb02b0b7502354f7ff75661dad2c5a87cfaf0
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -1033,9 +1033,9 @@ documents:
 
 - document: audits/rc10-bug-inventory.yml
   review_status: full_document_review
-  reviewed_lines: [[1, 82]]
-  line_count: 82
-  sha256: c5e480ebc4afe71ab14a824445b2fdb4c74df50b8b9364ec16f75d3e0e6fa184
+  reviewed_lines: [[1, 87]]
+  line_count: 87
+  sha256: 31eee31aa7397db04e9fbdbbd301f90ae6fd3c8558b09024f4f20c9473dc6e35
   baseline_sha256: null
   disposition: new
   review_basis: Full new bug-disposition inventory reviewed; reproduced defects distinguished from expected denials and accepted future limitations.

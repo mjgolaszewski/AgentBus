@@ -438,3 +438,17 @@ Historical provider proof is retained in
 carrier signatures, publishers and exact destination receipt hashes. Its
 historical wire-1 observations do not certify a later source or wire-3 threaded
 operation, and destination custody never becomes semantic acknowledgement.
+
+
+### Slack presentation and carrier custody
+
+Federated message posts show their sender, recipient and readable message body
+using the same escaped Slack formatting as local messages. A compact transport
+footer identifies the origin, destination and message ID. Receipt and directory
+posts show only their compact transport summary.
+
+The exact signed frame remains in the provider message's machine-readable `text`
+field; visible blocks do not replace it. Existing peers recover and authenticate
+the same carrier bytes without a coordinated upgrade. The human view grants no
+extra authority and is not proof of signature verification, recipient reading,
+execution or semantic acknowledgement. Public Slack channels remain public.
