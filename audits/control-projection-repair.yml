@@ -21,11 +21,12 @@ repair:
   compatibility: additive check-in response; unchanged paths Slack protocol and database schema
 proof:
   populations: [tests/test_poll_client.py, tests/test_message_lifecycle.py, tests/test_poll_projection_recovery.py, tests/test_control_store.py]
-  status: not_executed
+  status: focused_88_lint_and_two_owner_typing_passed_independently_accepted_canonical_pending
 editorial:
   rule: current guides describe present behavior and limits; chronology belongs to release and engineering records
   coverage: changed spans reviewed in section context against retained full-document baseline; whole-file current digests in editorial inventory
   retained: historical proof subjects signatures qualification limits and valid verification commands
 rollout:
+  repair_candidate: 0.9.1rc10
   immutable_RC9: do_not_retag_or_replace_published_assets
   delivery: coordinate separately with runtime custodian after exact-source proof and isolated installation

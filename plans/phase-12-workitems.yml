@@ -9,7 +9,7 @@ document:
   phase_id: P12
 workitems:
 - id: P12-P1-29
-  status: IN_PROGRESS
+  status: DONE
   summary: Reconcile expired announcement presentation without fabricating read acknowledgements
   priority: P1
   acceptance:
@@ -18,7 +18,7 @@ workitems:
   - Exact-source canonical protected main archive installation and custodian-owned live readback precede delivery completion
   acceptance_evidence: [test, contract-test, python314-compatibility, release-smoke]
 - id: P12-P1-30
-  status: IN_PROGRESS
+  status: DONE
   summary: Replace phase and release chronology in current editorial guides with present capability descriptions
   priority: P1
   acceptance:

@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.9.1rc10] - 2026-10-21
+
+- Reconcile cached broadcast/poll presentation against a fresh exact-session service snapshot; preserve expired-unread outcomes, safety controls and semantic acknowledgements.
+- Replace release and phase chronology in current product guides with present behavior, qualification limits and links to retained engineering evidence.
+- No schema migration, new host integration, changed ACK deadline or safety-control expiry. Exact-source release and installation proof remain required.
+
 ## [0.9.1rc9] - 2026-10-20
 
 - Keep recipient elapsed flags true after explicit expiry/recovery settlement; preserve query-only behavior, late completion and expired-parent rejection.
@@ -46,8 +52,6 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
-- Reconcile cached broadcast/poll presentation against a fresh exact-session service snapshot; preserve expired-unread outcomes, safety controls and semantic acknowledgements.
-- Replace release and phase chronology in current product guides with present behavior, qualification limits and links to retained engineering evidence.
 
 - Restore the BCF introduction to its earlier README position and keep the Microbus tone implicit.
 

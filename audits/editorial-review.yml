@@ -18,7 +18,7 @@ baseline_review:
   inventory: audits/editorial-review.yml
   sha256: b322d4dfbdda737da076f2f15fd2bab62e204296cbf96988f79e1d43ba56a609
 experimental_claims:
-  RC9: construction candidate; no release or deployment qualification yet
+  current_repair: fresh exact-source qualification pending; prior releases retain their own immutable evidence
   AHP_native_queue: offline research; live interoperability and atomic idle-only admission unqualified
   federation: Historical canaries apply only to pinned runtime subjects; custody is not execution or semantic ACK
 documents:
@@ -55,7 +55,7 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines: [[1, 105]]
   line_count: 105
-  sha256: 7eea33e4a5d4c189d7bf1c24dafa768424bd85c8a954674ee5838ab3176ec570
+  sha256: 532447f09ea4de36f1e7fc73dea6b2dc91316e78e239047f8df5520d9b388ad9
   baseline_sha256: 486989ca8ea9e296a2dce9fe025313aa5c5f73606531fb405a0c338ee953b4c3
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
@@ -594,9 +594,9 @@ documents:
 
 - document: phases/phase-12-log.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 365]]
-  line_count: 365
-  sha256: 2a64b52cdaf176e3a7d390057655c8dca98e70aacccfe89e6350480ed4d453cb
+  reviewed_lines: [[1, 366]]
+  line_count: 366
+  sha256: 053db1aafad3a680273af3c9f04eda2fe7a185920db923def359c1fa1eff08aa
   baseline_sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -845,7 +845,7 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines: [[1, 316]]
   line_count: 316
-  sha256: a7847d60e7d39fb8e8749462bc0b8c9167c5850337bf3188e0904cfff87b3e25
+  sha256: aedba22cbeef31e0409876b5a695a4f6e5d328bca8d11e24ab268ef455f3a32a
   baseline_sha256: 1c632ee46d55ab7ba403af50842aa97a1a733cadd8798eb694257d3f6e53cfbc
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -981,9 +981,9 @@ documents:
 
 - document: CHANGELOG.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 571]]
-  line_count: 571
-  sha256: eb402a04bf2de209e07cc92e5722ee85948526ded07d1abb1986e06066c3cd1b
+  reviewed_lines: [[1, 575]]
+  line_count: 575
+  sha256: cebc8fdc8c25dd144fa64c3dfb918427cd97a35d0507f8e411787ce0c6b1dc76
   baseline_sha256: 089d7b76fe9d53eddc539da2141fb02b0b7502354f7ff75661dad2c5a87cfaf0
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -1023,9 +1023,9 @@ documents:
 
 - document: audits/control-projection-repair.yml
   review_status: full_document_review
-  reviewed_lines: [[1, 31]]
-  line_count: 31
-  sha256: 2d418f734fe1a6691d84109f868e4de6746f4d8550031840756af066a4deee04
+  reviewed_lines: [[1, 32]]
+  line_count: 32
+  sha256: 3b8eb294fec181646b50188468c37d91473da08e93c00d03d0684d20d5aec1ea
   baseline_sha256: null
   disposition: new
   review_basis: New bounded repair audit reviewed in full; source assertions distinguished from unexecuted qualification.
@@ -1037,9 +1037,6 @@ summary:
   retained: 63
   verification: Privacy regression and exact-source proof pending
 release_record_review:
-  runtime_source: 52fcd8608994d69f1108eabc0e58769c815c037e
-  method: Prior inventory hashes verified; changed release-guidance sections and public qualification records reviewed
-    in context; stale next/unqualified RC3 labels reconciled with subject-specific released evidence; runtime custody
-    unchanged
-  scope: documentation_only
-  qualification: new_documentation_subject_requires_own_canonical_proof
+  method: Historical release custody stays in linked engineering records; current editorial guidance describes behavior and limits
+  scope: current_control_repair_and_editorial_cleanup
+  qualification: current_candidate_requires_own_canonical_release_and_installation_proof
