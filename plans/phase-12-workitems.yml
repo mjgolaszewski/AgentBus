@@ -9,7 +9,7 @@ document:
   phase_id: P12
 workitems:
 - id: P12-P1-32
-  status: IN_PROGRESS
+  status: DONE
   summary: Recover committed credential rotations and reject stale profile authority or foreign-service egress
   priority: P1
   acceptance:
@@ -19,7 +19,7 @@ workitems:
   - Keep client modules below800LOC through a narrow profile-persistence owner; preserve original behavioral oracles and qualify final source canonically
   acceptance_evidence: [test, python314-compatibility, release-smoke]
 - id: P12-P1-31
-  status: IN_PROGRESS
+  status: DONE
   summary: Record complete poll observations and preserve same-session cursor high-water
   priority: P1
   acceptance:

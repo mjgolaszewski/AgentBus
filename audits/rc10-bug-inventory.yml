@@ -13,30 +13,30 @@ bugs:
   correction: fresh authenticated service snapshot retires prior cached broadcast_poll_presentation_only
   proof: existing poll and message-lifecycle populations; 88 focused cases passed
 - id: poll_observation_missing
-  disposition: focused_green160_accepted_final_subject_pending
+  disposition: focused_green188_independently_accepted_canonical_pending
   cause: foreground poll displays and consumes message without advancing observation high_water
   correction: complete foreground observation under fresh exact-scope credential-bound profile lock
   proof: new launcher red case fails before repair; no extra inbox read should be required
 - id: stale_cursor_save
-  disposition: focused_green160_accepted_final_subject_pending
+  disposition: focused_green188_independently_accepted_canonical_pending
   cause: serialized stale whole-profile save can overwrite newer ACK and observed cursors
   correction: merge cursor maxima for matching session scope; explicit rebind keeps intentional reset
   proof: new launcher red case fails before repair; existing rebind preservation case passes
 - id: stale_profile_authority
-  disposition: source_fix_authored_characterization_and_green_pending
+  disposition: focused_green188_independently_accepted_canonical_pending
   cause: stale whole-profile writer can replace newer session secret STOP or staged recovery intent
   correction: private read-snapshot compare_and_swap under existing lock; independent metadata merge and conflicting intent rejection
-  proof: original frozen six-case RED subject retained; snapshot and concurrent-intent controls added to stacked candidate
+  proof: all six original RED failures reproduced; loaded-snapshot and concurrent-intent controls pass in independently accepted188test cohort
 - id: committed_rotation_lost_response
-  disposition: source_fix_authored_characterization_and_green_pending
+  disposition: focused_green188_independently_accepted_canonical_pending
   cause: old revoked secret info preflight prevents recovery of already committed rotation receipt
   correction: exact retained grant and staged secret recover canonical receipt directly; new rotation still requires valid current session
-  proof: isolated actual ParticipationStore revokes old secret before client retry; retained request and receipt equality plus STOP preservation
+  proof: isolated actual ParticipationStore revokes old secret before retry; identical retained request and receipt plus STOP preservation passed in188test cohort
 - id: bound_service_check_after_credential_egress
-  disposition: source_fix_authored_characterization_and_green_pending
+  disposition: focused_green188_independently_accepted_canonical_pending
   cause: checked_profile and rebind compare service binding after sending session proof; file enrollment lacks early bound-service check
   correction: reject service mismatch before credential-bearing info enrollment or rotation requests
-  proof: request-observation controls require zero API calls and unchanged private staging on mismatch
+  proof: request-observation controls passed with zero API calls and unchanged private staging on mismatch
 - id: stale_release_mutation_target
   disposition: corrected_awaiting_governed_preparation
   cause: version-drift negative control still searched prior package version after candidate bump
@@ -47,6 +47,9 @@ bugs:
   correction: present behavior and limits in product guides; retain historical subjects in release and engineering evidence
   proof: per-document digests dispositions and changed-span review in editorial inventory
 not_bugs:
+- report: caller_selects_another_valid_local_profile
+  disposition: selected_session_credential_possession_is_the_current_authority_boundary
+  evidence: service_authenticates_supplied_exact_session_not_originating_OS_process_or_conversation; shared_file_credential_isolation_is_not_claimed
 - report: historical_query_ACK_guard
   disposition: expected_stateless_query_semantics_supported_recovery_verified
   evidence: ordinary inbox advanced observation and explicit handled ACK succeeded without reset

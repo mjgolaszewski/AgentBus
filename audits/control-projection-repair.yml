@@ -21,7 +21,7 @@ repair:
   compatibility: additive check-in response; unchanged paths Slack protocol and database schema
 proof:
   populations: [tests/test_poll_client.py, tests/test_message_lifecycle.py, tests/test_poll_projection_recovery.py, tests/test_control_store.py]
-  status: focused_88_lint_and_two_owner_typing_passed_independently_accepted_canonical_pending
+  status: expanded_188_lint_and_seven_owner_typing_passed_independently_accepted_canonical_pending
   preparation: offline root-version lock and original owner reconciliation passed; authored stale version-mutation target corrected after failed governance and independent handback
   generated_population: ordinary three new client controls; contract one new service control; compatibility all four
 editorial:

@@ -56,7 +56,7 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines: [[1, 105]]
   line_count: 105
-  sha256: 532447f09ea4de36f1e7fc73dea6b2dc91316e78e239047f8df5520d9b388ad9
+  sha256: 8483d66c77f82844ba1f4f9cd8c57666c44a8f414e4221375ee59be8e31b55e6
   baseline_sha256: 486989ca8ea9e296a2dce9fe025313aa5c5f73606531fb405a0c338ee953b4c3
   disposition: updates
   review_basis: Prior full-document review retained at pinned baseline; RC9 changed spans reviewed in section context, with README rewritten and reviewed in full. Current whole-file hash and range recorded.
@@ -595,9 +595,9 @@ documents:
 
 - document: phases/phase-12-log.yml
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 375]]
-  line_count: 375
-  sha256: e466816ca175fec71ecb928d05b5629f6b4a7196de1e01747ad54e5781f1947c
+  reviewed_lines: [[1, 376]]
+  line_count: 376
+  sha256: f232f75e7ba3e7f2f07d340284ca76d58510ed82dae8f8b686f24f820c882d17
   baseline_sha256: d178c45254cbf9be2794a1957eec80d03d510cca93fb8d930eaecba29d671896
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -846,7 +846,7 @@ documents:
   review_status: changed_spans_reviewed_in_context
   reviewed_lines: [[1, 336]]
   line_count: 336
-  sha256: c981e2d50d96ff1fe62f3a9c23a6198454a5daaa25672710adc6b7b8762aa0da
+  sha256: f10499b80a07619e7a69bf80ac15426f25d5aaa41543e740342efc851998366c
   baseline_sha256: 1c632ee46d55ab7ba403af50842aa97a1a733cadd8798eb694257d3f6e53cfbc
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
@@ -1026,16 +1026,16 @@ documents:
   review_status: full_document_review
   reviewed_lines: [[1, 34]]
   line_count: 34
-  sha256: 1fdc0408235d3002999712ffdd77016cb582debc72b6852308933493fc95e10f
+  sha256: 05ba81588a856584cfab2499765efe9ea2f9361079ac31310c0c80b513dc3c57
   baseline_sha256: null
   disposition: new
   review_basis: New bounded repair audit reviewed in full; source assertions distinguished from unexecuted qualification.
 
 - document: audits/rc10-bug-inventory.yml
   review_status: full_document_review
-  reviewed_lines: [[1, 69]]
-  line_count: 69
-  sha256: 7bb9790bab9ed18f2e851b5273e7397b58a5e569db90073dd7926434920dd854
+  reviewed_lines: [[1, 72]]
+  line_count: 72
+  sha256: 1e6d2f4413a33c925a740b5d352dce8409c09969269539c14220da9673045962
   baseline_sha256: null
   disposition: new
   review_basis: Full new bug-disposition inventory reviewed; reproduced defects distinguished from expected denials and accepted future limitations.
