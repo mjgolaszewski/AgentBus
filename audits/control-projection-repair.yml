@@ -22,7 +22,7 @@ repair:
 proof:
   populations: [tests/test_poll_client.py, tests/test_message_lifecycle.py, tests/test_poll_projection_recovery.py, tests/test_control_store.py]
   status: expanded_188_lint_and_seven_owner_typing_passed_independently_accepted_canonical_pending
-  preparation: offline root-version lock and original owner reconciliation passed; authored stale version-mutation target corrected after failed governance and independent handback
+  preparation: original234 owner reconciliation governance source lint and full typing independently accepted; first failures retained in phase evidence, canonical archive and installation remain pending
   generated_population: owner-generated270ordinary_586contract_711Python314 manifests include all applicable observation authority rotation and service snapshot controls; final provider execution remains pending
 editorial:
   rule: current guides describe present behavior and limits; chronology belongs to release and engineering records
