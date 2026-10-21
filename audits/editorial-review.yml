@@ -386,9 +386,9 @@ documents:
 
 - document: docs/contracts.md
   review_status: changed_spans_reviewed_in_context
-  reviewed_lines: [[1, 127]]
-  line_count: 127
-  sha256: bf0fb381bf60b21824926d6ba4b139037d4c97c10faf68e6f2d56cbdb9abae15
+  reviewed_lines: [[1, 128]]
+  line_count: 128
+  sha256: 5b3fd3aed97671860308114ff8a48be0916699feee4917677324194f178c3b15
   baseline_sha256: e1339ee0338de7e0976fd09f3cb48891371068323d5e5bbd59987caacd310f70
   disposition: updates
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.

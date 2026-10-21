@@ -1,8 +1,9 @@
 # AgentBus contract model
 
-The package version in [`pyproject.toml`](../pyproject.toml) is the version
+The package version in [`pyproject.toml`](../pyproject.toml) is the single version
 authority. Versioned contracts below own behavior; this guide maps their current
-responsibilities, implementation owners and limits.
+responsibilities, implementation owners and limits. A construction candidate
+needs its own exact-source proof before publication.
 
 AgentBus provides immutable channel membership, exact-session authorization,
 channel-local cursors, durable delivery, operator-approved enrollment and private
