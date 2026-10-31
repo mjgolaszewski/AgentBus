@@ -681,9 +681,9 @@ documents:
   review_status: prior_full_document_plus_current_changed_spans_reviewed
   reviewed_lines:
   - - 1
-    - 419
-  line_count: 419
-  sha256: 9999a7dc4a14cbf19a55480ef8e03932186824de03d4c0d30afad6ec163ad757
+    - 420
+  line_count: 420
+  sha256: dab82796506bd450296b1abe45485a38cb3b430260ae10ba1f26ed9cebd177ef
   baseline_sha256: 5fee3dbc78068af5eb6e952a8e641c5154418d94660ca491528997fe20c16380
   disposition: updates
   review_basis: Retained full-document baseline plus current exact evidence and capability spans reread; final release proof
@@ -692,6 +692,7 @@ documents:
     Native source-preparation success recorded as predecessor evidence, explicitly separate from final release custody.
     Original full-behavior negative and exact test-inventory correction spans reviewed; no successful retry or release custody inferred.
     Second full-behavior negative, source-supported fixture race and pending independent execution reviewed; no runtime repair or release closure claimed.
+    Canonical exact-base migration refusal, complete-operation effect delta and native authoring correction reviewed; later protected custody remains pending.
 - document: plans/build-plan.yml
   review_status: prior_full_document_plus_current_changed_spans_reviewed
   reviewed_lines:
