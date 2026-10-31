@@ -758,3 +758,84 @@ def test_federation_presentation_keeps_controls_compact_and_blocks_bounded(pair)
         invalid_frame = encode_frame(origin, 'message', 'invalid-display', destination.instance_id,
                                      json.dumps(invalid_payload))
         assert '📤' not in json.dumps(carrier_blocks(invalid_frame), ensure_ascii=False)
+
+
+@pytest.mark.parametrize('text', [
+    'Please explain the agentbus_federation field.',
+    json.dumps({'agentbus': 2, 'sender': 'local:demo:sender', 'text': 'agentbus_federation discussion'}),
+    json.dumps({'note': 'agentbus_federation discussion'}),
+])
+def test_federation_classifier_defers_plain_mentions_and_ordinary_envelopes(text):
+    from src.agentbus_federation_runtime_service import SlackFederationBridge
+
+    bridge = object.__new__(SlackFederationBridge)
+    bridge.channel = 'C123456'
+    received = []
+    bridge.receive = lambda event: received.append(event)
+    assert bridge.accept_event({'type': 'message', 'channel': bridge.channel, 'text': text}) is False
+    assert received == []
+
+
+@pytest.mark.parametrize('source', ['human', 'trusted-bot'])
+def test_socket_retains_ordinary_protocol_discussion_with_federation_enabled(tmp_path, source):
+    from src.agentbus_federation_runtime_service import SlackFederationBridge
+    from src.agentbus_service import SendMessage, encode_envelope
+
+    store = MessageStore(tmp_path / 'ordinary.sqlite3')
+    store.channels.configure(('C123456',))
+    bridge = object.__new__(SlackFederationBridge)
+    bridge.channel = 'C123456'
+    def reject(_event):
+        raise ValueError('Not a federation frame')
+    bridge.receive = reject
+    receiver = SlackReceiver(store, bridge.channel, 'B123', federation_bridge=bridge)
+    acknowledgements = []
+    class ProviderSocket:
+        def send_socket_mode_response(self, response):
+            acknowledgements.append(response.envelope_id)
+    text = 'Please explain the agentbus_federation field.'
+    event = {'type': 'message', 'channel': bridge.channel, 'user': 'U123', 'text': text, 'ts': '10.000001'}
+    expected_sender, expected_assurance = 'slack:U123', 'slack-human'
+    if source == 'trusted-bot':
+        store.participation.set_policy(scope='global', scope_key='*', actor='operator', values={
+            'initial_interval_seconds': 60, 'backoff_factor': 2, 'max_interval_seconds': 1920,
+            'control_check_max_seconds': 60, 'jitter_fraction': 0, 'overdue_grace_seconds': 120,
+            'presentation_budget_bytes': None})
+        route = 'local:agentbus:sender'
+        grant = store.channels.issue_grant(channel=bridge.channel, repo='agentbus', route=route, actor='operator')
+        store.channels.enroll(grant, repo='agentbus', route=route, display_name='Sender', session_secret='s' * 32)
+        event = {'type': 'message', 'subtype': 'bot_message', 'channel': bridge.channel,
+                 'app_id': 'A123', 'bot_id': 'B123', 'ts': '10.000001',
+                 'text': encode_envelope(SendMessage(sender=route, recipient='all', audience='broadcast', text=text))}
+        expected_sender, expected_assurance = route, 'legacy'
+    try:
+        receiver(ProviderSocket(), SocketModeRequest(type='events_api', envelope_id='ordinary', payload={'event': event}))
+        assert acknowledgements == ['ordinary']
+        messages = store.read(bridge.channel).messages
+        assert len(messages) == 1
+        assert messages[0].text == text and messages[0].sender == expected_sender
+        assert messages[0].sender_assurance == expected_assurance
+        assert store._db.execute('SELECT count(*) FROM federated_messages').fetchone()[0] == 0
+    finally:
+        receiver._commands.shutdown()
+        store.close()
+
+
+@pytest.mark.parametrize('recoverable', [False, True])
+def test_federation_candidate_rejection_keeps_distinct_custody_failure(recoverable):
+    from src.agentbus_federation_inbox_service import InboxProjectionError
+    from src.agentbus_federation_runtime_service import SlackFederationBridge
+
+    bridge = object.__new__(SlackFederationBridge)
+    bridge.channel = 'C123456'
+    def reject(_event):
+        if recoverable:
+            raise InboxProjectionError('retained custody needs recovery')
+        raise ValueError('invalid signature or foreign destination')
+    bridge.receive = reject
+    event = {'type': 'message', 'channel': bridge.channel, 'text': json.dumps({'agentbus_federation': 1})}
+    if recoverable:
+        with pytest.raises(InboxProjectionError):
+            bridge.accept_event(event)
+    else:
+        assert bridge.accept_event(event) is True

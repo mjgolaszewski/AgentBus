@@ -8,6 +8,39 @@ document:
   path: plans/phase-12-workitems.yml
   phase_id: P12
 workitems:
+- id: P12-P1-33
+  priority: P1
+  status: IN_PROGRESS
+  summary: Exact-session request lifecycle and local-profile recovery with non-steering control precedence
+  acceptance:
+  - Text bounds fail before staging; uncertain requests retain the original UUID payload epoch and private stage
+  - Enrollment expiry guidance is specific only after exact retained subject and secret proof; consumed retries return the original session
+  - Introduction staging survives lost responses and concurrent submission; optional introduction failure cannot block policy-ACK worker activation
+  - Rename serializes both profiles and preserves newer credentials STOP recovery intents and cursor maxima before durable source removal
+  - Fresh controls precede cached work; nonterminal outcomes refresh without semantic ACK and only exact terminal truth retires presentation
+  - Authored request UUID queries require exact active session and inbox; foreign absent or retired evidence remains unknown and cannot authorize resend; retained transport custody never implies execution or semantic ACK
+  acceptance_evidence: [test, contract-test, python314-compatibility, release-smoke]
+- id: P12-P1-34
+  priority: P1
+  status: IN_PROGRESS
+  summary: One configured Slack command and standard quiet fresh-install polling without changing existing policy records
+  acceptance:
+  - Both dispatch layers accept only the operator-configured exact command with unchanged user and channel authorization; help and approval guidance agree
+  - Fresh empty participation stores initialize the standard minute ladder once; existing policy history identities and ACK authority remain intact
+  - Empty polling stays silent, controls keep a separate bound, and native workers handle idle waits without repeated model turns
+  - Shipped Codex skill avoids pre-enrollment roster prerequisites and accurately describes staged recovery and current scope
+  acceptance_evidence: [test, contract-test, python314-compatibility, release-smoke]
+- id: P12-P1-35
+  priority: P1
+  status: IN_PROGRESS
+  summary: Complete source and editorial audit dispositions plus final exact-subject release custody
+  acceptance:
+  - Ordinary Slack protocol discussion continues through normal ingress; signed-frame validation and recoverable custody failure boundaries remain unchanged
+  - Federation obligation and directory reads never publish a writer transaction that subsequently rolls back
+  - History inflation lifecycle projection and public cursors remain writer-stable during retention; experimental terminal evidence binds exact thread and turn; caught provider failures remain degraded while other channels progress
+  - Source and editorial records contain exact per-file coverage and dispositions; unresolved reports and unsupported guarantees are explicit
+  - Final required graph protected PR exact-main archive isolated installation and custodian handback bind the final subject; historical component proof is not relabelled
+  acceptance_evidence: [security-secret-scan, architecture-test, test, contract-test, runtime-smoke, release-smoke]
 - id: P12-P1-32
   status: DONE
   summary: Recover committed credential rotations and reject stale profile authority or foreign-service egress
@@ -126,7 +159,7 @@ workitems:
   acceptance_evidence: [test, release-smoke]
 - id: P12-P1-14
   status: DONE
-  summary: deliver Issue94 RC5 bounded invariant-first delivery wake alias assurance and onboarding corrections; audits/rc5-invariant-construction.yml owns edge coverage
+  summary: Bounded invariant-first delivery wake alias assurance and onboarding corrections; audits/rc5-invariant-construction.yml owns edge coverage
   priority: P0
   acceptance:
   - Issue94 invariant domain law canonical owner primitive transitions exclusions producer consumer controls and exact-source evidence are recorded in audits/rc5-invariant-construction.yml
@@ -169,7 +202,7 @@ workitems:
 - id: P12-P1-13
   priority: P1
   status: DONE
-  summary: deliver RC4 grouped private health observed service workers and bounded read-only operator diagnostics
+  summary: Grouped private health observed service workers and bounded read-only operator diagnostics
   acceptance:
   - Health workers doctor pending and explain authorize the exact Slack operator allowlist before channel-scoped resource lookup
   - Existing task observations report attempts completed cycles backoff failure and restart limits without raw exception text or remote execution claims

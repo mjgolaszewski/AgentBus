@@ -31,7 +31,7 @@ def request_stage(values, profile, key, payload, epoch, *, existing=False):
     fingerprint = hashlib.sha256(authored.encode()).hexdigest()
     expected = {'scope':binding, 'request_id':key, 'payload':payload, 'fingerprint':fingerprint}
     if not path.exists() and existing:
-        raise ClientError('Original lifecycle request stage is missing; never replace its epoch or request identity')
+        raise ClientError('Original lifecycle request stage is missing; omit --message-id for a new first send. Never replace the epoch or identity of an uncertain prior request')
     if not path.exists():
         if not isinstance(epoch, str) or not re.fullmatch('[0-9a-f]{64}', epoch):
             raise ClientError('No current service-issued request epoch is available')

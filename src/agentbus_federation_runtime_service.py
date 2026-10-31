@@ -15,7 +15,7 @@ from src.agentbus_federation_bridge_service import FederationBridge
 from src.agentbus_federation_directory_service import DirectorySynchronizer
 from src.agentbus_federation_inbox_service import project_message, project_ordinary
 from src.agentbus_federation_slack_service import SlackFederationProvider, publisher_id
-from src.agentbus_federation_wire_service import Binding, Identity, key_generation
+from src.agentbus_federation_wire_service import MAX_FRAME_BYTES, Binding, Identity, key_generation
 
 
 class SlackFederationBridge(FederationBridge):
@@ -26,7 +26,15 @@ class SlackFederationBridge(FederationBridge):
                 or event.get('hidden') or event.get('subtype') not in (None, 'bot_message', 'thread_broadcast')):
             return False
         text = event.get('text')
-        if not isinstance(text, str) or 'agentbus_federation' not in text[:200]:
+        if not isinstance(text, str) or not text.lstrip().startswith('{'):
+            return False
+        try:
+            if len(text) > MAX_FRAME_BYTES or len(text.encode('utf-8')) > MAX_FRAME_BYTES:
+                return False
+            candidate = json.loads(text)
+        except (ValueError, RecursionError):
+            return False
+        if not isinstance(candidate, dict) or 'agentbus_federation' not in candidate:
             return False
         try:
             self.receive({'publisher_id': publisher_id(event, self.channel), 'text': text, 'ts': event.get('ts')})

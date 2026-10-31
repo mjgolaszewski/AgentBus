@@ -1,7 +1,7 @@
 document:
   kind: agentbus_federation_contract
   id: agentbus-federation-v1
-  version: 1.0.0
+  version: 1.0.1
   status: active
   path: contracts/federation/v1/federation.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/48
@@ -153,6 +153,9 @@ contracts:
     receipt: signed_destination_origin_message_identity_and_payload_hash_after_destination_commit
     recovery: bounded_complete_provider_history_before_checkpoint_advance
     ingress: existing_socket_listener_only_no_new_remote_http_endpoint
+    ingress_classification: bounded_top_level_JSON_federation_marker_only; plain_mentions_and_protocol2_envelopes_continue_through_ordinary_ingress
+    classification_authority: none; existing_origin_signature_destination_and_custody_checks_remain_mandatory
+    classification_failure: malformed_candidate_does_not_gain_message_authority; recoverable_custody_errors_still_withhold_transport_ACK
     enqueue: optional_authenticated_local_api_separate_from_existing_protocol_2_send_response
 
 proof_obligations:
@@ -188,3 +191,9 @@ acceptance_gates:
   identity_and_deduplication: [FB-INV-002, FB-INV-004, FB-INV-010, FB-PO-002]
   directory: [FB-INV-005, FB-INV-006, FB-INV-009, FB-INV-012, FB-PO-003, FB-PO-007]
   owner_wake: [FB-INV-008, FB-PO-005]
+
+shared_connection_reads:
+  owner: FederationStore
+  rule: obligation_and_directory_snapshots_share_writer_lock_before_SQLite_fetch
+  guarantee: uncommitted_writer_state_is_not_published_before_commit_or_rollback
+  exclusions: no_inference_about_prior_hang_root_cause_no_new_remote_custody_or_execution_authority

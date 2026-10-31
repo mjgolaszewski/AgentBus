@@ -199,3 +199,62 @@ def test_directory_delta_gap_is_explicit_and_requires_resync():
     )
     assert gap["state"] == "gap"
     assert gap["revision"] == 4
+
+
+@pytest.mark.parametrize('reader', ['obligation', 'directory'])
+def test_public_federation_reads_never_publish_rolled_back_custody_or_directory(reader):
+    from concurrent.futures import ThreadPoolExecutor
+    from queue import Queue
+
+    federation = store()
+    federation.accept(origin_instance_id='home', origin_message_id='m1', destination_instance_id='remote', payload='hello')
+    federation.apply_directory(origin_instance_id='remote', route='remote:agentbus:agent',
+                               revision=1, state='current', metadata={'role': 'committed'})
+    real_lock = federation._lock
+    reader_id = [None]
+    staged = threading.Event()
+    handoff = Queue()
+    class ScheduledLock:
+        def __enter__(self):
+            if threading.get_ident() == reader_id[0]:
+                if not real_lock.acquire(blocking=False):
+                    handoff.put('reader_waiting_for_commit')
+                    real_lock.acquire()
+            else:
+                real_lock.acquire()
+            return self
+        def __exit__(self, *_args):
+            real_lock.release()
+    federation._lock = ScheduledLock()
+    def writer():
+        with federation._lock:
+            federation._db.execute('BEGIN')
+            try:
+                if reader == 'obligation':
+                    federation._db.execute("UPDATE bridge_obligations SET state='destination_accepted'")
+                else:
+                    federation._db.execute("UPDATE remote_directory SET metadata=?", ('{"role":"uncommitted"}',))
+                staged.set()
+                handoff.get(timeout=5)
+            finally:
+                federation._db.rollback()
+    def observe():
+        reader_id[0] = threading.get_ident()
+        assert staged.wait(timeout=5)
+        try:
+            if reader == 'obligation':
+                result = federation.obligation('home', 'm1', 'remote')['state']
+            else:
+                result = federation.directory(origin_instance_id='remote')[0]['metadata']['role']
+            return result
+        finally:
+            handoff.put('reader_returned')
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            writing = pool.submit(writer)
+            reading = pool.submit(observe)
+            observed = reading.result(timeout=10)
+            writing.result(timeout=10)
+        assert observed == ('origin_accepted' if reader == 'obligation' else 'committed')
+    finally:
+        federation._db.close()

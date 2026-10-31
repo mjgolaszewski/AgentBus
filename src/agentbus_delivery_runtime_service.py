@@ -19,11 +19,13 @@ class LocalDeliveryWorker:
         self.store, self.poster, self.channel = store, poster, channel
         self.wake = asyncio.Event()
         self.cycle_attempts = 0
+        self.cycle_incomplete = False
         self.trusted_bot_id: str | None = None
         self.federation: FederationBridge | None = None
 
     async def recover_once(self, rows: list[dict]) -> set[str]:
         if not self.trusted_bot_id or not callable(getattr(self.poster, 'observed_messages', None)):
+            self.cycle_incomplete = True
             self.store.local_delivery.defer_recovery(rows)
             return set()
         try:
@@ -53,6 +55,7 @@ class LocalDeliveryWorker:
             return {row['request_id'] for row in rows}
         except (ProviderUnavailable, sqlite3.Error, OSError, ValueError, KeyError, TypeError):
             self.store.local_delivery.defer_recovery(rows)
+            self.cycle_incomplete = True
             LOGGER.warning('Local provider history incomplete; uncertain custody retained')
             return set()
 
@@ -60,6 +63,7 @@ class LocalDeliveryWorker:
         from src.agentbus_service import SendMessage
 
         self.cycle_attempts = 0
+        self.cycle_incomplete = False
         self.store.local_delivery.settle_expired(self.channel)
         pending = self.store.local_delivery.pending(channel=self.channel)
         uncertain = self.store.local_delivery.recovery_pending(self.channel)
@@ -94,8 +98,10 @@ class LocalDeliveryWorker:
                     reference = await self.poster.post(message, message_id=row['request_id'])
                     self.store.local_delivery.complete(self.channel, row['request_id'], reference)
                 except ProviderCarrierRejected as exc:
+                    self.cycle_incomplete = True
                     self.store.local_delivery.blocked(self.channel, row['request_id'], exc.reason, exc.provider_ref)
                 except (HTTPException, sqlite3.Error, OSError, ValueError):
+                    self.cycle_incomplete = True
                     self.store.local_delivery.uncertain(self.channel, row['request_id'])
                     LOGGER.warning('Ordinary provider submission incomplete; local custody retained')
             if attempted == before or attempted >= budget or time.monotonic() >= deadline:
@@ -190,6 +196,7 @@ class DeliveryCoordinator:
                 break
             try:
                 quota-=await worker.submit_once(budget=quota,deadline=deadline)
+                self.cycle_incomplete = self.cycle_incomplete or worker.cycle_incomplete
             except (sqlite3.Error,OSError,ValueError):
                 self.cycle_incomplete = True
                 quota -= worker.cycle_attempts

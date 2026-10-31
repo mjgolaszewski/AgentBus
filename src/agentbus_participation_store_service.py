@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 from src.agentbus_message_assurance_service import route_parts
 from src.agentbus_participation_service import (
+    DEFAULT_POLL_POLICY,
     MAX_ALIASES_PER_CHAT,
     MAX_ENROLLED_CHATS,
     EffectivePolicy,
@@ -138,6 +139,16 @@ class ParticipationStore:
                     actor TEXT NOT NULL
                 )
             """)
+
+    def initialize_default_policy(self) -> bool:
+        """Bootstrap only an empty participation store; preserve operator history."""
+        with self._lock, atomic(self._db):
+            if (self._db.execute('SELECT 1 FROM poll_policy_revisions LIMIT 1').fetchone()
+                    or self._db.execute('SELECT 1 FROM chat_identities LIMIT 1').fetchone()):
+                return False
+            self.set_policy(scope='global', scope_key='*', values=dict(DEFAULT_POLL_POLICY),
+                            actor='installation-default')
+            return True
 
     def issue_profile_handoff(self, *, chat_id: str, repo: str, route: str, actor: str) -> str:
         """Operator authorizes one legacy profile UUID to enter service custody."""

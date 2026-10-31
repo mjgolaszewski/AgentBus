@@ -6,6 +6,9 @@ from uuid import UUID, uuid4
 
 from src.agentbus_transport_client import ClientError, profile_session_token
 
+# Protocol-2 text bound; characters, not UTF-8 bytes. Keep service parity tested.
+MAX_TEXT_CHARACTERS = 6000
+
 
 def send_command(ns, values, checked_profile, resolve_identity, api):
     send_profile: dict | None = None
@@ -53,9 +56,18 @@ def send_command(ns, values, checked_profile, resolve_identity, api):
 
     if send_profile is None:
         raise ClientError("A joined sender profile is required")
+    return deliver_payload(values, send_profile, info, payload, api,
+                           message_id=getattr(ns, 'message_id', None),
+                           legacy_replay=getattr(ns, 'legacy_replay', False))
+
+
+def deliver_payload(values, send_profile, info, payload, api, *, message_id=None, legacy_replay=False):
+    """Shared send and introduction custody; callers supply literal, already-expanded text."""
+    if not 1 <= len(payload["text"]) <= MAX_TEXT_CHARACTERS:
+        raise ClientError("Message text must contain 1..6000 characters; no message submitted. "
+                          "Split new work before sending; preserve any original retry stage.")
     session = profile_session_token(send_profile)
-    explicit = getattr(ns, 'message_id', None)
-    legacy_replay = getattr(ns, 'legacy_replay', False)
+    explicit = message_id
     if legacy_replay and (explicit is None or values.get('_AGENTBUS_DELIVERY_VERSION') != '2'):
         raise ClientError('Legacy replay requires an original --message-id and an active lifecycle server')
     capable = values.get('_AGENTBUS_DELIVERY_VERSION') in {'1','2'} and session is not None
@@ -85,4 +97,11 @@ def send_command(ns, values, checked_profile, resolve_identity, api):
             raise ClientError('Request expired. Its identity is retained; do not resubmit under a new UUID.', status=410) from None
         if exc.status in {409, 426}:
             raise ClientError(f'{exc} Request identity or capability rejected; preserve the original record.', status=exc.status) from None
-        raise ClientError(f'{exc} Retry the identical request with --message-id {key}; acceptance may be uncertain.') from None
+        if exc.status in {400, 401, 403, 404, 413, 422}:
+            raise ClientError(
+                f'{exc} Inspect validation, authorization and destination before retrying. '
+                f'Preserve the original request stage and UUID {key}; this response does not establish custody.',
+                status=exc.status,
+            ) from None
+        raise ClientError(f'{exc} Retry the identical request with --message-id {key}; acceptance may be uncertain.',
+                          status=exc.status) from None

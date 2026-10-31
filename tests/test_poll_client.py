@@ -42,7 +42,7 @@ def test_read_only_spool_and_worker_observation_create_no_state(tmp_path):
         assert poll.worker_running(path) is True
 
 
-def test_worker_empty_cycles_are_silent_and_keep_control_checks_running(tmp_path, monkeypatch):
+def test_worker_empty_cycles_are_silent_and_keep_control_checks_running(tmp_path, monkeypatch, capsys):
     path, profile = profile_at(tmp_path)
     clock = [0.0]
     checks = []
@@ -64,6 +64,7 @@ def test_worker_empty_cycles_are_silent_and_keep_control_checks_running(tmp_path
     poll._worker(path, {"AGENTBUS_URL": profile["service_url"]})
     assert checks == [0.0, 1.0, 2.0]
     assert reads == [0.0, 1.0]
+    assert capsys.readouterr() == ('', '')
     assert poll.peek_event(path, profile) is None
 
 
@@ -403,3 +404,209 @@ def test_foreign_snapshot_projection_is_rejected_before_retirement(tmp_path):
         poll.reconcile_announcement_snapshot(path, {**profile, "channel": "foreign"},
             {"pending_announcement_ids": []}, {"expired"})
     assert poll.spool_path(path).read_bytes() == before
+
+
+def test_foreground_check_in_projects_fresh_control_before_cached_message(tmp_path, monkeypatch, capsys):
+    from src import agentbus_client as client
+    from src.agentbus_parser_client import parse_args
+    path, profile = profile_at(tmp_path)
+    poll.change_spool(path, profile, lambda state: poll._append(state,
+        {'kind': 'MESSAGE', 'id': '7', 'message': {'cursor': 7}}))
+    values = {'AGENTBUS_URL': profile['service_url'], 'AGENTBUS_CONSUMER_STATE_DIR': str(tmp_path)}
+    monkeypatch.setattr(client, 'control_profile', lambda *_: (profile, {}))
+    control = {'control_id': 'fresh-stop', 'kind': 'stop_end_turn', 'reason': 'stop'}
+    monkeypatch.setattr(client, 'api', lambda *_args, **_kwargs: {'controls': [control]})
+    ns = parse_args(['check-in', '--identity', profile['identity']])
+    assert client._execute_command(ns, tmp_path, values) == 0
+    assert poll.peek_event(path, profile)['control'] == control
+    assert json.loads(path.read_text())['ack_cursor'] == 0
+    assert 'fresh-stop' in capsys.readouterr().out
+
+
+def test_complete_retires_cached_notice_without_semantic_ack(tmp_path, monkeypatch, capsys):
+    from src import agentbus_client as client
+    from src import agentbus_lifecycle_client as lifecycle
+    from src.agentbus_parser_client import parse_args
+    path, profile = profile_at(tmp_path)
+    poll.change_spool(path, profile, lambda state: poll._append(state,
+        {'kind': 'MESSAGE', 'id': '7', 'message': {'cursor': 7}}))
+    values = {'AGENTBUS_URL': profile['service_url'], 'AGENTBUS_CONSUMER_STATE_DIR': str(tmp_path)}
+    monkeypatch.setattr(client, 'load_profile', lambda *_args, **_kwargs: profile)
+    monkeypatch.setattr(lifecycle, 'message_command', lambda *_args, **_kwargs:
+                        {'cursor': 7, 'state': 'handled', 'receipt_id': 'original'})
+    ns = parse_args(['complete', '--identity', profile['identity'], '--cursor', '7'])
+    assert client.cli_lifecycle_message(ns, tmp_path, values) == 0
+    assert poll.read_spool_events(path, profile=profile) == []
+    assert json.loads(path.read_text())['ack_cursor'] == 0
+    assert 'original' in capsys.readouterr().out
+
+
+def test_cached_message_retirement_requires_fresh_exact_terminal_outcome(tmp_path):
+    import pytest
+
+    path, profile = profile_at(tmp_path)
+    profile['message_lifecycle_version'] = 1
+    event = {'kind': 'MESSAGE', 'id': '7', 'message': {'cursor': 7, 'lifecycle': {'state': 'unclaimed'}}}
+    values = {'AGENTBUS_URL': profile['service_url']}
+    for state in ('unclaimed', 'picked_up', 'recovery_required', 'unknown', 'handled', 'expired_unclaimed'):
+        poll.change_spool(path, profile, lambda spool: poll._append(spool, event))
+        def read(*_args, **_kwargs):
+            return {'cursor': 7, 'scope': 'recipient', 'state': state}
+        retired = poll.reconcile_message_event(values, path, profile, event, api_call=read)
+        assert retired == (state in {'handled', 'expired_unclaimed'})
+        assert bool(poll.read_spool_events(path, profile=profile)) != retired
+    poll.change_spool(path, profile, lambda spool: poll._append(spool, event))
+    for response in ({'cursor': 8, 'scope': 'recipient', 'state': 'handled'},
+                     {'cursor': 7, 'scope': 'sender', 'state': 'handled'}):
+        with pytest.raises(poll.ClientError, match='scope differs'):
+            poll.reconcile_message_event(values, path, profile, event, api_call=lambda *_a, **_k: response)
+        assert poll.read_spool_events(path, profile=profile) == [event]
+    assert json.loads(path.read_text())['ack_cursor'] == 0
+
+
+def test_worker_skips_terminal_presentation_and_advances_only_private_scan(tmp_path, monkeypatch):
+    path, profile = profile_at(tmp_path)
+    profile['message_lifecycle_version'] = 1
+    path.write_text(json.dumps(profile))
+    def read(_values, route, *_args, **_kwargs):
+        if route.endswith('/check-in'):
+            profile['participation']['stopped'] = True
+            path.write_text(json.dumps(profile))
+            return {'revision': 'r1', 'values': POLICY, 'sources': {}, 'ack_required': False}
+        return {'messages': [{'cursor': i, 'lifecycle': {'state': state}} for i, state in
+                             enumerate(('handled', 'expired_unclaimed', 'recovery_required'), 1)],
+                'next_cursor': 3, 'has_more': False}
+    monkeypatch.setattr(poll, 'api', read)
+    poll._worker(path, {'AGENTBUS_URL': profile['service_url']})
+    state = json.loads(poll.spool_path(path).read_text())
+    assert state['cursor'] == 3
+    assert [event['id'] for event in state['events']] == ['3']
+    assert json.loads(path.read_text())['ack_cursor'] == 0
+
+
+def test_wake_prompt_uses_observing_inbox_instead_of_stateless_history():
+    from src.agentbus_codex_wake_events_client import _prompt
+    prompt = _prompt('example:project:agent', 'attempt', ['MESSAGE:7'], ack_cursor=3)
+    assert 'agentbus inbox --identity example:project:agent`' in prompt
+    assert '--after' not in prompt
+    assert 'only after handling' in prompt
+
+
+def test_mismatched_completion_keeps_presentation_evidence(tmp_path, monkeypatch):
+    import pytest
+
+    from src import agentbus_client as client
+    from src import agentbus_lifecycle_client as lifecycle
+    from src.agentbus_parser_client import parse_args
+    path, profile = profile_at(tmp_path)
+    event = {'kind': 'MESSAGE', 'id': '7', 'message': {'cursor': 7}}
+    poll.change_spool(path, profile, lambda state: poll._append(state, event))
+    values = {'AGENTBUS_URL': profile['service_url'], 'AGENTBUS_CONSUMER_STATE_DIR': str(tmp_path)}
+    monkeypatch.setattr(client, 'load_profile', lambda *_args, **_kwargs: profile)
+    monkeypatch.setattr(lifecycle, 'message_command', lambda *_args, **_kwargs:
+                        {'cursor': 8, 'state': 'handled'})
+    ns = parse_args(['complete', '--identity', profile['identity'], '--cursor', '7'])
+    with pytest.raises(client.ClientError, match='scope differs'):
+        client.cli_lifecycle_message(ns, tmp_path, values)
+    assert poll.read_spool_events(path, profile=profile) == [event]
+    assert json.loads(path.read_text())['ack_cursor'] == 0
+
+
+def test_stop_precedes_unanswered_poll_without_retiring_other_controls(tmp_path):
+    path, profile = profile_at(tmp_path)
+    events = [{'kind': 'CONTROL', 'id': 'a-poll', 'control': {'kind': 'poll'}},
+              {'kind': 'CONTROL', 'id': 'b-broadcast', 'control': {'kind': 'broadcast'}},
+              {'kind': 'CONTROL', 'id': 'z-stop', 'control': {'kind': 'stop_end_turn'}}]
+    poll.change_spool(path, profile, lambda state: state['events'].extend(events))
+    before = poll.spool_path(path).read_bytes()
+    for _ in range(3):
+        assert poll.peek_event(path, profile, quiet=True)['id'] == 'z-stop'
+    assert poll.spool_path(path).read_bytes() == before
+    assert json.loads(path.read_text())['ack_cursor'] == 0
+    poll.retire_event(path, profile, 'CONTROL', 'z-stop')
+    assert poll.peek_event(path, profile)['id'] == 'a-poll'
+
+
+def test_foreground_poll_checks_fresh_controls_before_presenting_cached_work(tmp_path, monkeypatch, capsys):
+    from src import agentbus_client as client
+    from src.agentbus_parser_client import parse_args
+
+    path, profile = profile_at(tmp_path)
+    event = {'kind': 'MESSAGE', 'id': '7', 'message': {
+        'cursor': 7, 'sender': 'agentbus:peer', 'recipient': profile['identity'],
+        'audience': 'direct', 'kind': 'request', 'text': 'retained unfinished work',
+        'actionable': True, 'lifecycle': {'state': 'picked_up'},
+    }}
+    poll.change_spool(path, profile, lambda spool: poll._append(spool, event))
+    values = {'AGENTBUS_URL': profile['service_url'], 'AGENTBUS_CONSUMER_STATE_DIR': str(tmp_path)}
+    monkeypatch.setattr(client, 'checked_profile', lambda *_args: (profile, {}))
+    monkeypatch.setattr(poll, 'ensure_worker', lambda *_args: None)
+    calls = []
+    control = {'control_id': 'fresh-owner-stop', 'kind': 'stop_end_turn', 'reason': 'stop now'}
+
+    def service(_values, route, body=None, **kwargs):
+        assert route == '/v1/sessions/session-1/check-in'
+        assert kwargs['session_token'] == profile['participation']['session_secret']
+        assert kwargs['inbox_id'] == profile['inbox_id']
+        calls.append(route)
+        return {'controls': [control]}
+
+    monkeypatch.setattr(client, 'api', service)
+    ns = parse_args(['poll', '--identity', profile['identity'], '--check', '--json'])
+    assert client._execute_command(ns, tmp_path, values) == 0
+    result = json.loads(capsys.readouterr().out)
+    assert result['kind'] == 'CONTROL' and result['control'] == control
+    assert calls == ['/v1/sessions/session-1/check-in']
+    assert event in poll.read_spool_events(path, profile=profile)
+    assert json.loads(path.read_text())['ack_cursor'] == 0
+    assert json.loads(path.read_text()).get('observed_cursor', 0) == 0
+
+
+def test_failed_foreground_poll_control_check_preserves_cached_evidence(tmp_path, monkeypatch, capsys):
+    import pytest
+
+    from src import agentbus_client as client
+    from src.agentbus_parser_client import parse_args
+    from src.agentbus_transport_client import ClientError
+
+    path, profile = profile_at(tmp_path)
+    poll.change_spool(path, profile, lambda spool: poll._append(spool, {
+        'kind': 'MESSAGE', 'id': '7', 'message': {'cursor': 7, 'sender': 'agentbus:peer',
+            'recipient': profile['identity'], 'kind': 'request', 'text': 'retain this',
+            'audience': 'direct', 'actionable': True},
+    }))
+    before = poll.spool_path(path).read_bytes()
+    values = {'AGENTBUS_URL': profile['service_url'], 'AGENTBUS_CONSUMER_STATE_DIR': str(tmp_path)}
+    monkeypatch.setattr(client, 'checked_profile', lambda *_args: (profile, {}))
+    monkeypatch.setattr(poll, 'ensure_worker', lambda *_args: None)
+
+    def unavailable(*_args, **_kwargs):
+        raise ClientError('control service unavailable', status=503)
+
+    monkeypatch.setattr(client, 'api', unavailable)
+    ns = parse_args(['poll', '--identity', profile['identity'], '--check', '--json'])
+    with pytest.raises(ClientError, match='control service unavailable'):
+        client._execute_command(ns, tmp_path, values)
+    assert poll.spool_path(path).read_bytes() == before
+    assert capsys.readouterr().out == ''
+    assert json.loads(path.read_text())['ack_cursor'] == 0
+
+
+
+def test_cached_nonterminal_outcome_refreshes_flags_without_retirement_or_ack(tmp_path):
+    path, profile = profile_at(tmp_path)
+    profile['message_lifecycle_version'] = 1
+    event = {'kind': 'MESSAGE', 'id': '7', 'message': {'cursor': 7,
+        'text': 'retain original work', 'lifecycle': {'state': 'picked_up'}}}
+    poll.change_spool(path, profile, lambda spool: poll._append(spool, event))
+    def fresh(*_args, **_kwargs):
+        return {'cursor': 7, 'scope': 'recipient', 'state': 'recovery_required',
+                'lease_elapsed': True, 'owned_by_this_session': False}
+    assert poll.reconcile_message_event({'AGENTBUS_URL': profile['service_url']},
+        path, profile, event, api_call=fresh) is False
+    retained = poll.read_spool_events(path, profile=profile)
+    assert len(retained) == 1 and retained[0]['message']['text'] == 'retain original work'
+    assert retained[0]['message']['lifecycle']['state'] == 'recovery_required'
+    assert retained[0]['message']['lifecycle']['lease_elapsed'] is True
+    assert event['message']['lifecycle']['owned_by_this_session'] is False
+    assert json.loads(path.read_text())['ack_cursor'] == 0

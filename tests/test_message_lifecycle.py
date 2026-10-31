@@ -1275,3 +1275,60 @@ def test_check_in_snapshot_reconciles_expired_announcements_without_ack(lifecycl
         assert stop in [item['control_id'] for item in response.json()['controls']]
     finally:
         client.close()
+
+
+@pytest.mark.parametrize('query', ['read', 'inbox', 'message', 'api_read', 'api_inbox'])
+def test_retirement_cannot_split_payload_and_public_cursor_snapshot(lifecycle, monkeypatch, query):
+    from threading import Event
+    from types import SimpleNamespace
+
+    from src import agentbus_channel_api_service as channel_api
+
+    store, p = lifecycle
+    original = message(store, p['sender'], p['recipient'])
+    store.lifecycle.settle(111)
+    store.retention.archive('C111', actor='operator', request_key='snapshot-archive', apply=True, instant=200)
+    selected, attempted = Event(), Event()
+    def retire():
+        assert selected.wait(3), 'reader never reached snapshot boundary'
+        acquired = store._lock.acquire(blocking=False)
+        if not acquired:
+            attempted.set()
+        try:
+            return store.retention.purge('C111', actor='operator', request_key='snapshot-purge',
+                                         apply=True, instant=221)
+        finally:
+            if acquired:
+                store._lock.release()
+                attempted.set()
+    hook = 'serialize_page' if query.startswith('api_') else '_message'
+    owner = channel_api if query.startswith('api_') else store
+    target = getattr(owner, hook)
+    def paused(*args, **kwargs):
+        selected.set()
+        assert attempted.wait(3), 'retirement did not attempt the writer lock'
+        return target(*args, **kwargs)
+    monkeypatch.setattr(owner, hook, paused)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        retired = pool.submit(retire)
+        if query == 'read':
+            result = store.read('C111').messages[0]
+        elif query == 'inbox':
+            result = store.inbox('C111', p['recipient'].route).messages[0]
+        elif query == 'message':
+            result = store.message('C111', original.cursor)
+        else:
+            monkeypatch.setattr(channel_api, 'resolve_principal', lambda *_args, **_kw: p['recipient'])
+            request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(store=store)))
+            if query == 'api_read':
+                page = channel_api.api_read(request, after=0, recipient=None, limit=100, thread_ts=None)
+            else:
+                page = channel_api.api_inbox(request, p['recipient'].route, after=0, limit=100,
+                                            thread_ts=None, context=False, x_agentbus_session_token=None)
+            result = page['messages'][0]
+        assert (result['text'] if isinstance(result, dict) else result.text) == original.text
+        assert (result['cursor'] if isinstance(result, dict) else result.cursor) == original.cursor
+        assert retired.result(timeout=3)['eligible'] == 1
+    monkeypatch.setattr(owner, hook, target)
+    assert store.message('C111', original.cursor) is None
+    assert store.channels.high_water('C111') == 1

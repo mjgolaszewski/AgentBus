@@ -76,3 +76,24 @@ def test_mandatory_announcement_text_never_clips_or_acknowledges():
         if kind == 'poll':
             assert '--answer' in rendered
         assert json.loads(render_event(event, json_mode=True, budget_bytes=1)) == event
+
+
+
+def test_idle_policy_description_matches_default_and_custom_cap():
+    from src.agentbus_presentation_client import idle_cadence
+
+    assert idle_cadence({'initial_interval_seconds': 60, 'max_interval_seconds': 1920}) == (
+        'idle checks 1, 2, 4, 8, 12, 16, 24, 32 min')
+    assert idle_cadence({'initial_interval_seconds': 60, 'max_interval_seconds': 3000}).endswith('32, 50 min')
+    assert idle_cadence({'initial_interval_seconds': 7, 'max_interval_seconds': 100}) == (
+        'idle checks 7, 14, 28, 56, 84, 100 s')
+
+
+def test_plain_poll_discloses_elapsed_lease_without_claiming_completion():
+    event = message_event()
+    event['message']['lifecycle'] = {'state': 'recovery_required', 'lease_elapsed': True}
+    before = json.dumps(event, sort_keys=True)
+    rendered = render_event(event, json_mode=False, budget_bytes=None)
+    assert '[recovery_required]' in rendered and 'lease elapsed' in rendered
+    assert 'inspect message-status' in rendered
+    assert json.dumps(event, sort_keys=True) == before

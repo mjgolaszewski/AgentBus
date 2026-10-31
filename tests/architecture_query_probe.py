@@ -40,7 +40,7 @@ def assert_query_nonmutation(operations, *, inject=None):
         message = store.append(CHANNEL, '123.456', message)
         principal = store.channels.principal(secret, 'agentbus:query-probe')
         cursor = store.channels.public_cursor(CHANNEL, message.cursor)
-        fixtures = {'session_id':session,'control_id':control,'cursor':cursor}
+        fixtures = {'session_id':session,'control_id':control,'cursor':cursor,'request_id':'11111111-1111-4111-8111-111111111111'}
         query_params = {'repo':'agentbus','chat_id':chat,'identity':principal.route}
         headers = {**AUTH, 'X-AgentBus-Session-Token':secret,
                    'X-AgentBus-Inbox-ID':principal.inbox_id, 'X-AgentBus-Lifecycle-Version':'1'}

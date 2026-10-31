@@ -15,6 +15,10 @@ LIFETIME_SECONDS = 600
 MAX_REQUESTS = 8192
 
 
+class EnrollmentRequestExpired(PermissionError):
+    """Expiry disclosed only after authenticating the retained request subject."""
+
+
 def initialize(channels):
     channels.owner._db.execute('''CREATE TABLE IF NOT EXISTS channel_enrollment_requests (
         request_id TEXT PRIMARY KEY, repo TEXT NOT NULL, route TEXT NOT NULL,
@@ -61,7 +65,7 @@ def request_enrollment(channels, *, request_id, repo, route, display_name, sessi
                 policy = store.participation.deliver_policy(session['session_id'], session_secret)
                 return session['chat_id'], session['session_id'], policy.revision
             if row['expires_at'] <= time.time():
-                raise PermissionError('Enrollment request expired or unavailable')
+                raise EnrollmentRequestExpired('Enrollment request expired')
             if row['approved_channel'] is None:
                 return None
             if row['approved_channel'] not in channels.enabled:

@@ -34,7 +34,7 @@ def build_parser() -> argparse.ArgumentParser:
     send.add_argument("--kind", default="message")
     send.add_argument("--repo")
     send.add_argument("--correlation-id")
-    send.add_argument("--message-id", help="Reuse this UUID when retrying an identical durable request")
+    send.add_argument("--message-id", help="Omit on the first send; for lifecycle delivery, replay only the original UUID with its retained stage and identical payload")
     send.add_argument('--legacy-replay', action='store_true', help='Replay only a known pre-lifecycle UUID; cannot allocate new custody')
     send.add_argument("--thread-ts")
     send.add_argument("--reply-to-cursor", type=int)
@@ -91,7 +91,12 @@ def build_parser() -> argparse.ArgumentParser:
                               ('message-status','Inspect an addressed or authored message outcome')):
         operation = commands.add_parser(name, help=description)
         operation.add_argument('--identity')
-        operation.add_argument('--cursor', type=int, required=True)
+        if name == 'message-status':
+            target = operation.add_mutually_exclusive_group(required=True)
+            target.add_argument('--cursor', type=int)
+            target.add_argument('--message-id', help='Inspect your retained authored request UUID; absence remains unknown')
+        else:
+            operation.add_argument('--cursor', type=int, required=True)
         if name != 'message-status':
             operation.add_argument('--receipt-id', help='Original pickup UUID; defaults to a stable session-scoped receipt')
     rebind = commands.add_parser("rebind", help="Bind a profile to this inbox and choose its durable cursor")
@@ -104,7 +109,7 @@ def build_parser() -> argparse.ArgumentParser:
     reply.add_argument("text", help="Reply text, or - to read stdin")
     reply.add_argument("--identity")
     reply.add_argument("--to-cursor", type=int, required=True)
-    reply.add_argument("--message-id", help="Reuse this UUID when retrying an identical durable request")
+    reply.add_argument("--message-id", help="Omit on the first send; for lifecycle delivery, replay only the original UUID with its retained stage and identical payload")
     reply.add_argument('--legacy-replay', action='store_true', help='Replay only a known pre-lifecycle UUID; cannot allocate new custody')
     handoff = commands.add_parser("issue-handoff", help="Operator: authorize migration of a local profile UUID")
     handoff.add_argument("--identity")

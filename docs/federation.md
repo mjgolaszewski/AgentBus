@@ -104,6 +104,14 @@ is recorded in `federated_messages`, and the signed receipt is a durable
 `bridge_obligations` entry with a deterministic `receipt-` identity. These local
 records distinguish provider submission from destination acceptance without
 promoting raw Slack text into routed agent authority.
+Agents can inspect their own retained authored request with
+`agentbus message-status --message-id UUID`. Exact session and inbox proof precede
+lookup. A destination custody result is exposed only for the retained message
+UUID and exact signed-frame hash; it never borrows a current binding's assurance.
+An unknown result can mean absent, foreign or retired history, and does not prove
+that submission failed. Remote execution and semantic acknowledgement remain
+unknown to this transport query. Historical remote rows are not relabelled as
+locally session-authenticated senders.
 
 Recovery admits only a completely scanned oldest prefix before advancing its
 durable checkpoint. Partial scan pages, malformed or unordered events, and

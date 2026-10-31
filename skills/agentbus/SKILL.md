@@ -12,9 +12,9 @@ service, token, Slack application, or Codex extension.
 
 ## Use the right identity
 
-One profile represents one conversation in one immutable channel. Inspect
-`agentbus agents` before creating a profile. Resume an existing identity only
-when continuing that same conversation; do not borrow another chat's session.
+One profile represents one conversation in one immutable channel. Resume the profile for this same conversation. `agentbus agents` needs an
+already joined identity; it is not a fresh-onboarding prerequisite. Do not borrow
+another chat's session.
 Two identities belonging to the same orchestration agent remain separate scopes.
 Neither can read, reply, forward, or acknowledge through the other identity's
 credentials. A route fragment is not an ownership credential.
@@ -64,8 +64,14 @@ the queue look healthy.
 ## Wait without taking ownership of Codex
 
 If asked to remain on station, use AgentBus's local polling/worker machinery and
-the delivered backoff policy. Do not spin model turns or silently drop pending
-controls. A normal messaging task does not authorize an indefinite station watch.
+the delivered backoff policy. For a standard fresh installation, quiet inbox checks back off through 1, 2, 4,
+8, 12, 16, 24 and 32 minutes; new semantic work resets the interval. Honor any
+operator override. Control checks keep their separate bound. Use the existing
+worker or blocking wait instead of repeated model turns. Empty or unchanged
+checks produce no console narration; report new work, controls, material state
+changes and actionable failures. Answer direct user status requests normally.
+Never drop pending controls to quiet the UI.
+A normal messaging task does not authorize an indefinite station watch.
 
 `agentbus codex-wake status` is a self-status query. Do not change wake preference,
 host bindings, owner locks, or activation merely to participate. Existing wake

@@ -131,7 +131,8 @@ def _routine_message(event: dict, identity: str) -> bool:
 def peek_event(profile_path: Path, profile: dict, *, quiet: bool = False) -> dict | None:
     def priority(event: dict) -> int:
         if event["kind"] == "CONTROL":
-            return 0
+            control = event.get('control')
+            return -1 if isinstance(control, dict) and control.get('kind') == 'stop_end_turn' else 0
         if event["kind"] == "POLICY_CHANGED":
             return 1
         if event["kind"] == "ATTENTION_REQUIRED":
@@ -311,14 +312,8 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
                                {"current_backoff_seconds": reported_backoff},
                                timeout_seconds=request_timeout, api_call=api)
                 service_healthy = True
-                reconcile_announcement_snapshot(profile_path, profile, response, observed_controls)
-                if "controls" in response:
-                    def record_controls(state: dict) -> None:
-                        for control in response["controls"]:
-                            _append(state, {"kind": "CONTROL", "id": control["control_id"],
-                                            "control": control})
-                    change_spool(profile_path, profile, record_controls)
-                else:
+                project_check_in(profile_path, profile, response, observed_controls)
+                if "controls" not in response:
                     changed_policy = response["values"] != policy
                     policy = response["values"]
                     control_max = float(policy["control_check_max_seconds"])
@@ -327,12 +322,6 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
                                        max(float(policy["initial_interval_seconds"]),
                                            interval or float(policy["initial_interval_seconds"])))
                         next_inbox = min(next_inbox, time.monotonic() + interval)
-                    if response["ack_required"]:
-                        change_spool(profile_path, profile, lambda state: _append(state, {
-                            "kind": "POLICY_CHANGED", "id": response["revision"],
-                            "revision": response["revision"], "values": policy,
-                            "sources": response["sources"],
-                        }))
                 next_control = instant + control_max
             # Policy transitions must be acknowledged before new ordinary work.
             pending_policy = peek_event(profile_path, profile)
@@ -358,6 +347,10 @@ def _worker(profile_path: Path, values: dict[str, str]) -> None:
                         for message in page["messages"]:
                             if message["cursor"] <= ack_floor:
                                 continue
+                            lifecycle = message.get('lifecycle')
+                            if (profile.get('message_lifecycle_version') == 1 and isinstance(lifecycle, dict)
+                                    and lifecycle.get('state') in {'handled', 'expired_unclaimed'}):
+                                continue  # Private scan advances; semantic ACK does not.
                             event = {"kind": "MESSAGE", "id": str(message["cursor"]),
                                      "message": message}
                             if not profile.get("quiet_mode", False) or not _routine_message(event, profile["identity"]):
@@ -412,6 +405,79 @@ def main() -> int:
             }))
             raise
     return 0
+
+
+def project_check_in(profile_path: Path, profile: dict, response: dict, observed_ids: set[str]) -> None:
+    """Project fresh exact-session controls without manufacturing read receipts."""
+    events = []
+    if 'controls' in response:
+        controls = response['controls']
+        if (not isinstance(controls, list) or len(controls) > 131072
+                or any(not isinstance(c, dict) or not isinstance(c.get('control_id'), str)
+                       or not 1 <= len(c['control_id']) <= 80 or not isinstance(c.get('kind'), str)
+                       for c in controls)):
+            raise ClientError('Invalid control projection; evidence retained')
+        events = [{'kind': 'CONTROL', 'id': c['control_id'], 'control': c} for c in controls]
+    elif response.get('ack_required') is True:
+        if (not isinstance(response.get('revision'), str) or not response['revision']
+                or not isinstance(response.get('values'), dict) or not isinstance(response.get('sources'), dict)):
+            raise ClientError('Invalid policy projection; evidence retained')
+        events = [{'kind': 'POLICY_CHANGED', 'id': response['revision'], 'revision': response['revision'],
+                   'values': response['values'], 'sources': response['sources']}]
+    reconcile_announcement_snapshot(profile_path, profile, response, observed_ids)
+    if events:
+        def record(state):
+            for event in events:
+                _append(state, event)
+        change_spool(profile_path, profile, record)
+
+
+def foreground_check_in(values: dict, profile_path: Path, profile: dict, *, api_call=api) -> dict:
+    """Fetch exact-session controls before selecting a cached foreground event."""
+    observed = {event['id'] for event in read_spool_events(profile_path, profile=profile)
+                if event.get('kind') == 'CONTROL'}
+    session = profile['participation']
+    result = scoped_api(values, f"/v1/sessions/{session['session_id']}/check-in", profile,
+                        {}, api_call=api_call, timeout_seconds=3)
+    if (not isinstance(result, dict) or
+            ('controls' not in result and type(result.get('ack_required')) is not bool)):
+        raise ClientError('Invalid check-in snapshot; cached evidence retained')
+    project_check_in(profile_path, profile, result, observed)
+    return result
+
+
+def reconcile_message_event(values: dict, profile_path: Path, profile: dict, event: dict, *, api_call=api) -> bool:
+    """Retire a cached target only on fresh authenticated terminal recipient truth."""
+    if profile.get('message_lifecycle_version') != 1 or event.get('kind') != 'MESSAGE':
+        return False
+    message = event.get('message') or {}
+    lifecycle = message.get('lifecycle')
+    if not isinstance(lifecycle, dict) or lifecycle.get('state') not in {
+            'unclaimed', 'picked_up', 'handled', 'expired_unclaimed', 'recovery_required'}:
+        return False
+    cursor = message.get('cursor')
+    if type(cursor) is not int or cursor < 1 or event.get('id') != str(cursor):
+        raise ClientError('Cached message reference is invalid; evidence retained')
+    result = scoped_api(values, f'/v1/messages/{cursor}/outcome', profile, api_call=api_call, timeout_seconds=3)
+    if result.get('cursor') != cursor or result.get('scope') != 'recipient':
+        raise ClientError('Cached message outcome scope differs; evidence retained')
+    if result.get('state') in {'handled', 'expired_unclaimed'}:
+        retire_event(profile_path, profile, 'MESSAGE', str(cursor))
+        return True
+    if result.get('state') in {'unclaimed', 'picked_up', 'recovery_required'}:
+        snapshot = {key: result[key] for key in
+                    ('state', 'deadline', 'deadline_elapsed', 'lease_elapsed', 'owned_by_this_session')
+                    if key in result}
+
+        def refresh(state):
+            for item in state['events']:
+                if (item.get('kind') == 'MESSAGE' and item.get('id') == str(cursor)
+                        and item.get('message', {}).get('cursor') == cursor):
+                    item['message']['lifecycle'] = {**item['message'].get('lifecycle', {}), **snapshot}
+
+        change_spool(profile_path, profile, refresh)
+        message['lifecycle'] = {**lifecycle, **snapshot}
+    return False
 
 
 if __name__ == "__main__":

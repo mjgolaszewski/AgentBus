@@ -14,8 +14,9 @@ from uuid import UUID
 
 
 class ClientError(Exception):
-    def __init__(self, message, *, status=None):
+    def __init__(self, message, *, status=None, recovery_code=None):
         self.status = status
+        self.recovery_code = recovery_code
         super().__init__(message)
 
 
@@ -156,8 +157,13 @@ def api(values: dict[str, str], path: str, payload: dict | None = None, *,
         claimant = exc.headers.get("X-AgentBus-Claimed-By")
         if exc.code == 409 and claimant and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}", claimant):
             suffix += f"; already claimed by {claimant}"
-        # Avoid printing upstream/proxy response bodies that might echo credentials.
-        raise ClientError(f"AgentBus returned HTTP {exc.code}{suffix}.", status=exc.code) from None
+        # Accept only this fixed recovery code on the enrollment response. Never
+        # print upstream/proxy bodies or arbitrary header values.
+        recovery_code = ("enrollment_request_expired" if path == "/v1/sessions" and exc.code == 403
+                         and payload is not None and payload.get("approval_request_id")
+                         and exc.headers.get("X-AgentBus-Recovery-Code") == "enrollment_request_expired" else None)
+        raise ClientError(f"AgentBus returned HTTP {exc.code}{suffix}.", status=exc.code,
+                          recovery_code=recovery_code) from None
     except (URLError, TimeoutError):
         raise ClientError("Cannot reach AgentBus. Check `agentbus status` and AGENTBUS_URL.") from None
     except (ValueError, UnicodeDecodeError):

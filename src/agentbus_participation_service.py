@@ -31,6 +31,16 @@ POLICY_FIELDS = frozenset({
 # depend on an unbounded or agent-selected schedule.
 IDLE_BACKOFF_MULTIPLIERS = (1, 2, 4, 8, 12, 16, 24, 32)
 
+DEFAULT_POLL_POLICY: Mapping[str, int | float | None] = {
+    "initial_interval_seconds": 60,
+    "backoff_factor": 2,
+    "max_interval_seconds": 1920,
+    "control_check_max_seconds": 60,
+    "jitter_fraction": 0,
+    "overdue_grace_seconds": 120,
+    "presentation_budget_bytes": None,
+}
+
 
 @dataclass(frozen=True)
 class EffectivePolicy:

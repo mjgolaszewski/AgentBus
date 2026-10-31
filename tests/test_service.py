@@ -1452,3 +1452,22 @@ def test_poll_api_requires_answer_exact_session_and_operator(service):
     assert client.post(url, headers=headers, json={'answer': 'different'}).status_code == 409
     assert client.get(f'/v1/controls/{cid}', headers=operator).json()['targets'][0]['answer'] == 'awaiting review'
     assert posts == []
+
+
+def test_fresh_service_bootstrap_supplies_default_without_operator_policy_install(service):
+    client, app, _ = service
+    store = app.state.store
+    expected = {'initial_interval_seconds': 60, 'backoff_factor': 2,
+                'max_interval_seconds': 1920, 'control_check_max_seconds': 60,
+                'jitter_fraction': 0, 'overdue_grace_seconds': 120,
+                'presentation_budget_bytes': None}
+    route = 'agentbus:fresh-default'
+    grant = store.channels.issue_grant(channel=CHANNEL, route=route, repo='agentbus', actor='test-operator')
+    response = client.post('/v1/sessions', headers={'Authorization': 'Bearer local-test-secret'}, json={
+        'route': route, 'repo': 'agentbus', 'display_name': 'Fresh default',
+        'session_secret': 'fresh-default-session-secret-at-least32', 'enrollment_token': grant,
+    })
+    assert response.status_code == 201, response.text
+    receipt = response.json()
+    assert receipt['values'] == expected and receipt['ack_required'] is True
+    assert store.participation.session_state(receipt['session_id'])['acknowledged_policy_revision'] is None

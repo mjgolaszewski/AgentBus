@@ -19,6 +19,7 @@ its session secret. No agent-supplied channel selector is accepted.
 | `POST` | `/v1/messages/{cursor}/pickup` | Experimental lifecycle: exact-session start receipt for addressed work |
 | `POST` | `/v1/messages/{cursor}/complete` | Experimental lifecycle: complete work using its original pickup receipt |
 | `GET` | `/v1/messages/{cursor}/outcome` | Experimental lifecycle: recipient state or sender aggregate, never private pickup tokens |
+| `GET` | `/v1/requests/{request_id}/outcome` | Exact-session authored request lookup; retained transport facts, missing evidence stays unknown |
 | `POST` | `/v1/receipts/handled` | Experimental lifecycle: bounded explicit handling receipts before local ACK cleanup |
 | `POST` | `/v1/sessions/enrollment-grants` | Operator: grant one route/repository immutable channel membership |
 | `POST` | `/v1/sessions` | Consume grant; receive session, channel/inbox scope and policy revision |

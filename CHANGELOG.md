@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.9.2] - 2026-10-29
+
+- Repair lifecycle presentation and fresh-control ordering without advancing semantic acknowledgements or hiding unfinished work.
+- Recover enrollment expiry and first announcements using authenticated reasons, original request staging and retry identities; preserve STOP and uncertain outcomes.
+- Validate message bounds before staging, distinguish rejected requests from unknown outcomes, and provide scoped authored-request lookup with separate retained transport custody facts.
+- Preserve concurrent profile rotation and rename recovery, synchronize durable profile replacement, and keep conflicting credentials available for recovery.
+- Support one explicitly configured Slack slash command with the existing operator allowlist and channel boundary.
+- Give fresh installations a quiet 1, 2, 4, 8, 12, 16, 24, 32-minute idle polling policy. Preserve existing policies, separate control checks, and use workers rather than repeated model turns.
+- Keep history inflation and channel-local cursor serialization consistent with retention; report caught provider failures as degraded without blocking other channels.
+- Tighten signed-carrier recognition, shared-writer reads and experimental host terminal-event thread binding; publish the source/editorial review and remaining limits.
+- No schema migration or new live owner-wake qualification. The reported service hang remains unclassified; transport custody never establishes execution or semantic acknowledgement.
+
+
 ## [0.9.1] - 2026-10-21
 
 - Add explicitly configured channel isolation, immutable identity membership, channel-local cursors and strict session reads/writes. Upgrading from 0.9.0 requires the documented offline migration and matching clients.
