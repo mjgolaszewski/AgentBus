@@ -650,10 +650,22 @@ def test_authored_federation_status_requires_retained_exact_frame_not_current_bi
     assert client.get(route, headers=a[1]).json()['accepted'] is None
 
 
-def test_request_status_same_uuid_in_two_channels_keeps_distinct_custody(channel_service):
+@pytest.fixture
+def request_status_channel_service(monkeypatch, request):
+    """Freeze transport before startup so manually seeded custody stays stable."""
+    from src.agentbus_delivery_runtime_service import DeliveryCoordinator
+
+    async def defer_submission(self):
+        return 0
+
+    monkeypatch.setattr(DeliveryCoordinator, 'submit_once', defer_submission)
+    return request.getfixturevalue('channel_service')
+
+
+def test_request_status_same_uuid_in_two_channels_keeps_distinct_custody(request_status_channel_service):
     from uuid import uuid4
 
-    client, app, posted, a, a2, b, bearer, operator = channel_service
+    client, app, posted, a, a2, b, bearer, operator = request_status_channel_service
     key = str(uuid4())
     for identity in (a, b):
         response = client.post('/v1/messages', headers={**identity[1], 'X-AgentBus-Delivery-Version':'1', 'Idempotency-Key':key},
@@ -665,3 +677,4 @@ def test_request_status_same_uuid_in_two_channels_keeps_distinct_custody(channel
         store._db.execute("UPDATE local_delivery_obligations SET state='blocked' WHERE channel='C222' AND request_id=?", (key,))
     assert client.get(f'/v1/requests/{key}/outcome', headers=a[1]).json()['local_transport_state'] == 'uncertain'
     assert client.get(f'/v1/requests/{key}/outcome', headers=b[1]).json()['local_transport_state'] == 'blocked'
+    assert posted == [], 'Custody lookup fixture must not submit to Slack'
