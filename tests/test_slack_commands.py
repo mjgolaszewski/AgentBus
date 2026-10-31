@@ -626,3 +626,71 @@ def test_results_are_private_operator_and_channel_scoped(enrolled):
     assert 'not enabled' in command(settings, store, web, f'results {cid}', user='U999')
     settings = replace(settings, slack_channels=('C123456', 'C654321'))
     assert 'No announcement results' in command(settings, store, web, f'results {cid}', channel='C654321')
+
+
+@pytest.mark.parametrize('name', ['', 'agentbus', '/AgentBus', '/a b', '/a/b', '/' + 'a' * 33])
+def test_configured_command_rejects_invalid_names(enrolled, name):
+    settings, _, _, _ = enrolled
+    with pytest.raises(ValueError, match='AGENTBUS_SLACK_COMMAND'):
+        replace(settings, slack_command=name)
+
+
+def test_configured_command_help_and_authorization(enrolled):
+    settings, store, _, web = enrolled
+    settings = replace(settings, slack_command='/workspace-bus')
+    payload = {'command': '/workspace-bus', 'channel_id': 'C123456', 'user_id': 'U123', 'text': 'help'}
+    result = execute_command(payload, settings, store, web)
+    assert '/workspace-bus approve' in result and '/agentbus' not in result
+    before = store._db.total_changes
+    assert 'not enabled' in execute_command(dict(payload, user_id='U999'), settings, store, web)
+    assert 'configured channel' in execute_command(dict(payload, channel_id='COTHER'), settings, store, web)
+    assert 'Unsupported' in execute_command(dict(payload, command='/agentbus'), settings, store, web)
+    assert store._db.total_changes == before and web.posts == []
+
+
+def test_unsupported_socket_command_has_no_custody_or_operator_effects(enrolled):
+    settings, store, _, web = enrolled
+    settings = replace(settings, slack_command='/workspace-bus')
+    receiver = SlackReceiver(store, settings.slack_channel, 'BTEST', settings)
+    socket = FakeSocket(web)
+    before = store._db.total_changes
+    try:
+        receiver(socket, SocketModeRequest(type='slash_commands', envelope_id='unsupported-command', payload={
+            'command': '/agentbus', 'channel_id': settings.slack_channel,
+            'user_id': 'U123', 'text': 'retire anything CONFIRM', 'trigger_id': 'unsupported-trigger',
+        }))
+        assert len(socket.acks) == 1
+        assert socket.acks[0].payload['response_type'] == 'ephemeral'
+        assert 'Unsupported' in socket.acks[0].payload['text']
+        assert store._db.total_changes == before and web.posts == [] and web.ephemeral == []
+    finally:
+        receiver._commands.shutdown(wait=True)
+
+
+def test_configured_command_environment_uses_same_validation(monkeypatch):
+    monkeypatch.setenv('AGENTBUS_API_TOKEN', 'x' * 32)
+    monkeypatch.setenv('AGENTBUS_SLACK_BOT_TOKEN', 'xoxb-test')
+    monkeypatch.setenv('AGENTBUS_SLACK_APP_TOKEN', 'xapp-test')
+    monkeypatch.setenv('AGENTBUS_SLACK_CHANNEL', 'C123456')
+    monkeypatch.delenv('AGENTBUS_SLACK_CHANNELS', raising=False)
+    monkeypatch.setenv('AGENTBUS_SLACK_COMMAND', '/workspace-bus')
+    assert Settings.from_env().slack_command == '/workspace-bus'
+    monkeypatch.setenv('AGENTBUS_SLACK_COMMAND', '/invalid command')
+    with pytest.raises(ValueError, match='AGENTBUS_SLACK_COMMAND'):
+        Settings.from_env()
+
+
+def test_configured_command_does_not_rewrite_human_poll_question(enrolled):
+    settings, store, _, web = enrolled
+    settings = replace(settings, slack_command='/workspace-bus')
+    question = 'Does literal /agentbus remain unchanged?'
+    result = execute_command({
+        'command': settings.slack_command, 'channel_id': settings.slack_channel,
+        'user_id': 'U123', 'text': 'poll ' + question, 'trigger_id': 'custom-command-poll',
+    }, settings, store, web)
+    assert result.startswith('Poll ')
+    control_id = result.split()[1].removesuffix(':')
+    with store._lock:
+        retained = store._db.execute('SELECT reason FROM operator_controls WHERE control_id = ?',
+                                     (control_id,)).fetchone()
+    assert retained['reason'] == question

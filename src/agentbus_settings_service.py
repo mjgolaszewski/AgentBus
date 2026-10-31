@@ -24,12 +24,15 @@ class Settings:
     local_delivery_outstanding_limit: int = 1024
     local_delivery_retained_limit: int = 65536
     local_delivery_observation_limit: int = 131072
+    slack_command: str = "/agentbus"
 
     @property
     def channels(self) -> tuple[str, ...]:
         return self.slack_channels or (self.slack_channel,)
 
     def __post_init__(self):
+        if not isinstance(self.slack_command, str) or not re.fullmatch(r"/[a-z][a-z0-9_-]{0,31}", self.slack_command):
+            raise ValueError("AGENTBUS_SLACK_COMMAND must be a slash followed by 1–32 lowercase command characters")
         from src.agentbus_local_delivery_service import validate_limits
         validate_limits(self.local_delivery_outstanding_limit, self.local_delivery_retained_limit,
                         self.local_delivery_observation_limit)
@@ -85,6 +88,7 @@ class Settings:
             limits['local_delivery_' + suffix + '_limit'] = int(raw)
         return cls(api_token=values["api_token"], slack_bot_token=values["slack_bot_token"],
                    slack_app_token=values["slack_app_token"],
+                   slack_command=os.environ.get("AGENTBUS_SLACK_COMMAND", "/agentbus").strip(),
                    slack_channel=channels[0] if len(channels)==1 else "",
                    slack_channels=channels if multiple is not None else (),
                    db_path=db_path.expanduser(), operator_token=operator_token,

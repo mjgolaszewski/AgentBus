@@ -306,6 +306,35 @@ class MessageLifecycleStore:
             result['lease_elapsed'] = result['state'] in {'picked_up', 'recovery_required'} and result['lease_until'] <= current
             return result
 
+    def request_outcome(self, principal, request_id):
+        """Read only retained authorship and transport facts; absence is unknown."""
+        try:
+            if str(UUID(request_id)) != request_id:
+                raise ValueError()
+        except (ValueError, AttributeError):
+            raise LifecycleRejected(422, 'Request identity must be a canonical UUID') from None
+        unknown = {'request_id':request_id, 'known':False, 'accepted':None,
+                   'destination_custody':'unknown', 'execution':'unknown',
+                   'semantic_acknowledgement':'unknown'}
+        with self.owner._lock:
+            row = self.owner._db.execute('SELECT o.*,m.sender,m.sender_assurance FROM local_delivery_obligations o '
+                'JOIN messages m ON m.cursor=o.local_cursor WHERE o.channel=? AND m.channel=? AND o.request_id=?',
+                (principal.channel, principal.channel, request_id)).fetchone()
+            if (row is None or row['sender_assurance'] != 'session'
+                    or not self.owner.participation.same_chat(principal.route, row['sender'])):
+                return unknown
+            result = {**unknown, 'known':True, 'accepted':True,
+                      'cursor':self.owner.channels.public_cursor(principal.channel, row['local_cursor']),
+                      'local_transport_state':row['state']}
+            if row['federation_frame_hash'] is not None:
+                facts = self.owner._db.execute('SELECT state FROM bridge_obligations WHERE origin_message_id=? '
+                    "AND payload_hash=? AND kind='message'", (request_id, row['federation_frame_hash'])).fetchall()
+                if len(facts) == 1:
+                    result['federation_transport_state'] = facts[0]['state']
+                    if facts[0]['state'] in {'destination_accepted', 'acknowledged'}:
+                        result['destination_custody'] = 'authenticated'
+            return result
+
     def outcome(self, principal, cursor):
         with self.owner._lock:
             message = self.owner.message(principal.channel, cursor)

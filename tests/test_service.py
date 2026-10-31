@@ -156,7 +156,7 @@ def test_public_api_operation_inventory_owns_registered_routes(settings):
         for route in app.routes
         for method in getattr(route, "methods", set())
     }
-    assert set(API_OPERATIONS) == {"enrollment_grant", "federation_enqueue", "health", "status", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "rotation_grant", "session_rotate_secret", "session_presence", "session_self_presence", "session_roster", "session_policy_ack", "session_policy_explain", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename", "pickup", "complete", "outcome", "handled_batch"}
+    assert set(API_OPERATIONS) == {"enrollment_grant", "federation_enqueue", "health", "status", "send", "read", "info", "inbox", "claim", "claim_recovery", "policy_set", "policy_effective", "session_enroll", "profile_handoff", "rotation_grant", "session_rotate_secret", "session_presence", "session_self_presence", "session_roster", "session_policy_ack", "session_policy_explain", "session_check_in", "control_stop", "control_issue", "control_status", "control_ack", "session_rename", "pickup", "complete", "outcome", "request_outcome", "handled_batch"}
     assert routes[("GET", "/healthz")] is API_OPERATIONS["health"]
     assert routes[("GET", "/v1/status")] is API_OPERATIONS["status"]
     assert routes[("POST", "/v1/messages")] is API_OPERATIONS["send"]
@@ -167,6 +167,7 @@ def test_public_api_operation_inventory_owns_registered_routes(settings):
     assert routes[("POST", "/v1/messages/{cursor}/pickup")] is API_OPERATIONS["pickup"]
     assert routes[("POST", "/v1/messages/{cursor}/complete")] is API_OPERATIONS["complete"]
     assert routes[("GET", "/v1/messages/{cursor}/outcome")] is API_OPERATIONS["outcome"]
+    assert routes[("GET", "/v1/requests/{request_id}/outcome")] is API_OPERATIONS["request_outcome"]
     assert routes[("POST", "/v1/receipts/handled")] is API_OPERATIONS["handled_batch"]
     assert routes[("POST", "/v1/messages/{cursor}/claim-recovery")] is API_OPERATIONS["claim_recovery"]
     assert routes[("POST", "/v1/policy/revisions")] is API_OPERATIONS["policy_set"]
@@ -1452,3 +1453,22 @@ def test_poll_api_requires_answer_exact_session_and_operator(service):
     assert client.post(url, headers=headers, json={'answer': 'different'}).status_code == 409
     assert client.get(f'/v1/controls/{cid}', headers=operator).json()['targets'][0]['answer'] == 'awaiting review'
     assert posts == []
+
+
+def test_fresh_service_bootstrap_supplies_default_without_operator_policy_install(service):
+    client, app, _ = service
+    store = app.state.store
+    expected = {'initial_interval_seconds': 60, 'backoff_factor': 2,
+                'max_interval_seconds': 1920, 'control_check_max_seconds': 60,
+                'jitter_fraction': 0, 'overdue_grace_seconds': 120,
+                'presentation_budget_bytes': None}
+    route = 'agentbus:fresh-default'
+    grant = store.channels.issue_grant(channel=CHANNEL, route=route, repo='agentbus', actor='test-operator')
+    response = client.post('/v1/sessions', headers={'Authorization': 'Bearer local-test-secret'}, json={
+        'route': route, 'repo': 'agentbus', 'display_name': 'Fresh default',
+        'session_secret': 'fresh-default-session-secret-at-least32', 'enrollment_token': grant,
+    })
+    assert response.status_code == 201, response.text
+    receipt = response.json()
+    assert receipt['values'] == expected and receipt['ack_required'] is True
+    assert store.participation.session_state(receipt['session_id'])['acknowledged_policy_revision'] is None

@@ -537,3 +537,144 @@ def test_approval_capacity_and_expiry_remain_bounded(tmp_path, monkeypatch):
     assert [row['request_id'] for row in store.channels.pending_enrollments()] == [second['request_id']]
     assert store._db.execute('SELECT count(*) FROM channel_enrollment_requests').fetchone()[0] == 1
     store.close()
+
+
+def test_enrollment_expiry_reason_requires_exact_staged_subject(channel_service, monkeypatch):
+    import uuid
+
+    from src import agentbus_enrollment_approval_service as approval
+    client, app, _posted, _a, _a2, _b, bearer, _operator = channel_service
+    instant = [1000.0]
+    monkeypatch.setattr(approval.time, 'time', lambda: instant[0])
+    body = dict(repo='agentbus', route='home:agentbus:expiry-reason', display_name='Expiry',
+                session_secret='staged-expiry-secret-at-least-32-characters',
+                approval_request_id=str(uuid.uuid4()), profile_chat_id=str(uuid.uuid4()))
+    assert client.post('/v1/sessions', headers=bearer, json=body).status_code == 202
+    app.state.store.channels.approve_enrollment(body['approval_request_id'], channel='C111', actor='slack:U1')
+    instant[0] += 601
+    denied = []
+    for change in ({'session_secret': 'wrong-secret-at-least-32-characters'},
+                   {'route': 'home:agentbus:foreign'}, {'profile_chat_id': str(uuid.uuid4())}):
+        response = client.post('/v1/sessions', headers=bearer, json={**body, **change})
+        assert response.status_code == 403
+        assert 'X-AgentBus-Recovery-Code' not in response.headers
+        denied.append(response.json())
+    assert denied[0] == denied[1] == denied[2]
+    response = client.post('/v1/sessions', headers=bearer, json=body)
+    assert response.status_code == 403
+    assert response.headers['X-AgentBus-Recovery-Code'] == 'enrollment_request_expired'
+    assert body['session_secret'] not in response.text
+    row = app.state.store._db.execute('SELECT consumed_session FROM channel_enrollment_requests WHERE request_id=?',
+                                     (body['approval_request_id'],)).fetchone()
+    assert row['consumed_session'] is None
+
+
+def test_consumed_approval_retry_survives_request_expiry(channel_service, monkeypatch):
+    import uuid
+
+    from src import agentbus_enrollment_approval_service as approval
+    client, app, _posted, _a, _a2, _b, bearer, _operator = channel_service
+    instant = [1000.0]
+    monkeypatch.setattr(approval.time, 'time', lambda: instant[0])
+    body = dict(repo='agentbus', route='home:agentbus:consumed-retry', display_name='Retry',
+                session_secret='consumed-retry-secret-at-least-32-characters',
+                approval_request_id=str(uuid.uuid4()), profile_chat_id=str(uuid.uuid4()))
+    assert client.post('/v1/sessions', headers=bearer, json=body).status_code == 202
+    app.state.store.channels.approve_enrollment(body['approval_request_id'], channel='C111', actor='slack:U1')
+    first = client.post('/v1/sessions', headers=bearer, json=body)
+    assert first.status_code == 201
+    instant[0] += 601
+    retry = client.post('/v1/sessions', headers=bearer, json=body)
+    assert retry.status_code == 201
+    assert retry.json()['session_id'] == first.json()['session_id']
+
+
+def test_authored_request_lookup_is_scoped_nonmutating_and_absence_is_unknown(channel_service):
+    from uuid import uuid4
+
+    client, app, posted, a, a2, b, bearer, operator = channel_service
+    key = str(uuid4())
+    response = client.post('/v1/messages', headers={**a[1], 'X-AgentBus-Delivery-Version':'1', 'Idempotency-Key':key},
+                           json={'sender':a[0], 'recipient':a2[0], 'text':'own retained request'})
+    assert response.status_code == 202, response.text
+    route = f'/v1/requests/{key}/outcome'
+    own = client.get(route, headers=a[1])
+    assert own.status_code == 200 and own.json()['accepted'] is True
+    assert own.json()['cursor'] == response.json()['cursor']
+    assert own.json()['execution'] == 'unknown' and own.json()['semantic_acknowledgement'] == 'unknown'
+    foreign = [client.get(route, headers=proof) for proof in (a2[1], b[1])]
+    missing = client.get('/v1/requests/'+str(uuid4())+'/outcome', headers=a[1])
+    for result in [*foreign, missing]:
+        assert result.status_code == 200 and result.json()['known'] is False
+        assert result.json()['accepted'] is None and 'cursor' not in result.json()
+    assert client.get(route, headers=bearer).status_code == 403
+    assert client.get(route, headers={key:value for key,value in a[1].items()
+                                      if key.lower() != 'authorization'}).status_code == 401
+    assert client.get(route, headers={**a[1], 'Authorization':'Bearer wrong'}).status_code == 401
+    assert client.get(route, headers={**a[1], 'X-AgentBus-Session-Token':'wrong'}).status_code == 403
+    assert client.get(route, headers={**a[1], 'X-AgentBus-Inbox-ID':b[2]['inbox_id']}).status_code == 403
+    assert client.get('/v1/requests/not-a-uuid/outcome', headers=a[1]).status_code == 422
+    store = app.state.store
+    with store._lock:
+        before = store._db.total_changes
+        principal = store.channels.principal(a[1]['X-AgentBus-Session-Token'], a[0])
+        assert store.lifecycle.request_outcome(principal, key)['known'] is True
+        assert store._db.total_changes == before
+
+
+def test_authored_federation_status_requires_retained_exact_frame_not_current_binding(channel_service):
+    import hashlib
+    from uuid import uuid4
+
+    client, app, posted, a, a2, b, bearer, operator = channel_service
+    key = str(uuid4())
+    response = client.post('/v1/messages', headers={**a[1], 'X-AgentBus-Delivery-Version':'1', 'Idempotency-Key':key},
+                           json={'sender':a[0], 'recipient':a2[0], 'text':'transport fixture'})
+    assert response.status_code == 202
+    store = app.state.store
+    # Retained custody fixture only; signature and receipt admission have separate wire controls.
+    digest = hashlib.sha256(b'exact-retained-signed-frame').hexdigest()
+    with store._lock, store._db:
+        store._db.execute("UPDATE local_delivery_obligations SET federation_frame_hash=? WHERE channel='C111' AND request_id=?", (digest,key))
+        store._db.execute("INSERT INTO bridge_obligations (origin_instance_id,origin_message_id,destination_instance_id,state,payload,payload_hash,updated_at,kind) VALUES ('origin',?,'destination','acknowledged','retained',?,'now','message')", (key,'0'*64))
+    route = f'/v1/requests/{key}/outcome'
+    assert client.get(route, headers=a[1]).json()['destination_custody'] == 'unknown'
+    with store._lock, store._db:
+        store._db.execute('UPDATE bridge_obligations SET payload_hash=? WHERE origin_message_id=?', (digest,key))
+    result = client.get(route, headers=a[1]).json()
+    assert result['destination_custody'] == 'authenticated'
+    assert result['execution'] == result['semantic_acknowledgement'] == 'unknown'
+    assert client.get(route, headers=b[1]).json()['known'] is False
+    with store._lock, store._db:
+        store._db.execute('DELETE FROM local_delivery_obligations WHERE request_id=?', (key,))
+    assert client.get(route, headers=a[1]).json()['accepted'] is None
+
+
+@pytest.fixture
+def request_status_channel_service(monkeypatch, request):
+    """Freeze transport before startup so manually seeded custody stays stable."""
+    from src.agentbus_delivery_runtime_service import DeliveryCoordinator
+
+    async def defer_submission(self):
+        return 0
+
+    monkeypatch.setattr(DeliveryCoordinator, 'submit_once', defer_submission)
+    return request.getfixturevalue('channel_service')
+
+
+def test_request_status_same_uuid_in_two_channels_keeps_distinct_custody(request_status_channel_service):
+    from uuid import uuid4
+
+    client, app, posted, a, a2, b, bearer, operator = request_status_channel_service
+    key = str(uuid4())
+    for identity in (a, b):
+        response = client.post('/v1/messages', headers={**identity[1], 'X-AgentBus-Delivery-Version':'1', 'Idempotency-Key':key},
+            json={'sender':identity[0], 'recipient':'all', 'audience':'broadcast', 'text':'same UUID, separate scope'})
+        assert response.status_code == 202, response.text
+    store = app.state.store
+    with store._lock, store._db:
+        store._db.execute("UPDATE local_delivery_obligations SET state='uncertain' WHERE channel='C111' AND request_id=?", (key,))
+        store._db.execute("UPDATE local_delivery_obligations SET state='blocked' WHERE channel='C222' AND request_id=?", (key,))
+    assert client.get(f'/v1/requests/{key}/outcome', headers=a[1]).json()['local_transport_state'] == 'uncertain'
+    assert client.get(f'/v1/requests/{key}/outcome', headers=b[1]).json()['local_transport_state'] == 'blocked'
+    assert posted == [], 'Custody lookup fixture must not submit to Slack'

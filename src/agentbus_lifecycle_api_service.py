@@ -99,6 +99,14 @@ def api_complete(request: Request, cursor: int, payload: dict):
             'completed_at':result['outcome_at']}
 
 
+def api_request_outcome(request: Request, request_id: str):
+    principal = resolve_principal(request)
+    try:
+        return request.app.state.store.lifecycle.request_outcome(principal, request_id)
+    except LifecycleRejected as exc:
+        raise HTTPException(exc.status, str(exc)) from None
+
+
 def api_outcome(request: Request, cursor: int):
     principal = resolve_principal(request)
     store = request.app.state.store

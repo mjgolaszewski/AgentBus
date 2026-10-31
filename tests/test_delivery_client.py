@@ -277,3 +277,126 @@ def test_https_transport_defers_but_preserves_fresh_standard_verified_tls(monkey
     for _ in range(2):
         assert deferred.https_open(Request('https://service.invalid/healthz')) == 'https://service.invalid/healthz'
     assert len(handlers) == 2 and handlers[0]._context is not handlers[1]._context
+
+
+# Follow-up regression controls use no Slack or live service.
+def _text_bound_context(tmp_path):
+    values = {'_AGENTBUS_DELIVERY_VERSION': '2', 'AGENTBUS_STATE_DIR': str(tmp_path),
+              'AGENTBUS_URL': 'http://localhost:8766'}
+    profile = {'repo': 'agentbus', 'inbox_id': 'inbox-one', 'channel': 'C111', 'chat_id': 'chat-one',
+               'service_url': values['AGENTBUS_URL'],
+               'participation': {'session_id': 'session-one', 'session_secret': 'private-session'}}
+    info = {'features': ['message-lifecycle-v1'],
+            'lifecycle': {'version': 1, 'request_epoch': 'a' * 64}}
+    return values, profile, info
+
+
+def _text_bound_command(operation, text):
+    if operation == 'reply':
+        return parse_args(['reply', '--identity', 'agentbus:flower', '--to-cursor', '1', text])
+    return parse_args(['send', '--identity', 'agentbus:flower', '--to', 'agentbus:other',
+                       '-' if operation == 'stdin' else text])
+
+
+@pytest.mark.parametrize('operation', ['send', 'reply', 'stdin'])
+@pytest.mark.parametrize('text', ['', 'x' * 6001, '\u00e9' * 6001])
+def test_local_text_rejection_never_stages_or_submits(tmp_path, monkeypatch, operation, text):
+    import io
+
+    from src.agentbus_delivery_client import send_command
+
+    values, profile, info = _text_bound_context(tmp_path)
+    calls = []
+    monkeypatch.setattr('sys.stdin', io.StringIO(text))
+    ns = _text_bound_command(operation, text)
+    with pytest.raises(ClientError, match='1..6000 characters; no message submitted'):
+        send_command(ns, values, lambda *_: (profile, info), lambda value: value,
+                     lambda *args, **kwargs: calls.append((args, kwargs)))
+    assert calls == []
+    assert not (tmp_path / 'send-requests').exists()
+
+
+@pytest.mark.parametrize('operation', ['send', 'reply', 'stdin'])
+@pytest.mark.parametrize('character', ['x', '\u00e9'])
+def test_text_boundary_counts_characters_and_preserves_custody(tmp_path, monkeypatch, operation, character):
+    import io
+    import json
+
+    from src.agentbus_delivery_client import send_command
+    from src.agentbus_service import MAX_TEXT
+
+    values, profile, info = _text_bound_context(tmp_path)
+    text = character * MAX_TEXT
+    monkeypatch.setattr('sys.stdin', io.StringIO(text))
+    calls = []
+    def post(_values, path, payload, **kwargs):
+        calls.append((path, payload, kwargs))
+        return {'cursor': 1}
+    ns = _text_bound_command(operation, text)
+    assert send_command(ns, values, lambda *_: (profile, info), lambda value: value, post) == {'cursor': 1}
+    assert len(calls) == 1 and calls[0][1]['text'] == text
+    stages = list((tmp_path / 'send-requests').glob('*.json'))
+    assert len(stages) == 1
+    assert json.loads(stages[0].read_text())['payload']['text'] == text
+
+
+@pytest.mark.parametrize('status', [400, 401, 403, 404, 413, 422])
+def test_known_http_rejection_preserves_status_and_stage_without_blind_retry(tmp_path, status):
+    import json
+
+    from src.agentbus_delivery_client import send_command
+
+    values, profile, info = _text_bound_context(tmp_path)
+    calls = []
+    def post(*args, **kwargs):
+        calls.append(kwargs)
+        raise ClientError(f'AgentBus returned HTTP {status}.', status=status)
+    ns = _text_bound_command('send', 'hello')
+    with pytest.raises(ClientError, match='Inspect validation, authorization and destination') as failed:
+        send_command(ns, values, lambda *_: (profile, info), lambda value: value, post)
+    assert failed.value.status == status
+    assert 'acceptance may be uncertain' not in str(failed.value)
+    assert 'does not establish custody' in str(failed.value)
+    assert 'private-session' not in str(failed.value)
+    stages = list((tmp_path / 'send-requests').glob('*.json'))
+    assert len(stages) == 1
+    retained = json.loads(stages[0].read_text())
+    assert retained['request_id'] == calls[0]['delivery_key']
+    assert retained['epoch'] == 'a' * 64
+    assert retained['request_id'] in str(failed.value)
+
+
+def test_missing_explicit_stage_explains_first_send_without_submission(tmp_path):
+    from src.agentbus_delivery_client import send_command
+
+    values, profile, info = _text_bound_context(tmp_path)
+    ns = _text_bound_command('send', 'hello')
+    ns.message_id = '7d76697d-ed3f-4abf-afc9-45e20312f42a'
+    calls = []
+    with pytest.raises(ClientError, match='omit --message-id for a new first send'):
+        send_command(ns, values, lambda *_: (profile, info), lambda value: value,
+                     lambda *args, **kwargs: calls.append((args, kwargs)))
+    assert calls == []
+    assert list((tmp_path / 'send-requests').glob('*.json')) == []
+
+
+@pytest.mark.parametrize('path,code,expected', [
+    ('/v1/sessions', 'enrollment_request_expired', 'enrollment_request_expired'),
+    ('/v1/sessions', 'private-untrusted-value', None),
+    ('/v1/messages', 'enrollment_request_expired', None),
+])
+def test_transport_enrollment_recovery_header_is_allowlisted(monkeypatch, path, code, expected):
+    import io
+    from urllib.error import HTTPError
+
+    from src import agentbus_transport_client as transport
+    class Opener:
+        def open(self, *_args, **_kwargs):
+            raise HTTPError('http://localhost', 403, 'denied',
+                            {'X-AgentBus-Recovery-Code': code}, io.BytesIO(b'private-response-body'))
+    monkeypatch.setattr(transport, 'build_opener', lambda *_: Opener())
+    with pytest.raises(ClientError) as failed:
+        transport.api({'AGENTBUS_URL': 'http://localhost', 'AGENTBUS_API_TOKEN': 'private-bearer'},
+                      path, {'approval_request_id': 'request-one'})
+    assert failed.value.recovery_code == expected
+    assert 'private-' not in str(failed.value)

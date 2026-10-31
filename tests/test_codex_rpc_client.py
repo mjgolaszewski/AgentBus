@@ -75,14 +75,14 @@ for line in sys.stdin:
     else:
         result = {"result": {}}
     if method == "turn/start" and mode == "early":
-        print(json.dumps({"method": "turn/completed", "params": {"turn": {
+        print(json.dumps({"method": "turn/completed", "params": {"threadId": "thread-one", "turn": {
             "id": "turn-new", "status": "completed"}}}), flush=True)
     if method == "turn/start" and mode in {"approval-early", "approval-other"}:
         requested_turn = "turn-other" if mode == "approval-other" else "turn-new"
         print(json.dumps({"id": 99, "method": "item/commandExecution/requestApproval",
             "params": {"threadId": "thread-one", "turnId": requested_turn}}), flush=True)
     if method == "turn/interrupt" and mode == "terminal-before-error":
-        print(json.dumps({"method": "turn/completed", "params": {"turn": {
+        print(json.dumps({"method": "turn/completed", "params": {"threadId": "thread-one", "turn": {
             "id": "turn-new", "status": "interrupted"}}}), flush=True)
     print(json.dumps({"id": item["id"], **result}), flush=True)
     if method == "turn/start" and mode == "approval":
@@ -96,30 +96,30 @@ for line in sys.stdin:
         print("{not-json", flush=True)
     if method == "turn/start" and mode == "delayed":
         time.sleep(0.2)
-        print(json.dumps({"method": "turn/completed", "params": {"turn": {
+        print(json.dumps({"method": "turn/completed", "params": {"threadId": "thread-one", "turn": {
             "id": "turn-new", "status": "completed"}}}), flush=True)
     if method == "turn/interrupt" and mode == "stall":
-        print(json.dumps({"method": "turn/completed", "params": {"turn": {
+        print(json.dumps({"method": "turn/completed", "params": {"threadId": "thread-one", "turn": {
             "id": "turn-new", "status": "interrupted"}}}), flush=True)
     if method == "turn/interrupt" and mode == "malformed-after-accept":
-        print(json.dumps({"method": "turn/completed", "params": {"turn": {
+        print(json.dumps({"method": "turn/completed", "params": {"threadId": "thread-one", "turn": {
             "id": "turn-new", "status": "interrupted"}}}), flush=True)
     if method == "turn/interrupt" and mode in {"approval", "approval-early"} and approval_rejected:
-        print(json.dumps({"method": "turn/completed", "params": {"turn": {
+        print(json.dumps({"method": "turn/completed", "params": {"threadId": "thread-one", "turn": {
             "id": "turn-new", "status": "interrupted"}}}), flush=True)
     if method == "turn/interrupt" and mode == "approval-grace" and approval_rejected:
         time.sleep(0.12)
-        print(json.dumps({"method": "turn/completed", "params": {"turn": {
+        print(json.dumps({"method": "turn/completed", "params": {"threadId": "thread-one", "turn": {
             "id": "turn-new", "status": "interrupted"}}}), flush=True)
     if method == "turn/start" and mode == "approval-other":
         response = json.loads(sys.stdin.readline())
         with calls.open("a") as stream:
             stream.write(json.dumps({"method": "approval-response",
                 "error": response.get("error")}) + "\\n")
-        print(json.dumps({"method": "turn/completed", "params": {"turn": {
+        print(json.dumps({"method": "turn/completed", "params": {"threadId": "thread-one", "turn": {
             "id": "turn-new", "status": "completed"}}}), flush=True)
     if method == "turn/start" and mode == "failed":
-        print(json.dumps({"method": "turn/completed", "params": {"turn": {
+        print(json.dumps({"method": "turn/completed", "params": {"threadId": "thread-one", "turn": {
             "id": "turn-new", "status": "failed"}}}), flush=True)
 '''
 
@@ -264,3 +264,23 @@ def test_terminal_notification_is_captured_before_or_after_start_reply(tmp_path:
     with host(tmp_path, mode) as rpc:
         turn_id = rpc.start_turn("thread-one", "wake")
         assert rpc.await_turn_terminal("thread-one", turn_id, max_seconds=1) == expected
+
+
+@pytest.mark.parametrize("foreign_thread", [None, "", "thread-other"])
+def test_terminal_observation_requires_exact_thread_and_turn(monkeypatch, foreign_thread):
+    rpc = CodexAppServer()
+    foreign = {"turn": {"id": "turn-same", "status": "completed"}}
+    if foreign_thread is not None:
+        foreign['threadId'] = foreign_thread
+    rpc._observe_terminal({"method": "turn/completed", "params": foreign})
+    received = []
+    def own_terminal(_deadline):
+        received.append(True)
+        return {"method": "turn/completed", "params": {"threadId": "thread-one",
+                "turn": {"id": "turn-same", "status": "interrupted"}}}
+    monkeypatch.setattr(rpc, '_receive', own_terminal)
+    assert rpc._terminal_until('thread-one', 'turn-same', time.monotonic()+1) == 'interrupted'
+    assert received == [True]
+    if foreign_thread == 'thread-other':
+        assert rpc._terminal_until('thread-other', 'turn-same', time.monotonic()+1) == 'completed'
+        assert received == [True]

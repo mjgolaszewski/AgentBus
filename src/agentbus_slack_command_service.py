@@ -67,7 +67,10 @@ def short_session(session_id: str, all_ids: list[str]) -> str:
 def execute_command(payload: dict, settings, store, web_client, *, dashboard=None) -> str:
     """Authorize by Slack's verified Socket Mode user ID and exact session ID."""
     channel = payload.get("channel_id")
-    if payload.get("command") != "/agentbus" or not isinstance(channel, str) or channel not in settings.channels:
+    command = settings.slack_command
+    if payload.get("command") != command:
+        return "Unsupported AgentBus slash command."
+    if not isinstance(channel, str) or channel not in settings.channels:
         return "AgentBus commands are available only in the configured channel."
     user = payload.get("user_id")
     if not isinstance(user, str) or user not in settings.slack_operator_user_ids:
@@ -77,30 +80,30 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
         return "Command text is too long."
     parts = raw.strip().split(maxsplit=2)
     if not parts or parts[0] == "help":
-        return HELP
+        return HELP.replace("/agentbus", command)
     action = parts[0]
     if action in {'workers', 'doctor', 'pending', 'explain'}:
         from src.agentbus_operator_presentation_service import explain_text, pending_text, workers_text
         from src.agentbus_operator_query_service import doctor_checks, explain_snapshot, pending_snapshot
         if action in {'workers', 'doctor'}:
             if len(parts) != 1:
-                return f'Use `/agentbus {action}` without a target.'
+                return f'Use `{command} {action}` without a target.'
             from src.agentbus_status_api_service import service_dashboard
             snapshot = dashboard() if dashboard is not None else service_dashboard(settings, store)
             if action == 'workers':
                 return workers_text(snapshot)
             return '*Doctor — read-only checks*\n\n' + '\n\n'.join(
-                f'*{name}: {state}*\n{guidance}' for name, state, guidance in doctor_checks(snapshot))
+                f'*{name}: {state}*\n{guidance}' for name, state, guidance in doctor_checks(snapshot, command=command))
         if action == 'explain':
             if len(parts) != 2 or not re.fullmatch(r'[1-9][0-9]{0,17}', parts[1]):
-                return 'Use `/agentbus explain CURSOR` with a positive channel-local cursor.'
+                return f'Use `{command} explain CURSOR` with a positive channel-local cursor.'
             return explain_text(explain_snapshot(store, channel, int(parts[1])))
         if len(parts) > 2:
-            return 'Use `/agentbus pending` or `/agentbus pending ID`.'
+            return f'Use `{command} pending` or `{command} pending ID`.'
         try:
             target = resolve_session(store, parts[1], channel) if len(parts) == 2 else None
         except KeyError:
-            return 'Unknown session or identity. Use /agentbus roster.'
+            return f'Unknown session or identity. Use {command} roster.'
         except ValueError as exc:
             return str(exc)
         return pending_text(pending_snapshot(store, channel, target))
@@ -115,13 +118,13 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
                     f"Physical allocation `{result['physical_bytes']}` bytes · reusable pages `{result['reusable_bytes']}` bytes\n"
                     'No message, receipt, retry identity or credential rows were deleted. This is not an ACK or a vacuum.')
         if len(parts) != 1 and parts[1:] != ['checkpoint']:
-            return 'Use `/agentbus storage` to inspect; `/agentbus storage checkpoint CONFIRM` applies service-wide WAL maintenance.'
+            return f'Use `{command} storage` to inspect; `{command} storage checkpoint CONFIRM` applies service-wide WAL maintenance.'
         storage = store.retention.storage()
         return (f"*💾 Service-wide storage*\nPhysical allocation `{storage['physical_bytes']}` bytes\n"
                 f"Reusable database pages `{storage['reusable_bytes']}` bytes\n"
                 f"Archive-only maintenance headroom `{storage['archive_maintenance_bytes']}` bytes; accounted archive limit `{storage['archive_limit_bytes']}` bytes\n"
                 'Checkpoint maintenance is service-wide, nonblocking and preserves custody. '
-                'Use `/agentbus storage checkpoint CONFIRM` to apply; no generic cache flush is available.')
+                f'Use `{command} storage checkpoint CONFIRM` to apply; no generic cache flush is available.')
     if action == "lifecycle":
         from src.agentbus_message_lifecycle_service import LifecycleRejected
         if len(parts) == 1:
@@ -133,7 +136,7 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
                 f"{state}: `{states.get(state, 0)}`" for state in
                 ('unclaimed', 'picked_up', 'handled', 'expired_unclaimed', 'recovery_required'))
         if parts[1] not in {'settle','archive','purge'} or (len(parts) == 3 and parts[2] != 'CONFIRM'):
-            return 'Use `/agentbus lifecycle settle|archive|purge` to preview; append `CONFIRM` to apply.'
+            return f'Use `{command} lifecycle settle|archive|purge` to preview; append `CONFIRM` to apply.'
         try:
             operation = store.lifecycle.reconcile if parts[1] == 'settle' else getattr(store.retention, parts[1])
             result = operation(channel, actor=f'slack:{user}',
@@ -165,7 +168,7 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
         return "Showing up to 20 oldest pending requests; approved requests await join.\n" + "\n".join(
             f"{row['request_id']} | {row['route']} | {row['display_name']} | profile {row['chat_id']} | "
             f"{'approved in ' + row['approved_channel'] if row['approved_channel'] else 'awaiting approval'}\n"
-            f"`/agentbus approve {row['request_id']}`"
+            f"`{command} approve {row['request_id']}`"
             for row in rows)
     if action == "approve" and len(parts) == 2:
         if not SESSION_ID.fullmatch(parts[1]):
@@ -215,12 +218,12 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
             for item in sessions[:50]
         ) + (f"\n… `{len(sessions) - 50}` more" if len(sessions) > 50 else "") + "\nHost wake availability is separate from participation."
     if len(parts) < 2:
-        return HELP
+        return HELP.replace("/agentbus", command)
     try:
         session_id = resolve_session(store, parts[1], channel)
         presence = store.participation.presence(session_id)
     except KeyError:
-        return "Unknown session or identity. Use /agentbus roster."
+        return f"Unknown session or identity. Use {command} roster."
     except ValueError as exc:
         return str(exc)
     if action == "status" and len(parts) == 2:
@@ -270,7 +273,7 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
         return f"Checkpoint requested for {presence['route']}; control {control_id}."
     if action == "retire":
         if len(parts) != 3 or parts[2] != "CONFIRM":
-            return f"Retiring {presence['route']} is irreversible. Run /agentbus retire {session_id} CONFIRM."
+            return f"Retiring {presence['route']} is irreversible. Run {command} retire {session_id} CONFIRM."
         with store._lock:
             pending = store._db.execute(
                 "SELECT c.control_id FROM operator_controls AS c "
@@ -311,4 +314,4 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
             return "Slack delivery is uncertain; inspect the channel before retrying."
         stored = store.append(channel, response["ts"], message)
         return f"Delivered to {presence['route']} as cursor {store.channels.public_cursor(channel, stored.cursor)}."
-    return HELP
+    return HELP.replace("/agentbus", command)

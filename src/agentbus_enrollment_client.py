@@ -84,21 +84,21 @@ def enrollment_command(ns, project, values, api):
             payload.update(approval_request_id=pending["approval_request_id"], profile_chat_id=profile["chat_id"])
         else:
             payload["enrollment_token"] = pending.get("enrollment_token") or pending.get("handoff_token")
-        result = api(values, "/v1/sessions", payload)
+        result = _submit_enrollment(values, payload, identity, api)
         if result.get("status") == "approval_required":
             if result.get("request_id") != pending.get("approval_request_id"):
                 raise ClientError("Enrollment request receipt differs; retain staged recovery state.")
             print(f"Enrollment approval required for {identity} (profile {profile['chat_id']}).\n"
                   f"In the intended Slack channel, an allowlisted operator runs:\n"
-                  f"/agentbus approve {result['request_id']}\n"
-                  f"Then rerun agentbus join --identity {identity}, or leave --wait-for-approval running. Approval expires after ten minutes. "
+                  f"{values.get('AGENTBUS_SLACK_COMMAND', '/agentbus')} approve {result['request_id']}\n"
+                  f"Then rerun agentbus join --identity {identity}, or leave --wait-for-approval running. Requests expire ten minutes after creation; approval does not extend that lifetime. "
                   "No credential file or operator token is needed in this chat.", flush=True)
             if getattr(ns, "wait_for_approval", False):
                 deadline = time.monotonic() + 600
                 delay = 2.0
                 while result.get("status") == "approval_required" and time.monotonic() < deadline:
                     time.sleep(min(delay, max(0, deadline - time.monotonic())))
-                    result = api(values, "/v1/sessions", payload)
+                    result = _submit_enrollment(values, payload, identity, api)
                     delay = min(30.0, delay * 2)
             if result.get("status") == "approval_required":
                 return 0
@@ -128,9 +128,11 @@ def enrollment_command(ns, project, values, api):
                 print(json.dumps({"codex_wake": wake}))
         except ClientError as exc:
             print(f"Codex wake enrollment pending: {exc}", file=sys.stderr)
+        from src.agentbus_presentation_client import idle_cadence
+
         cadence = result["values"]
         print(f"Acknowledge with `agentbus policy-ack --identity {identity} {result['revision']}`. Active-turn checks: `agentbus poll --check --identity {identity}` at work checkpoints; "
-              f"back off {cadence['initial_interval_seconds']}s ×{cadence['backoff_factor']} to {cadence['max_interval_seconds']}s after quiet checks. Idle live-wakable chats end turns; the worker keeps checking. Empty checks print nothing.")
+              f"{idle_cadence(cadence)} after quiet checks. Let the worker wait; empty checks print nothing. Report new work, controls, state changes or actionable failures, not unchanged waiting.")
         return 0
     if ns.command == "onboard":
         ns.repo = ns.repo or current_repo()
@@ -175,16 +177,51 @@ def enrollment_command(ns, project, values, api):
         return 0
 
 
-def announce_pending(values,profile,api):
+def announce_pending(values, profile, api, checked_profile):
     from src.agentbus_client import save_profile
+    from src.agentbus_delivery_client import deliver_payload
+
     if 'announcement_pending' not in profile:
         return
-    text=profile['announcement_pending'] or f"{profile['display_name']} joined as {profile['identity']}. {profile['remit']}"
-    key=profile.setdefault('announcement_message_id',str(uuid.uuid4()))
-    save_profile(values,profile)
-    receipt=api(values,'/v1/messages',{'sender':profile['identity'],'recipient':'all','audience':'broadcast',
-        'kind':'introduction','repo':profile['repo'],'text':text},
-        session_token=profile['participation']['session_secret'],inbox_id=profile['inbox_id'],delivery_key=key)
-    profile['announcement']={'cursor':receipt['cursor'],'slack_ts':receipt['slack_ts']}
-    profile.pop('announcement_pending',None)
-    save_profile(values,profile)
+    current, info = checked_profile(values, profile['identity'])
+    if 'announcement_pending' not in current:
+        return  # Another exact-session recovery already committed the receipt.
+    if values.get('_AGENTBUS_DELIVERY_VERSION') not in {'1', '2'}:
+        raise ClientError('Introduction requires verified durable delivery; pending intent retained')
+    text = current['announcement_pending'] or (
+        f"{current['display_name']} joined as {current['identity']}. {current['remit']}")
+    payload = {'sender': current['identity'], 'recipient': 'all', 'audience': 'broadcast',
+               'kind': 'introduction', 'repo': current['repo'], 'text': text}
+
+    def submit(selected_values, path, body, **options):
+        key = options.get('delivery_key')
+        if not isinstance(key, str) or not key:
+            raise ClientError('Introduction requires a retained request identity; no message submitted')
+        if current.get('announcement_message_id') is None:
+            # Lifecycle staging has completed. Persist the exact key before the
+            # first POST; a concurrent profile conflict must stop before egress.
+            current['announcement_message_id'] = key
+            save_profile(values, current)
+        elif current['announcement_message_id'] != key:
+            raise ClientError('Introduction request identity changed; evidence retained')
+        return api(selected_values, path, body, **options)
+
+    receipt = deliver_payload(values, current, info, payload, submit,
+                              message_id=current.get('announcement_message_id'))
+    current['announcement'] = {'cursor': receipt['cursor'], 'slack_ts': receipt['slack_ts']}
+    current.pop('announcement_pending', None)
+    save_profile(values, current)
+
+
+def _submit_enrollment(values, payload, identity, api):
+    try:
+        return api(values, "/v1/sessions", payload)
+    except ClientError as exc:
+        if exc.status == 403 and exc.recovery_code == "enrollment_request_expired":
+            raise ClientError(
+                "Enrollment request expired; no enrollment was redeemed. Preserve the staged request. "
+                f"Run `agentbus join --identity {identity} --new-enrollment-request` to archive it and "
+                "request fresh operator approval in the intended Slack channel.",
+                status=403, recovery_code=exc.recovery_code,
+            ) from None
+        raise

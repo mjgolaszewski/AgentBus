@@ -60,6 +60,11 @@ def atomic_json(path: Path, data: dict) -> None:
             os.fsync(stream.fileno())
         os.chmod(temporary, 0o600)
         os.replace(temporary, path)
+        directory_fd = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
@@ -341,9 +346,9 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
         save_profile(values, profile)
         retire_event(path, profile, "POLICY_CHANGED", ns.revision)
         from src.agentbus_enrollment_client import announce_pending
-        announce_pending(values, profile, api)
         ensure_worker(path, values)
         print(f"ACK {result['receipt']} POLICY")
+        announce_pending(values, profile, api, checked_profile)
         return 0
     if ns.command == "poll":
         identity = resolve_identity(ns.identity)
@@ -357,12 +362,18 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
         from src.agentbus_presentation_client import render_event
 
         path = identity_path(values, identity).resolve()
+        from src.agentbus_poll_client import foreground_check_in
+
+        foreground_check_in(values, path, profile, api_call=api)
         last_ensure = 0.0
         while True:
             if time.monotonic() - last_ensure >= 5:
                 ensure_worker(path, values)
                 last_ensure = time.monotonic()
             event = peek_event(path, profile, quiet=bool(profile.get("quiet_mode", False)))
+            from src.agentbus_poll_client import reconcile_message_event
+            if event is not None and reconcile_message_event(values, path, profile, event, api_call=api):
+                continue
             if event is not None:
                 budget = session["policy_values"].get("presentation_budget_bytes")
                 rendered = render_event(event, json_mode=ns.json, budget_bytes=budget)
@@ -383,8 +394,9 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
         session = profile.get("participation")
         if not session:
             raise ClientError("This chat is not joined; run `agentbus join`.")
-        result = api(values, f"/v1/sessions/{session['session_id']}/check-in",
-                     {}, session_token=session["session_secret"], inbox_id=profile["inbox_id"])
+        from src.agentbus_poll_client import foreground_check_in
+        path = identity_path(values, identity).resolve()
+        result = foreground_check_in(values, path, profile, api_call=api)
         print(json.dumps(result, indent=2))
         return 0
     if ns.command == "ack-control":
@@ -517,16 +529,35 @@ def cli_lifecycle_message(ns: argparse.Namespace, project: Path, values: dict[st
     from src.agentbus_lifecycle_client import message_command
     identity = resolve_identity(ns.identity)
     profile = load_profile(values, identity, save_migration=False)
-    print(json.dumps(message_command(ns, values, profile, api_call=api), indent=2))
+    result = message_command(ns, values, profile, api_call=api)
+    if ns.command == 'complete' and result.get('state') == 'handled':
+        if type(result.get('cursor')) is not int or result['cursor'] != ns.cursor:
+            raise ClientError('Completion receipt scope differs; presentation evidence retained')
+        from src.agentbus_poll_client import retire_event
+        retire_event(identity_path(values, identity).resolve(), profile, 'MESSAGE', str(ns.cursor))
+    print(json.dumps(result, indent=2))
     return 0
 
 
 def cli_message_status(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
     from src.agentbus_scope_client import scoped_api
-    if ns.cursor < 1:
-        raise ClientError('Message cursor must be positive')
     profile = load_profile(values, resolve_identity(ns.identity), save_migration=False)
-    print(json.dumps(scoped_api(values, f'/v1/messages/{ns.cursor}/outcome', profile, api_call=api), indent=2))
+    if ns.message_id is not None:
+        from uuid import UUID
+        try:
+            if str(UUID(ns.message_id)) != ns.message_id:
+                raise ValueError()
+        except ValueError:
+            raise ClientError('Request identity must be a canonical UUID') from None
+        info = scoped_api(values, '/v1/info', profile, api_call=api)
+        if 'authored-request-outcome-v1' not in info.get('features', []):
+            raise ClientError('Service lacks authored request lookup; acceptance remains unknown')
+        route = f'/v1/requests/{ns.message_id}/outcome'
+    else:
+        if ns.cursor < 1:
+            raise ClientError('Message cursor must be positive')
+        route = f'/v1/messages/{ns.cursor}/outcome'
+    print(json.dumps(scoped_api(values, route, profile, api_call=api), indent=2))
     return 0
 
 

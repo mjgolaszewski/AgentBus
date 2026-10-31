@@ -36,7 +36,7 @@ class CodexAppServer:
         self.proc: subprocess.Popen[bytes] | None = None
         self.buffer = bytearray()
         self.next_id = 1
-        self.terminal_turns: dict[str, str] = {}
+        self.terminal_turns: dict[tuple[str, str], str] = {}
         self.rejected_turn_requests: set[tuple[str, str]] = set()
         self.interrupt_requested: set[tuple[str, str]] = set()
         self.last_turn_status = "unknown"
@@ -162,14 +162,17 @@ class CodexAppServer:
             self.turn_observer(params["threadId"], turn["id"], turn["status"])
         if frame.get("method") != "turn/completed":
             return
-        if (isinstance(turn, dict) and isinstance(turn.get("id"), str) and
-                turn.get("status") in {"completed", "interrupted", "failed"}):
-            self.terminal_turns[turn["id"]] = turn["status"]
+        if (isinstance(params, dict) and isinstance(params.get("threadId"), str)
+                and params["threadId"] and isinstance(turn, dict)
+                and isinstance(turn.get("id"), str) and turn["id"]
+                and turn.get("status") in {"completed", "interrupted", "failed"}):
+            self.terminal_turns[(params["threadId"], turn["id"])] = turn["status"]
 
     def _terminal_until(self, thread_id: str, turn_id: str, deadline: float) -> str:
-        if (thread_id, turn_id) in self.rejected_turn_requests and turn_id not in self.terminal_turns:
+        key = (thread_id, turn_id)
+        if key in self.rejected_turn_requests and key not in self.terminal_turns:
             self._request_interrupt(thread_id, turn_id)
-        while turn_id not in self.terminal_turns:
+        while key not in self.terminal_turns:
             frame = self._receive(deadline)
             if "method" in frame and "id" in frame:
                 self._reject_server_request(frame)
@@ -179,7 +182,7 @@ class CodexAppServer:
             self._observe_terminal(frame)
         self.rejected_turn_requests.discard((thread_id, turn_id))
         self.interrupt_requested.discard((thread_id, turn_id))
-        return self.terminal_turns.pop(turn_id)
+        return self.terminal_turns.pop(key)
 
     def await_turn_terminal(self, thread_id: str, turn_id: str, *, max_seconds: float = 3600) -> str:
         """Keep the owning stdio transport open through exact terminal status."""

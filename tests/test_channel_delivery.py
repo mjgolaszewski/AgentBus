@@ -154,3 +154,48 @@ def test_channel_failure_after_submission_keeps_aggregate_attempt_budget(tmp_pat
     asyncio.run(coordinator.submit_once())
     assert budgets == [5]
     store.close()
+
+
+def test_caught_provider_failure_reports_degraded_without_blocking_other_channel(tmp_path):
+    from uuid import uuid4
+
+    from src.agentbus_delivery_runtime_service import DeliveryCoordinator
+    from src.agentbus_local_delivery_service import fingerprint
+    from src.agentbus_service import MessageStore, SendMessage
+
+    store = MessageStore(tmp_path / 'provider-failure.sqlite3')
+    store.channels.configure(('C111', 'C222'))
+    posted = []
+    class Poster:
+        def __init__(self, channel):
+            self.channel = channel
+        async def post(self, message, *, message_id):
+            posted.append(self.channel)
+            if self.channel == 'C111':
+                raise OSError('private-provider-detail')
+            return '100.000001'
+    for channel in ('C111', 'C222'):
+        body = SendMessage(sender='agentbus:sender', recipient='all', audience='broadcast', text='test')
+        store.local_delivery.accept(channel, str(uuid4()), fingerprint(body.model_dump()), body, 'session')
+    coordinator = DeliveryCoordinator(store, {ch: Poster(ch) for ch in ('C111', 'C222')})
+    async def scenario():
+        task = asyncio.create_task(coordinator.run())
+        try:
+            for _ in range(10):
+                await asyncio.sleep(0)
+                if coordinator.observations.snapshot()['delivery']['state'] == 'degraded':
+                    break
+            result = coordinator.observations.snapshot()['delivery']
+            assert result['state'] == 'degraded'
+            assert result['last_completed_at'] is None
+            assert result['error'] == 'channel_cycle_incomplete'
+            assert 'private-provider-detail' not in str(result)
+            assert posted == ['C111', 'C222']
+        finally:
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+    try:
+        asyncio.run(scenario())
+    finally:
+        store.close()

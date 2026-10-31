@@ -408,12 +408,13 @@ def test_health_status_does_not_hold_lock_needed_to_stop_service(launcher, proje
 def test_active_poll_check_returns_silently_when_worker_has_no_event(launcher, tmp_path, monkeypatch, capsys):
     from src import agentbus_poll_client as poll
 
-    profile = {"identity": "agentbus:flower", "participation": {"session_id": "s1", "stopped": False}}
+    profile = {**joined_profile(), "identity": "agentbus:flower"}
     path = tmp_path / "agentbus:flower.json"
     path.write_text(json.dumps(profile))
-    monkeypatch.setattr(launcher, "configuration", lambda **_kwargs: (tmp_path, {}))
+    monkeypatch.setattr(launcher, "configuration", lambda **_kwargs: (tmp_path, {"AGENTBUS_URL": profile["service_url"]}))
     monkeypatch.setattr(launcher, "checked_profile", lambda _values, _identity: (profile, {}))
     monkeypatch.setattr(launcher, "identity_path", lambda _values, _identity: path)
+    monkeypatch.setattr(launcher, "api", lambda *_args, **_kwargs: {"controls": []})
     monkeypatch.setattr(poll, "ensure_worker", lambda *_args: None)
     monkeypatch.setattr(poll, "peek_event", lambda *_args, **_kwargs: None)
     assert launcher.main(["poll", "--check", "--identity", "agentbus:flower"]) == 0
@@ -790,8 +791,8 @@ def test_poll_cli_uses_budgeted_default_and_full_json_on_demand(launcher, tmp_pa
     path = state / f"{identity}.json"
     path.write_text(json.dumps(profile))
     monkeypatch.setattr(launcher, "configuration", lambda **kwargs: (Path("/unused"), values))
-    monkeypatch.setattr(launcher, "api", lambda *_args, **_kwargs:
-                        scope_info())
+    monkeypatch.setattr(launcher, "api", lambda _values, route, *_args, **_kwargs:
+                        {"controls": []} if route.endswith("/check-in") else scope_info())
     monkeypatch.setattr(poll, "ensure_worker", lambda *_args: None)
 
     def queue(cursor):
@@ -948,7 +949,8 @@ def test_poll_message_observation_permits_explicit_ack_without_extra_inbox(launc
     path = state / 'tools:weed.json'
     path.write_text(json.dumps(profile))
     monkeypatch.setattr(launcher, 'configuration', lambda **kwargs: (Path('/unused'), values))
-    monkeypatch.setattr(launcher, 'api', lambda *args, **kwargs: scope_info())
+    monkeypatch.setattr(launcher, 'api', lambda _values, route, *args, **kwargs:
+                        {'controls': []} if route.endswith('/check-in') else scope_info())
     monkeypatch.setattr(poll, 'ensure_worker', lambda *args: None)
     poll.change_spool(path, profile, lambda spool: poll._append(spool, {
         'kind': 'MESSAGE', 'id': '90', 'message': {'cursor': 90, 'sender': 'tools:peer',
@@ -1132,3 +1134,42 @@ def test_file_grant_join_checks_service_before_sending_staged_proof(launcher, tm
     monkeypatch.setattr(launcher, 'configuration', lambda **kwargs: (Path('/unused'), values))
     assert launcher.main(['join', '--identity', 'tools:weed', '--enrollment-file', str(grant)]) == 1
     assert calls == [] and path.read_bytes() == before
+
+
+def test_message_status_request_uuid_is_exclusive_and_keeps_unknown_recovery(monkeypatch, launcher, capsys):
+    from src.agentbus_parser_client import parse_args
+
+    key = '11111111-1111-4111-8111-111111111111'
+    for args in ([], ['--cursor','1','--message-id',key]):
+        with pytest.raises(SystemExit):
+            parse_args(['message-status',*args])
+    profile = {'identity':'agentbus:own'}
+    monkeypatch.setattr(launcher, 'resolve_identity', lambda value: 'agentbus:own')
+    monkeypatch.setattr(launcher, 'load_profile', lambda *_args, **_kw: profile)
+    calls = []
+    def lookup(values, route, principal, **kwargs):
+        calls.append(route)
+        assert principal is profile
+        return {'features':['authored-request-outcome-v1']} if route == '/v1/info' else {'known':False,'accepted':None}
+    monkeypatch.setattr('src.agentbus_scope_client.scoped_api', lookup)
+    ns = parse_args(['message-status','--message-id',key])
+    assert launcher.cli_message_status(ns, None, {}) == 0
+    assert calls == ['/v1/info',f'/v1/requests/{key}/outcome']
+    assert '"accepted": null' in capsys.readouterr().out
+
+
+def test_request_status_unsupported_service_keeps_acceptance_unknown(monkeypatch, launcher):
+    from src.agentbus_parser_client import parse_args
+    from src.agentbus_transport_client import ClientError
+
+    monkeypatch.setattr(launcher, 'resolve_identity', lambda value: 'agentbus:own')
+    monkeypatch.setattr(launcher, 'load_profile', lambda *_args, **_kw: {})
+    calls = []
+    def unsupported(values, route, profile, **kwargs):
+        calls.append(route)
+        return {'features':[]} if route == '/v1/info' else {'known':False}
+    monkeypatch.setattr('src.agentbus_scope_client.scoped_api', unsupported)
+    ns = parse_args(['message-status','--message-id','11111111-1111-4111-8111-111111111111'])
+    with pytest.raises(ClientError, match='acceptance remains unknown'):
+        launcher.cli_message_status(ns, None, {})
+    assert calls == ['/v1/info']

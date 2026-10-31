@@ -1,11 +1,4 @@
-document:
-  kind: product_spec
-  name: "AgentBus Product Spec"
-  id: "agentbus-product-spec"
-  version: 1.0.0
-  generated_at_utc: "2026-09-27T00:00:00Z"
-  status: active_delivery
-  path: plans/product-spec.yml
+document: {generated_at_utc: '2026-09-27T00:00:00Z', id: agentbus-product-spec, kind: product_spec, name: AgentBus Product Spec, path: plans/product-spec.yml, status: active_delivery, version: 1.0.0}
 product:
   name: "AgentBus"
   project_name: "AgentBus"
@@ -14,8 +7,12 @@ product:
   non_goals: ["AgentBus core executing or orchestrating coding agents; an optional host-owned adapter may start an explicitly bound Codex thread", "using persona labels as authentication or authorization", "providing offline Slack history, exactly-once Slack delivery, or a general message broker"]
 constraints:
   operating_constraints:
-    - "RC2 human Slack requests require the operator allowlist; unique current identity fragments resolve channel-first; global health is private operator-only; rich text preserves machine envelopes; broadcast/poll retain one shared durable control with fixed channel-local read receipts or answers, distinct from delivery and wake; optional secret-bound Slack approval replaces manual file handoff without granting pending agents authority; RC3 ordinary-message lifecycle construction uses scoped epochs explicit pickup/handling bounded replay and reference-safe SQLite retention; legacy unknown federation and shared-control retirement remain pinned or unqualified; no live qualification or automatic purge is implied; RC6 adds bounded resumable federation backlog recovery with oldest-prefix checkpoints and generation-covered uncertain retries; RC7 preserves occupied raw carriers with distinct scoped notifications and removes installation-specific public notices; bundled Codex skill guides participation without enrollment credentials deployment or host authority"
-    - "RC4 grouped private health and workers doctor pending explain commands inspect process-local delivery progress and bounded channel-scoped retained outcomes without new monitoring loops provider probes repairs acknowledgement or host/remote-health guarantees"
+    - "Allowlisted Slack human requests use channel-first unique identity lookup and private operator dashboards; rich text preserves protocol2 envelopes. Broadcasts and polls retain one shared durable control with exact-session read receipts or answers."
+    - "File-free operator Slack approval retains immutable staged enrollment proof; pending requests grant no session authority. Lifecycle cutover uses explicit epochs, pickup, handling and reference-safe retention; unknown shared and federated custody remains pinned."
+    - "Federation recovery uses bounded resumable oldest-prefix coverage and generation-bound uncertain retries; occupied raw carriers retain timestamp ownership and project distinct scoped notifications. Transport custody is not local session assurance, execution or semantic ACK."
+    - "One explicitly configured Slack command serves the existing app and socket. Fresh empty participation stores use the standard 1/2/4/8/12/16/24/32-minute idle ladder; existing operator policies and mandatory control-check bounds remain authoritative."
+    - "Quiet polling delegates idle waits to the native worker; empty or unchanged checks produce no narration. Shipped skill guidance cannot enforce an agent mental model or guarantee its independent token use."
+    - "Grouped private health, workers, doctor, pending and explain commands report observed local progress and bounded channel-scoped outcomes without new monitoring loops, repairs, ACKs or inferred remote health."
     - "one process SQLite database Slack app and Socket Mode receiver; explicit allowlist up to16 channels; one immutable grant-backed channel per identity"
     - "all agent reads/writes require exact session proof and bound inbox; no bearer-only or unjoined fallback; channel-local public cursors conceal other-channel counts"
     - "bearer-authenticated HTTP is loopback-only unless an operator supplies a secure boundary; opt-in federation enqueue requires a joined session, operator Ed25519 bindings, durable bounded custody, and separate live-provider qualification"
@@ -36,5 +33,5 @@ execution_phases:
   - {phase_id: P09, build_block: "lightweight_federation_and_owner_mediated_wake", objective: "construct Issue #48 outbound-only federation, remote directory synchronization, and owner-mediated idle-only wake while deferring publication to final BCF custody", release_train: release_9}
   - {phase_id: P10, build_block: "security_wake_recovery", objective: "close Issue #20 security roots, Issue #27 wake eligibility, Issue #33 recovery, and Issue #45 projection cleanup after canonical P09 closeout", release_train: release_10}
   - {phase_id: P11, build_block: "qualified_federation_runtime", objective: "complete Issue #48 federation only after provider fan-out and origin authentication are qualified", release_train: release_11}
-  - {phase_id: P12, build_block: owner_wake_qualification, objective: "Issue75 offline owner-wake qualification plus immutable channel-isolation construction; live capability remains gated", release_train: release_12}
+  - {phase_id: P12, build_block: owner_wake_qualification, objective: "Issue75 offline owner-wake qualification, immutable channel isolation and bounded reliability repair; live owner capability remains gated", release_train: release_12}
 acceptance: {release_gate: make release-check, evidence_location: phases/}

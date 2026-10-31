@@ -1,0 +1,198 @@
+document:
+  kind: production_code_review
+  path: audits/reliability-code-review.yml
+  status: source_inspected_component_tests_passed_release_pending
+scope:
+  production_modules: 67
+  supplemental_application_and_offline_research_files: 8
+  construction_base: 27e5325a386d10d9c71477957457a26c9c7ca5cc
+  method: Full-source inspection is retained per initial file digest; current changed spans are reread in section context
+    and bound to the current full-file digest.
+  exclusions:
+  - BCF-owned machinery
+  - changelog
+  - unchanged test-fixture line-by-line claims
+  test_review: Changed test behavior and negative controls are reviewed; native original-test preservation and final canonical
+    applicability are separate requirements.
+  non_claims:
+  - absence_of_all_defects
+  - full_test_source_manual_review
+  - canonical_release_certification
+  - live_owner_interoperability
+findings:
+- id: RR-01
+  state: implemented_component_qualified_final_proof_pending
+  subject: exact-session lifecycle and control projection
+  tests: tests/test_poll_client.py
+- id: RR-02
+  state: implemented_component_qualified_before_later_changes
+  subject: bounded text and exact request-stage recovery
+  tests: tests/test_delivery_client.py
+- id: RR-03
+  state: implemented_component_qualified_before_later_changes
+  subject: authenticated enrollment expiry and introduction recovery
+  tests: tests/test_self_service_client.py
+- id: RR-04
+  state: implemented_component_qualified_before_later_changes
+  subject: rename credential and recovery-intent preservation
+  tests: tests/test_rename_client.py
+- id: RR-05
+  state: implemented_component_qualified_before_later_changes
+  subject: one configured Slack command with unchanged authorization
+  tests: tests/test_slack_commands.py
+- id: RR-06
+  state: implemented_component_qualified_final_proof_pending
+  subject: fresh-install polling defaults and quiet participation guidance
+  tests: tests/test_participation_store.py
+- id: RR-07
+  state: implemented_component_qualified_on_earlier_subject
+  subject: bounded federation classification and writer-serialized snapshots
+  tests: tests/test_federation_adapter.py
+- id: RR-08
+  state: implemented_component_qualified_on_earlier_subject
+  subject: retention-safe payload and public cursor snapshot
+  tests: tests/test_message_lifecycle.py
+- id: RR-09
+  state: implemented_component_qualified_on_earlier_subject
+  subject: exact thread and turn terminal observations
+  tests: tests/test_codex_rpc_client.py
+- id: RR-10
+  state: implemented_component_qualified_on_earlier_subject
+  subject: caught provider failure health propagation
+  tests: tests/test_channel_delivery.py
+- id: RR-11
+  state: implemented_component_qualified_final_proof_pending
+  subject: scoped authored request and retained federation custody lookup
+  tests: tests/test_channel_isolation.py
+open_observations:
+- subject: reported service hang without a Python stack
+  disposition: cause_unclassified_original_diagnostics_retained
+  attribution_to_snapshot_fix: false
+component_evidence:
+- subject_manifest: b2676fb36ea0eb6c87cd7769b7c6464d201b0985d6b4f04dc8e6f4d69fefbf59
+  positive_cases: 381
+  expected_guard_removal_failures: 9
+  native_exit: 0
+  elapsed_seconds: 55.776
+- subject_manifest: f91c02993dc05d2249a841a028974f2c09a3adc997e18df86337861fe8052d92
+  positive_cases: 297
+  original_file_function_pairs: 190
+  new_cases: 17
+  expected_guard_removal_failures: 7
+  native_exit: 0
+  elapsed_seconds: 41.398
+- subject_manifest: e11d0329a939a1f78ff214e6279f521c452d2e77d65834d2f5d51c148593c14b
+  receipt_sha256: 45705d8b1e93c2b02f2cfc687d6f616f5208bad599d28ffb5bfd61d78c74e84a
+  positive_cases: 395
+  original_file_function_pairs: 254
+  expected_guard_removal_failures: 10
+  native_exit: 0
+  elapsed_seconds: 59.136
+- subject_manifest: 507ca6c3f699d9260d99ca6db71eb776d1394c4552ad6fc2d6a14b755e44d8bd
+  receipt_sha256: 418403a434406d15d102831b7f771d36c0064631142d6b1402df5b471bce5042
+  positive_cases: 230
+  original_file_function_pairs: 178
+  expected_guard_removal_failures: 9
+  native_exit: 0
+  elapsed_seconds: 58.159
+- subject_manifest: f451349257b2b4daa222b815439ee44d813ed676e079e271ebf994bed32bd05f
+  receipt_sha256: 5ee9a029c7f805a4744781ca2871219a53ec18d38efb666de83cc90bed339dcf
+  positive_cases: 173
+  original_file_function_pairs: 127
+  expected_guard_removal_failures: 3
+  native_exit: 0
+  elapsed_seconds: 42.906
+qualification_limits:
+  authored_request_query: affected_native_component_passed_final_canonical_proof_pending
+  current_polling_source_changes: affected_native_component_passed_final_canonical_proof_pending
+  component_results: Apply only to their retained exact input subjects; overlapping case counts are not summed or copied to
+    final release claims.
+  final_required:
+  - canonical_graph
+  - protected_PR
+  - exact_main
+  - archive
+  - isolated_installation
+  - runtime_smoke
+  - root_rejection
+  admission_exception: An earlier launch proceeded after a stale driver-hash check failed; retain its actual results separately.
+    A clean allocated rerun passed without source changes.
+  historical_evidence: Original diagnostics and source restoration inputs remain retained; cold archives need verified manifests
+    and durable restoration pointers.
+production_files:
+- {"path":"src/__init__.py","reviewed_lines":[[1,1]],"line_count":1,"sha256":"7fa777580828e212fa8613ad33cec257eef5ddc15f8a0440303c2a8a9a463430","initial_review_sha256":"7fa777580828e212fa8613ad33cec257eef5ddc15f8a0440303c2a8a9a463430","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_announcement_lifecycle_service.py","reviewed_lines":[[1,86]],"line_count":86,"sha256":"3d083d17c0627e610d991943af073f3bb357f9958cb78ed5f82cb4d77713ac6e","initial_review_sha256":"3d083d17c0627e610d991943af073f3bb357f9958cb78ed5f82cb4d77713ac6e","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_channel_api_service.py","reviewed_lines":[[1,144]],"line_count":144,"sha256":"477abbb35701434bb7da206e35d23164482938fc9f52b4a480f9c5da5fc66a1c","initial_review_sha256":"caa2d91c2d3f89e07d9d636c365e52e5f932e248d1ea392502fd357adbe0b3fd","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_channel_grants_service.py","reviewed_lines":[[1,72]],"line_count":72,"sha256":"5926675537e994684165573b08d70b970ba68b9dbe9650103369951a2259cc88","initial_review_sha256":"5926675537e994684165573b08d70b970ba68b9dbe9650103369951a2259cc88","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_channel_ingress_service.py","reviewed_lines":[[1,25]],"line_count":25,"sha256":"4d93885cd902f36f2604e8009d357078e99b53074bf042e7eb489f407d8b38a8","initial_review_sha256":"4d93885cd902f36f2604e8009d357078e99b53074bf042e7eb489f407d8b38a8","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_channel_migration_client.py","reviewed_lines":[[1,90]],"line_count":90,"sha256":"de3c2f06cae0ec09bee6ca36bf72082d387192b9faf95aceb73df8e0c3a2048a","initial_review_sha256":"de3c2f06cae0ec09bee6ca36bf72082d387192b9faf95aceb73df8e0c3a2048a","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_channel_migration_service.py","reviewed_lines":[[1,112]],"line_count":112,"sha256":"f8a6957a4aa789df258178171209237c91f1ce6d64cdbd967bcc620cae223dd7","initial_review_sha256":"f8a6957a4aa789df258178171209237c91f1ce6d64cdbd967bcc620cae223dd7","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_channel_store_service.py","reviewed_lines":[[1,201]],"line_count":201,"sha256":"7d66cbbc8c744b480987dceac72dd825b42652166f372074632efdb21e6e10f2","initial_review_sha256":"7d66cbbc8c744b480987dceac72dd825b42652166f372074632efdb21e6e10f2","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_claim_recovery_service.py","reviewed_lines":[[1,85]],"line_count":85,"sha256":"2fe62e188dddc850f1ead6dc0be8b089fe1e67ffe8db5f707c83a53081285a5c","initial_review_sha256":"2fe62e188dddc850f1ead6dc0be8b089fe1e67ffe8db5f707c83a53081285a5c","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_client.py","reviewed_lines":[[1,770]],"line_count":770,"sha256":"20847b9a9a0f3082c07e9ad610abe7a1ede28d864c4440c4f27189b64d191eec","initial_review_sha256":"521dcc3093f48f615af186f671d67bb01a8e47246e7776c16d31fafa7435f0d8","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_codex_rpc_client.py","reviewed_lines":[[1,279]],"line_count":279,"sha256":"27469d6563d604d3ae96528f029f37c7be766840b6bb8217461fd1a6c879a870","initial_review_sha256":"036e00e451db564d8aab02fe9d5d8c4e6c2ebea5960f7771caea9adba7dcf5d2","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_codex_wake_client.py","reviewed_lines":[[1,780]],"line_count":780,"sha256":"b540b768262fd6831d1318b2a5b71fc877223b9744633a2c40675f58da5dc71d","initial_review_sha256":"b540b768262fd6831d1318b2a5b71fc877223b9744633a2c40675f58da5dc71d","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_codex_wake_events_client.py","reviewed_lines":[[1,115]],"line_count":115,"sha256":"ccb909ac5deac36120697b85919253be1fe4f19004672797e27a42ebd0a8f8b4","initial_review_sha256":"fe5c82d200301a268b932af884c6eba230cf86a287db4c6f42583012744f16d8","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_codex_wake_intent_client.py","reviewed_lines":[[1,162]],"line_count":162,"sha256":"57c9430926473c61691b37cfdf403d9ad687b9035da0905ed8d934c208efeac6","initial_review_sha256":"57c9430926473c61691b37cfdf403d9ad687b9035da0905ed8d934c208efeac6","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_control_store_service.py","reviewed_lines":[[1,333]],"line_count":333,"sha256":"cc38f65b030e117a34990e9b0b7e30afc227f25cc4964cec163dc607f7a91b31","initial_review_sha256":"cc38f65b030e117a34990e9b0b7e30afc227f25cc4964cec163dc607f7a91b31","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_delivery_api_service.py","reviewed_lines":[[1,80]],"line_count":80,"sha256":"ef5a383341c204191fb4cc2cbb9fc509b137cdf2a37fffed1b639803dcc8e45f","initial_review_sha256":"ef5a383341c204191fb4cc2cbb9fc509b137cdf2a37fffed1b639803dcc8e45f","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_delivery_client.py","reviewed_lines":[[1,107]],"line_count":107,"sha256":"687e781a027a9ea701df6f2d780dacc6047834ece4f524d745db7ba17308908f","initial_review_sha256":"736183f79d60fe9be6783cb605e312ca128d183dc47d96e67c2eb8d038bdf032","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_delivery_lifecycle_service.py","reviewed_lines":[[1,116]],"line_count":116,"sha256":"949d41ff843a1e22001ac101c10269c36431e43c3b3156472916a82293ff9872","initial_review_sha256":"1a6ec491008b45b204dddcf90bb723b908a34f754d50da544a7e317cc0a81a1a","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_delivery_runtime_service.py","reviewed_lines":[[1,216]],"line_count":216,"sha256":"5ffbed56f3c0c82223da2c7a5d82b99c22414c28bfc57af1c1bf94e99eb624b1","initial_review_sha256":"522ed311b46dbe5e9b6375bfbb2a7ea43cac1360c530ec31de9572abc9e06fa1","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_enrollment_approval_service.py","reviewed_lines":[[1,128]],"line_count":128,"sha256":"383f1889c2de8662ec637d60204f48b69e6b05c85e627df40ced48263053d6d3","initial_review_sha256":"383f1889c2de8662ec637d60204f48b69e6b05c85e627df40ced48263053d6d3","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_enrollment_client.py","reviewed_lines":[[1,227]],"line_count":227,"sha256":"3e4f01d4d4c7c87c3d190cbacf370159cf4d0a00f62cf7ada2aff695942aeb07","initial_review_sha256":"d3146e34bacbf1fec8f22ed444de17cab265f478539b0d9c08c466c01637bc1b","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_federation_api_service.py","reviewed_lines":[[1,45]],"line_count":45,"sha256":"60658e7e5280618f831cb76b980e50fac8a74fecb794d960215b4d2182a7f533","initial_review_sha256":"60658e7e5280618f831cb76b980e50fac8a74fecb794d960215b4d2182a7f533","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_federation_bridge_service.py","reviewed_lines":[[1,337]],"line_count":337,"sha256":"71404319c4a876dfcd4590b68d746a380a72f41a720a6db2ede503fe5280274e","initial_review_sha256":"71404319c4a876dfcd4590b68d746a380a72f41a720a6db2ede503fe5280274e","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_federation_directory_service.py","reviewed_lines":[[1,168]],"line_count":168,"sha256":"3db76e94ead7ce9c4df030c70e3cba64a59eb1597ccc5ef8a054862f5f0b3b19","initial_review_sha256":"3db76e94ead7ce9c4df030c70e3cba64a59eb1597ccc5ef8a054862f5f0b3b19","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_federation_inbox_service.py","reviewed_lines":[[1,109]],"line_count":109,"sha256":"d72f8276be570187c27b962d21083cd5af8bd929996d21656bbe1ef9079704e3","initial_review_sha256":"d72f8276be570187c27b962d21083cd5af8bd929996d21656bbe1ef9079704e3","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_federation_ordinary_service.py","reviewed_lines":[[1,121]],"line_count":121,"sha256":"57c19c3d25628d40333561e0e68b6ea8686629f971e17dba580ce770c265903f","initial_review_sha256":"57c19c3d25628d40333561e0e68b6ea8686629f971e17dba580ce770c265903f","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_federation_runtime_service.py","reviewed_lines":[[1,112]],"line_count":112,"sha256":"1ec38ce745a68f1ee6b6b7fdee8d90fdbd33916dbef0ce0ccdd096ee81eb7157","initial_review_sha256":"2edab6b89d16107a141ae3cda47ec8ec1ce36451403c2f2ed26df933b6cfcc08","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_federation_service.py","reviewed_lines":[[1,684]],"line_count":684,"sha256":"9b812b6b06945da7166c93f4f56a0fe6e1edffa7e9bf3cb1b671ab8ecd339510","initial_review_sha256":"aec38c90c0bd83a45413a15c106e186fc0c3f1e58eb384e86015876c84a60450","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_federation_slack_service.py","reviewed_lines":[[1,242]],"line_count":242,"sha256":"9ad3777592ac5d4f8699a852dd7920608f8ae82d62d69446f5c39b55ea8820aa","initial_review_sha256":"9ad3777592ac5d4f8699a852dd7920608f8ae82d62d69446f5c39b55ea8820aa","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_federation_wire_service.py","reviewed_lines":[[1,161]],"line_count":161,"sha256":"5a8b3021cc6cdf92cdf197482782872cf1aa902494585ee5a7918efa08267aba","initial_review_sha256":"5a8b3021cc6cdf92cdf197482782872cf1aa902494585ee5a7918efa08267aba","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_lifecycle_api_service.py","reviewed_lines":[[1,132]],"line_count":132,"sha256":"c5683d0a95d99f62cd83459ab44fb981823074d8a725781b053c85daa8c8a15d","initial_review_sha256":"3d3a07851264b78ab79ebeed1fa816566d63c48f3074ffff23066d4d0a93829e","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_lifecycle_client.py","reviewed_lines":[[1,214]],"line_count":214,"sha256":"3f5a77ed8af47388628e4d208511086f9141d6df5e48f8d6a99f2dec3cbb89a4","initial_review_sha256":"3f5a77ed8af47388628e4d208511086f9141d6df5e48f8d6a99f2dec3cbb89a4","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_lifecycle_migration_service.py","reviewed_lines":[[1,138]],"line_count":138,"sha256":"abb2cabc0b998347889b909ad3af7ab9092ccbb4a09cd0e0c4362fccac06204a","initial_review_sha256":"abb2cabc0b998347889b909ad3af7ab9092ccbb4a09cd0e0c4362fccac06204a","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_local_delivery_service.py","reviewed_lines":[[1,385]],"line_count":385,"sha256":"13659ed46673730f3f45f2f3b085640ebb26eecc11760b941e8b1ca81334ea96","initial_review_sha256":"13659ed46673730f3f45f2f3b085640ebb26eecc11760b941e8b1ca81334ea96","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_message_assurance_service.py","reviewed_lines":[[1,40]],"line_count":40,"sha256":"1aaaf52257e863fb6e04dd85dea27dd1d312716ee950675bbc38e601e8f227be","initial_review_sha256":"1aaaf52257e863fb6e04dd85dea27dd1d312716ee950675bbc38e601e8f227be","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_message_authorization_service.py","reviewed_lines":[[1,16]],"line_count":16,"sha256":"2539e5e624544cf53c84bda8fa1e424e112209c48d0c827f283c22ec5c693af8","initial_review_sha256":"2539e5e624544cf53c84bda8fa1e424e112209c48d0c827f283c22ec5c693af8","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_message_lifecycle_service.py","reviewed_lines":[[1,526]],"line_count":526,"sha256":"ca393d211d84f4782cde2fa3511fc518dd8acc355da372515439b70f3d54029a","initial_review_sha256":"c71f20959041085fdc9914dd280528f3413effe3287b8fcb60feaa045be709f1","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_metrics_service.py","reviewed_lines":[[1,43]],"line_count":43,"sha256":"e29a519510fc493653d3a1e07346bd7394e72a79436a76490bb942c378cce3bc","initial_review_sha256":"e29a519510fc493653d3a1e07346bd7394e72a79436a76490bb942c378cce3bc","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_operator_client.py","reviewed_lines":[[1,125]],"line_count":125,"sha256":"649ff6facc80e3641b4d633e59839fb521880cd6871233432a48690048d15d64","initial_review_sha256":"649ff6facc80e3641b4d633e59839fb521880cd6871233432a48690048d15d64","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_operator_presentation_service.py","reviewed_lines":[[1,127]],"line_count":127,"sha256":"4622fe7466acd25c5d14c8887aebb98658c86fab9f0ba82bc3c20b340954c8a9","initial_review_sha256":"4622fe7466acd25c5d14c8887aebb98658c86fab9f0ba82bc3c20b340954c8a9","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_operator_query_service.py","reviewed_lines":[[1,88]],"line_count":88,"sha256":"d1fcb79c8f2bb47caccbf5e18536bfb6e5feee3a61879b41478dfd80b9490054","initial_review_sha256":"03c8e08a5773a3a01019dc8393d547d83acf033be5a1026e8d45a365dce5879b","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_parser_client.py","reviewed_lines":[[1,221]],"line_count":221,"sha256":"427b03730bfa7e4b099a946a11d465b01ff2e71d3daaf594c2c60042857f8953","initial_review_sha256":"e7a7a799c1353584decb40071662e197ef1e23e6aa3eb542fdc368cba657ba17","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_participation_api_service.py","reviewed_lines":[[1,419]],"line_count":419,"sha256":"16b6a01dc3823a5d46329caa5a6d68aacbb6fcad2485b9cfbec6aaec68cd850e","initial_review_sha256":"16b6a01dc3823a5d46329caa5a6d68aacbb6fcad2485b9cfbec6aaec68cd850e","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_participation_service.py","reviewed_lines":[[1,168]],"line_count":168,"sha256":"7d524712616e21d7855f13a2c019f4675bc5cb62ee60154f1ec7ee493e09d5a1","initial_review_sha256":"b951e9c5199cd1f28fff72fdc1c0c62bb8fc5b81f4a8d37f745790bd93681520","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_participation_store_service.py","reviewed_lines":[[1,735]],"line_count":735,"sha256":"4a9395e6eeb501a3e94b130e7a2f82f519101cc6115f9d0e38d539a16ee862f7","initial_review_sha256":"e2dba30a22d1ba686bd13ff7f037015cf3ab6534da56b569917c1591306f9ff9","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_poll_client.py","reviewed_lines":[[1,484]],"line_count":484,"sha256":"ec30f21a852631a9c39b9518dbb7c939db6b01670773c2848b57db3492d09641","initial_review_sha256":"75a3a8f2c68555a7f48162b8b7abe0af9c6de61703f1d6ad8c9185f5db7e88d1","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_presentation_client.py","reviewed_lines":[[1,63]],"line_count":63,"sha256":"d13f6574b459d8584789cba84939401fd71f88bc14dd4a4e8fd465485edd1051","initial_review_sha256":"da4d81ac94a86ebf49d5ac6d4566ebc63a6de0fe1e7686c723f85e4d785d488c","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_presentation_service.py","reviewed_lines":[[1,72]],"line_count":72,"sha256":"c26c9fce9ca91905f2852dff7ece7b05bd37059a92c437a961e1c47e5e1e4ff0","initial_review_sha256":"c26c9fce9ca91905f2852dff7ece7b05bd37059a92c437a961e1c47e5e1e4ff0","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_profile_client.py","reviewed_lines":[[1,94]],"line_count":94,"sha256":"6f7d75bb3ffaea5ca284af21c9d91a99adc80206178d44f1fe77a8b1105f4d3c","initial_review_sha256":"6f7d75bb3ffaea5ca284af21c9d91a99adc80206178d44f1fe77a8b1105f4d3c","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_rename_client.py","reviewed_lines":[[1,197]],"line_count":197,"sha256":"217fc0e86ea01353bc71fff4c8ca78c1b8fc35056d2767717bbb2c7ac1173599","initial_review_sha256":"4b3bf2c1bc3284c05295850293ef168a320c140ff13b9f1559c7cc994c8697f5","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_reply_policy_service.py","reviewed_lines":[[1,46]],"line_count":46,"sha256":"5488716ea72a8571717f92f9e895f091cdc44fdd48db903b5f6a53426448966f","initial_review_sha256":"5488716ea72a8571717f92f9e895f091cdc44fdd48db903b5f6a53426448966f","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_request_limits_service.py","reviewed_lines":[[1,57]],"line_count":57,"sha256":"717b667a6f80c3788bfbdcf55f81a2db74781ba3942b1e651683a9ce4663610d","initial_review_sha256":"717b667a6f80c3788bfbdcf55f81a2db74781ba3942b1e651683a9ce4663610d","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_retention_service.py","reviewed_lines":[[1,266]],"line_count":266,"sha256":"491f7efc26e1a8e29da1c1f18701fac7e03a9f40c4a1c375c5e18edbbdea69de","initial_review_sha256":"491f7efc26e1a8e29da1c1f18701fac7e03a9f40c4a1c375c5e18edbbdea69de","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_rotation_client.py","reviewed_lines":[[1,83]],"line_count":83,"sha256":"31be5c0a1b803e80f96ad50fdac14313842ede9a9f0d6ff0c3f627f21e67c203","initial_review_sha256":"31be5c0a1b803e80f96ad50fdac14313842ede9a9f0d6ff0c3f627f21e67c203","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_scope_client.py","reviewed_lines":[[1,29]],"line_count":29,"sha256":"c09bc08bb91353fbedcdfe2f9032c9edd7d8508331ca635f51e1979e959f9652","initial_review_sha256":"c09bc08bb91353fbedcdfe2f9032c9edd7d8508331ca635f51e1979e959f9652","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_send_policy_service.py","reviewed_lines":[[1,40]],"line_count":40,"sha256":"58708b707041c5d185d5e8980f23320311be4e9b1cd642651f9849e09e0f1198","initial_review_sha256":"58708b707041c5d185d5e8980f23320311be4e9b1cd642651f9849e09e0f1198","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_send_rate_service.py","reviewed_lines":[[1,61]],"line_count":61,"sha256":"c3bdaf1eabe17923b063bea9cfe28c920040c1305ca4d8a2bd02938b90c7ce3a","initial_review_sha256":"c3bdaf1eabe17923b063bea9cfe28c920040c1305ca4d8a2bd02938b90c7ce3a","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_service.py","reviewed_lines":[[1,756]],"line_count":756,"sha256":"841d4f4524355d9d59242228a2f8f9c2df3aa22566bf4d8a44579473716c9561","initial_review_sha256":"c73190b370b7f5cf82bdd7aefd6852e4438f171dbdc550c91aa508bf236ae479","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_settings_service.py","reviewed_lines":[[1,99]],"line_count":99,"sha256":"4565102ea7d07f8335504d581a7a1b00e70c1790037b25ac559354b49a1e311f","initial_review_sha256":"296854dd68d503c9b562d2793ab6cfc03f29ae149871c76fae48967ef0efbe44","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_slack_command_service.py","reviewed_lines":[[1,317]],"line_count":317,"sha256":"a2069ca13878451caf7ff5e1b4e68828f96c870fd65862826ab5b6a7c99ef92d","initial_review_sha256":"b5c5e78ed2e0858febdf076a4b8bf53588cb94d1593631c0a8518d92d416c167","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_slack_reply_service.py","reviewed_lines":[[1,89]],"line_count":89,"sha256":"c06eaba60b596c3db2a3224bd802a5e5c89e4b461f69dde65b9c20e421f743a3","initial_review_sha256":"c06eaba60b596c3db2a3224bd802a5e5c89e4b461f69dde65b9c20e421f743a3","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_slack_socket_service.py","reviewed_lines":[[1,135]],"line_count":135,"sha256":"55ad4f35c315d16ca0259619d2e696c5e88a403318c9a66f396894e2cb498a9c","initial_review_sha256":"acb7d545ee9c1b7071c6c7338f0e79b0669ced53e6e79ada9e2607aa499c45e3","review":"prior_full_source_read_plus_current_changed_spans","disposition":"updates"}
+- {"path":"src/agentbus_status_api_service.py","reviewed_lines":[[1,99]],"line_count":99,"sha256":"74207564ebe984f5bf1982724241fb1f9cc5057fd6ddbef13977ef2b49d0c9d2","initial_review_sha256":"74207564ebe984f5bf1982724241fb1f9cc5057fd6ddbef13977ef2b49d0c9d2","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_transaction_service.py","reviewed_lines":[[1,18]],"line_count":18,"sha256":"6a475a4da85f385b99849840c81339d788ed6a6f9517bc912af3cf8ef6c48e91","initial_review_sha256":"6a475a4da85f385b99849840c81339d788ed6a6f9517bc912af3cf8ef6c48e91","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_transport_client.py","reviewed_lines":[[1,179]],"line_count":179,"sha256":"93b82a432b7a2ac8a9d2adc8843486023c12867566cabc71f172ab58079357fc","initial_review_sha256":"93b82a432b7a2ac8a9d2adc8843486023c12867566cabc71f172ab58079357fc","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_wake_inbox_client.py","reviewed_lines":[[1,137]],"line_count":137,"sha256":"1ed5afb1259aaf4d6dd767c7c00d7cc000c1fc46efdbd1b546272b1162a4c0d5","initial_review_sha256":"1ed5afb1259aaf4d6dd767c7c00d7cc000c1fc46efdbd1b546272b1162a4c0d5","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+- {"path":"src/agentbus_worker_status_service.py","reviewed_lines":[[1,47]],"line_count":47,"sha256":"50fb7cb5486b13a3fc03c06cc9cea2629ac4e68be5edc47c1c5171ca6bd5aa87","initial_review_sha256":"50fb7cb5486b13a3fc03c06cc9cea2629ac4e68be5edc47c1c5171ca6bd5aa87","review":"prior_full_source_read_hash_verified","disposition":"retained"}
+supplemental_files:
+- {"path":"agentbus","reviewed_lines":[[1,6]],"sha256":"bf2e1b0b6fbbd39ca032be0fcbe720bc645cc58e2831d823d91d003e16aa8b00","disposition":"retained","review":"full_source_read_in_retained_inspection"}
+- {"path":"agentbus_service.py","reviewed_lines":[[1,5]],"sha256":"2a0e0be9020cea7cc5ba378e5941301431f47d19d2ba274f8faaaf82c51f8c87","disposition":"retained","review":"full_source_read_in_retained_inspection"}
+- {"path":"scripts/build_release.py","reviewed_lines":[[1,79]],"sha256":"e429f4394c095e9c55a79e8de5fd4a47be9d5ef45190d8e54e2382369b61f9aa","disposition":"retained","review":"full_source_read_in_retained_inspection"}
+- {"path":"scripts/check_source.py","reviewed_lines":[[1,108]],"sha256":"023afb6da778e30a84d828c2464a2a6331db05e59784610a821ef235c21f1433","disposition":"retained","review":"full_source_read_in_retained_inspection"}
+- {"path":"scripts/run_project_gate.py","reviewed_lines":[[1,342]],"sha256":"35804cb93c1f42e0f249ec40c20ce03a31dd2edb484bcab846eb9c252dcf7cd7","disposition":"retained","review":"full_source_read_in_retained_inspection"}
+- {"path":"scripts/verify_provider_canary.py","reviewed_lines":[[1,400]],"sha256":"07b3c4baafc5013ac335c4d319bfc3c2c27725b2922548d2926adaba42715403","disposition":"retained","review":"full_source_read_in_retained_inspection"}
+- {"path":"audits/owner-wake/ahp-schema-probe.py","reviewed_lines":[[1,54]],"sha256":"8f853b6c509d76d028cfaf60f310e40772943a573feec068be07d63eb37f9bf6","disposition":"retained","review":"full_source_read_in_retained_inspection"}
+- {"path":"audits/owner-wake/ahp-reducer-probe.mjs","reviewed_lines":[[1,91]],"sha256":"b9c8bc73e8046063f6023189a672bc0bbd007c67d47a90f99ab288695d512483","disposition":"retained","review":"full_source_read_in_retained_inspection"}

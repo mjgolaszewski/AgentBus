@@ -52,8 +52,9 @@ def api_read(request:Request,after:Annotated[int,Query(ge=0)]=0,
              thread_ts:Annotated[str|None,Query(pattern=SLACK_TS)]=None):
     principal=resolve_principal(request)
     store=request.app.state.store
-    page=store.read(principal.channel,store.channels.after_cursor(principal.channel,after),recipient,limit,thread_ts)
-    return serialize_page(store,principal.channel,page,after)
+    with store.snapshot():
+        page=store.read(principal.channel,store.channels.after_cursor(principal.channel,after),recipient,limit,thread_ts)
+        return serialize_page(store,principal.channel,page,after)
 
 
 def api_info(request:Request,response:Response):
@@ -63,7 +64,7 @@ def api_info(request:Request,response:Response):
     result={'protocol_version':2,'chat_id':principal.chat_id,'session_id':principal.session_id,'inbox_id':principal.inbox_id,'channel':principal.channel,
         'high_water_cursor':request.app.state.store.channels.high_water(principal.channel),
         'features':['profiles','stateless-cursors','explicit-routing','parent-replies','session-required',
-                    'channel-isolation-v1','channel-local-cursors-v1','mandatory-announcements-v1','slack-enrollment-approval-v1']}
+                    'channel-isolation-v1','channel-local-cursors-v1','authored-request-outcome-v1','mandatory-announcements-v1','slack-enrollment-approval-v1']}
     if store.lifecycle.enabled:
         epoch=store.lifecycle.epoch(principal.channel)
         result['features'].append('message-lifecycle-v1')
@@ -78,8 +79,9 @@ def api_inbox(request:Request,identity:Annotated[str,Query(pattern=IDENTIFIER)],
               x_agentbus_session_token:Annotated[str|None,Header()]=None):
     principal=resolve_principal(request,identity,x_agentbus_session_token)
     store=request.app.state.store
-    page=store.inbox(principal.channel,identity,store.channels.after_cursor(principal.channel,after),limit,thread_ts,context)
-    return serialize_page(store,principal.channel,page,after)
+    with store.snapshot():
+        page=store.inbox(principal.channel,identity,store.channels.after_cursor(principal.channel,after),limit,thread_ts,context)
+        return serialize_page(store,principal.channel,page,after)
 
 
 def claim_message(request,cursor,claim,token):

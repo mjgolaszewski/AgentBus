@@ -81,6 +81,7 @@ async def delivery_lifespan(app, settings, http_client, socket_factory):
                                        settings.local_delivery_retained_limit,
                                        settings.local_delivery_observation_limit)
         store.channels.configure(settings.channels)
+        store.participation.initialize_default_policy()
     except BaseException:
         lease.__exit__(None, None, None)
         raise

@@ -206,7 +206,7 @@ def api_session_policy_explain(request: Request, session_id: str) -> dict:
 
 
 def api_session_enroll(request: Request, body: EnrollSession, response: Response) -> dict:
-    from src.agentbus_enrollment_approval_service import enroll_authorized
+    from src.agentbus_enrollment_approval_service import EnrollmentRequestExpired, enroll_authorized
     try:
         result = enroll_authorized(request.app.state.store.channels, **body.model_dump())
         if result is None:
@@ -215,6 +215,9 @@ def api_session_enroll(request: Request, body: EnrollSession, response: Response
         chat_id, session_id, revision = result
     except SendRateExceeded as exc:
         raise HTTPException(429, "Enrollment request rate exceeded", headers={"Retry-After": str(exc.retry_after)}) from None
+    except EnrollmentRequestExpired:
+        raise HTTPException(403, "Enrollment request expired; retain the original staged request",
+                            headers={"X-AgentBus-Recovery-Code": "enrollment_request_expired"}) from None
     except PermissionError:
         raise HTTPException(403, "Matching enrollment approval required; expired requests need a new approval"
                             if body.approval_request_id else "Matching enrollment grant required") from None

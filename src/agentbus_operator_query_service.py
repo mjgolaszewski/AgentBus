@@ -55,7 +55,7 @@ def explain_snapshot(store, channel, position):
                 'recipients':recipients, 'archived':archived, 'legacy_unknown':bool(legacy[0]) if legacy else None}
 
 
-def doctor_checks(snapshot):
+def doctor_checks(snapshot, *, command="/agentbus"):
     """Inspect an already-produced dashboard; never connect to a provider or repair state."""
     checks = []
     connected = snapshot['slack_connected']
@@ -64,14 +64,14 @@ def doctor_checks(snapshot):
     workers = snapshot.get('workers')
     state = workers['task']['state'] if workers else 'not_observed'
     checks.append(('Delivery task', 'OK' if state == 'running' else 'WARN' if state == 'failed' else 'UNKNOWN',
-                   f'{state}; inspect /agentbus workers.'))
+                   f'{state}; inspect {command} workers.'))
     if workers and workers['delivery']['error']:
         checks.append(('Delivery cycle', 'WARN', 'Last cycle reported an error; inspect retained queues and worker status.'))
     if workers and workers['federation']['error']:
         checks.append(('Federation cycle', 'WARN', 'Last local cycle reported an error; preserve checkpoints and retained obligations.'))
     capacity = snapshot['local_delivery_capacity']
     checks.append(('Custody capacity', 'WARN' if capacity['warnings'] else 'OK',
-                   'Inspect /agentbus pending and /agentbus storage; never delete retry identities.'))
+                   f'Inspect {command} pending and {command} storage; never delete retry identities.'))
     storage = snapshot.get('lifecycle_storage')
     if storage:
         checks.append(('Storage headroom', 'WARN' if storage['accounted_bytes']*5 >= storage['limit_bytes']*4 else 'OK',

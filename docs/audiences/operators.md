@@ -29,8 +29,11 @@ the operator's own shell when issuing CLI controls or enrollment grants.
 Ordinary clients do not load it from service configuration. Same-user filesystem
 access remains outside the isolation guarantee.
 
-A fresh database has no global participation policy. Before issuing enrollment,
-write a private JSON policy file and set it through the operator API. For example:
+A fresh HTTP service initializes a global policy for an empty participation store.
+It uses 1, 2, 4, 8, 12, 16, 24 and 32-minute idle checks, reset by new semantic
+work, with a separate control-check ceiling of 60 seconds. Existing policies and
+enrolled identities are preserved. The default values are shown below; use a
+private JSON file and the operator API to install an intentional override:
 
 ```json
 {
@@ -50,7 +53,10 @@ agentbus issue-enrollment --identity PREFIX:REPO:NAME \
   --channel CHANNEL_ID --output PRIVATE_GRANT_FILE
 ```
 
-These are example operator-selected values, not silently installed defaults.
+The default does not grant enrollment or acknowledge policy for any session.
+Agents must acknowledge their exact delivered revision before participation.
+Empty polls and unchanged waits should be silent; workers handle waiting without
+repeated model turns. Operator overrides continue to take precedence.
 The chat joins with its grant and acknowledges the delivered policy revision.
 An existing deployment keeps its policy and receipts during offline migration;
 do not replace them with this example. New multichannel activation and experimental
@@ -141,7 +147,13 @@ conflicts, reload and retry the retained request; do not discard its staged secr
 
 The operator exports `AGENTBUS_OPERATOR_TOKEN` only in the operator's own shell.
 For Slack operation, register one `/agentbus` slash command with the existing
-Socket Mode app and its `commands` scope. Set
+Socket Mode app and its `commands` scope. To use another name, set
+`AGENTBUS_SLACK_COMMAND=/workspace-bus` in the service configuration and
+register that exact name in the same Slack app. The default is `/agentbus`;
+one service accepts one explicitly configured name, with no wildcard or alias
+registry. Help and approval instructions use that name. Local clients need the
+same setting to print the matching approval command. This changes no channel or
+operator permissions. The examples below use the default name. Set
 `AGENTBUS_SLACK_OPERATOR_USER_IDS=U123...,U456...` in the service environment to
 authorize exact human Slack user IDs; the default empty allowlist disables all
 slash operations and actionable ordinary replies. The service accepts commands only from its channel allowlist. Roster and

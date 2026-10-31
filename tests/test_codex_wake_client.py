@@ -393,7 +393,7 @@ for line in sys.stdin:
         while not (root / "release").exists() and time.monotonic() < until:
             time.sleep(0.01)
         (root / "host_terminal").write_text("completed")
-        print(json.dumps({"method": "turn/completed", "params": {"turn": {
+        print(json.dumps({"method": "turn/completed", "params": {"threadId": request["params"]["threadId"], "turn": {
             "id": "turn-one", "status": "completed"}}}), flush=True)
 ''')
     supervisor_script = tmp_path / "supervisor.py"
@@ -963,3 +963,20 @@ def test_status_reports_fresh_control_projection_lag_without_writes(setup, monke
     assert result['reason'] == 'control_projection_pending'
     assert not host.calls
     assert {p:p.read_bytes() for p in path.parent.rglob('*') if p.is_file()} == before
+
+
+def test_stop_is_in_compact_wake_before_ordinary_controls_without_dropping_required_set(setup):
+    from src.agentbus_codex_wake_events_client import _prompt, controls_projected, eligible_events
+
+    _values, identity, profile, path, _host = setup
+    controls = [{'control_id': f'a-poll-{i}', 'kind': 'poll'} for i in range(9)]
+    controls.append({'control_id': 'z-stop', 'kind': 'stop_end_turn'})
+    put(path, profile, *({'kind': 'CONTROL', 'id': c['control_id'], 'control': c} for c in controls))
+    before = path.with_name(path.name + '.poll.json').read_bytes()
+    refs = eligible_events(path, profile)
+    assert refs[0] == 'CONTROL:z-stop'
+    assert set(refs) == {'CONTROL:' + c['control_id'] for c in controls}
+    assert controls_projected({'state': 'control_pending', 'outstanding_controls': controls}, refs)
+    assert 'CONTROL:z-stop' in _prompt(identity, 'attempt', refs)
+    assert path.with_name(path.name + '.poll.json').read_bytes() == before
+    assert profile.get('ack_cursor', 0) == 0

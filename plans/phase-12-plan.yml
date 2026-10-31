@@ -19,11 +19,14 @@ phase:
   - MEMORY.yml
 delivery_contract:
   tightly_scoped_deliverables:
+  - Exact-session request lifecycle and local-profile recovery with non-steering control precedence
+  - One configured Slack command and standard quiet fresh-install polling without changing existing policy records
+  - Complete source and editorial audit dispositions plus final exact-subject release custody
   - Recover raw signed carriers without timestamp reassignment
   - Remove installation-specific public documentation and retain historical proof
   - Repair federation backlog starvation with bounded resumable oldest-prefix recovery
   - Ship a self-contained Codex AgentBus skill installable in VS Code
-  - Issue94 RC5 bounded invariant-first delivery wake alias assurance and onboarding corrections; audits/rc5-invariant-construction.yml owns edge coverage
+  - Bounded invariant-first delivery wake alias assurance and onboarding corrections; audits/rc5-invariant-construction.yml owns edge coverage
   - Pinned owner and protocol capability inventory with explicit unknowns
   - Conditional admission contract and deterministic conformance matrix
   - Separate live-provider prerequisite and go-no-go inventory
@@ -38,7 +41,7 @@ delivery_contract:
   - File-free Slack enrollment approval with immutable staged proof and canonical grant custody
   - Local delivery admission separated from retained idempotency history
   - Versioned local message lifecycle pickup return and bounded retention
-  - RC4 grouped private health observed service workers and bounded read-only operator diagnostics
+  - Grouped private health observed service workers and bounded read-only operator diagnostics
   parallelizable_workstreams:
   - id: P12-WS1
     name: owner_protocol_qualification

@@ -126,3 +126,83 @@ def test_first_new_route_read_recovers_crash_after_service_receipt(tmp_path, mon
     assert json.loads(new_path.read_text()) == recovered
     assert poll.peek_event(new_path, recovered)["kind"] == "CONTROL"
     assert workers == [new_path]
+
+
+@pytest.mark.parametrize("change", ["secret", "rotation", "stopped", "metadata"])
+def test_rename_recovery_retains_both_profiles_on_newer_source_state(tmp_path, monkeypatch, change):
+    values, profile, old_path = setup_profile(tmp_path)
+    new_path = old_path.with_name("agentbus:night-flower.json")
+    target = {**profile, "identity": "agentbus:night-flower", "name": "night-flower",
+              "rename_source": profile["identity"]}
+    new_path.write_text(json.dumps(target))
+    target = json.loads(new_path.read_text())
+    if change == "secret":
+        profile["participation"]["session_secret"] = "y" * 32
+    elif change == "rotation":
+        profile["participation_rotation_pending"] = {"request_id": "retained-request"}
+    elif change == "stopped":
+        profile["participation"]["stopped"] = True
+    else:
+        profile["display_name"] = "Fresh display name"
+    old_path.write_text(json.dumps(profile))
+    before = (old_path.read_bytes(), new_path.read_bytes())
+    monkeypatch.setattr(rename, "ensure_worker", lambda *_args: pytest.fail("conflict started worker"))
+    with pytest.raises(ClientError, match="state changed"):
+        rename.recover_rename_state(values, target)
+    assert (old_path.read_bytes(), new_path.read_bytes()) == before
+
+
+def test_rename_recovery_rejects_self_source_without_deleting_profile(tmp_path):
+    values, profile, path = setup_profile(tmp_path)
+    profile["rename_source"] = profile["identity"]
+    path.write_text(json.dumps(profile))
+    before = path.read_bytes()
+    with pytest.raises(ClientError, match="Invalid rename source"):
+        rename.recover_rename_state(values, profile)
+    assert path.read_bytes() == before
+
+
+def test_atomic_profile_directory_sync_failure_retains_replaced_file(tmp_path, monkeypatch):
+    import os
+    import stat
+
+    path = tmp_path / "profile.json"
+    path.write_text('{"old": true}')
+    actual_fsync = os.fsync
+    calls = []
+
+    def fsync(fd):
+        if stat.S_ISDIR(os.fstat(fd).st_mode):
+            calls.append("directory")
+            raise OSError("injected directory sync failure")
+        calls.append("file")
+        return actual_fsync(fd)
+
+    monkeypatch.setattr(client.os, "fsync", fsync)
+    with pytest.raises(OSError, match="directory sync"):
+        client.atomic_json(path, {"new": True})
+    assert calls == ["file", "directory"]
+    assert json.loads(path.read_text()) == {"new": True}
+    assert list(tmp_path.iterdir()) == [path]
+
+
+def test_remote_rename_receipt_cannot_overwrite_concurrent_local_rotation(tmp_path, monkeypatch):
+    values, profile, old_path = setup_profile(tmp_path)
+    monkeypatch.setattr(client, "api", lambda *_args, **_kwargs: {
+        "chat_id": "chat-1", "session_id": "session-1", "inbox_id": "inbox-1", "channel": "C123",
+        "features": ["session-required", "channel-isolation-v1", "channel-local-cursors-v1"],
+    })
+
+    def receipt(*_args, **_kwargs):
+        fresh = client.load_profile(values, profile["identity"], save_migration=False)
+        fresh["participation"]["session_secret"] = "new-session-secret" * 2
+        client.save_profile(values, fresh)
+        return {"chat_id": "chat-1", "new_route": "home:agentbus:night-flower"}
+
+    monkeypatch.setattr(rename, "api", receipt)
+    with pytest.raises(ClientError, match="authority changed"):
+        rename.rename_chat(client.argparse.Namespace(identity=profile["identity"], name="night-flower"), values)
+    retained = json.loads(old_path.read_text())
+    assert retained["participation"]["session_secret"] == "new-session-secret" * 2
+    assert retained["rename_pending"] == "home:agentbus:night-flower"
+    assert not old_path.with_name("home:agentbus:night-flower.json").exists()

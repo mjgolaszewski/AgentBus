@@ -600,7 +600,8 @@ class FederationStore:
             query += " WHERE origin_instance_id=?"
             args = (origin_instance_id,)
         query += " ORDER BY origin_instance_id, route"
-        rows = self._db.execute(query, args).fetchall()
+        with self._lock:
+            rows = self._db.execute(query, args).fetchall()
         result = []
         for row in rows:
             item = dict(row)
@@ -609,7 +610,8 @@ class FederationStore:
         return result
 
     def obligation(self, origin_instance_id: str, origin_message_id: str, destination_instance_id: str) -> dict[str, Any] | None:
-        row = self._db.execute("SELECT * FROM bridge_obligations WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?", (origin_instance_id, origin_message_id, destination_instance_id)).fetchone()
+        with self._lock:
+            row = self._db.execute("SELECT * FROM bridge_obligations WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?", (origin_instance_id, origin_message_id, destination_instance_id)).fetchone()
         return dict(row) if row else None
 
     def pending(self, *, now: float, max_attempts: int, limit: int = 100,

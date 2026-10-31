@@ -59,7 +59,11 @@ class SlackReceiver:
             if payload.get('channel_id') not in self.channels:
                 client.send_socket_mode_response(SocketModeResponse(envelope_id=request.envelope_id))
                 return
-            if (self.settings is None or payload.get('command') != '/agentbus'
+            if self.settings is not None and payload.get('command') != self.settings.slack_command:
+                client.send_socket_mode_response(SocketModeResponse(envelope_id=request.envelope_id,
+                    payload={'response_type': 'ephemeral', 'text': 'Unsupported AgentBus slash command.'}))
+                return
+            if (self.settings is None
                     or payload.get('user_id') not in self.settings.slack_operator_user_ids):
                 client.send_socket_mode_response(SocketModeResponse(envelope_id=request.envelope_id,
                     payload={'response_type':'ephemeral','text':'AgentBus operator command access is not enabled for this Slack user.'}))

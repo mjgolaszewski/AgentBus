@@ -124,3 +124,61 @@ def test_operator_handoff_preserves_legacy_chat_id_and_cannot_be_replayed(tmp_pa
     audit = db.execute("SELECT actor, action, chat_id FROM participation_audit WHERE action = 'handoff_issued'").fetchone()
     assert tuple(audit) == ("operator", "handoff_issued", old_chat_id)
     db.close()
+
+
+def test_installation_default_is_once_only_and_requires_exact_policy_ack(tmp_path):
+    from src.agentbus_participation_service import next_inbox_interval
+
+    path = tmp_path / 'fresh.sqlite3'
+    db, store = open_store(path)
+    assert store.initialize_default_policy() is True
+    policy = store.effective_policy('agentbus', 'new-profile')
+    assert policy.values == BASE_POLICY
+    intervals = []
+    previous = None
+    for _ in range(9):
+        previous = next_inbox_interval(policy, previous, semantic_delta=False)
+        intervals.append(previous)
+    assert intervals == [60, 120, 240, 480, 720, 960, 1440, 1920, 1920]
+    assert next_inbox_interval(policy, previous, semantic_delta=True) == 60
+    secret = 'default-policy-session-secret-at-least32'
+    _, session, revision = store.enroll(repo='agentbus', route='agentbus:default-policy',
+        display_name='Default', session_secret=secret)
+    assert store.session_state(session)['acknowledged_policy_revision'] is None
+    receipt = store.acknowledge_policy(session, secret, revision)
+    assert receipt
+    before = [tuple(row) for row in db.execute('SELECT * FROM poll_policy_revisions')]
+    db.close()
+    db, store = open_store(path)
+    assert store.initialize_default_policy() is False
+    assert [tuple(row) for row in db.execute('SELECT * FROM poll_policy_revisions')] == before
+    assert store.session_state(session)['acknowledged_policy_revision'] == revision
+    db.close()
+
+
+def test_installation_default_preserves_operator_policy_and_revision(tmp_path):
+    db, store = open_store(tmp_path / 'configured.sqlite3')
+    chosen = dict(BASE_POLICY, initial_interval_seconds=120, max_interval_seconds=720)
+    store.set_policy(scope='global', scope_key='*', values=chosen, actor='operator')
+    before = [tuple(row) for row in db.execute('SELECT * FROM poll_policy_revisions')]
+    policy = store.effective_policy('agentbus', 'new-profile')
+    assert store.initialize_default_policy() is False
+    assert store.effective_policy('agentbus', 'new-profile') == policy
+    assert [tuple(row) for row in db.execute('SELECT * FROM poll_policy_revisions')] == before
+    db.close()
+
+
+def test_installation_default_does_not_repair_populated_policy_less_store(tmp_path):
+    db, store = open_store(tmp_path / 'legacy.sqlite3')
+    store.set_policy(scope='global', scope_key='*', values=BASE_POLICY, actor='operator')
+    store.enroll(repo='agentbus', route='agentbus:legacy', display_name='Legacy',
+                 session_secret='legacy-session-secret-at-least32chars')
+    with db:
+        db.execute('DELETE FROM poll_policy_revisions')
+    sessions = [tuple(row) for row in db.execute('SELECT * FROM participation_sessions')]
+    assert store.initialize_default_policy() is False
+    assert db.execute('SELECT count(*) FROM poll_policy_revisions').fetchone()[0] == 0
+    assert [tuple(row) for row in db.execute('SELECT * FROM participation_sessions')] == sessions
+    with pytest.raises(ValueError, match='global policy'):
+        store.effective_policy('agentbus', 'new-profile')
+    db.close()

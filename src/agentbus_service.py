@@ -29,7 +29,13 @@ from src.agentbus_delivery_lifecycle_service import delivery_lifespan
 from src.agentbus_federation_api_service import FederationAcceptance, api_federation_enqueue
 from src.agentbus_federation_service import FederationStore
 from src.agentbus_federation_slack_service import SlackFederationProvider, bounded_response, validate_carrier_echo
-from src.agentbus_lifecycle_api_service import api_complete, api_handled_batch, api_outcome, api_pickup
+from src.agentbus_lifecycle_api_service import (
+    api_complete,
+    api_handled_batch,
+    api_outcome,
+    api_pickup,
+    api_request_outcome,
+)
 from src.agentbus_local_delivery_service import LOCAL_REFERENCE_PREFIX, LOCATOR_PREFIX, LocalDeliveryStore
 from src.agentbus_message_lifecycle_service import MessageLifecycleStore
 from src.agentbus_participation_api_service import (
@@ -296,6 +302,10 @@ class MessageStore:
             )
             return inserted.rowcount == 1
 
+    def snapshot(self):
+        """Keep composed message reads and public cursor projection writer-stable."""
+        return self._lock
+
     def _message(self, row: sqlite3.Row) -> Message:
         return Message(**json.loads(self.retention.payload(row['channel'], row['cursor'], row["payload"])), cursor=row["cursor"],
                        slack_ts=("" if row["slack_ts"].startswith(LOCAL_REFERENCE_PREFIX) else row["slack_ts"]), received_at=row["received_at"],
@@ -357,10 +367,10 @@ class MessageStore:
                 "SELECT * FROM messages WHERE " + " AND ".join(clauses) + " ORDER BY cursor LIMIT ?",
                 (*params, limit + 1),
             ).fetchall()
-        has_more = len(rows) > limit
-        messages = [self._message(row) for row in rows[:limit]]
-        next_cursor = messages[-1].cursor if has_more else max(after, high)
-        return MessagePage(messages=messages, next_cursor=next_cursor, has_more=has_more)
+            has_more = len(rows) > limit
+            messages = [self._message(row) for row in rows[:limit]]
+            next_cursor = messages[-1].cursor if has_more else max(after, high)
+            return MessagePage(messages=messages, next_cursor=next_cursor, has_more=has_more)
 
     def info(self, channel: str) -> Info:
         with self._lock:
@@ -375,7 +385,7 @@ class MessageStore:
         with self._lock:
             row = self._db.execute("SELECT * FROM messages WHERE channel = ? AND cursor = ?",
                                    (channel, cursor)).fetchone()
-        return self._message(row) if row else None
+            return self._message(row) if row else None
 
     def claim(self, channel: str, cursor: int, identity: str, *, session_token=None) -> Claim:
         with self._lock, atomic(self._db):
@@ -467,26 +477,26 @@ class MessageStore:
                 + where + " ORDER BY m.cursor LIMIT ?",
                 (*params, limit + 1),
             ).fetchall()
-        visible: list[InboxMessage] = []
-        for row in rows:
-            message = self._message(row)
-            claim = row["claim_identity"]
-            addressed = message.audience in {"direct", "informational"} and message.recipient in routes
-            actionable = addressed or message.audience == "broadcast" or claim in routes
-            reason = ("addressed to this identity" if addressed
-                      else "explicit broadcast" if message.audience == "broadcast"
-                      else "claimed by this identity" if claim in routes
-                      else f"claimed by {claim}" if claim
-                      else f"addressed to {message.recipient}" if message.audience == "direct"
-                      else "informational" if message.audience == "informational"
-                      else "unrouted; claim before replying")
-            actionable, lifecycle = self.lifecycle.inbox_projection(channel, message.cursor, identity, actionable)
-            visible.append(InboxMessage(**message.model_dump(), actionable=actionable, lifecycle=lifecycle,
-                                        action_reason=reason))
-        has_more = len(visible) > limit
-        shown = visible[:limit]
-        next_cursor = shown[-1].cursor if has_more else max(after, high)
-        return InboxPage(messages=shown, next_cursor=next_cursor, has_more=has_more)
+            visible: list[InboxMessage] = []
+            for row in rows:
+                message = self._message(row)
+                claim = row["claim_identity"]
+                addressed = message.audience in {"direct", "informational"} and message.recipient in routes
+                actionable = addressed or message.audience == "broadcast" or claim in routes
+                reason = ("addressed to this identity" if addressed
+                          else "explicit broadcast" if message.audience == "broadcast"
+                          else "claimed by this identity" if claim in routes
+                          else f"claimed by {claim}" if claim
+                          else f"addressed to {message.recipient}" if message.audience == "direct"
+                          else "informational" if message.audience == "informational"
+                          else "unrouted; claim before replying")
+                actionable, lifecycle = self.lifecycle.inbox_projection(channel, message.cursor, identity, actionable)
+                visible.append(InboxMessage(**message.model_dump(), actionable=actionable, lifecycle=lifecycle,
+                                            action_reason=reason))
+            has_more = len(visible) > limit
+            shown = visible[:limit]
+            next_cursor = shown[-1].cursor if has_more else max(after, high)
+            return InboxPage(messages=shown, next_cursor=next_cursor, has_more=has_more)
 
     def validate_reply(self, channel: str, message: SendMessage) -> None:
         validate_reply(self, channel, message)
@@ -648,6 +658,7 @@ API_OPERATIONS: dict[str, Callable[..., object]] = {
     "pickup": api_pickup,
     "complete": api_complete,
     "outcome": api_outcome,
+    "request_outcome": api_request_outcome,
     "handled_batch": api_handled_batch,
     "policy_set": api_policy_set,
     "policy_effective": api_policy_effective,
@@ -680,7 +691,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
         async with delivery_lifespan(app, settings, http_client, socket_factory):
             yield
 
-    app = FastAPI(title="AgentBus", version="0.9.1", lifespan=lifespan,
+    app = FastAPI(title="AgentBus", version="0.9.2", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     app.add_middleware(RequestBodyLimit)
@@ -702,6 +713,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
     app.add_api_route('/v1/messages/{cursor}/pickup', API_OPERATIONS['pickup'], methods=['POST'], dependencies=auth)
     app.add_api_route('/v1/messages/{cursor}/complete', API_OPERATIONS['complete'], methods=['POST'], dependencies=auth)
     app.add_api_route('/v1/messages/{cursor}/outcome', API_OPERATIONS['outcome'], methods=['GET'], dependencies=auth)
+    app.add_api_route('/v1/requests/{request_id}/outcome', API_OPERATIONS['request_outcome'], methods=['GET'], dependencies=auth)
     app.add_api_route('/v1/receipts/handled', API_OPERATIONS['handled_batch'], methods=['POST'], dependencies=auth)
     app.add_api_route("/v1/messages/{cursor}/claim-recovery", API_OPERATIONS["claim_recovery"],
                       methods=["POST"], dependencies=[Depends(authenticate_operator)])
