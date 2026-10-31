@@ -608,6 +608,10 @@ def test_authored_request_lookup_is_scoped_nonmutating_and_absence_is_unknown(ch
         assert result.status_code == 200 and result.json()['known'] is False
         assert result.json()['accepted'] is None and 'cursor' not in result.json()
     assert client.get(route, headers=bearer).status_code == 403
+    assert client.get(route, headers={key:value for key,value in a[1].items()
+                                      if key.lower() != 'authorization'}).status_code == 401
+    assert client.get(route, headers={**a[1], 'Authorization':'Bearer wrong'}).status_code == 401
+    assert client.get(route, headers={**a[1], 'X-AgentBus-Session-Token':'wrong'}).status_code == 403
     assert client.get(route, headers={**a[1], 'X-AgentBus-Inbox-ID':b[2]['inbox_id']}).status_code == 403
     assert client.get('/v1/requests/not-a-uuid/outcome', headers=a[1]).status_code == 422
     store = app.state.store

@@ -681,15 +681,16 @@ documents:
   review_status: prior_full_document_plus_current_changed_spans_reviewed
   reviewed_lines:
   - - 1
-    - 417
-  line_count: 417
-  sha256: ee503dcce68fb3360d1aa109b54ef8ab55c7760cc796b4a017687e2d3dde7ae9
+    - 418
+  line_count: 418
+  sha256: e0b7bc00cba54c2eb40b41b801ef23a18a88a0efca11562089a25544e2693ce1
   baseline_sha256: 5fee3dbc78068af5eb6e952a8e641c5154418d94660ca491528997fe20c16380
   disposition: updates
   review_basis: Retained full-document baseline plus current exact evidence and capability spans reread; final release proof
     remains separate.
     Reviewed exact phase IDs statuses evidence eligibility and native-negative records; no authored closure claim.
     Native source-preparation success recorded as predecessor evidence, explicitly separate from final release custody.
+    Original full-behavior negative and exact test-inventory correction spans reviewed; no successful retry or release custody inferred.
 - document: plans/build-plan.yml
   review_status: prior_full_document_plus_current_changed_spans_reviewed
   reviewed_lines:
