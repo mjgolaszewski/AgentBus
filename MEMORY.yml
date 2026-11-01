@@ -53,7 +53,7 @@ environment_facts:
     - Application source lives under src; public client/service shims and protocol2 paths remain stable; Python3.12 and pinned Python3.14 compatibility are required
     - One service, SQLite database, Slack app and socket serve an explicit bounded channel registry; each grant-backed identity has one immutable channel
     - Exact session and inbox proof precedes reads writes aliases replies claims and controls; sender labels grant no authority
-    - Local request UUID epoch staging and profile CAS preserve uncertain outcomes, STOP and independent cursor maxima; rename retains conflicting credential or recovery evidence
+    - Local request UUID epoch staging and profile CAS preserve uncertain outcomes, STOP and independent cursor maxima; command-only proactive epoch renewal preserves each original deadline and retry identity, while queries remain read-only; rename retains conflicting credential or recovery evidence
     - Component proofs cover delivery enrollment lifecycle introduction STOP ingress shared snapshots rename and configured commands; applicability is limited to each retained input manifest
     - Released fresh-store policy defaults, quiet skill guidance, fresh-control polling and lifecycle flag refresh retain exact-subject evidence; new follow-ups need independent applicability
     - Routine Slack enrollment and poll navigation use private buttons with exact operator and channel checks; separate plain approval commands preserve mobile copy-and-paste fallback without granting authority

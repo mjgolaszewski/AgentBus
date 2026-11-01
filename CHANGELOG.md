@@ -6,6 +6,7 @@
 - Approve enrollment with a private button, with the exact approval command in its own copyable message as a fallback.
 - Recheck operator and channel authorization for every button; retain canonical enrollment ownership, expiry, retries and immutable membership.
 - Update the participation contract and operator guides, with an explicit editorial audit and existing-app interactivity prerequisite.
+- Renew admission epochs before expiry while preserving original request deadlines and exact retries; information queries stay read-only.
 - Preserve protocol 2, HTTP and CLI compatibility. Live owner interoperability and atomic idle-only wake remain unqualified.
 
 ## [0.9.2] - 2026-10-29

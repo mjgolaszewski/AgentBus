@@ -204,12 +204,14 @@ class MessageLifecycleStore:
         """Command only: queries never create a fresh admission epoch."""
         with self.owner._lock, atomic(self.owner._db):
             current = self.now(instant, persist=True)
+            # Renew before expiry; queries remain read-only and old deadlines stay exact.
+            renewal_lead = min(3600.0, self.policy.epoch_seconds / 2)
             for row in self.owner._db.execute('SELECT channel,inbox_id FROM bus_channels').fetchall():
                 channels = getattr(self.owner, 'channels', None)
                 if channels is not None and row['channel'] not in channels.enabled:
                     continue
                 existing = self.owner._db.execute('SELECT 1 FROM lifecycle_epochs WHERE channel=? AND accepts_until>?',
-                                                   (row['channel'], current)).fetchone()
+                                                   (row['channel'], current + renewal_lead)).fetchone()
                 if not existing:
                     end = current + self.policy.epoch_seconds
                     self.owner._db.execute('INSERT INTO lifecycle_epochs VALUES (?,?,?,?,?)',

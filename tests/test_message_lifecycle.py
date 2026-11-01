@@ -1332,3 +1332,146 @@ def test_retirement_cannot_split_payload_and_public_cursor_snapshot(lifecycle, m
     monkeypatch.setattr(owner, hook, target)
     assert store.message('C111', original.cursor) is None
     assert store.channels.high_water('C111') == 1
+
+
+@pytest.mark.parametrize(('epoch_seconds', 'lead'), [(30, 15), (86400, 3600)])
+def test_epoch_maintenance_renews_before_expiry_without_query_writes(tmp_path, monkeypatch, epoch_seconds, lead):
+    monkeypatch.setattr("src.agentbus_message_lifecycle_service.time.time", lambda: 100.0)
+    store = MessageStore(tmp_path / 'epoch-overlap.sqlite3')
+    try:
+        store.channels.configure(('C111', 'C222'))
+        policy = LifecyclePolicy(epoch_seconds=epoch_seconds, replay_seconds=epoch_seconds * 2,
+                                 archive_seconds=epoch_seconds * 3, retention_seconds=epoch_seconds * 4)
+        store.lifecycle.activate_fresh(policy, instant=100)
+        old = store.lifecycle.epoch('C111', 100)
+        boundary = old['accepts_until'] - lead
+        store.lifecycle.rotate_epochs(boundary - 0.125)
+        assert store.lifecycle.epoch('C111', boundary - 0.125)['epoch'] == old['epoch']
+        store.lifecycle.rotate_epochs(boundary)
+        renewed = store.lifecycle.epoch('C111', boundary)
+        assert renewed['epoch'] != old['epoch']
+        assert renewed['accepts_until'] == boundary + epoch_seconds
+        before = store._db.total_changes
+        assert store.lifecycle.epoch('C111', old['accepts_until'])['epoch'] == renewed['epoch']
+        assert store._db.total_changes == before
+        # A suspended maintainer never grants an unbounded fresh epoch through a read.
+        assert store.lifecycle.epoch('C111', renewed['accepts_until']) is None
+        assert store.lifecycle.epoch('C111', 100) is None
+        assert store._db.total_changes == before
+    finally:
+        store.close()
+
+
+def test_epoch_overlap_keeps_original_deadlines_and_retry_identity(lifecycle):
+    store, principals = lifecycle
+    original = store.lifecycle.epoch('C111', 100)['epoch']
+    item = message(store, principals['sender'], principals['recipient'])
+    key = str(uuid4())
+    with store._lock, store._db:
+        store.lifecycle.bind_request('C111', key, original, item.cursor, 100)
+    store.lifecycle.rotate_epochs(115)
+    renewed = store.lifecycle.epoch('C111', 115)['epoch']
+    with store._lock, store._db:
+        store.lifecycle.validate_request('C111', str(uuid4()), renewed, instant=130)
+        with pytest.raises(LifecycleRejected) as expired:
+            store.lifecycle.validate_request('C111', str(uuid4()), original, instant=130)
+        assert expired.value.status == 410
+        store.lifecycle.validate_request('C111', key, original, existing=True, instant=131)
+        with pytest.raises(LifecycleRejected) as altered:
+            store.lifecycle.validate_request('C111', key, renewed, existing=True, instant=131)
+        assert altered.value.status == 409
+        with pytest.raises(LifecycleRejected) as foreign:
+            store.lifecycle.validate_request('C222', str(uuid4()), renewed, instant=131)
+        assert foreign.value.status == 410
+        with pytest.raises(LifecycleRejected) as replay_expired:
+            store.lifecycle.validate_request('C111', key, original, existing=True, instant=160)
+        assert replay_expired.value.status == 410
+
+
+def test_epoch_overlap_rotation_is_bounded_under_concurrency(lifecycle):
+    store, _ = lifecycle
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(lambda _: store.lifecycle.rotate_epochs(115), range(16)))
+    rows = store._db.execute('SELECT channel,COUNT(*) FROM lifecycle_epochs GROUP BY channel').fetchall()
+    assert {row[0]: row[1] for row in rows} == {'C111': 2, 'C222': 2}
+    store.lifecycle.rotate_epochs(116)
+    assert store._db.execute('SELECT COUNT(*) FROM lifecycle_epochs').fetchone()[0] == 4
+
+
+def test_epoch_overlap_does_not_renew_disabled_channels(lifecycle):
+    store, _ = lifecycle
+    store.channels.configure(('C111',))
+    store.lifecycle.rotate_epochs(115)
+    rows = store._db.execute('SELECT channel,COUNT(*) FROM lifecycle_epochs GROUP BY channel').fetchall()
+    assert {row[0]: row[1] for row in rows} == {'C111': 2, 'C222': 1}
+    assert store.lifecycle.epoch('C222', 130) is None
+    assert store.lifecycle.epoch('C111', 130) is not None
+
+
+def test_epoch_overlap_and_original_replay_survive_restart(lifecycle):
+    from pathlib import Path
+
+    store, principals = lifecycle
+    original = store.lifecycle.epoch('C111', 100)['epoch']
+    item = message(store, principals['sender'], principals['recipient'])
+    key = str(uuid4())
+    with store._lock, store._db:
+        store.lifecycle.bind_request('C111', key, original, item.cursor, 100)
+    store.lifecycle.rotate_epochs(115)
+    renewed = store.lifecycle.epoch('C111', 115)['epoch']
+    path = Path(store._db.execute('PRAGMA database_list').fetchone()[2])
+    store.close()
+    reopened = MessageStore(path)
+    try:
+        reopened.channels.configure(('C111', 'C222'))
+        assert reopened.lifecycle.policy.epoch_seconds == 30
+        assert reopened.lifecycle.epoch('C111', 130)['epoch'] == renewed
+        with reopened._lock, reopened._db:
+            reopened.lifecycle.validate_request('C111', key, original, existing=True, instant=131)
+        assert reopened._db.execute('SELECT accepts_until FROM lifecycle_epochs WHERE epoch=?',
+                                    (original,)).fetchone()[0] == 130
+    finally:
+        reopened.close()
+
+
+
+def test_epoch_overlap_serializes_independent_connections_and_next_boundary(lifecycle):
+    from pathlib import Path
+
+    store, _ = lifecycle
+    path = Path(store._db.execute('PRAGMA database_list').fetchone()[2])
+    peer = MessageStore(path)
+    try:
+        peer.channels.configure(('C111', 'C222'))
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            list(pool.map(lambda owner: owner.lifecycle.rotate_epochs(115), [store, peer]))
+        assert store._db.execute('SELECT COUNT(*) FROM lifecycle_epochs').fetchone()[0] == 4
+        peer.lifecycle.rotate_epochs(129.875)
+        assert store._db.execute('SELECT COUNT(*) FROM lifecycle_epochs').fetchone()[0] == 4
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            list(pool.map(lambda owner: owner.lifecycle.rotate_epochs(130), [store, peer]))
+        assert store._db.execute('SELECT COUNT(*) FROM lifecycle_epochs').fetchone()[0] == 6
+    finally:
+        peer.close()
+
+
+def test_epoch_overlap_accepts_new_custody_and_keeps_original_retry(lifecycle, monkeypatch):
+    from src.agentbus_local_delivery_service import fingerprint
+
+    store, principals = lifecycle
+    body = SendMessage(sender=principals['sender'].route, recipient=principals['recipient'].route,
+                       text='epoch-bound authored work', kind='request')
+    body._sender_assurance = 'session'
+    original = store.lifecycle.epoch('C111', 100)['epoch']
+    key = str(uuid4())
+    digest = fingerprint(body.model_dump())
+    first = store.local_delivery.accept('C111', key, digest, body, 'session', epoch=original)
+    store.lifecycle.rotate_epochs(115)
+    monkeypatch.setattr('src.agentbus_message_lifecycle_service.time.time', lambda: 130.0)
+    renewed = store.lifecycle.epoch('C111', 130)['epoch']
+    successor = store.local_delivery.accept('C111', str(uuid4()), digest, body, 'session', epoch=renewed)
+    assert successor.cursor != first.cursor
+    replay = store.local_delivery.accept('C111', key, digest, body, 'session', epoch=original)
+    assert replay.cursor == first.cursor
+    assert store._db.execute('SELECT epoch FROM lifecycle_requests WHERE channel=? AND request_id=?',
+                             ('C111', key)).fetchone()[0] == original

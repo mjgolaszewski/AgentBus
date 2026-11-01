@@ -37,6 +37,15 @@ Known accepted requests can replay through their declared replay window even
 after their admission epoch closes. New requests using a closed epoch fail;
 expired requests return HTTP 410 and must not be recreated automatically.
 
+The delivery maintenance command renews an epoch before its deadline, when its
+remaining validity reaches the smaller of one hour and half the configured
+epoch lifetime. Each token retains its original acceptance and replay deadlines;
+renewal does not extend an older staged request. Information queries stay
+read-only. With the daily default, this provides up to an hour of overlap.
+If maintenance stalls beyond the remaining overlap, new requests can still fail
+before staging. Check worker health and preserve any existing request stage;
+never reset an uncertain request to obtain another epoch.
+
 Use `agentbus pickup --identity ID --cursor CURSOR` when starting addressed
 work. The default receipt is stable for that session and cursor. After actually
 handling it, use `agentbus complete --identity ID --cursor CURSOR`, or the

@@ -1,0 +1,44 @@
+document:
+  kind: request_epoch_availability_audit
+  path: audits/request-epoch-renewal.yml
+  status: component_validated_final_subject_release_proof_pending
+scope:
+  contract: contracts/messages/v1/message-lifecycle.contract.yml
+  implementation: src/agentbus_message_lifecycle_service.py
+  tests: tests/test_message_lifecycle.py
+  guide: docs/message-lifecycle.md
+finding:
+  failure: An expired request epoch could leave new sends unavailable until the next delivery maintenance cycle.
+  boundary: The client refuses before staging or posting; this does not classify older uncertain requests.
+design:
+  owner: existing_delivery_maintenance_command
+  renewal_lead_seconds: minimum_of_3600_and_half_declared_epoch_lifetime
+  overlap: Issue a replacement before the old deadline; retain each epoch's original acceptance and replay deadlines.
+  query: Read-only information and epoch queries cannot create or extend authority.
+  recovery: Existing request stages retain the exact original epoch, UUID, payload and scoped identity.
+  issuance_rate: At least half the configured epoch lifetime between issuances for one channel under a fixed policy.
+  capacity: This rate bound is not an absolute database-size guarantee; referenced epochs depend on request retirement.
+acceptance:
+  - default_hour_and_short_policy_half_lifetime_renewal_boundaries
+  - successor_custody_across_old_expiry_and_exact_old_request_replay
+  - old_epoch_new_allocation_and_foreign_channel_denials
+  - unchanged_original_acceptance_and_replay_deadlines
+  - repeated_commands_and_two_independent_SQLite_connections_at_consecutive_boundaries
+  - disabled_channel_and_restart_preservation
+  - readonly_queries_and_fail_closed_after_full_maintenance_blackout
+  - persisted_command_clock_floor_and_no_invented_query_only_restart_guarantee
+qualification:
+  component_validation:
+    positive_cases: 199
+    failures_errors_skips: 0
+    old_subject_expected_failures: 8
+    negative_controls: Exact regression cases and expected failure causes matched against the prior implementation.
+    checks: Authored YAML and editorial inventory, source boundaries, lint and full-source typing passed.
+    scope: Component results apply to the retained tested source; later qualification text updates do not establish final release proof.
+  required: Canonical prospective, protected PR and exact-main proof, archive and isolated installation on the final subject.
+  live: Installation and bounded Slack interaction checks require custodian coordination.
+limits:
+  - Proactive renewal mitigates ordinary maintenance cadence; suspension beyond the remaining overlap can still deny new work.
+  - No additional worker, schema migration, query write, credential reset or automatic replay is introduced.
+  - Accepted transport, execution, completion and semantic acknowledgement remain distinct.
+  - Live host interoperability and atomic idle-only wake admission remain unqualified.
