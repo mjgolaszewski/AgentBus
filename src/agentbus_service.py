@@ -691,7 +691,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
         async with delivery_lifespan(app, settings, http_client, socket_factory):
             yield
 
-    app = FastAPI(title="AgentBus", version="0.9.2", lifespan=lifespan,
+    app = FastAPI(title="AgentBus", version="0.9.3", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     app.add_middleware(RequestBodyLimit)

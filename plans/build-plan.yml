@@ -20,7 +20,7 @@ planning_inputs:
     - plans/phase-ledger.yml
 global_delivery_rules:
   - "RC2 join may request allowlisted Slack approval without a credential file; immutable staged proof and invoking-channel approval redeem canonical grants atomically; file grants remain supported; RC6 repairs federation backlog starvation without schema/checkpoint reset; distribute a self-contained Codex participation skill while preserving immutable membership and unqualified host wake"
-  - "RC2 operator broadcast and poll use one durable control payload with fixed invoking-channel recipients; explicit read ACK and bounded poll answers remain distinct from delivery and wake"
+  - "RC2 operator broadcast and poll use one durable control payload with fixed invoking-channel recipients; explicit read ACK and bounded poll answers remain distinct from delivery and wake; private enrollment and poll navigation use buttons with command-only copy fallback and unchanged operator/channel authorization; command-only proactive epoch renewal preserves original deadlines and exact retry identities, with independent-connection boundary and custody regressions"
   - "RC2 human Slack requests require the operator allowlist; unique current identity fragments resolve channel-first; global health is private operator-only; rich text preserves machine envelopes; RC4 workers doctor pending and explain reuse bounded local observations and channel custody without probes daemons repairs or host-health inference"
   - change units default to the smallest valid vertical slice with low blast radius
   - every behavior change must update specs, plans, MEMORY, and tests together

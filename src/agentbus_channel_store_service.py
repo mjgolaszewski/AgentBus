@@ -196,6 +196,6 @@ class ChannelStore:
         from src.agentbus_enrollment_approval_service import approve_enrollment
         return approve_enrollment(self, request_id, **kwargs)
 
-    def pending_enrollments(self, *, channel=None):
+    def pending_enrollments(self, *, channel=None, limit=None):
         from src.agentbus_enrollment_approval_service import pending_enrollments
-        return pending_enrollments(self, channel=channel)
+        return pending_enrollments(self, channel=channel, limit=limit)

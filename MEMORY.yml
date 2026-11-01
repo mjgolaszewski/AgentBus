@@ -48,14 +48,15 @@ memory_retention_policy:
     - preserve_replacement_reference_when_available
 environment_facts:
   current_repo_state:
-    - Published baseline is stable 0.9.1; the 0.9.2 reliability follow-up is an unreleased construction candidate requiring its own final proof and custody
+    - Published baseline is stable 0.9.2; the private Slack button and complete poll-results follow-up requires its own final proof and custody
     - Certified BCF 2.3.4 Standard contract v3 remains the project runtime; successor adoption is a separate decision, not a retrospective prerequisite
     - Application source lives under src; public client/service shims and protocol2 paths remain stable; Python3.12 and pinned Python3.14 compatibility are required
     - One service, SQLite database, Slack app and socket serve an explicit bounded channel registry; each grant-backed identity has one immutable channel
     - Exact session and inbox proof precedes reads writes aliases replies claims and controls; sender labels grant no authority
-    - Local request UUID epoch staging and profile CAS preserve uncertain outcomes, STOP and independent cursor maxima; rename retains conflicting credential or recovery evidence
+    - Local request UUID epoch staging and profile CAS preserve uncertain outcomes, STOP and independent cursor maxima; command-only proactive epoch renewal preserves each original deadline and retry identity, while queries remain read-only; rename retains conflicting credential or recovery evidence
     - Component proofs cover delivery enrollment lifecycle introduction STOP ingress shared snapshots rename and configured commands; applicability is limited to each retained input manifest
-    - Fresh-store policy defaults, quiet skill guidance, fresh-control polling and lifecycle flag refresh passed affected native component validation; final canonical release proof and deployment remain pending
+    - Released fresh-store policy defaults, quiet skill guidance, fresh-control polling and lifecycle flag refresh retain exact-subject evidence; new follow-ups need independent applicability
+    - Routine Slack enrollment and poll navigation use private buttons with exact operator and channel checks; separate plain approval commands preserve mobile copy-and-paste fallback without granting authority
     - History payload and public cursor reads share a writer-stable snapshot; experimental terminal observations bind thread and turn; caught provider failures retain degraded worker status
     - Authored request lookup is an additive exact-session and inbox query; retained sender ownership and exact frame hash gate transport facts; missing evidence stays unknown and supplies no resend authority
     - Queue acceptance provider posting destination custody host completion and semantic ACK are separate; presentation cleanup never substitutes for them

@@ -20,8 +20,8 @@ baseline_review:
   inventory: audits/editorial-review.yml
   sha256: b322d4dfbdda737da076f2f15fd2bab62e204296cbf96988f79e1d43ba56a609
 experimental_claims:
-  current_repair: Source repairs passed affected component validation with retained exact input subjects and original negatives.
-    Final canonical release qualification remains pending.
+  current_repair: Button and epoch repairs passed affected component validation against retained exact input subjects and
+    original negative controls. Qualification metadata was updated afterward; final canonical release proof remains pending.
   AHP_native_queue: offline research; live interoperability and atomic idle-only admission unqualified
   federation: Historical canaries apply only to pinned runtime subjects; custody is not execution or semantic ACK
 documents:
@@ -62,13 +62,13 @@ documents:
   review_status: prior_full_document_plus_current_changed_spans_reviewed
   reviewed_lines:
   - - 1
-    - 86
-  line_count: 86
-  sha256: 05b0a6c70825e735a5f0fa544ac88c51ec90fbb2b23ba2cc69a3612a22511248
-  baseline_sha256: 88824764c209a11d9f9c941aea1be34e1c87a45cf990b7e87f1658a5964d0319
+    - 87
+  line_count: 87
+  sha256: 5c8e289ee8f6610de2c31ecf5ebd23d257dd7341b0679e20e4707567775bd4b8
+  baseline_sha256: 05b0a6c70825e735a5f0fa544ac88c51ec90fbb2b23ba2cc69a3612a22511248
   disposition: updates
-  review_basis: Retained full-document baseline plus current capability spans and restored top-level environment mapping/unchanged
-    retention rules reviewed; final canonical release proof remains separate.
+  review_basis: Pinned full-document baseline retained; current epoch-renewal decision and qualification spans reviewed in
+    section context. Engineering records preserve prior exact-subject evidence without promoting it to the new repair.
 - document: README.md
   review_status: full_document_review
   reviewed_lines:
@@ -293,16 +293,16 @@ documents:
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans inspected
     in section context. New records reviewed in full.
 - document: contracts/participation/v2/participation.contract.yml
-  review_status: prior_full_document_plus_current_changed_spans_reviewed
+  review_status: full_document_line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 274
-  line_count: 274
-  sha256: af34483e98d9bc674aa04e2395fb9393988b7780efe6e6093826cd1c6e3ec89e
-  baseline_sha256: d4a538a92dd24a49d9794e0abafec1741423fc94de887e8a1cee524f3093c3a6
+    - 281
+  line_count: 281
+  sha256: 043ac42a2daf8c718666376f7720c6e4764bc04d11772c795996bd4d0a870619
+  baseline_sha256: af34483e98d9bc674aa04e2395fb9393988b7780efe6e6093826cd1c6e3ec89e
   disposition: updates
-  review_basis: Pinned full-document baseline retained; current authored spans reread in section context for accurate capability,
-    contract, recovery and qualification boundaries. This is editorial review, not release proof.
+  review_basis: Entire document reread line by line against the button-first implementation and independent review; private
+    authority, compatibility and qualification limits retained.
 - document: docs/OPERATIONS.md
   review_status: changed_spans_reviewed_in_context
   reviewed_lines:
@@ -392,16 +392,16 @@ documents:
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability
     language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 - document: docs/audiences/humans.md
-  review_status: changed_spans_reviewed_in_context
+  review_status: full_document_line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 79
-  line_count: 79
-  sha256: 224d62a0caba8f1d94913658f521bc4a6bc3f194462058b69565dd6e16fc5a43
-  baseline_sha256: 7b67a8e3b9e5ed46795be81e320aa964956b777178f8e7e40bb184bfa9acb968
+    - 81
+  line_count: 81
+  sha256: 0958c054d5393707b69491002c55be814cacd5aaa449ca19131b10ce11b2f6ae
+  baseline_sha256: 224d62a0caba8f1d94913658f521bc4a6bc3f194462058b69565dd6e16fc5a43
   disposition: updates
-  review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability
-    language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
+  review_basis: Entire document reread line by line against the button-first implementation and independent review; private
+    authority, compatibility and qualification limits retained.
 - document: docs/audiences/maintainers.md
   review_status: changed_spans_reviewed_in_context
   reviewed_lines:
@@ -414,16 +414,16 @@ documents:
   review_basis: Prior full-document baseline retained; current changed spans reviewed in section context for present capability
     language, experimental boundaries or control reconciliation. Whole-file digest and line range refreshed.
 - document: docs/audiences/operators.md
-  review_status: prior_full_document_plus_current_changed_spans_reviewed
+  review_status: full_document_line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 317
-  line_count: 317
-  sha256: 00a20cefb72b4845c5117c478172034782a6162c979d17122de37850364c94c3
-  baseline_sha256: e137702c3210ad780134ff031b1a0b7b344ab1d0695e8f2d3d3a6203243b70e1
+    - 326
+  line_count: 326
+  sha256: 42f521437a191eed3a325fa35ead400360c4f5f8976ae101cfda65df2b379991
+  baseline_sha256: 00a20cefb72b4845c5117c478172034782a6162c979d17122de37850364c94c3
   disposition: updates
-  review_basis: Pinned full-document baseline retained; current authored spans reread in section context for accurate capability,
-    contract, recovery and qualification boundaries. This is editorial review, not release proof.
+  review_basis: Entire document reread line by line against the button-first implementation and independent review; private
+    authority, compatibility and qualification limits retained.
 - document: docs/audiences/security-reviewers.md
   review_status: changed_spans_reviewed_in_context
   reviewed_lines:
@@ -681,29 +681,24 @@ documents:
   review_status: prior_full_document_plus_current_changed_spans_reviewed
   reviewed_lines:
   - - 1
-    - 420
-  line_count: 420
-  sha256: dab82796506bd450296b1abe45485a38cb3b430260ae10ba1f26ed9cebd177ef
-  baseline_sha256: 5fee3dbc78068af5eb6e952a8e641c5154418d94660ca491528997fe20c16380
+    - 423
+  line_count: 423
+  sha256: f2ac372d4b5a0e6966e7d9df0752eb8585859ddfb73dee93aceb0d3c5cda9dab
+  baseline_sha256: dab82796506bd450296b1abe45485a38cb3b430260ae10ba1f26ed9cebd177ef
   disposition: updates
-  review_basis: Retained full-document baseline plus current exact evidence and capability spans reread; final release proof
-    remains separate.
-    Reviewed exact phase IDs statuses evidence eligibility and native-negative records; no authored closure claim.
-    Native source-preparation success recorded as predecessor evidence, explicitly separate from final release custody.
-    Original full-behavior negative and exact test-inventory correction spans reviewed; no successful retry or release custody inferred.
-    Second full-behavior negative, source-supported fixture race and pending independent execution reviewed; no runtime repair or release closure claimed.
-    Canonical exact-base migration refusal, complete-operation effect delta and native authoring correction reviewed; later protected custody remains pending.
+  review_basis: Retained full-document review plus current qualification spans reread against executed component evidence;
+    no final-subject release or live deployment claim.
 - document: plans/build-plan.yml
   review_status: prior_full_document_plus_current_changed_spans_reviewed
   reviewed_lines:
   - - 1
     - 100
   line_count: 100
-  sha256: 6515d262036a3fefad6252b72ec202e759886fe2754dc4ad670b135b1c099eb2
-  baseline_sha256: cc05c6ccbfbd99cef8c69ed80673f1667f1be72291887e25ebb7025f1dced69a
+  sha256: 8f54ff6b9cfe0674768a09ad207950199aa8b82b67ea44d62e0d5c50ebae1f93
+  baseline_sha256: 6515d262036a3fefad6252b72ec202e759886fe2754dc4ad670b135b1c099eb2
   disposition: updates
-  review_basis: Pinned full-document baseline retained; current authored spans reread in section context for accurate capability,
-    contract, recovery and qualification boundaries. This is editorial review, not release proof.
+  review_basis: Pinned full-document baseline retained; current epoch-renewal decision and qualification spans reviewed in
+    section context. Engineering records preserve prior exact-subject evidence without promoting it to the new repair.
 - document: plans/phase-01-plan.yml
   review_status: hash_verified_prior_full_document_review
   reviewed_lines:
@@ -967,8 +962,9 @@ documents:
   baseline_sha256: f10499b80a07619e7a69bf80ac15426f25d5aaa41543e740342efc851998366c
   disposition: updates
   review_basis: Pinned full-document baseline retained; current authored spans reread in section context for accurate capability,
-    contract, recovery and qualification boundaries. Five summary mappings reread against exact phase deliverables; IDs statuses acceptance and evidence retained. This is editorial review, not release proof.
-    Reviewed exact phase IDs statuses evidence eligibility and native-negative records; no authored closure claim.
+    contract, recovery and qualification boundaries. Five summary mappings reread against exact phase deliverables; IDs statuses
+    acceptance and evidence retained. This is editorial review, not release proof. Reviewed exact phase IDs statuses evidence
+    eligibility and native-negative records; no authored closure claim.
 - document: plans/phase-history.yml
   review_status: hash_verified_prior_full_document_review
   reviewed_lines:
@@ -995,13 +991,13 @@ documents:
   review_status: prior_full_document_plus_current_changed_spans_reviewed
   reviewed_lines:
   - - 1
-    - 37
-  line_count: 37
-  sha256: ddac50c8618eb4bade4640059de375e411417127d1465b2b96dd1319314e5359
-  baseline_sha256: 9a9ef0b60b5c057598bfe8f12fba2d99b774d33a1c390ad35d3239aa8833294d
+    - 38
+  line_count: 38
+  sha256: 62690ae8f8bfc09dad3b5ba05df981608e923220f88d28ba476d581bc86a5c90
+  baseline_sha256: ddac50c8618eb4bade4640059de375e411417127d1465b2b96dd1319314e5359
   disposition: updates
-  review_basis: All product constraints and phase data retained byte-semantically; document metadata compacted within the
-    existing 40-line context budget. Current spans reviewed; final release proof remains separate.
+  review_basis: Pinned full-document baseline retained; current epoch-renewal decision and qualification spans reviewed in
+    section context. Engineering records preserve prior exact-subject evidence without promoting it to the new repair.
 - document: LICENSE
   review_status: hash_verified_prior_full_document_review
   reviewed_lines:
@@ -1025,27 +1021,29 @@ documents:
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans inspected
     in section context. New records reviewed in full.
 - document: contracts/messages/v1/message-lifecycle.contract.yml
-  review_status: hash_verified_prior_full_document_review
+  review_status: full_document_line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 112
-  line_count: 112
-  sha256: a44fa56b09e4b3470be30874140577e41c18a76e6c72e3ac895c5abdc5b584dd
+    - 119
+  line_count: 119
+  sha256: f3d6d23e9e88e7752e8e07a959a41a8aaef681d3c58ea558994a3269bd21b1e0
   baseline_sha256: 2223963b98aee1fbba1945ed31fa3bdaa0f0cb62273a17d32969ee718c8d426f
-  disposition: retained
-  review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans inspected
-    in section context. New records reviewed in full.
+  disposition: updates
+  review_basis: Whole current document reread line by line; proactive command-only renewal, exact original deadlines, query-only
+    behavior and prolonged maintenance blackout limits match the authored source. Execution and final-subject release proof
+    remain pending.
 - document: docs/message-lifecycle.md
-  review_status: changed_spans_reviewed_in_context
+  review_status: full_document_line_by_line_reviewed
   reviewed_lines:
   - - 1
-    - 181
-  line_count: 181
-  sha256: 3c933e4d2662990ced5b6604676bb6c4cf5960937a8abdae3167d797fa664992
+    - 190
+  line_count: 190
+  sha256: 438d14a1e97a9a155593a4d4681fa1ab1353e098667302cc300586a679c56ef7
   baseline_sha256: c2155fd26f2887873d3b5b858426103aee0fc71dcc992ab8c8705582210e9758
   disposition: updates
-  review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans inspected
-    in section context. New records reviewed in full.
+  review_basis: Whole current document reread line by line; proactive command-only renewal, exact original deadlines, query-only
+    behavior and prolonged maintenance blackout limits match the authored source. Execution and final-subject release proof
+    remain pending.
 - document: audits/rc5-invariant-construction.yml
   review_status: hash_verified_prior_full_document_review
   reviewed_lines:
@@ -1113,10 +1111,12 @@ documents:
   review_basis: Full-line baseline review retained at pinned source; RC7 identifier/notice sweep and changed spans inspected
     in section context. New records reviewed in full.
 - document: CHANGELOG.md
-  review_status: excluded_prose_hash_metadata_only
-  reviewed_lines: []
-  line_count: 598
-  sha256: a54023b1752c2ad209cd55fb777789322f54f9529d7106c80ef73e65ad104d4d
+  review_status: excluded_changelog_hash_metadata_only
+  reviewed_lines:
+  - - 1
+    - 607
+  line_count: 607
+  sha256: 0913bc50417119da58eceddff4ab192e092aa1581700d862a0b5a492883d1d9d
   baseline_sha256: e30fcbf365f725fe9cf49ca256aaf88668e7b62d8745bac52aac9e055112b76c
   disposition: updates
   review_basis: Excluded from the editorial sweep by operator request; digest and line-count metadata only. New release notes
@@ -1193,11 +1193,32 @@ documents:
   review_basis: Retained full-document baseline plus current exact evidence and capability spans reread; final release proof
     remains separate.
   baseline_sha256: bd1687509398b356722128ad4b5648a5d68b72c52035daca917791fae9e09fe4
+- document: audits/slack-operator-ui.yml
+  review_status: full_document_line_by_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 52
+  line_count: 52
+  sha256: 1ad40c602a0d7396ac73a51ef4dd5dcb55a2b612b848ea7c73d52d8c622c6748
+  disposition: new
+  review_basis: Complete new bounded construction audit reviewed; supporting behavioral results distinguished from pending
+    canonical and live qualification.
+- document: audits/request-epoch-renewal.yml
+  review_status: full_document_line_by_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 44
+  line_count: 44
+  sha256: ab34532f983975fe2fc2913c52a4c66c7c905511e269bcd2eec24543d13d2acc
+  baseline_sha256: null
+  disposition: new
+  review_basis: Retained full-document review plus current qualification spans reread against executed component evidence;
+    no final-subject release or live deployment claim.
 summary:
-  documents: 105
-  new: 6
-  updated: 37
-  retained: 62
+  documents: 108
+  new: 8
+  updated: 41
+  retained: 59
   verification: Privacy regression and exact-source proof pending
 release_record_review:
   method: Historical release custody stays in linked engineering records; current editorial guidance describes behavior and

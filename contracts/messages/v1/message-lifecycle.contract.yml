@@ -1,6 +1,6 @@
 document:
   kind: message_lifecycle_contract
-  version: 1.0.2
+  version: 1.0.3
   status: active
   path: contracts/messages/v1/message-lifecycle.contract.yml
 contract:
@@ -28,6 +28,13 @@ request_identity:
   tuple: [service_inbox, channel_epoch, session_principal, canonical_UUID, canonical_fingerprint]
   epoch: opaque_service_issued_bound_to_channel_and_inbox_persisted_before_submission
   client: stage_payload_fingerprint_and_original_epoch_privately_before_first_message_submission
+  renewal:
+    owner: existing_delivery_maintenance_command_only
+    lead_seconds: min_3600_and_half_declared_epoch_seconds
+    validity: each_issued_epoch_keeps_its_original_acceptance_and_replay_deadlines
+    issuance_bound: at_least_half_declared_epoch_seconds_between_issuances_per_channel
+    queries: readonly_never_create_or_extend_epochs
+    residual: maintenance_suspension_beyond_remaining_overlap_can_refuse_new_requests_before_staging
   retry: never_replace_epoch_or_UUID_after_uncertain_outcome
   closed_epoch: explicit_expired_response_never_new_allocation
   legacy_cutover: known_exact_legacy_requests_only_during_declared_replay_window_unknown_UUID_never_allocates

@@ -34,15 +34,11 @@ class SlackReceiver:
 
     def _finish_command(self, client: BaseSocketModeClient, payload: dict) -> None:
         try:
-            from src.agentbus_presentation_service import command_blocks, slack_escape
             from src.agentbus_status_api_service import service_dashboard
             dashboard = self.dashboard or (lambda: service_dashboard(
                 self.settings, self.store, socket=client, bridge=self.federation_bridge))
             result = execute_command(payload, self.settings, self.store, client.web_client, dashboard=dashboard)
-            client.web_client.chat_postEphemeral(
-                channel=payload["channel_id"], user=payload["user_id"], text=slack_escape(result)[:3900],
-                blocks=command_blocks(result), parse="none",
-            )
+            self._post_reply(client, payload['channel_id'], payload['user_id'], result)
         except Exception:
             LOGGER.error("Could not complete AgentBus Slack command; outcome may be uncertain")
             try:
@@ -53,7 +49,42 @@ class SlackReceiver:
             except Exception:
                 LOGGER.error("Could not report uncertain AgentBus Slack command outcome")
 
+    @staticmethod
+    def _post_reply(client, channel: str, user: str, result: str) -> None:
+        from src.agentbus_presentation_service import command_blocks, slack_escape
+        from src.agentbus_slack_ui_service import OperatorReply
+        blocks = result.blocks if isinstance(result, OperatorReply) else command_blocks(result)
+        display = result.text if isinstance(result, OperatorReply) else result
+        client.web_client.chat_postEphemeral(channel=channel, user=user,
+            text=slack_escape(display)[:3900], blocks=blocks, parse='none')
+        if isinstance(result, OperatorReply):
+            for command in result.command_messages:
+                # The whole message is the exact copyable command, without a heading or markdown.
+                client.web_client.chat_postEphemeral(channel=channel, user=user, text=command, parse='none')
+
+    def _finish_interaction(self, client, payload: dict, principal: tuple[str, str]) -> None:
+        from src.agentbus_slack_ui_commands_service import execute_interaction
+        user, channel = principal
+        try:
+            result = execute_interaction(payload, self.settings, self.store, client.web_client)
+            self._post_reply(client, channel, user, result)
+        except Exception:
+            LOGGER.error('Could not finish AgentBus operator button; inspect status before retrying')
+            try:
+                self._post_reply(client, channel, user,
+                    'Button outcome is uncertain. Review enrollments or results before retrying.')
+            except Exception:
+                LOGGER.error('Could not report uncertain AgentBus operator button outcome')
+
     def __call__(self, client: BaseSocketModeClient, request: SocketModeRequest) -> None:
+        if request.type == 'interactive':
+            from src.agentbus_slack_ui_commands_service import interaction_principal
+            payload = request.payload if isinstance(request.payload, dict) else {}
+            principal = interaction_principal(payload, self.settings)
+            client.send_socket_mode_response(SocketModeResponse(envelope_id=request.envelope_id))
+            if principal is not None:
+                self._commands.submit(self._finish_interaction, client, payload, principal)
+            return
         if request.type == "slash_commands":
             payload = request.payload if isinstance(request.payload, dict) else {}
             if payload.get('channel_id') not in self.channels:
