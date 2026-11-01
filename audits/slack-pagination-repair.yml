@@ -1,0 +1,50 @@
+document:
+  kind: bounded_construction_audit
+  version: '1.0'
+  status: component_validated_final_subject_pending
+scope:
+  defect: adjacent_page_buttons_reused_action_ID_within_one_Slack_actions_block
+  affected_views: [poll_results, recent_polls, enrollment_requests]
+  provider_contract: https://docs.slack.dev/reference/block-kit/block-elements/button-element/
+  failure_boundary: generic_uncertain_button_reply_hides_original_exception
+  live_cause_limit: callback_failure_observed_but_original_provider_error_not_retained
+repair:
+  owner: src/agentbus_slack_ui_service.py
+  action_ID: known_action_kind_plus_exact_bounded_page_suffix
+  compatibility: already_posted_unsuffixed_action_IDs_remain_accepted
+  rejection: malformed_or_mismatched_suffix_is_not_executed
+preserved:
+  - exact_human_operator_allowlist_and_invoking_channel_authorization
+  - canonical_enrollment_consumption_and_unknown_outcome_boundaries
+  - read_only_pagination_and_explicit_control_acknowledgement
+  - protocol_2_HTTP_CLI_and_database_schema
+validation:
+  receipt_sha256: de68e2ff7404489d0a2e721b9127337e504005c048901c0e94c6832b91f5739b
+  released_negative: exactly_three_named_middle_page_duplicate_ID_assertion_failures
+  repaired_cases: 31
+  failures: 0
+  errors: 0
+  skipped: 0
+  regression_owner: tests/test_slack_operator_ui.py
+  new_controls: [three_view_middle_page_uniqueness, legacy_button_compatibility, five_invalid_suffix_cases]
+  applicability: exact_isolated_two_file_component_input_only
+  metadata_updated_after_component: true
+integrated_validation:
+  receipt_sha256: 9fd19563aa8f266d57114004e110d95140686397394c97fd25ad49f7d9baded1
+  stages: [authored_yaml_and_editorial_inventory, source, lint, typecheck, affected_behavior]
+  cases: 136
+  UI_cases: 31
+  failures_errors_skipped: 0
+  typechecked_source_files: 71
+  editorial_documents: 109
+  qualification_records_updated_after_execution: true
+  final_subject_proof: pending
+remaining:
+  - canonical_required_graph_on_final_subject
+  - protected_PR_and_exact_main_proof
+  - archive_and_isolated_installation_verification
+  - bounded_live_pagination_check_after_custodian_upgrade
+limits:
+  - no_live_service_provider_configuration_or_database_mutation
+  - no_new_owner_wake_or_federation_qualification
+  - no_automatic_retry_of_uncertain_approvals

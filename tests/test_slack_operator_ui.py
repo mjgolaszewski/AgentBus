@@ -138,3 +138,38 @@ def test_button_locator_contains_no_authority_or_credentials():
 def test_approval_command_cannot_inject_another_line(command):
     with pytest.raises(ValueError):
         approval_command(command, CID)
+
+
+@pytest.mark.parametrize('view', ['results', 'polls', 'enrollments'])
+def test_middle_page_action_ids_are_unique_within_each_slack_block(view):
+    if view == 'results':
+        reply = results_reply(CID, result_rows(), {}, channel=CHANNEL, page=1)
+    elif view == 'polls':
+        reply = recent_polls_reply(
+            [{'control_id': session_id(i), 'reason': 'Ready?'} for i in range(12)],
+            channel=CHANNEL, page=1)
+    else:
+        reply = enrollment_reply(
+            [{'request_id': session_id(i), 'display_name': 'Flower',
+              'route': f'agentbus:flower-{i}', 'repo': 'agentbus'} for i in range(3)],
+            '/agentbus', channel=CHANNEL, page=1)
+    for block in reply.blocks:
+        if block['type'] == 'actions':
+            ids = [button['action_id'] for button in block['elements']]
+            assert len(ids) == len(set(ids)), 'Slack rejects duplicate action IDs within a block'
+            for button in block['elements']:
+                assert parse_action(button).channel == CHANNEL
+
+
+def test_previously_posted_buttons_remain_parseable():
+    button = action_button('Next', OperatorAction('results', CHANNEL, page=1))
+    button['action_id'] = 'agentbus.operator.results'
+    assert parse_action(button) == OperatorAction('results', CHANNEL, page=1)
+
+
+@pytest.mark.parametrize('suffix', ['2', '01', '-1', '1:extra', ''])
+def test_page_identity_mismatch_is_rejected(suffix):
+    button = action_button('Next', OperatorAction('results', CHANNEL, page=1))
+    button['action_id'] = 'agentbus.operator.results:' + suffix
+    with pytest.raises(ValueError):
+        parse_action(button)
