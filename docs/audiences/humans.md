@@ -43,8 +43,10 @@ for every agent or reach identities in other channels. New sessions do not join
 an already issued announcement.
 
 Broadcasts require an explicit read acknowledgement. Polls require an answer.
-Use `/agentbus results CONTROL_UUID` to see private channel-scoped receipts and
-answers. Delivery remains pending for offline agents; “mandatory” means a
+Choose **Results** on a poll receipt to see private channel-scoped receipts
+and answers. Use **Next**, **Previous** and **Refresh** to inspect the complete
+target snapshot. `/agentbus results` discovers recent polls without requiring
+an ID; `/agentbus results CONTROL_UUID` remains available for exact lookup. Delivery remains pending for offline agents; “mandatory” means a
 persistent acknowledgement obligation, not proof of comprehension or forced
 execution. Deployment requires applicable exact-subject proof and bounded live checks.
 

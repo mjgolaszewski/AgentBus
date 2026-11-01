@@ -17,6 +17,122 @@ POLICY = {
     "jitter_fraction": 0, "overdue_grace_seconds": 120,
     "presentation_budget_bytes": None,
 }
+
+
+def ui_payload(kind, *, target='', page=0, channel='C123456', user='U123', button_channel=None):
+    from src.agentbus_slack_ui_service import OperatorAction, action_button
+    return {'type': 'block_actions', 'user': {'id': user}, 'channel': {'id': channel},
+            'container': {'type': 'message', 'channel_id': channel, 'is_ephemeral': True},
+            'actions': [action_button('Choose', OperatorAction(kind, button_channel or channel, target, page))]}
+
+
+def test_enrollment_socket_sends_separate_copyable_command(enrolled):
+    import uuid
+    settings, store, _, web = enrolled
+    request_id = str(uuid.uuid4())
+    store.channels.request_enrollment(request_id=request_id, chat_id=str(uuid.uuid4()), repo='agentbus',
+        route='agentbus:new-flower', display_name='New flower', session_secret='new-secret-with-at-least-32-characters')
+    receiver = SlackReceiver(store, settings.slack_channel, 'BTEST', settings)
+    socket = FakeSocket(web)
+    try:
+        receiver(socket, SocketModeRequest(type='slash_commands', envelope_id='enrollment-ui', payload={
+            'command': '/agentbus', 'channel_id': settings.slack_channel, 'user_id': 'U123',
+            'text': 'enrollments', 'trigger_id': 'enrollment-ui-trigger'}))
+    finally:
+        receiver._commands.shutdown(wait=True)
+    assert len(web.ephemeral) == 2 and not web.posts
+    assert web.ephemeral[1] == {'channel': settings.slack_channel, 'user': 'U123',
+                               'text': f'/agentbus approve {request_id}', 'parse': 'none'}
+    assert any(block['type'] == 'actions' for block in web.ephemeral[0]['blocks'])
+
+
+def test_approval_button_duplicate_delivery_keeps_one_approval(enrolled):
+    import uuid
+    settings, store, _, web = enrolled
+    request_id = str(uuid.uuid4())
+    store.channels.request_enrollment(request_id=request_id, chat_id=str(uuid.uuid4()), repo='agentbus',
+        route='agentbus:new-flower', display_name='New flower', session_secret='new-secret-with-at-least-32-characters')
+    before = store._db.total_changes
+    receiver = SlackReceiver(store, settings.slack_channel, 'BTEST', settings)
+    socket = FakeSocket(web)
+    request = SocketModeRequest(type='interactive', envelope_id='approval-button',
+                               payload=ui_payload('approve', target=request_id))
+    try:
+        receiver(socket, request)
+        receiver(socket, request)
+    finally:
+        receiver._commands.shutdown(wait=True)
+    rows = store.channels.pending_enrollments(channel=settings.slack_channel)
+    assert rows[0]['approved_channel'] == settings.slack_channel
+    assert store._db.total_changes == before + 1
+    assert len(socket.acks) == 2 and len(web.ephemeral) == 2 and not web.posts
+
+
+@pytest.mark.parametrize('change', [{'user': 'U999'}, {'channel': 'CFOREIGN'}])
+def test_button_authentication_precedes_lookup_and_custody(enrolled, change, monkeypatch):
+    settings, store, _, web = enrolled
+    calls = []
+    monkeypatch.setattr(store.controls, 'recent_polls', lambda *_: calls.append('lookup'))
+    receiver = SlackReceiver(store, settings.slack_channel, 'BTEST', settings)
+    socket = FakeSocket(web)
+    before = store._db.total_changes
+    try:
+        receiver(socket, SocketModeRequest(type='interactive', envelope_id='denied-button',
+                                          payload=ui_payload('results', **change)))
+    finally:
+        receiver._commands.shutdown(wait=True)
+    assert not calls and store._db.total_changes == before
+    assert len(socket.acks) == 1 and not web.ephemeral and not web.posts
+
+
+def test_button_cannot_change_rendered_channel(enrolled):
+    settings, store, _, web = enrolled
+    settings = replace(settings, slack_channels=('C123456', 'C654321'))
+    store.channels.configure(settings.channels)
+    receiver = SlackReceiver(store, settings.channels, 'BTEST', settings)
+    socket = FakeSocket(web)
+    before = store._db.total_changes
+    try:
+        receiver(socket, SocketModeRequest(type='interactive', envelope_id='foreign-button', payload=
+            ui_payload('results', channel='C654321', button_channel='C123456')))
+    finally:
+        receiver._commands.shutdown(wait=True)
+    assert store._db.total_changes == before
+    assert len(web.ephemeral) == 1 and 'another channel' in web.ephemeral[0]['text']
+    assert not web.posts
+
+
+def test_results_discovery_button_does_not_mutate_or_publicly_post(enrolled):
+    settings, store, sid, web = enrolled
+    cid, _ = store.controls.issue_auxiliary(kind='poll', routes=None, session_ids=[sid],
+                                          reason='Visible question?', actor='operator')
+    store.controls.deliver(sid, SECRET)
+    store.controls.acknowledge_control(cid, sid, SECRET, answer='Visible retained answer')
+    before = store._db.total_changes
+    receiver = SlackReceiver(store, settings.slack_channel, 'BTEST', settings)
+    socket = FakeSocket(web)
+    try:
+        receiver(socket, SocketModeRequest(type='interactive', envelope_id='results-button',
+                                          payload=ui_payload('results_page', target=cid)))
+    finally:
+        receiver._commands.shutdown(wait=True)
+    assert len(web.ephemeral) == 1 and not web.posts
+    assert store._db.total_changes == before
+    assert 'Visible retained answer' in web.ephemeral[0]['text']
+    assert 'agentbus:flower' in web.ephemeral[0]['text']
+    assert 'Visible question?' in command(settings, store, web, 'results')
+
+
+def test_button_rechecks_revoked_operator_before_worker_lookup(enrolled, monkeypatch):
+    from src.agentbus_slack_ui_commands_service import execute_interaction, interaction_principal
+    settings, store, _, web = enrolled
+    payload = ui_payload('results')
+    assert interaction_principal(payload, settings) == ('U123', settings.slack_channel)
+    calls = []
+    monkeypatch.setattr(store.controls, 'recent_polls', lambda *_: calls.append('lookup'))
+    revoked = replace(settings, slack_operator_user_ids=frozenset())
+    result = execute_interaction(payload, revoked, store, web)
+    assert 'not enabled' in result and not calls and not web.ephemeral and not web.posts
 SECRET = "session-secret-with-at-least-32-characters"
 
 

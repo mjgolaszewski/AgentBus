@@ -15,10 +15,10 @@ HELP = "\n".join([
     "`/agentbus workers` — observed service workers\n`/agentbus doctor` — read-only diagnostic guidance\n"
     "`/agentbus pending [ID]` — bounded channel work and controls\n`/agentbus explain CURSOR` — retained delivery/outcome evidence\n"
     "`/agentbus status ID`\n`/agentbus metrics ID`",
-    "*Enroll*\n`/agentbus enrollments` — pending requests\n`/agentbus approve REQUEST_UUID` — approve in this channel",
+    "*Enroll*\n`/agentbus enrollments` — review requests and press Approve\n`/agentbus approve` — copy the complete command from its separate message",
     "*Message*\n`/agentbus send ID MESSAGE`\n`/agentbus wake ID MESSAGE` — request attention; host admission is separate",
     "*Ask everyone in this channel*\n`/agentbus broadcast TEXT` — read acknowledgement required\n"
-    "`/agentbus poll QUESTION` — answer required\n`/agentbus results CONTROL_UUID` — receipts and answers",
+    "`/agentbus poll QUESTION` — answer required\n`/agentbus results` — choose a poll; named answers and page buttons",
     "*Control*\n`/agentbus checkpoint ID`\n`/agentbus pause ID` · `/agentbus resume ID`\n"
     "`/agentbus retire ID CONFIRM` — irreversible stop",
     "*Targets:* ID is a unique current identity fragment, last 6–12 hex characters, or full session UUID. "
@@ -161,15 +161,9 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
         from src.agentbus_presentation_service import health_text
         from src.agentbus_status_api_service import service_dashboard
         return health_text(dashboard() if dashboard is not None else service_dashboard(settings, store))
-    if action == "enrollments" and len(parts) == 1:
-        rows = store.channels.pending_enrollments(channel=channel)
-        if not rows:
-            return "No pending enrollment requests."
-        return "Showing up to 20 oldest pending requests; approved requests await join.\n" + "\n".join(
-            f"{row['request_id']} | {row['route']} | {row['display_name']} | profile {row['chat_id']} | "
-            f"{'approved in ' + row['approved_channel'] if row['approved_channel'] else 'awaiting approval'}\n"
-            f"`{command} approve {row['request_id']}`"
-            for row in rows)
+    if action in {'enrollments', 'results'}:
+        from src.agentbus_slack_ui_commands_service import query_reply
+        return query_reply(parts, settings, store, channel)
     if action == "approve" and len(parts) == 2:
         if not SESSION_ID.fullmatch(parts[1]):
             return "Use approve with the full enrollment request UUID."
@@ -178,20 +172,6 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
         except (PermissionError, ValueError) as exc:
             return str(exc)
         return f"Enrollment request {parts[1]} approved in this channel. The requester can rerun agentbus join; policy acknowledgement is still required."
-    if action == "results" and len(parts) == 2:
-        if not SESSION_ID.fullmatch(parts[1]):
-            return "Use results with the full control UUID."
-        rows = store.controls.status(parts[1], channel=channel)
-        if not rows:
-            return "No announcement results in this channel."
-        completed = sum(row["state"] == "effective" for row in rows)
-        lines = [f"{parts[1]}: {completed}/{len(rows)} acknowledged."]
-        for row in rows[:8]:
-            lines.append(f"{row['session_id']} | {row.get('lifecycle_state', row['state'])}" +
-                         (f" | {row['answer']}" if row['answer'] is not None else ""))
-        if len(rows) > 8:
-            lines.append(f"{len(rows) - 8} further receipts; use operator control-status for the full report.")
-        return "\n".join(lines)
     if action in {"broadcast", "poll"}:
         text = raw.strip().partition(" ")[2].strip()
         request_key = payload.get("trigger_id")
@@ -206,7 +186,8 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
                 actor=f"slack:{user}:{channel}", request_key=request_key)
         except ValueError as exc:
             return str(exc)
-        return f"{action.title()} {control_id}: {len(retained)} session(s); explicit {'answer' if action == 'poll' else 'read acknowledgement'} required."
+        from src.agentbus_slack_ui_commands_service import issued_reply
+        return issued_reply(action, control_id, len(retained), channel)
     if action == "roster" and len(parts) == 1:
         sessions = store.participation.roster(include_stopped=True, channel=channel)
         if not sessions:

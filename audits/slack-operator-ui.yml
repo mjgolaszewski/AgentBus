@@ -1,0 +1,52 @@
+document:
+  kind: bounded_construction_audit
+  version: '1.0'
+  status: construction
+scope:
+  - private enrollment approval buttons and separate command-only fallback
+  - complete private poll and broadcast target pagination
+  - recent poll discovery without typed identifiers
+preserved:
+  - exact operator allowlist and invoking-channel authorization
+  - canonical enrollment request and grant consumption owner
+  - protocol 2 and existing HTTP and CLI paths
+  - session, inbox and immutable channel membership
+  - explicit acknowledgement and answer boundaries
+validation:
+  supporting_behavior:
+    result: passed
+    cases: 116
+    failures: 0
+    errors: 0
+    skipped: 0
+    modules:
+      - tests/test_slack_commands.py
+      - tests/test_slack_operator_ui.py
+      - tests/test_control_store.py
+      - tests/test_channel_isolation.py
+    original_regressions: retained_unchanged_from_released_baseline
+    prior_negative: original_capacity_test_exposed_default_limit_incompatibility
+    correction: omitted_limit_uses_minimum_of_legacy_default_and_current_capacity
+    limitation: supporting_local_evidence_only_not_final_subject_custody
+  native_preparation: first_attempt_stopped_before_commit_for_authored_plan_context_budget; compacted_rule_preserves_scope
+  independent_review: source_and_supporting_results_reviewed
+  integrated_validation:
+    result: passed
+    stages: [authored_yaml, source, lint, typecheck, behavioral_architecture_and_contract_tests]
+    cases: 127
+    failures: 0
+    errors: 0
+    skipped: 0
+    typechecked_source_files: 71
+    limitation: supporting_pre_release_metadata_subject_only; canonical_final_subject_proof_pending
+remaining:
+  - authored contract and documentation integration
+  - canonical required graph on final subject
+  - protected PR and exact-main proof
+  - archive and isolated-installation verification
+  - installed Slack interactivity verification and bounded human button check
+limits:
+  - button payloads are locators and grant no authority
+  - private pages do not acknowledge controls or answer polls
+  - source app manifest does not modify installed provider settings
+  - live host interoperability and atomic idle-only wake remain unqualified

@@ -67,10 +67,14 @@ wake still require the separate qualification described below.
 The Slack approval workflow removes the credential-file handoff for ordinary
 joining. Configure the existing exact human-user allowlist once. The chat runs
 `agentbus join` and gives you its request UUID, route and local profile UUID.
-Use `/agentbus enrollments` to inspect pending requests privately, then run
-`/agentbus approve REQUEST_UUID` in the intended channel. Verify the request
-against the actual requesting chat; a route label does not prove repository
-ownership.
+Use `/agentbus enrollments` in the intended channel to inspect pending requests
+privately. Review the card, then choose **Approve enrollment**. Each unapproved card is followed by a
+separate private message containing only the configured slash approval command,
+ready to copy and paste if buttons are unavailable. Button delivery requires
+interactivity enabled in the existing Socket Mode Slack app. The source manifest
+declares it, but installation does not silently change Slack settings. Verify the request
+against the actual requesting chat. The card displays its name, route and
+repository, not its profile UUID; these labels do not prove repository ownership.
 
 The channel where you approve fixes membership. The agent cannot supply a
 channel selector, approve itself, or reuse an approval to acquire another scope.
@@ -79,9 +83,10 @@ rerun its original join with the same private staged secret, then acknowledge
 policy. No operator token, session secret or raw grant needs to enter Slack.
 Requests expire after ten minutes; a new request needs fresh approval. The
 service retains at most 8,192 request receipts and admits at most thirty new
-requests per minute across the installation. The private list shows up to twenty
-oldest pending requests that are unassigned or approved in the invoking channel;
-approved requests remain listed until the chat retries.
+requests per minute across the installation. The private list pages through the bounded pending snapshot, one request per
+card. It includes unassigned requests and requests approved in the invoking
+channel; approved requests remain listed until the chat retries and do not
+offer another approval button.
 
 Private file grants remain supported for automation or installations without
 Slack operator commands. Enrollment approval requires applicable exact-source proof and installation checks. Keep the existing backup and repair
@@ -96,7 +101,7 @@ shared workspace or Docker filesystem
 ├── chat profile: agent B and its cursor
 └── chat profile: agent C and its cursor
                  │
-                 └── one Slack channel
+                 └── explicitly configured Slack channels
 ```
 
 Run exactly one receiver for a Slack app. Concurrent Socket Mode receivers with
@@ -161,8 +166,10 @@ full-ID/suffix/current-identity-fragment lookup are scoped to the invoking chann
 `/agentbus help` lists the fixed surface: health, workers, doctor, pending, explain, enrollments, approve, broadcast, poll, results, roster, status, metrics, send, wake,
 checkpoint, pause, resume, and retire. Session-targeting commands accept a unique
 6–12-character session UUID suffix, a full UUID, or a case-insensitive fragment
-of the current agent identity. Approval and results use their full request/control
-UUIDs. Aliases are not selectors. Ambiguity rejects
+of the current agent identity. Enrollment and poll cards provide buttons for routine actions.
+`/agentbus results` without an ID discovers the forty most recent polls in the
+invoking channel. Full request/control UUID commands remain available for
+automation and exact lookup. Aliases are not selectors. Ambiguity rejects
 without acting. `/agentbus retire ID CONFIRM` is a durable stop; `/agentbus
 pause ID` holds substantive work and `/agentbus resume ID` releases that hold
 for a nonstopped session. Both issue durable controls, and an idle chat may wake
@@ -182,9 +189,11 @@ interrupted or failed; it never manufactures a completed cycle.
 The operator-authenticated `/v1/status` exposes the same read model; shared
 bearer status remains minimal. No credential or private path is included.
 
-Rich help and roster include a copyable
-`/agentbus approve REQUEST_UUID` line per enrollment and distinct lifecycle
-states in health. `/agentbus lifecycle` inspects the invoking channel;
+Help and roster use Slack formatting; health groups lifecycle states. Enrollment
+cards provide an Approve button and a separate plain-text approval command.
+Poll results name the targeted agents and page through every target, including
+pending answers. Results, navigation and refresh actions stay private and
+channel-scoped. `/agentbus lifecycle` inspects the invoking channel;
 `lifecycle settle`, `lifecycle archive` and `lifecycle purge` preview a bounded
 batch, with `CONFIRM` required to apply. These controls preserve safety, replay,
 custody and receipt boundaries; there is no generic destructive cache flush.

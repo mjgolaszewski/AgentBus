@@ -309,6 +309,18 @@ class ControlStore:
                 (applied, control_id, session_id),
             )
 
+    def recent_polls(self, channel: str) -> list[dict]:
+        """Bounded operator discovery; exclude controls without a local target."""
+        with self._lock:
+            rows = self._db.execute(
+                'SELECT c.control_id,c.reason,c.issued_at FROM operator_controls c '
+                "WHERE c.kind='poll' AND EXISTS (SELECT 1 FROM control_targets t "
+                'JOIN participation_sessions s ON s.session_id=t.session_id '
+                'JOIN chat_channels b ON b.chat_id=s.chat_id '
+                'WHERE t.control_id=c.control_id AND b.channel=?) '
+                'ORDER BY c.issued_at DESC,c.control_id DESC LIMIT 40', (channel,)).fetchall()
+            return [dict(row) for row in rows]
+
     def status(self, control_id: str, *, channel: str | None = None) -> list[dict]:
         with self._lock:
             rows = self._db.execute(

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.3] - 2026-11-01
+
+- Read every poll answer and broadcast receipt through private, named, paginated results; discover recent polls without typing an identifier.
+- Approve enrollment with a private button, with the exact approval command in its own copyable message as a fallback.
+- Recheck operator and channel authorization for every button; retain canonical enrollment ownership, expiry, retries and immutable membership.
+- Update the participation contract and operator guides, with an explicit editorial audit and existing-app interactivity prerequisite.
+- Preserve protocol 2, HTTP and CLI compatibility. Live owner interoperability and atomic idle-only wake remain unqualified.
+
 ## [0.9.2] - 2026-10-29
 
 - Repair lifecycle presentation and fresh-control ordering without advancing semantic acknowledgements or hiding unfinished work.

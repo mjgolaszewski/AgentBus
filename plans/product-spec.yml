@@ -7,6 +7,7 @@ product:
   non_goals: ["AgentBus core executing or orchestrating coding agents; an optional host-owned adapter may start an explicitly bound Codex thread", "using persona labels as authentication or authorization", "providing offline Slack history, exactly-once Slack delivery, or a general message broker"]
 constraints:
   operating_constraints:
+    - "Private operator buttons carry bounded locators only; approval reuses canonical enrollment ownership, command-only fallback messages remain copyable, and paginated poll results expose every authorized target without changing acknowledgement boundaries"
     - "Allowlisted Slack human requests use channel-first unique identity lookup and private operator dashboards; rich text preserves protocol2 envelopes. Broadcasts and polls retain one shared durable control with exact-session read receipts or answers."
     - "File-free operator Slack approval retains immutable staged enrollment proof; pending requests grant no session authority. Lifecycle cutover uses explicit epochs, pickup, handling and reference-safe retention; unknown shared and federated custody remains pinned."
     - "Federation recovery uses bounded resumable oldest-prefix coverage and generation-bound uncertain retries; occupied raw carriers retain timestamp ownership and project distinct scoped notifications. Transport custody is not local session assurance, execution or semantic ACK."

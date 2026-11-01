@@ -103,13 +103,17 @@ def approve_enrollment(channels, request_id, *, channel, actor):
                               (channel, actor, request_id))
 
 
-def pending_enrollments(channels, *, channel=None):
+def pending_enrollments(channels, *, channel=None, limit=None):
     """Privileged query deliberately excludes staged credential digests and grants."""
+    if limit is None:
+        limit = min(20, MAX_REQUESTS)
+    if type(limit) is not int or not 1 <= limit <= MAX_REQUESTS:
+        raise ValueError('Invalid pending enrollment limit')
     with channels.owner._lock:
         rows = channels.owner._db.execute('''SELECT request_id,repo,route,display_name,chat_id,expires_at,approved_channel
             FROM channel_enrollment_requests WHERE consumed_session IS NULL AND expires_at>?
             AND (? IS NULL OR approved_channel IS NULL OR approved_channel=?)
-            ORDER BY expires_at,request_id LIMIT 20''', (time.time(), channel, channel)).fetchall()
+            ORDER BY expires_at,request_id LIMIT ?''', (time.time(), channel, channel, limit)).fetchall()
         return [dict(row) for row in rows]
 
 

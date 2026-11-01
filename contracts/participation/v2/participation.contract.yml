@@ -1,6 +1,6 @@
 document:
   kind: participation_authorization_contract
-  version: 2.0.9
+  version: 2.0.10
   status: active
   path: contracts/participation/v2/participation.contract.yml
 extends: contracts/participation/v1/participation.contract.yml
@@ -8,6 +8,7 @@ changes:
 - Operator-granted immutable channel membership replaces unjoined message authority
 - All agent data-plane operations require session proof and inbox binding
 - Existing exact-session controls policy ACK rotation and STOP semantics persist
+- Private button locators preserve operator authority and complete channel-local poll results
 compatibility:
   slack_envelope: 2
   http_paths: retained; strict session proof required
@@ -150,7 +151,9 @@ mandatory_announcements:
   poll_ack: exact_session_explicit_bounded_answer_required; read_without_answer_remains_pending
   recovery: stable_Slack_trigger_identity; same_request_returns_original_control; changed_request_fails_closed
   limits: text_1_to_1000_characters; answer_1_to_2000_characters
-  status: private_channel_scoped_Slack_results_up_to_8_targets; existing_privileged_control_status_for_full_report
+  status: private_channel_scoped_complete_target_snapshot; four_targets_per_page; named_answers_and_pending_receipts
+  discovery: results_without_ID_lists_up_to_40_recent_channel_local_polls; exact_control_UUID_lookup_retained
+  navigation: private_results_previous_next_refresh_buttons; payload_locators_grant_no_authority
   exclusions: no_forced_model_turn; no_proof_of_comprehension; offline_sessions_remain_pending_unless_declared_optional_lifecycle_read_expiry_applies; no_remote_fanout
 
 slack_enrollment_approval:
@@ -158,7 +161,11 @@ slack_enrollment_approval:
   agent_command: join_without_grant_file_stages_private_secret_and_random_request_UUID
   http_path: existing_POST_sessions; approval_request_ID_and_profile_UUID_without_channel_selector
   pending: HTTP_202_no_session_or_message_authority; retry_same_private_staged_secret_and_immutable_subject
-  operator_commands: enrollments_lists_unassigned_and_same_channel_pending_privately; approve_REQUEST_UUID_in_intended_configured_channel
+  operator_commands: enrollments_pages_unassigned_and_same_channel_pending_privately_one_card_per_page; Approve_button_or_exact_UUID_command_in_intended_configured_channel
+  copy_fallback: separate_private_plain_message_contains_only_configured_slash_approval_command
+  interaction_authority: configured_channel_and_exact_human_allowlist_rechecked_before_lookup_and_execution; payload_channel_must_match_verified_invoking_channel
+  interaction_locators: implicit_v1_schema_bounded_action_channel_target_page; identifiers_only_never_credentials_or_authority
+  deployment_prerequisite: existing_Socket_Mode_app_interactivity_enabled_and_verified; source_manifest_does_not_mutate_provider_settings
   waiting: optional_foreground_wait_up_to_600_seconds; backoff_2_4_8_16_then_30_seconds; no_background_or_model_turn_authority
   authority: exact_existing_Slack_operator_allowlist; approval_channel_is_invocation_channel
   completion: canonical_internal_grant_and_enrollment_in_same_transaction; raw_grant_never_returned_or_persisted
