@@ -1,7 +1,7 @@
 document:
   kind: editorial_audit
   path: audits/editorial-review.yml
-  status: current_source_editorial_review_recorded_release_validation_pending
+  status: current_pagination_repair_reviewed_final_subject_validation_pending
 request:
   scope: Current product documents, contracts, audience guides and skills; changed spans reviewed against retained full-document
     baselines. Engineering records retain historical evidence; excluded changelog entries receive hash metadata only.
@@ -20,8 +20,8 @@ baseline_review:
   inventory: audits/editorial-review.yml
   sha256: b322d4dfbdda737da076f2f15fd2bab62e204296cbf96988f79e1d43ba56a609
 experimental_claims:
-  current_repair: Button and epoch repairs passed affected component validation against retained exact input subjects and
-    original negative controls. Qualification metadata was updated afterward; final canonical release proof remains pending.
+  current_repair: Stable 0.9.3 has protected PR/exact-main, archive/install and publication evidence. Its bounded pagination
+    repair passed 136 integrated component cases and source/lint/type/editorial checks; final 0.9.4 subject proof and live pagination remain pending.
   AHP_native_queue: offline research; live interoperability and atomic idle-only admission unqualified
   federation: Historical canaries apply only to pinned runtime subjects; custody is not execution or semantic ACK
 documents:
@@ -64,10 +64,10 @@ documents:
   - - 1
     - 87
   line_count: 87
-  sha256: 5c8e289ee8f6610de2c31ecf5ebd23d257dd7341b0679e20e4707567775bd4b8
+  sha256: 4671623f452dfb2c62daf0e33105fbe76a53c567342850d9fc86ec6ac3b605f7
   baseline_sha256: 05b0a6c70825e735a5f0fa544ac88c51ec90fbb2b23ba2cc69a3612a22511248
   disposition: updates
-  review_basis: Pinned full-document baseline retained; current epoch-renewal decision and qualification spans reviewed in
+  review_basis: Pinned full-document baseline retained; current pagination locator compatibility and qualification spans reviewed in
     section context. Engineering records preserve prior exact-subject evidence without promoting it to the new repair.
 - document: README.md
   review_status: full_document_review
@@ -298,7 +298,7 @@ documents:
   - - 1
     - 281
   line_count: 281
-  sha256: 043ac42a2daf8c718666376f7720c6e4764bc04d11772c795996bd4d0a870619
+  sha256: 4f427c46686a94db935bf909cbe1b785acf26f2c459696a4293d124165329793
   baseline_sha256: af34483e98d9bc674aa04e2395fb9393988b7780efe6e6093826cd1c6e3ec89e
   disposition: updates
   review_basis: Entire document reread line by line against the button-first implementation and independent review; private
@@ -681,9 +681,9 @@ documents:
   review_status: prior_full_document_plus_current_changed_spans_reviewed
   reviewed_lines:
   - - 1
-    - 423
-  line_count: 423
-  sha256: f2ac372d4b5a0e6966e7d9df0752eb8585859ddfb73dee93aceb0d3c5cda9dab
+    - 426
+  line_count: 426
+  sha256: 6fafb978b9f036d3590c62fe1c391812e65fe030f09cfc5e23fdd953ac1edcf1
   baseline_sha256: dab82796506bd450296b1abe45485a38cb3b430260ae10ba1f26ed9cebd177ef
   disposition: updates
   review_basis: Retained full-document review plus current qualification spans reread against executed component evidence;
@@ -697,7 +697,7 @@ documents:
   sha256: 8f54ff6b9cfe0674768a09ad207950199aa8b82b67ea44d62e0d5c50ebae1f93
   baseline_sha256: 6515d262036a3fefad6252b72ec202e759886fe2754dc4ad670b135b1c099eb2
   disposition: updates
-  review_basis: Pinned full-document baseline retained; current epoch-renewal decision and qualification spans reviewed in
+  review_basis: Pinned full-document baseline retained; current pagination locator compatibility and qualification spans reviewed in
     section context. Engineering records preserve prior exact-subject evidence without promoting it to the new repair.
 - document: plans/phase-01-plan.yml
   review_status: hash_verified_prior_full_document_review
@@ -996,7 +996,7 @@ documents:
   sha256: 62690ae8f8bfc09dad3b5ba05df981608e923220f88d28ba476d581bc86a5c90
   baseline_sha256: ddac50c8618eb4bade4640059de375e411417127d1465b2b96dd1319314e5359
   disposition: updates
-  review_basis: Pinned full-document baseline retained; current epoch-renewal decision and qualification spans reviewed in
+  review_basis: Pinned full-document baseline retained; current pagination locator compatibility and qualification spans reviewed in
     section context. Engineering records preserve prior exact-subject evidence without promoting it to the new repair.
 - document: LICENSE
   review_status: hash_verified_prior_full_document_review
@@ -1114,9 +1114,9 @@ documents:
   review_status: excluded_changelog_hash_metadata_only
   reviewed_lines:
   - - 1
-    - 607
-  line_count: 607
-  sha256: 0913bc50417119da58eceddff4ab192e092aa1581700d862a0b5a492883d1d9d
+    - 612
+  line_count: 612
+  sha256: 796537641c2030e209ac802c24ee4eb57f7c85a63f6aca7e24f7a594241204c7
   baseline_sha256: e30fcbf365f725fe9cf49ca256aaf88668e7b62d8745bac52aac9e055112b76c
   disposition: updates
   review_basis: Excluded from the editorial sweep by operator request; digest and line-count metadata only. New release notes
@@ -1214,14 +1214,23 @@ documents:
   disposition: new
   review_basis: Retained full-document review plus current qualification spans reread against executed component evidence;
     no final-subject release or live deployment claim.
+- document: audits/slack-pagination-repair.yml
+  review_status: full_document_reviewed
+  reviewed_lines:
+  - - 1
+    - 50
+  line_count: 50
+  sha256: 0d360a88e70e207c5778b337b24dd1c7b845dbc3dc7d0e1d74ddaadd127273b4
+  disposition: new
+  review_basis: Every line checked against the retained three negative controls and 31 passing cases; final-subject and live limits explicit.
 summary:
-  documents: 108
-  new: 8
+  documents: 109
+  new: 9
   updated: 41
   retained: 59
   verification: Privacy regression and exact-source proof pending
 release_record_review:
   method: Historical release custody stays in linked engineering records; current editorial guidance describes behavior and
     limits
-  scope: current_control_repair_and_editorial_cleanup
+  scope: current_pagination_repair_and_qualification_records
   qualification: current_candidate_requires_own_canonical_release_and_installation_proof

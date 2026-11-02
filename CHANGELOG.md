@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.9.4] - 2026-11-01
+
+- Repair Previous and Next buttons on middle pages of poll results, recent polls and enrollment requests.
+- Keep already-posted buttons usable and preserve operator/channel authorization, approval ownership and read-only result semantics.
+
 ## [0.9.3] - 2026-11-01
 
 - Read every poll answer and broadcast receipt through private, named, paginated results; discover recent polls without typing an identifier.

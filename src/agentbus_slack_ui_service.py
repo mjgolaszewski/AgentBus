@@ -61,7 +61,7 @@ def action_button(label: str, action: OperatorAction) -> dict[str, object]:
     return {
         'type': 'button',
         'text': {'type': 'plain_text', 'text': label, 'emoji': False},
-        'action_id': ACTION_PREFIX + action.kind,
+        'action_id': f'{ACTION_PREFIX}{action.kind}:{action.page}',
         'value': json.dumps({'channel': action.channel, 'target': action.target, 'page': action.page}, separators=(',', ':')),
     }
 
@@ -82,8 +82,12 @@ def parse_action(value: object) -> OperatorAction:
     if (not isinstance(payload, dict) or set(payload) != {'channel', 'target', 'page'}
             or not isinstance(payload['target'], str)):
         raise ValueError('Invalid operator button value')
-    action = OperatorAction(action_id[len(ACTION_PREFIX):], payload['channel'], payload['target'], payload['page'])
+    kind, separator, position = action_id[len(ACTION_PREFIX):].partition(':')
+    action = OperatorAction(kind, payload['channel'], payload['target'], payload['page'])
     action.validate()
+    # Retain already-posted buttons; new IDs distinguish adjacent page actions.
+    if separator and position != str(action.page):
+        raise ValueError('Invalid operator button page identity')
     return action
 
 
