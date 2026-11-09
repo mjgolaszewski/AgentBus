@@ -74,6 +74,9 @@ execution_evidence:
   - Canonical candidate4349282 preflight rejected YAML merge-key shorthand before native proof; authored registry
     expanded explicitly without altering certified BCF runtime. Original diagnostic retained, no SDK defect or upgrade
     inferred.
+  - Canonical preflight retained failures for candidatea73ff26 exact-base family migration, e53dbd6 changelog heading,
+    ffe56b5 preflight-only workitem evidence, and2bf2f46 stale version-drift negative-control target. Authored metadata
+    corrected without changing certified SDK bytes; no native suite pass or release closure inferred.
 closeout_requirements:
   claims:
     workitems_closed:
