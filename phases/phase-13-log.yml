@@ -77,6 +77,9 @@ execution_evidence:
   - Canonical preflight retained failures for candidatea73ff26 exact-base family migration, e53dbd6 changelog heading,
     ffe56b5 preflight-only workitem evidence, and2bf2f46 stale version-drift negative-control target. Authored metadata
     corrected without changing certified SDK bytes; no native suite pass or release closure inferred.
+  - Candidate498a92b semantic preflight could not discover Pydantic model_validate constructor calls. The exact
+    hostile decoder now invokes the same strict canonical models through explicit constructors; validation bounds
+    and ownership remain unchanged.
 closeout_requirements:
   claims:
     workitems_closed:

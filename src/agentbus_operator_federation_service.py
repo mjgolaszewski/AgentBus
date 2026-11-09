@@ -205,10 +205,10 @@ class OperatorFederation:
             raise ValueError("Invalid operator request identity")
         with self.store._lock, atomic(self.store._db):
             if frame["kind"] == "operator_result":
-                body = OperatorResponse.model_validate(body).model_dump()
+                body = OperatorResponse(**body).model_dump()
                 self._receive_result(origin, body)
                 return
-            body = OperatorRequest.model_validate(body).model_dump()
+            body = OperatorRequest(**body).model_dump()
             if set(body) != {"request_id", "actor", "source_channel", "channel", "operation", "text", "expires_at"}:
                 raise ValueError("Invalid operator request fields")
             if (
