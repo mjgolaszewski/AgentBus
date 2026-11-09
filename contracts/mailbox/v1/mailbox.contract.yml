@@ -1,0 +1,16 @@
+document:
+  kind: mailbox_query_contract
+  version: 1.0.0
+  status: active
+  path: contracts/mailbox/v1/mailbox.contract.yml
+invariants:
+- Exact session and inbox scope precedes search thread or cursor lookup
+- Query execution never changes state or acknowledges work
+- Search indexes only retained message text and returns only public channel-local positions
+interfaces:
+  search: GET /v1/search with query limit and opaque after
+  cli: agentbus search --identity ROUTE --query TEXT
+bounds: {query_characters: 256, default_limit: 20, maximum_limit: 100, token_bytes: 2048}
+owner: agentbus_search_service
+migration: Additive FTS5 index and triggers installed atomically after support probe; preserve original messages custody and public positions
+rollback: Before new writes restore verified backup; after new custody repair forward and do not discard records

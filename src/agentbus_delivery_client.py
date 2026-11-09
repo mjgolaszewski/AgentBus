@@ -91,7 +91,9 @@ def deliver_payload(values, send_profile, info, payload, api, *, message_id=None
         options['delivery_epoch'] = request_stage(values, send_profile, key, payload,
             lifecycle.get('request_epoch'), existing=explicit is not None)
     try:
-        return api(values, '/v1/messages', payload, session_token=session, delivery_key=key, inbox_id=send_profile["inbox_id"], **options)
+        result = api(values, '/v1/messages', payload, session_token=session, delivery_key=key, inbox_id=send_profile["inbox_id"], **options)
+        return {**result, 'delivery_receipt': {'request_id': key, 'state': 'accepted',
+                'provider_delivery': 'not_inferred', 'recipient_execution': 'not_inferred'}}
     except ClientError as exc:
         if exc.status == 410:
             raise ClientError('Request expired. Its identity is retained; do not resubmit under a new UUID.', status=410) from None

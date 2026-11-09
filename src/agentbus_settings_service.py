@@ -25,12 +25,15 @@ class Settings:
     local_delivery_retained_limit: int = 65536
     local_delivery_observation_limit: int = 131072
     slack_command: str = "/agentbus"
+    local_prefix: str | None = None
 
     @property
     def channels(self) -> tuple[str, ...]:
         return self.slack_channels or (self.slack_channel,)
 
     def __post_init__(self):
+        if self.local_prefix is not None and not re.fullmatch(r"[a-z][a-z0-9-]{0,31}", self.local_prefix):
+            raise ValueError("AGENTBUS_LOCAL_PREFIX must be a lowercase route prefix of at most32 characters")
         if not isinstance(self.slack_command, str) or not re.fullmatch(r"/[a-z][a-z0-9_-]{0,31}", self.slack_command):
             raise ValueError("AGENTBUS_SLACK_COMMAND must be a slash followed by 1–32 lowercase command characters")
         from src.agentbus_local_delivery_service import validate_limits
@@ -89,6 +92,7 @@ class Settings:
         return cls(api_token=values["api_token"], slack_bot_token=values["slack_bot_token"],
                    slack_app_token=values["slack_app_token"],
                    slack_command=os.environ.get("AGENTBUS_SLACK_COMMAND", "/agentbus").strip(),
+                   local_prefix=os.environ.get("AGENTBUS_LOCAL_PREFIX", "").strip() or None,
                    slack_channel=channels[0] if len(channels)==1 else "",
                    slack_channels=channels if multiple is not None else (),
                    db_path=db_path.expanduser(), operator_token=operator_token,

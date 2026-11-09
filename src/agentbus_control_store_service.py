@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 from src.agentbus_participation_service import resolve_policy
 from src.agentbus_participation_store_service import ParticipationStore
+from src.agentbus_transaction_service import atomic
 
 if TYPE_CHECKING:
     from src.agentbus_announcement_lifecycle_service import AnnouncementLifecycle
@@ -102,7 +103,7 @@ class ControlStore:
         if request_key is not None and (kind not in {"broadcast", "poll"} or not 1 <= len(request_key) <= 500):
             raise ValueError("request key is only supported for bounded announcements")
         control_id = str(uuid.uuid5(uuid.NAMESPACE_URL, f"agentbus:announcement:{actor}:{request_key}")) if request_key else str(uuid.uuid4())
-        with self._lock, self._db:
+        with self._lock, atomic(self._db):
             existing = self._db.execute("SELECT kind, reason, actor FROM operator_controls WHERE control_id = ?", (control_id,)).fetchone()
             if existing is not None:
                 if (existing["kind"], existing["reason"], existing["actor"]) != (kind, reason, actor):

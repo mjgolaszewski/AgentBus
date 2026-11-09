@@ -11,6 +11,12 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = yaml.safe_load((ROOT / "architecture-boundaries.yml").read_text())["architecture"]
 MODULES = {
+    "src/agentbus_runtime_inventory_service.py": ("service", "service"),
+    "src/agentbus_operator_federation_service.py": ("service", "service"),
+    "src/agentbus_operator_scope_service.py": ("service", "service"),
+    "src/agentbus_mcp_client.py": ("client", "client"),
+    "src/agentbus_search_service.py": ("service", "service"),
+    "src/agentbus_search_client.py": ("client", "client"),
     "src/agentbus_slack_ui_service.py": ("service", "service"),
     "src/agentbus_slack_ui_commands_service.py": ("service", "service"),
     "src/agentbus_announcement_lifecycle_service.py": ("service", "service"),

@@ -1,0 +1,123 @@
+document:
+  kind: construction_audit
+  name: Issue112 release train
+  id: agentbus-issue112-train
+  version: 1.0.0
+  path: audits/issue112-release-train.yml
+  status: planned
+  generated_at_utc: '2026-11-09T00:00:00Z'
+authority: Operator approved full issue112 two-release plan; no release publication or live deployment grant
+baseline:
+  commit: 0c772fabd1a08f6602b8c2bf98f7e7a3fc6e0171
+  tree: c6d83695769df25d6e47755fb8da3b317b08f4bf
+  version: 0.9.4
+  bcf: 2.3.4
+  retained_provider_run: 41370870206
+  qualification: Retained exact-main PR-mode truth passed; no P12 computed closure inferred
+  prospective_attempt: Clean baseline has no PR changelog delta; prospective preflight rejects no-op PR. Original
+    diagnostic retained; do not edit baseline to fabricate proof.
+source_continuity:
+  active_branch: feat/112-release-train
+  publication_remote: https://github.com/mjgolaszewski/AgentBus.git
+  historical_primary: 14 qualification changes retained in verified private byte inventory and dedicated reachable
+    preservation ref; not adopted
+  historical_workbenches: Clean followup and operator UX heads are incorporated; pagination ancestry is assessed
+    against refreshed main, no retirement yet
+issue_disposition:
+  '1': P13 and P14 canonical contract and acceptance coverage
+  '2': P13 and P14 canonical contract and acceptance coverage
+  '3': P13 and P14 canonical contract and acceptance coverage
+  '4': P13 and P14 canonical contract and acceptance coverage
+  '5': P13 and P14 canonical contract and acceptance coverage
+  '6': P13 and P14 canonical contract and acceptance coverage
+  '7': P13 and P14 canonical contract and acceptance coverage
+  '8': P13 and P14 canonical contract and acceptance coverage
+  '9': P13 and P14 canonical contract and acceptance coverage
+  '10': P14 client publication and interface contract
+  '11': P13 and P14 canonical contract and acceptance coverage
+interfaces:
+  location: AgentBus installation
+  channel: Immutable session-derived Slack conversation scope
+  destination: Operator-bound client Slack installation workspace channel authors and approval policy
+  slack_scope: health or broadcast --location LOCATION or --federated; mutually exclusive; configured command alias
+  agent_cli:
+  - send --identity ROUTE --recipient ROUTE TEXT
+  - reply --identity ROUTE --to-cursor PUBLIC_CURSOR TEXT
+  - search --identity ROUTE --query TEXT [--limit N] [--after TOKEN]
+  - mcp --identity ROUTE
+  - update --identity ROUTE --destination NAME TEXT
+  compatibility: No global channel location or workspace switch; current send --to alias and retained retry flags
+    preserved
+external_owner_dispositions:
+- CI controller installation remains framework or CI-owner work
+- Resource admission floor enforcement and cleanup remain scheduler/custodian work
+- NFS durability and private backup scheduling remain custodian work; AgentBus supplies bounded runbook references
+  only
+blocked_live_prerequisites:
+- P13 location pair approved; custodian window rollout and proof remain prerequisites
+- P14 client workspace/channel and protected local installation credentials unconfirmed
+workflow: Canonical prospective submit truth and custody; one executor and actual pipeline; reuse unchanged valid
+  evidence
+source_slice:
+  context: client receipt and mailbox adapter; service query operator-control and installation owners
+  command_or_query: Existing command receipt projection; new scoped read query and explicit operator commands
+  forbidden_surfaces:
+  - generated BCF runtime implementations
+  - live service configuration databases credentials and owner bindings
+  - P14 activation before computed P13 closure
+  targets:
+  - src/agentbus_delivery_client.py
+  - src/agentbus_search_service.py
+  - src/agentbus_mcp_client.py
+  - src/agentbus_operator_federation_service.py
+  - src/agentbus_slack_command_service.py
+  tests:
+  - tests/test_delivery_client.py
+  - tests/test_mailbox_search.py
+  - tests/test_mcp_adapter.py
+  - tests/test_operator_federation.py
+  - tests/test_runtime_inventory.py
+  - tests/test_channel_isolation.py
+editorial_review:
+- path: docs/operator-federation.md
+  reviewed_lines:
+  - 1
+  - 88
+  sha256: 88958bbed91ba7de7c15f0f3fa5d1937841f24d2cf07d50a746f41c5db5ea081
+  disposition: new
+  notes: Every line reviewed for availability, configured alias, scope, authority, privacy and current contracts;
+    excludes BCF machinery and changelog
+- path: docs/local-adapters.md
+  reviewed_lines:
+  - 1
+  - 50
+  sha256: 4e2345b44376e270697d9b4a5c5b44c7f563d951d4594894c6601a126056bc3d
+  disposition: new
+  notes: Every line reviewed for availability, configured alias, scope, authority, privacy and current contracts;
+    excludes BCF machinery and changelog
+- path: docs/contracts.md
+  reviewed_lines:
+  - 1
+  - 135
+  sha256: 3ed9762ad10acbdbb8e9471bfb999938d1bee534031cbfb680a5708b56c2f646
+  disposition: updated
+  notes: Every line reviewed for availability, configured alias, scope, authority, privacy and current contracts;
+    excludes BCF machinery and changelog
+- path: skills/agentbus/SKILL.md
+  reviewed_lines:
+  - 1
+  - 98
+  sha256: 1a61d7594ffa9f831014698f38dbb800b625da3d374a011938bd1112e74828dc
+  disposition: updated
+  notes: Every line reviewed for availability, configured alias, scope, authority, privacy and current contracts;
+    excludes BCF machinery and changelog
+- path: skills/agentbus/references/participation.md
+  reviewed_lines:
+  - 1
+  - 132
+  sha256: 30eb866b0d6d673d69b1efbd05fd711b6c84ceba4be1c53ac1851e22c8b11156
+  disposition: updated
+  notes: Every line reviewed for availability, configured alias, scope, authority, privacy and current contracts;
+    excludes BCF machinery and changelog
+context_budget_change: Canonical representation registry KiB cap increases44 to50 only for explicit signed operator
+  frame and two typed payload owners; no runtime memory or retention budget changed

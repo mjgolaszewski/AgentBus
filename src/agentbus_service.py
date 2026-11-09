@@ -65,6 +65,7 @@ from src.agentbus_participation_store_service import StoppedMessageSession as St
 from src.agentbus_reply_policy_service import validate_reply
 from src.agentbus_request_limits_service import RequestBodyLimit
 from src.agentbus_retention_service import RetentionStore
+from src.agentbus_search_service import SearchStore, api_search
 from src.agentbus_send_policy_service import SessionAuthorityError as SessionAuthorityError
 from src.agentbus_send_policy_service import validate_new_send as validate_new_send
 from src.agentbus_send_rate_service import SendRateExceeded as SendRateExceeded
@@ -286,6 +287,7 @@ class MessageStore:
         self.controls.lifecycle = self.announcements
         self.participation.announcements = self.announcements
         self.claim_recovery.lifecycle = self.lifecycle
+        self.search = SearchStore(self)
 
     def first_legacy_notice(self, channel: str, identity: str) -> bool:
         """Return an onboarding notice once per legacy inbox identity."""
@@ -652,6 +654,7 @@ API_OPERATIONS: dict[str, Callable[..., object]] = {
     "send": api_send,
     "federation_enqueue": api_federation_enqueue,
     "read": api_read,
+    "search": api_search,
     "info": api_info,
     "inbox": api_inbox,
     "claim": api_claim,
@@ -685,13 +688,15 @@ API_OPERATIONS: dict[str, Callable[..., object]] = {
 def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClient | None = None,
                socket_factory: Callable = build_socket) -> FastAPI:
     settings = settings or Settings.from_env()
+    from src.agentbus_runtime_inventory_service import verify_runtime_inventory
+    verify_runtime_inventory()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         async with delivery_lifespan(app, settings, http_client, socket_factory):
             yield
 
-    app = FastAPI(title="AgentBus", version="0.9.4", lifespan=lifespan,
+    app = FastAPI(title="AgentBus", version="0.10.0", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
     app.add_middleware(RequestBodyLimit)
@@ -704,6 +709,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                       dependencies=auth, response_model=FederationAcceptance, status_code=202)
     app.add_api_route("/v1/messages", API_OPERATIONS["read"], methods=["GET"],
                       dependencies=auth, response_model=MessagePage)
+    app.add_api_route("/v1/search", API_OPERATIONS["search"], methods=["GET"], dependencies=auth)
     app.add_api_route("/v1/info", API_OPERATIONS["info"], methods=["GET"],
                       dependencies=auth, response_model=Info)
     app.add_api_route("/v1/inbox", API_OPERATIONS["inbox"], methods=["GET"],

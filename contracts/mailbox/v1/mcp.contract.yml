@@ -1,0 +1,9 @@
+document: {kind: local_tool_adapter_contract, version: 1.0.0, status: active, path: contracts/mailbox/v1/mcp.contract.yml}
+protocol: {name: MCP, version: '2025-11-25', transport: stdio}
+owner: agentbus_mcp_client
+invariants:
+- One process is bound to one existing profile service session channel and inbox; tool callers cannot supply another identity or endpoint
+- Tools delegate the existing authenticated API via client operations; no direct SQLite provider or operator authority
+- Read receipts pickup completion and semantic ACK are separate explicitly invoked actions
+- Standard output contains only MCP messages and no background polling or model turns are started
+bounds: {request_bytes: 1048576, text_characters: 6000}

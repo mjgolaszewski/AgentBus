@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from src.agentbus_presentation_service import section_blocks
 
 UUID = re.compile(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}")
-ACTIONS = frozenset({'results', 'results_page', 'enrollments_page', 'approve'})
+ACTIONS = frozenset({'results', 'results_page', 'enrollments_page', 'approve', 'operator_results'})
 ACTION_PREFIX = 'agentbus.operator.'
 
 
@@ -26,7 +26,7 @@ class OperatorAction:
         if (not isinstance(self.channel, str) or len(self.channel) > 80
                 or not re.fullmatch(r'[CG][A-Z0-9]+', self.channel)):
             raise ValueError('Invalid operator action channel')
-        needs_target = self.kind in {'results_page', 'approve'}
+        needs_target = self.kind in {'results_page', 'approve', 'operator_results'}
         if needs_target and not UUID.fullmatch(self.target):
             raise ValueError('Invalid operator action reference')
         if not needs_target and self.target:
@@ -40,10 +40,14 @@ class OperatorReply(str):
     blocks: list[dict[str, object]]
     command_messages: tuple[str, ...]
     display_text: str
+    outcome: str
+    receipt: str | None
 
     def __new__(cls, text: str, blocks: list[dict[str, object]],
-                command_messages: tuple[str, ...] = (), *, legacy_text: str | None = None) -> OperatorReply:
+                command_messages: tuple[str, ...] = (), *, legacy_text: str | None = None,
+                outcome: str = "unknown", receipt: str | None = None) -> OperatorReply:
         result = super().__new__(cls, text if legacy_text is None else legacy_text)
+        result.outcome, result.receipt = outcome, receipt
         result.blocks = blocks
         result.command_messages = command_messages
         result.display_text = text
@@ -203,3 +207,10 @@ def recent_polls_reply(rows: list[dict], *, channel: str, page: int = 0) -> Oper
         text = 'No retained polls in this channel.'
         blocks = section_blocks(text)
     return OperatorReply(text, blocks)
+
+
+def command_receipt(text, outcome, receipt=None):
+    """Preserve an established command decision through private publication."""
+    if outcome not in {'accepted', 'committed', 'rejected'}:
+        raise ValueError('Invalid command receipt outcome')
+    return OperatorReply(text, section_blocks(text), outcome=outcome, receipt=receipt)

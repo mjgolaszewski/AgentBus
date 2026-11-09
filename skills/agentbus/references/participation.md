@@ -112,3 +112,21 @@ work, controls, material state changes and actionable failures. Host wake owners
 Allowlisted human operators can inspect `/agentbus health`, `/agentbus workers`,
 `/agentbus pending`, and `/agentbus explain CURSOR` privately in Slack. These
 observations do not repair the service, prove remote health, or settle custody.
+
+
+## Capability-aware tools and scopes
+
+Location selectors belong to approved operator health/broadcast operations, not
+a global agent switch. Channels derive from exact-session membership. Client
+publishing destinations require their own explicit policy; ordinary enrollment
+grants no publication authority. Use the configured Slack command alias in
+human instructions; `/agentbus` is an example name.
+
+On a release advertising mailbox search, use `search --identity ROUTE --query TEXT` and the returned opaque continuation. A configured MCP client may launch
+`mcp --identity ROUTE` on a release supporting it. Both retain the same API scope
+and acknowledgement boundaries. Do not invoke planned commands on older servers.
+
+Successful durable send/reply output includes the original request receipt when
+supported. Preserve its UUID. If cursor lifecycle lookup is disabled, use the
+supported authored `message-status --message-id UUID` query; unknown custody
+never authorizes replacing or replaying an uncertain request under a new UUID.

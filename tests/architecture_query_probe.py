@@ -41,7 +41,7 @@ def assert_query_nonmutation(operations, *, inject=None):
         principal = store.channels.principal(secret, 'agentbus:query-probe')
         cursor = store.channels.public_cursor(CHANNEL, message.cursor)
         fixtures = {'session_id':session,'control_id':control,'cursor':cursor,'request_id':'11111111-1111-4111-8111-111111111111'}
-        query_params = {'repo':'agentbus','chat_id':chat,'identity':principal.route}
+        query_params = {'query':'hello','repo':'agentbus','chat_id':chat,'identity':principal.route}
         headers = {**AUTH, 'X-AgentBus-Session-Token':secret,
                    'X-AgentBus-Inbox-ID':principal.inbox_id, 'X-AgentBus-Lifecycle-Version':'1'}
         operator = {'Authorization':'Bearer operator-test-secret',**{k:v for k,v in headers.items() if k!='Authorization'}}
@@ -91,7 +91,7 @@ def assert_cli_query_nonmutation(operations):
     from src import agentbus_operator_client as operator
     from src import agentbus_transport_client as transport
     from src.agentbus_parser_client import parse_args
-    cases = {'status':[], 'read':[], 'agents':[], 'roster':['--json'],
+    cases = {'search':['--query','hello'], 'status':[], 'read':[], 'agents':[], 'roster':['--json'],
         'policy-show':['--session-id','session-one'], 'control-status':['control-one'],
         'session-presence':['session-one'], 'message-status':['--cursor','1']}
     queries = {o['population_key'] for o in operations
@@ -109,7 +109,7 @@ def assert_cli_query_nonmutation(operations):
         def read_only(_values, path, payload=None, **kwargs):
             assert payload is None and kwargs.get('method', 'GET') == 'GET', (path,payload,kwargs)
             calls.append(path)
-            return {'messages':[],'sessions':[],'revision':'r1','values':POLICY,'sources':{},'status':'ok'}
+            return {'features':['message-lifecycle-v1','authored-request-outcome-v1'],'messages':[],'sessions':[],'revision':'r1','values':POLICY,'sources':{},'status':'ok'}
         for module in (client,operator,transport):
             patch.setattr(module,'api',read_only)
         patch.setattr(client,'checked_profile',lambda *_args,**_kwargs:(dict(profile),{}))

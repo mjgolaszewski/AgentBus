@@ -556,9 +556,22 @@ def cli_message_status(ns: argparse.Namespace, project: Path, values: dict[str, 
     else:
         if ns.cursor < 1:
             raise ClientError('Message cursor must be positive')
+        info = scoped_api(values, '/v1/info', profile, api_call=api)
+        if 'message-lifecycle-v1' not in info.get('features', []):
+            raise ClientError('Recipient lifecycle is disabled or unsupported; use message-status --message-id UUID for authored custody. No acceptance or execution outcome is inferred.')
         route = f'/v1/messages/{ns.cursor}/outcome'
     print(json.dumps(scoped_api(values, route, profile, api_call=api), indent=2))
     return 0
+
+
+def cli_mcp(ns, project, values):
+    from src.agentbus_mcp_client import mcp_command
+    return mcp_command(ns, project, values)
+
+
+def cli_search(ns, project, values):
+    from src.agentbus_search_client import search_command
+    return search_command(ns, project, values)
 
 
 def cli_send(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
@@ -718,6 +731,8 @@ CLI_OPERATIONS = {
     "status": cli_lifecycle,
     "autostart": cli_lifecycle,
     "send": cli_send,
+    "search": cli_search,
+    "mcp": cli_mcp,
     "read": cli_read,
     "onboard": cli_onboard,
     "persona": cli_persona,

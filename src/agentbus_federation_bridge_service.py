@@ -10,7 +10,7 @@ import re
 import sqlite3
 import time
 from decimal import Decimal
-from typing import Callable, Protocol
+from typing import TYPE_CHECKING, Callable, Protocol
 
 from src.agentbus_federation_directory_service import DirectorySynchronizer, decode_directory
 from src.agentbus_federation_inbox_service import InboxProjectionError
@@ -25,6 +25,9 @@ from src.agentbus_federation_wire_service import (
     encode_frame,
 )
 from src.agentbus_message_assurance_service import route_parts
+
+if TYPE_CHECKING:
+    from src.agentbus_operator_federation_service import OperatorFederation
 
 LOGGER = logging.getLogger('agentbus')
 
@@ -104,6 +107,7 @@ class FederationBridge:
         self.now, self.max_attempts = now, max_attempts
         self._recovery_complete = False
         self._recovery_attempts: dict[tuple[str, str, str], int] | None = None
+        self.operator: OperatorFederation | None = None
         self.directory: DirectorySynchronizer | None = None
         self.project_submission: Callable[[str, str, str], bool] | None = None
         self.ordinary_channel: str | None = None
@@ -238,6 +242,16 @@ class FederationBridge:
             return
         frame = decode_frame(event['text'], event['publisher_id'], self.identity.instance_id, self.bindings)
         origin, message_id = frame['origin_instance_id'], frame['origin_message_id']
+        if frame['agentbus_federation'] == 4:
+            if self.operator is None:
+                raise ValueError('Operator federation is not enabled')
+            from src.agentbus_transaction_service import atomic
+            with self.store._lock, atomic(self.store._db):
+                self.operator.receive(frame)
+                self.store.accept_destination(origin_instance_id=origin, publisher_id=event['publisher_id'],
+                    origin_message_id=message_id, destination_instance_id=self.identity.instance_id, payload=frame['payload'])
+                self._delivery_receipt(frame)
+            return
         if frame['kind'] == 'receipt':
             receipt = json.loads(frame['payload'])
             if set(receipt) != {'origin', 'message', 'destination', 'payload_hash'}:
@@ -273,6 +287,11 @@ class FederationBridge:
                 origin_message_id=message_id, destination_instance_id=self.identity.instance_id, payload=payload)
             if self.project_message is not None:
                 self.project_message(origin, message_id, self.identity.instance_id, payload, event.get('ts'), event['text'])
+        self._delivery_receipt(frame, payload)
+
+    def _delivery_receipt(self, frame, payload=None):
+        origin, message_id = frame['origin_instance_id'], frame['origin_message_id']
+        payload = frame['payload'] if payload is None else payload
         receipt = canonical({'origin': origin, 'message': message_id,
             'destination': self.identity.instance_id, 'payload_hash': hashlib.sha256(payload.encode()).hexdigest()})
         receipt_id = 'receipt-' + hashlib.sha256(canonical([origin, message_id, self.identity.instance_id]).encode()).hexdigest()
@@ -319,6 +338,8 @@ class FederationBridge:
     async def cycle(self) -> float:
         delay = 60.0
         try:
+            if self.operator is not None:
+                self.operator.refresh()
             if self.directory is not None:
                 self.directory.reconcile()
             await self.recover_once(limit=self.history_limit)

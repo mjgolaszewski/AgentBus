@@ -1,0 +1,15 @@
+"""The declared runtime population is required even for deferred command imports."""
+from importlib import import_module
+from pathlib import Path
+
+RUNTIME_MODULES = ('agentbus_announcement_lifecycle_service', 'agentbus_channel_api_service', 'agentbus_channel_grants_service', 'agentbus_channel_ingress_service', 'agentbus_channel_migration_client', 'agentbus_channel_migration_service', 'agentbus_channel_store_service', 'agentbus_claim_recovery_service', 'agentbus_client', 'agentbus_codex_rpc_client', 'agentbus_codex_wake_client', 'agentbus_codex_wake_events_client', 'agentbus_codex_wake_intent_client', 'agentbus_control_store_service', 'agentbus_delivery_api_service', 'agentbus_delivery_client', 'agentbus_delivery_lifecycle_service', 'agentbus_delivery_runtime_service', 'agentbus_enrollment_approval_service', 'agentbus_enrollment_client', 'agentbus_federation_api_service', 'agentbus_federation_bridge_service', 'agentbus_federation_directory_service', 'agentbus_federation_inbox_service', 'agentbus_federation_ordinary_service', 'agentbus_federation_runtime_service', 'agentbus_federation_service', 'agentbus_federation_slack_service', 'agentbus_federation_wire_service', 'agentbus_lifecycle_api_service', 'agentbus_lifecycle_client', 'agentbus_lifecycle_migration_service', 'agentbus_local_delivery_service', 'agentbus_mcp_client', 'agentbus_message_assurance_service', 'agentbus_message_authorization_service', 'agentbus_message_lifecycle_service', 'agentbus_metrics_service', 'agentbus_operator_client', 'agentbus_operator_federation_service', 'agentbus_operator_presentation_service', 'agentbus_operator_query_service', 'agentbus_operator_scope_service', 'agentbus_parser_client', 'agentbus_participation_api_service', 'agentbus_participation_service', 'agentbus_participation_store_service', 'agentbus_poll_client', 'agentbus_presentation_client', 'agentbus_presentation_service', 'agentbus_profile_client', 'agentbus_rename_client', 'agentbus_reply_policy_service', 'agentbus_request_limits_service', 'agentbus_retention_service', 'agentbus_rotation_client', 'agentbus_runtime_inventory_service', 'agentbus_scope_client', 'agentbus_search_client', 'agentbus_search_service', 'agentbus_send_policy_service', 'agentbus_send_rate_service', 'agentbus_service', 'agentbus_settings_service', 'agentbus_slack_command_service', 'agentbus_slack_reply_service', 'agentbus_slack_socket_service', 'agentbus_slack_ui_commands_service', 'agentbus_slack_ui_service', 'agentbus_status_api_service', 'agentbus_transaction_service', 'agentbus_transport_client', 'agentbus_wake_inbox_client', 'agentbus_worker_status_service')
+
+
+def verify_runtime_inventory(root=None, *, importer=import_module):
+    source = root or Path(__file__).resolve().parent
+    missing = [name for name in RUNTIME_MODULES if not (source/(name+'.py')).is_file()]
+    if missing:
+        raise RuntimeError('AgentBus installation incomplete; missing runtime modules: '+', '.join(missing))
+    for name in RUNTIME_MODULES:
+        if name.endswith('_service'):
+            importer('src.'+name)

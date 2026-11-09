@@ -661,7 +661,7 @@ def test_public_cli_operation_inventory_matches_parser_surface(launcher):
     from src.agentbus_parser_client import build_parser
 
     assert set(launcher.CLI_OPERATIONS) == {
-        "serve", "start", "stop", "status", "autostart", "send", "read",
+        "serve", "start", "stop", "status", "autostart", "send", "read", "search", "mcp",
         "onboard", "persona", "agents", "roster", "inbox", "ack", "rebind", "claim", "reply",
         "issue-handoff", "issue-rotation", "rotate-secret", "join", "policy-ack", "check-in", "ack-control", "poll", "quiet",
         "policy-set", "policy-show", "control-stop", "control-status", "session-presence",
@@ -1173,3 +1173,19 @@ def test_request_status_unsupported_service_keeps_acceptance_unknown(monkeypatch
     with pytest.raises(ClientError, match='acceptance remains unknown'):
         launcher.cli_message_status(ns, None, {})
     assert calls == ['/v1/info']
+
+
+def test_cursor_outcome_reports_disabled_lifecycle_without_looking_up_a_parent(monkeypatch):
+    from src import agentbus_client as client
+    from src.agentbus_parser_client import parse_args
+    from src.agentbus_transport_client import ClientError
+    monkeypatch.setattr(client,'load_profile',lambda *_a,**_kw:{})
+    monkeypatch.setattr(client,'resolve_identity',lambda *_a:'local:agentbus:mine')
+    calls=[]
+    def query(_values,path,_profile,**_kwargs):
+        calls.append(path)
+        return {'features':['authored-request-outcome-v1']}
+    monkeypatch.setattr('src.agentbus_scope_client.scoped_api',query)
+    with pytest.raises(ClientError,match='disabled or unsupported'):
+        client.cli_message_status(parse_args(['message-status','--cursor','1']),None,{})
+    assert calls==['/v1/info']

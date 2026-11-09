@@ -333,7 +333,9 @@ def test_text_boundary_counts_characters_and_preserves_custody(tmp_path, monkeyp
         calls.append((path, payload, kwargs))
         return {'cursor': 1}
     ns = _text_bound_command(operation, text)
-    assert send_command(ns, values, lambda *_: (profile, info), lambda value: value, post) == {'cursor': 1}
+    result = send_command(ns, values, lambda *_: (profile, info), lambda value: value, post)
+    assert {key: value for key, value in result.items() if key != 'delivery_receipt'} == {'cursor': 1}
+    assert result['delivery_receipt']['request_id'] == calls[0][2]['delivery_key']
     assert len(calls) == 1 and calls[0][1]['text'] == text
     stages = list((tmp_path / 'send-requests').glob('*.json'))
     assert len(stages) == 1
@@ -400,3 +402,22 @@ def test_transport_enrollment_recovery_header_is_allowlisted(monkeypatch, path, 
                       path, {'approval_request_id': 'request-one'})
     assert failed.value.recovery_code == expected
     assert 'private-' not in str(failed.value)
+
+
+def test_successful_durable_send_returns_original_uuid_receipt_without_mutating_provider_result():
+    from src.agentbus_delivery_client import send_command
+    values = {'_AGENTBUS_DELIVERY_VERSION': '1'}
+    profile = {'inbox_id': 'inbox-one', 'repo': 'agentbus',
+               'participation': {'session_secret': 'private-session'}}
+    calls = []
+    response = {'cursor': 7, 'sender': 'local:agentbus:flower'}
+    def post(_values, _path, _payload, **kwargs):
+        calls.append(kwargs)
+        return response
+    ns = parse_args(['send', '--identity', 'local:agentbus:flower', '--recipient', 'local:agentbus:other', 'hello'])
+    result = send_command(ns, values, lambda *_: (profile, {}), lambda value: value, post)
+    receipt = result['delivery_receipt']
+    assert receipt == {'request_id': calls[0]['delivery_key'], 'state': 'accepted',
+                       'provider_delivery': 'not_inferred', 'recipient_execution': 'not_inferred'}
+    assert str(UUID(receipt['request_id'])) == receipt['request_id']
+    assert 'delivery_receipt' not in response and 'private-session' not in str(result)

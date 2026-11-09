@@ -1,0 +1,16 @@
+document:
+  kind: federated_operator_contract
+  version: 1.0.0
+  status: active
+  path: contracts/federation/v1/operator.contract.yml
+wire: {version: 4, kinds: [operator_request, operator_result], unchanged_versions: [1, 2, 3]}
+authority:
+- Explicit peer capability and destination grant bind origin actor source_channel destination_channel and operation
+- Ordinary agent messages cannot acquire operator authority by content
+- Request identity target snapshot digest and deadline are immutable across duplicate recovery
+operations: [health, broadcast]
+bounds: {locations: 64, retained_operations: 1024, refresh_per_cycle: 8, broadcast_characters: 1000, admission_seconds: 600}
+results:
+- Health is an immutable sampled observation with explicit freshness and unknown outcomes
+- Broadcast keeps one shared destination control and separate exact-session read receipts
+- Private refresh and pagination expose partial results without execution or semantic ACK claims

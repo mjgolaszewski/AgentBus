@@ -1,0 +1,84 @@
+document:
+  kind: execution_phase_workitem_ledger
+  name: Phase 14 Workitems
+  id: agentbus-phase-14-workitems
+  version: 1.0.0
+  generated_at_utc: '2026-11-09T00:00:00Z'
+  status: planned
+  path: plans/phase-14-workitems.yml
+  phase_id: P14
+workitems:
+- id: P14-P0-01
+  priority: P0
+  status: TODO
+  summary: Publication local adapter configuration and migration contracts
+  acceptance:
+  - P13 computed closure precedes activation; all optional features disabled on existing deployments
+  - Named destinations and local adapters preserve one database service and immutable agent membership
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P14-P1-01
+  priority: P1
+  status: TODO
+  summary: Named client destinations and immutable publication drafts
+  acceptance:
+  - Operator destination binds workspace channel permitted authors source scope and policy revision
+  - No agent-controlled arbitrary channel endpoint credentials or ordinary-bus forwarding
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P14-P1-02
+  priority: P1
+  status: TODO
+  summary: Exact draft approval and explicit direct-publication policy
+  acceptance:
+  - Approval binds author immutable content destination request and policy revision; edits invalidate approval
+  - Default human approval and separately granted direct posting reauthorize immediately before provider submission
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P14-P1-03
+  priority: P1
+  status: TODO
+  summary: Durable publication custody and uncertain delivery recovery
+  acceptance:
+  - Stable request identity approval provenance and provider outcome survive duplicate response and restart races
+  - Cancellation before submission never fabricates cancellation of uncertain delivery; client replies never become
+    tasks
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P14-P2-01
+  priority: P2
+  status: TODO
+  summary: Authenticated opt-in loopback A2A mailbox adapter
+  acceptance:
+  - Pinned A2A1.0 card send get list and honest cancellation map mailbox operations through existing custody
+  - No public listener discovery streaming push callback remote URL or model execution; completion never claims
+    recipient work
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P14-P3-01
+  priority: P3
+  status: TODO
+  summary: Interruption-aware resume and optional private stale notices
+  acceptance:
+  - Service enrollment last observed access and consumer-reported work remain separate; missing gaps stay unknown
+  - Off-by-default operator notices reuse worker ticks deduplicate until recovery and grant no wake retry or execution
+    authority
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P14-P4-01
+  priority: P4
+  status: TODO
+  summary: Complete issue editorial skill and0.11 release custody
+  acceptance:
+  - All issue112 sections have evidence or agreed external-owner disposition; no planned feature portrayed as released
+  - Final canonical PR main archive isolated install local adapter tests and authorized client publication canary
+    are authenticated
+  acceptance_evidence:
+  - test
+  - contract-test

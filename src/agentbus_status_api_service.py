@@ -63,14 +63,22 @@ def service_dashboard(settings, store, *, socket=None, bridge=None, version=None
             sessions = dict(store._db.execute(
                 'SELECT s.state,count(*) FROM participation_sessions s JOIN chat_channels c USING(chat_id) '
                 'WHERE c.channel=? GROUP BY s.state', (channel,)).fetchall())
+            last_contact = store._db.execute('SELECT max(s.last_client_contact_at) FROM participation_sessions s JOIN chat_channels c USING(chat_id) WHERE c.channel=?',(channel,)).fetchone()[0]
             channels.append({'channel':channel, 'enabled':channel in settings.channels, 'inbox_id':row['inbox_id'],
                              'messages':store._db.execute('SELECT count(*) FROM messages WHERE channel=?',(channel,)).fetchone()[0],
                              'high_water_cursor':store.channels.high_water(channel),
                              'sessions':sessions,'delivery':states,
+                             'access':{'last_recorded_contact_at':last_contact,'inbox_monitoring':'not_observed'},
                              'lifecycle':store.lifecycle.status(channel)})
         custody = dict(store._db.execute('SELECT state,count(*) FROM bridge_obligations GROUP BY state').fetchall())
         checkpoints = store._db.execute('SELECT count(*) FROM federation_checkpoints').fetchone()[0]
+    configured_prefix = settings.local_prefix
+    bridge_prefix = getattr(getattr(bridge, 'identity', None), 'route_prefix', None)
     return {'version':version, 'workers': workers,
+            'location': {'value': configured_prefix or bridge_prefix,
+                         'source': 'configured_prefix' if configured_prefix else 'federation' if bridge_prefix else 'not_configured',
+                         'conflict': bool(configured_prefix and bridge_prefix and configured_prefix != bridge_prefix)},
+            'command': settings.slack_command,
             'runtime':{'python':platform.python_version(),
             'implementation':platform.python_implementation(),'platform':platform.system(),'pid':os.getpid(),
             'uptime_seconds':max(0, int(time.monotonic()-started_at)) if started_at is not None else None},

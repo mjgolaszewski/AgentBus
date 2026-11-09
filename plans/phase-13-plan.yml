@@ -1,0 +1,45 @@
+document:
+  kind: execution_phase_plan
+  name: Phase 13 Plan
+  id: agentbus-phase-13-plan
+  version: 1.0.0
+  generated_at_utc: '2026-11-09T00:00:00Z'
+  status: active
+  path: plans/phase-13-plan.yml
+phase:
+  id: P13
+  build_block: reliable_operator_federation
+  planner: codex
+  date: '2026-11-09'
+  scope_source:
+  - AGENTS.yml
+  - plans/product-spec.yml
+  - plans/build-plan.yml
+  - plans/phase-ledger.yml
+  - MEMORY.yml
+delivery_contract:
+  tightly_scoped_deliverables:
+  - Baseline continuity contracts and issue traceability
+  - Complete installation and classified command diagnostics
+  - Durable original request receipts and scoped status
+  - Location-labelled health and compatible scoped parsing
+  - Versioned authenticated operator federation
+  - Bounded asynchronous federated health
+  - Federated shared mandatory-read controls
+  - Scoped FTS5 mailbox search and thread context
+  - Thin session-bound MCP stdio adapter
+  - Documentation skill installation and exact-subject release custody
+  parallelizable_workstreams:
+  - id: P13-WS1
+    name: reliable_operator_federation
+  hard_dependencies:
+  - Authenticated stable0.9.4 baseline; P12 owner qualification explicitly parked without computed closure claim
+  docker_first_local_runtime: repo_native_validation_and_governance_commands
+  completeness_standard: full_completeness_for_declared_scope
+scope_lock:
+- order: 1
+  statement: keep the phase narrowly scoped to declared deliverables and update canonical governed artifacts in
+    the same change
+verification_plan:
+- make governance-validate
+- make contract-test

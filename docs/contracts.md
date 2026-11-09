@@ -38,6 +38,9 @@ a successful historical test does not certify changed bytes or another installat
 | [Message lifecycle v1](../contracts/messages/v1/message-lifecycle.contract.yml) | Experimental: scoped epochs, staged retries, exact-session pickup/handling, shared read outcomes and reference-safe SQLite retention | Live deployment, automatic reclamation, remote expiry, retroactive legacy handling or owner interoperability |
 | [Codex wake v1](../contracts/codex-wake/v1/codex-wake.contract.yml) | Host-owned eligibility, opt-in, binding, uncertainty and acknowledgement boundaries | Supported AHP/native-queue integration or atomic idle-only admission |
 | [Federation v1](../contracts/federation/v1/federation.contract.yml) | Signed-origin custody, directory and parent mapping/recovery laws | Remote session/owner/execution authority or federation from extra channels |
+| [Mailbox query v1](../contracts/mailbox/v1/mailbox.contract.yml) | Construction: scoped retained search, public positions and opaque continuation | Release readiness, combined inboxes or cross-channel search |
+| [MCP stdio v1](../contracts/mailbox/v1/mcp.contract.yml) | Construction: pinned local tool adapter over exact-session API | Operator authority, independent queues or automatic ACK |
+| [Operator federation v1](../contracts/federation/v1/operator.contract.yml) | Construction: signed wire4 requests/results and independent origin/actor/channel grants | Ordinary messages becoming controls or delivery implying execution |
 | [Logging](../contracts/observability/v1/logging.contract.yml) and [telemetry](../contracts/observability/v1/telemetry.contract.yml) | Retained observability reference templates; deployment identity/backend still unspecialized | Implemented full OpenTelemetry collection, immutable audit storage, retention or cross-channel agent metrics |
 
 V2 overrides the older authorization rules rather than erasing historical
@@ -58,7 +61,7 @@ protocol envelopes and signed carriers remain unchanged. Human interaction check
 The file-free approval construction is also owned by participation v2. A
 pending request binds a UUID, exact private staged-secret digest, route,
 repository, display name and existing local profile UUID. It grants no session.
-An allowlisted human binds one configured channel through `/agentbus approve`;
+An allowlisted human binds one configured channel through the configured Slack command’s `approve` action;
 redemption delegates the existing grant and enrollment owners within one SQLite
 transaction. Repeating the same proof recovers the session; changing the subject,
 secret or approved channel fails closed. File grants remain supported.
@@ -103,6 +106,10 @@ membership and obligations while ordinary access/posting pauses.
 | Public cursor translation and scoped sends/replies/claims | Channel API, delivery API, ingress, reply policy | Channel isolation, service, claim recovery, local delivery tests |
 | Provider destination and recovery isolation | Delivery lifecycle/runtime, Slack socket/commands, local delivery | Channel delivery, Slack commands, custody and provider-bound tests |
 | Client projection and wake identity | Scope/enrollment/migration client, polling, wake binding and intent modules | Channel projection, polling recovery, enrollment and wake tests |
+| Scoped mailbox queries | Search index/store, channel API and search client | Mailbox search, channel isolation and read-only architecture probes |
+| Local MCP tools | MCP stdio adapter and existing session-scoped CLI/API | MCP adapter, launcher and lifecycle tests; no automatic semantic ACK |
+| Explicit operator federation | Operator fan-out store, signed wire decoder, scope parser and private UI | Operator federation, bridge, Slack controls and scoped result tests |
+| Runtime installation population | Declared inventory, service startup, archive producer and consumer installer | Missing deferred-import refusal and exact isolated-install population checks |
 | Federation containment | Federation runtime, API, directory and inbox modules | Channel isolation and federation directory/projection/delivery tests |
 | Experimental message lifecycle | Message/announcement lifecycle, receipt API/client, retention and offline migration owners | Message lifecycle, delivery client/custody, controls, wake and architecture tests; exact release custody and bounded canary recorded in release notes |
 
@@ -120,8 +127,8 @@ AgentBus access; message interpretation and outside tool permissions stay with
 the agent and host. AgentBus cannot prevent an agent from inferring authority
 on its own. Provenance is not permission to execute a request.
 
-Wake contract v1 revision 1.7.2 adds the recognized legacy-scope recovery law
-CW-INV-022 and its proof obligation CW-PO-19. Recovery fills missing local fields
+Recognized legacy-scope recovery follows CW-INV-022 and proof obligation
+CW-PO-19. It fills missing local fields
 without changing the stored schema or public protocol, preserves uncertain
 attempts and original identities, and never relabels conflicting scope. Read-only
 queries remain read-only. Live owner interoperability and atomic idle-only

@@ -810,3 +810,36 @@ def test_configured_command_does_not_rewrite_human_poll_question(enrolled):
         retained = store._db.execute('SELECT reason FROM operator_controls WHERE control_id = ?',
                                      (control_id,)).fetchone()
     assert retained['reason'] == question
+
+
+def test_health_location_uses_configured_prefix_and_reports_conflict(enrolled):
+    from dataclasses import replace
+    from types import SimpleNamespace
+
+    from src.agentbus_operator_presentation_service import health_text
+    from src.agentbus_status_api_service import service_dashboard
+    settings, store, _session_id, web = enrolled
+    settings = replace(settings, local_prefix='local-one')
+    snapshot = service_dashboard(settings, store, bridge=SimpleNamespace(
+        identity=SimpleNamespace(route_prefix='other'), channel=settings.channels[0], bindings={}))
+    rendered = health_text(snapshot)
+    assert rendered.index('Location') < rendered.index('*Service*')
+    assert 'local-one' in rendered and 'conflict' in rendered.lower()
+    assert 'observation' in rendered.lower() and 'actively monitoring' in rendered.lower()
+    assert not web.posts
+
+
+def test_private_confirmation_failure_retains_committed_control_and_safe_diagnostic(enrolled, monkeypatch, caplog):
+    settings, store, _session, web = enrolled
+    receiver = SlackReceiver(store, settings.channels, 'B123', settings)
+    client = FakeSocket(web)
+    def fail_reply(*_args):
+        raise ModuleNotFoundError('private-path-and-secret-must-not-appear')
+    monkeypatch.setattr(receiver, '_post_reply', fail_reply)
+    receiver._finish_command(client, {'command':settings.slack_command,'channel_id':settings.channels[0],
+        'user_id':'U123','text':'broadcast retained test','trigger_id':'diagnostic-trigger'})
+    assert store._db.execute("SELECT count(*) FROM operator_controls WHERE kind='broadcast'").fetchone()[0]==1
+    assert 'request accepted' in web.ephemeral[-1]['text']
+    assert 'stage=private_publication' in caplog.text and 'exception=ModuleNotFoundError' in caplog.text
+    assert 'private-path-and-secret' not in caplog.text
+    receiver._commands.shutdown()

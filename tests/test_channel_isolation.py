@@ -678,3 +678,34 @@ def test_request_status_same_uuid_in_two_channels_keeps_distinct_custody(request
     assert client.get(f'/v1/requests/{key}/outcome', headers=a[1]).json()['local_transport_state'] == 'uncertain'
     assert client.get(f'/v1/requests/{key}/outcome', headers=b[1]).json()['local_transport_state'] == 'blocked'
     assert posted == [], 'Custody lookup fixture must not submit to Slack'
+
+
+def test_search_http_uses_session_channel_and_bound_continuation(channel_service):
+    client, app, posted, a, a2, b, bearer, _operator = channel_service
+    from src.agentbus_service import SendMessage
+    store = app.state.store
+    store.append('C111','200.1',SendMessage(sender='human',text='green local'))
+    store.append('C222','200.1',SendMessage(sender='human',text='green secret'))
+    store.append('C111','200.2',SendMessage(sender='human',text='green next'))
+    response = client.get('/v1/search',params={'query':'green','limit':1},headers=a[1])
+    assert response.status_code == 200
+    first = response.json()
+    assert first['messages'][0]['text']=='green local' and first['after']
+    assert client.get('/v1/search',params={'query':'green','after':first['after']},headers=b[1]).status_code == 422
+    assert client.get('/v1/search',params={'query':'green','after':first['after']},headers=a2[1]).status_code == 422
+    assert client.get('/v1/search',params={'query':'green'},headers=bearer).status_code == 403
+    assert client.get('/v1/search',params={'query':'green','channel':'C222'},headers=a[1]).status_code == 422
+    last = client.get('/v1/search',params={'query':'green','after':first['after']},headers=a[1]).json()
+    assert [m['text'] for m in last['messages']]==['green next']
+    assert posted==[]
+
+
+def test_disabled_lifecycle_outcome_is_explicit_after_session_authorization(channel_service):
+    client, app, _posted, a, _a2, _b, bearer, _operator = channel_service
+    assert not app.state.store.lifecycle.enabled
+    denied = client.get('/v1/messages/1/outcome',headers=bearer)
+    assert denied.status_code == 403
+    result = client.get('/v1/messages/1/outcome',headers=a[1])
+    assert result.status_code == 404
+    assert result.json()['detail']['code']=='lifecycle_disabled'
+    assert 'request UUID' in result.json()['detail']['message']

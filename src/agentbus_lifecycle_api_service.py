@@ -110,6 +110,9 @@ def api_request_outcome(request: Request, request_id: str):
 def api_outcome(request: Request, cursor: int):
     principal = resolve_principal(request)
     store = request.app.state.store
+    if not store.lifecycle.enabled:
+        raise HTTPException(404, {'code': 'lifecycle_disabled',
+            'message': 'Recipient lifecycle is not enabled; use the original request UUID for authored custody lookup. No delivery or execution outcome is inferred.'})
     internal = _internal(store, principal.channel, cursor)
     try:
         return {'cursor':cursor, **store.lifecycle.outcome(principal, internal)}
