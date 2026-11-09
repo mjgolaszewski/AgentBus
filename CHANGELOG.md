@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.10.0] - In development
+## [0.10.0] - 2026-11-09
 
 - Construct reliable operator federation, scoped mailbox search, local MCP tools and explicit request diagnostics. This candidate has not completed release custody or live qualification.
 
