@@ -71,6 +71,9 @@ execution_evidence:
     negative controls; canonical final-subject proof remains pending
   - P13 location pair approved, with exact private deployment inventory outside published docs; no service rollout
     or new operator trust grant applied
+  - Canonical candidate4349282 preflight rejected YAML merge-key shorthand before native proof; authored registry
+    expanded explicitly without altering certified BCF runtime. Original diagnostic retained, no SDK defect or upgrade
+    inferred.
 closeout_requirements:
   claims:
     workitems_closed:

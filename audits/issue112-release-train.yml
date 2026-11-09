@@ -119,5 +119,5 @@ editorial_review:
   disposition: updated
   notes: Every line reviewed for availability, configured alias, scope, authority, privacy and current contracts;
     excludes BCF machinery and changelog
-context_budget_change: Canonical representation registry KiB cap increases44 to48 only for explicit signed operator
+context_budget_change: Canonical representation registry KiB cap increases44 to50 only for explicit signed operator
   frame and two typed payload owners; no runtime memory or retention budget changed
