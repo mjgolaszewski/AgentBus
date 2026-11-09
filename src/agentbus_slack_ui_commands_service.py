@@ -21,7 +21,7 @@ def page_number(value: str) -> int:
     return int(value) - 1
 
 
-def query_reply(parts: list[str], settings, store, channel: str) -> str:
+def query_reply(parts: list[str], settings, store, channel: str, actor=None) -> str:
     """Caller must authorize the verified Slack operator before any query."""
     try:
         if parts[0] == 'enrollments':
@@ -35,7 +35,14 @@ def query_reply(parts: list[str], settings, store, channel: str) -> str:
             if len(parts) == 2 or len(parts) > 3:
                 raise ValueError(f'Use {settings.slack_command} results, then choose Results.')
             page = page_number(parts[2]) if len(parts) == 3 else 0
-            return recent_polls_reply(store.controls.recent_polls(channel), channel=channel, page=page)
+            reply = recent_polls_reply(store.controls.recent_polls(channel), channel=channel, page=page)
+            owner = getattr(store, 'operator_federation', None)
+            if owner is not None and actor and page == 0:
+                from src.agentbus_operator_scope_service import recent_operator_buttons
+                extra = recent_operator_buttons(owner, actor, channel)
+                if extra:
+                    return OperatorReply(reply.text + '\n\nRecent federated operations: choose Results.', [*reply.blocks, *extra], reply.command_messages)
+            return reply
         from src.agentbus_slack_ui_service import UUID
         if len(parts) > 3 or not UUID.fullmatch(parts[1]):
             raise ValueError(f'Use {settings.slack_command} results, then choose a poll. No UUID typing required.')
@@ -55,7 +62,7 @@ def issued_reply(kind: str, control_id: str, count: int, channel: str) -> Operat
     blocks.append({'type': 'actions', 'elements': [
         action_button('Results', OperatorAction('results_page', channel, control_id))]})
     legacy = f'{kind.title()} {control_id}: {count} session(s); explicit {requirement} required.'
-    return OperatorReply(text, blocks, legacy_text=legacy)
+    return OperatorReply(text, blocks, legacy_text=legacy, outcome="committed", receipt=control_id)
 
 
 def interaction_principal(payload: dict, settings) -> tuple[str, str] | None:
@@ -88,6 +95,12 @@ def execute_interaction(payload: dict, settings, store, web_client) -> str:
         action = parse_action(actions[0])
         if action.channel != channel:
             raise ValueError('This button belongs to another channel. Open the local command again.')
+        if action.kind == 'operator_results':
+            from src.agentbus_operator_scope_service import operator_results
+            owner = getattr(store, 'operator_federation', None)
+            if owner is None:
+                raise ValueError('Operator federation is not configured')
+            return operator_results(owner, action.target, uid, channel, action.page)
         if action.kind == 'approve':
             text = f'approve {action.target}'
         elif action.kind == 'enrollments_page':

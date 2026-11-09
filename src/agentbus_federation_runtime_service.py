@@ -48,7 +48,7 @@ def load_bridge(path: Path, store, client, token: str, bot_id: str) -> SlackFede
         raise ValueError('federation configuration exceeds limit')
     data = json.loads(path.read_text())
     required = {'instance_id', 'route_prefix', 'publisher_id', 'private_key_file', 'key_generation', 'channel', 'bindings'}
-    if not isinstance(data, dict) or not required <= set(data) or set(data) - required - {'directory', 'inbox_projection', 'history_limit'} or not isinstance(data['bindings'], list) or len(data['bindings']) > 64:
+    if not isinstance(data, dict) or not required <= set(data) or set(data) - required - {'directory', 'inbox_projection', 'history_limit', 'operator_controls'} or not isinstance(data['bindings'], list) or len(data['bindings']) > 64:
         raise ValueError('invalid operator federation configuration')
     local_publisher = data['publisher_id']
     if (not isinstance(local_publisher, str) or len(local_publisher.split('/')) != 3
@@ -64,7 +64,7 @@ def load_bridge(path: Path, store, client, token: str, bot_id: str) -> SlackFede
     bindings = {}
     for item in data['bindings']:
         if (not {'instance_id', 'route_prefix', 'publisher_id', 'public_key', 'key_generation'} <= set(item)
-                or set(item) - {'instance_id', 'route_prefix', 'publisher_id', 'public_key', 'key_generation', 'directory_version', 'ordinary_version'}
+                or set(item) - {'instance_id', 'route_prefix', 'publisher_id', 'public_key', 'key_generation', 'directory_version', 'ordinary_version', 'operator_version'}
                 or item['instance_id'] in bindings):
             raise ValueError('duplicate or invalid operator origin binding')
         public = Ed25519PublicKey.from_public_bytes(base64.b64decode(item['public_key'], validate=True))
@@ -72,7 +72,8 @@ def load_bridge(path: Path, store, client, token: str, bot_id: str) -> SlackFede
             raise ValueError('peer verification key differs from the approved generation')
         bindings[item['instance_id']] = Binding(item['instance_id'], item['route_prefix'], item['publisher_id'], public,
                                                    directory_version=item.get('directory_version'),
-                                                   ordinary_version=item.get('ordinary_version'))
+                                                   ordinary_version=item.get('ordinary_version'),
+                                                   operator_version=item.get('operator_version'))
     if any(binding.ordinary_version == 3 for binding in bindings.values()):
         if type(data.get('inbox_projection')) is not int or data['inbox_projection'] != 1:
             raise ValueError('ordinary peers require explicitly enabled inbox projection')
@@ -94,6 +95,10 @@ def load_bridge(path: Path, store, client, token: str, bot_id: str) -> SlackFede
             raise ValueError('Directory sharing identity belongs to another channel')
         bridge.directory = DirectorySynchronizer(bridge, store.participation,
             share_chat_ids=policy['share_chat_ids'], peers=policy['peers'])
+    if 'operator_controls' in data:
+        from src.agentbus_operator_federation_service import OperatorFederation
+        bridge.operator = OperatorFederation(store, bridge, data['operator_controls'])
+        store.operator_federation = bridge.operator
     return bridge
 
 

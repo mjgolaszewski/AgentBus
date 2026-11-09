@@ -32,6 +32,7 @@ HELP = "\n".join([
     "*Storage*\n`/agentbus storage` — service-wide footprint\n"
     "`/agentbus storage checkpoint CONFIRM` — nonblocking service-wide WAL maintenance; no custody deletion",
 ])
+HELP += "\n*Explicit location scope*\n`/agentbus health --location LOCATION` · `/agentbus health --federated`\n`/agentbus broadcast --location LOCATION TEXT` · `/agentbus broadcast --federated TEXT`\nRequires approved operator federation; plain commands remain local. Use `--` before literal flag-like broadcast text.\n"
 HELP = HELP.replace('\n*', '\n\n*').replace(' · ', '\n')
 
 
@@ -66,18 +67,28 @@ def short_session(session_id: str, all_ids: list[str]) -> str:
 
 def execute_command(payload: dict, settings, store, web_client, *, dashboard=None) -> str:
     """Authorize by Slack's verified Socket Mode user ID and exact session ID."""
+    from src.agentbus_slack_ui_service import command_receipt
     channel = payload.get("channel_id")
     command = settings.slack_command
     if payload.get("command") != command:
-        return "Unsupported AgentBus slash command."
+        return command_receipt("Unsupported AgentBus slash command.", "rejected")
     if not isinstance(channel, str) or channel not in settings.channels:
-        return "AgentBus commands are available only in the configured channel."
+        return command_receipt("AgentBus commands are available only in the configured channel.", "rejected")
     user = payload.get("user_id")
     if not isinstance(user, str) or user not in settings.slack_operator_user_ids:
-        return "AgentBus operator command access is not enabled for this Slack user."
+        return command_receipt("AgentBus operator command access is not enabled for this Slack user.", "rejected")
     raw = payload.get("text", "")
     if not isinstance(raw, str) or len(raw) > 4096:
         return "Command text is too long."
+    from src.agentbus_operator_scope_service import parse_scope, scoped_command
+    try:
+        scoped = parse_scope(raw)
+    except ValueError as exc:
+        return str(exc)
+    if scoped is not None:
+        if scoped[0] != 'local':
+            return scoped_command(scoped, payload, settings, store)
+        raw = 'broadcast ' + scoped[2]
     parts = raw.strip().split(maxsplit=2)
     if not parts or parts[0] == "help":
         return HELP.replace("/agentbus", command)
@@ -163,7 +174,7 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
         return health_text(dashboard() if dashboard is not None else service_dashboard(settings, store))
     if action in {'enrollments', 'results'}:
         from src.agentbus_slack_ui_commands_service import query_reply
-        return query_reply(parts, settings, store, channel)
+        return query_reply(parts, settings, store, channel, actor=user)
     if action == "approve" and len(parts) == 2:
         if not SESSION_ID.fullmatch(parts[1]):
             return "Use approve with the full enrollment request UUID."
@@ -294,5 +305,5 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
         if not response.get("ok") or response.get("channel") != channel:
             return "Slack delivery is uncertain; inspect the channel before retrying."
         stored = store.append(channel, response["ts"], message)
-        return f"Delivered to {presence['route']} as cursor {store.channels.public_cursor(channel, stored.cursor)}."
+        return command_receipt(f"Delivered to {presence['route']} as cursor {store.channels.public_cursor(channel, stored.cursor)}.", "committed", str(store.channels.public_cursor(channel, stored.cursor)))
     return HELP.replace("/agentbus", command)

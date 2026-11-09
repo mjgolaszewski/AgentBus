@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import concurrent.futures
+import hashlib
 import logging
+import re
 import sqlite3
 
 from slack_sdk import WebClient
@@ -33,18 +35,36 @@ class SlackReceiver:
         self._commands = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
     def _finish_command(self, client: BaseSocketModeClient, payload: dict) -> None:
+        stage, result = "execution", None
         try:
             from src.agentbus_status_api_service import service_dashboard
             dashboard = self.dashboard or (lambda: service_dashboard(
                 self.settings, self.store, socket=client, bridge=self.federation_bridge))
             result = execute_command(payload, self.settings, self.store, client.web_client, dashboard=dashboard)
+            stage = 'private_publication'
             self._post_reply(client, payload['channel_id'], payload['user_id'], result)
-        except Exception:
-            LOGGER.error("Could not complete AgentBus Slack command; outcome may be uncertain")
+        except Exception as exc:
+            action_parts = str(payload.get('text', '')).split(maxsplit=1)
+            action = action_parts[0] if action_parts and re.fullmatch('[a-z-]{1,32}', action_parts[0]) else 'unknown'
+            response = getattr(exc, 'response', None)
+            provider = response.get('error') if response is not None and callable(getattr(response, 'get', None)) else None
+            provider = provider if isinstance(provider, str) and re.fullmatch('[a-z_]{1,64}', provider) else 'unknown'
+            correlation = hashlib.sha256(str(payload.get('trigger_id', 'unknown'))[:1024].encode()).hexdigest()[:16]
+            LOGGER.error('AgentBus command failed stage=%s operation=%s exception=%s provider=%s correlation=%s',
+                         stage, action, type(exc).__name__[:64], provider, correlation)
+            outcome = getattr(result, 'outcome', 'unknown')
+            if outcome in {'accepted', 'committed'}:
+                warning = 'AgentBus request accepted; private confirmation failed. Inspect results and the channel before retrying.'
+            elif outcome == 'rejected':
+                warning = 'AgentBus command rejected before admission; private confirmation failed. Review command access and scope.'
+            elif result is not None and (action in {'help','roster','status','metrics','workers','doctor','pending','explain','results','enrollments'} or str(payload.get('text', '')).strip() == 'health'):
+                warning = 'AgentBus read-only command completed; private confirmation failed. Inspect service diagnostics.'
+            else:
+                warning = 'AgentBus command outcome is uncertain. Inspect status and the channel before retrying.'
             try:
                 client.web_client.chat_postEphemeral(
                     channel=payload["channel_id"], user=payload["user_id"],
-                    text="AgentBus command outcome is uncertain. Inspect status and the channel before retrying.",
+                    text=warning,
                 )
             except Exception:
                 LOGGER.error("Could not report uncertain AgentBus Slack command outcome")

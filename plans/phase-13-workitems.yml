@@ -1,0 +1,126 @@
+document:
+  kind: execution_phase_workitem_ledger
+  name: Phase 13 Workitems
+  id: agentbus-phase-13-workitems
+  version: 1.0.0
+  generated_at_utc: '2026-11-09T00:00:00Z'
+  status: active
+  path: plans/phase-13-workitems.yml
+  phase_id: P13
+workitems:
+- id: P13-P0-01
+  priority: P0
+  status: IN_PROGRESS
+  summary: Baseline continuity contracts and issue traceability
+  acceptance:
+  - Exact stable baseline and outstanding source disposition are recorded without claiming P12 closure
+  - Every issue112 section has a workitem or explicit external-owner disposition
+  acceptance_evidence:
+  - test
+  - contract-test
+  - governance-validate
+- id: P13-P1-01
+  priority: P1
+  status: IN_PROGRESS
+  summary: Complete installation and classified command diagnostics
+  acceptance:
+  - Fresh install and upgrade include deferred imports and the full declared runtime population
+  - Pre-admission rejection committed-action confirmation failure and unknown outcome are distinguished without
+    secrets
+  acceptance_evidence:
+  - test
+  - contract-test
+  - governance-validate
+- id: P13-P1-02
+  priority: P1
+  status: IN_PROGRESS
+  summary: Durable original request receipts and scoped status
+  acceptance:
+  - Successful send and reply expose original UUID and custody status without changing retained fingerprints
+  - Disabled lifecycle unknown retired and foreign requests remain distinct where authorized; no resend or execution
+    authority inferred
+  acceptance_evidence:
+  - test
+  - contract-test
+  - governance-validate
+- id: P13-P2-01
+  priority: P2
+  status: IN_PROGRESS
+  summary: Location-labelled health and compatible scoped parsing
+  acceptance:
+  - Configured command aliases and location appear consistently in private health and guidance
+  - Location and federated selectors conflict; literal text boundary and existing local behavior are covered
+  acceptance_evidence:
+  - test
+  - contract-test
+  - governance-validate
+- id: P13-P3-01
+  priority: P3
+  status: IN_PROGRESS
+  summary: Versioned authenticated operator federation
+  acceptance:
+  - Destination independently authorizes origin generation actor operation and channel mapping
+  - Immutable UUID digest and bounded target population survive duplicate receipt replay and restart; old wire versions
+    remain valid
+  acceptance_evidence:
+  - test
+  - contract-test
+  - governance-validate
+- id: P13-P3-02
+  priority: P3
+  status: IN_PROGRESS
+  summary: Bounded asynchronous federated health
+  acceptance:
+  - Private per-location samples label freshness unreachable and unsupported outcomes
+  - No synchronous provider convergence wait or hidden local-only success occurs
+  acceptance_evidence:
+  - test
+  - contract-test
+  - governance-validate
+- id: P13-P3-03
+  priority: P3
+  status: IN_PROGRESS
+  summary: Federated shared mandatory-read controls
+  acceptance:
+  - One shared payload and immutable eligible-session snapshot per authorized destination
+  - Private button results distinguish acceptance read receipts partial failure and execution
+  acceptance_evidence:
+  - test
+  - contract-test
+  - governance-validate
+- id: P13-P4-01
+  priority: P4
+  status: IN_PROGRESS
+  summary: Scoped FTS5 mailbox search and thread context
+  acceptance:
+  - FTS5 support checked before atomic migration; index tracks retained content and retirement
+  - Literal queries return at most100 results with scoped opaque continuation and no cross-channel content counts
+    or internal IDs
+  acceptance_evidence:
+  - test
+  - contract-test
+  - governance-validate
+- id: P13-P4-02
+  priority: P4
+  status: IN_PROGRESS
+  summary: Thin session-bound MCP stdio adapter
+  acceptance:
+  - Pinned2025-11-25 protocol tools reuse authenticated API and exact bound profile
+  - No direct database provider credentials operator tools implicit ACK or identity switching; stdout is protocol
+    only
+  acceptance_evidence:
+  - test
+  - contract-test
+  - governance-validate
+- id: P13-P5-01
+  priority: P5
+  status: TODO
+  summary: Documentation skill installation and exact-subject release custody
+  acceptance:
+  - Line-reviewed public guidance and packaged skill match released interfaces and privacy boundaries
+  - Canonical protected PR exact-main archive isolated install and approved two-location canary apply to final0.10
+    subject
+  acceptance_evidence:
+  - test
+  - contract-test
+  - governance-validate

@@ -32,7 +32,10 @@ def health_text(snapshot):
     connected = snapshot['slack_connected']
     connection = 'not observed' if connected is None else 'connected' if connected else 'DISCONNECTED'
     uptime = runtime['uptime_seconds']
-    sections = ['*AgentBus health*', '*Service*\n'
+    location = snapshot.get('location', {})
+    label = location.get('value') or 'not configured'
+    warning = ' (configuration conflict with federation prefix)' if location.get('conflict') else ''
+    sections = ['*AgentBus health*', f"Location: `{label}`{warning}\nCommand: `{snapshot.get('command', 'not observed')}`", '*Service*\n'
         f"Version `{snapshot['version']}`; protocol `{snapshot['protocol_version']}`; participation `{snapshot['participation_version']}`\n"
         f"{runtime['implementation']} Python `{runtime['python']}` on {runtime['platform']}; PID `{runtime['pid']}`\n"
         f"Uptime `{str(uptime)+'s' if uptime is not None else 'not observed'}`; Slack `{connection}`\n"
@@ -41,7 +44,8 @@ def health_text(snapshot):
     channels = snapshot['channels'][:8]
     for c in channels:
         sections.append(f"*{c['channel']}* — {'enabled' if c['enabled'] else 'disabled / retained'}\n"
-            f"Messages `{c['messages']}`; local high-water `{c['high_water_cursor']}`; sessions `{sum(c['sessions'].values())}`")
+            f"Messages `{c['messages']}`; local high-water `{c['high_water_cursor']}`; sessions `{sum(c['sessions'].values())}`\n"
+            f"Last recorded client contact `{c.get('access', {}).get('last_recorded_contact_at') or 'not observed'}`; inbox monitoring not observed")
     if snapshot['channel_details_truncated'] or len(channels) < len(snapshot['channels']):
         sections.append('Additional retained channel details omitted from this bounded dashboard.')
     sections.append('*Queues*\nTransport custody, recipient work and shared read receipts are separate.')
@@ -91,6 +95,7 @@ def health_text(snapshot):
         f"retained obligations `{sum(federation['custody'].values())}`\nRemote health: not observed",
         '*Qualification*\nProvider delivery, destination custody and semantic ACK are distinct. '
         'Owner interoperability and atomic idle-only wake remain unqualified.'])
+    sections.append('Service health and enrollment are observations, not proof that an agent is actively monitoring or executing.')
     return '\n\n'.join(sections)
 
 

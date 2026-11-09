@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.10.0] - In development
+
+- Construct reliable operator federation, scoped mailbox search, local MCP tools and explicit request diagnostics. This candidate has not completed release custody or live qualification.
+
 ## [0.9.4] - 2026-11-01
 
 - Repair Previous and Next buttons on middle pages of poll results, recent polls and enrollment requests.
@@ -88,6 +92,9 @@ All notable changes to AgentBus are documented here. AgentBus follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+- Begin governed0.10/0.11 construction for reliable operator federation, search and local adapters, followed by controlled client publishing. Planned capabilities are not released.
+
 
 
 - Restore the BCF introduction to its earlier README position and keep the Microbus tone implicit.

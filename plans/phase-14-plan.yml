@@ -1,0 +1,46 @@
+document:
+  kind: execution_phase_plan
+  name: Phase 14 Plan
+  id: agentbus-phase-14-plan
+  version: 1.0.0
+  generated_at_utc: '2026-11-09T00:00:00Z'
+  status: planned
+  path: plans/phase-14-plan.yml
+phase:
+  id: P14
+  build_block: controlled_client_publishing
+  planner: codex
+  date: '2026-11-09'
+  scope_source:
+  - AGENTS.yml
+  - plans/product-spec.yml
+  - plans/build-plan.yml
+  - plans/phase-ledger.yml
+  - MEMORY.yml
+delivery_contract:
+  tightly_scoped_deliverables:
+  - Publication local adapter configuration and migration contracts
+  - Named client destinations and immutable publication drafts
+  - Exact draft approval and explicit direct-publication policy
+  - Durable publication custody and uncertain delivery recovery
+  - Authenticated opt-in loopback A2A mailbox adapter
+  - Interruption-aware resume and optional private stale notices
+  - Complete issue editorial skill and0.11 release custody
+  parallelizable_workstreams:
+  - id: P14-WS1
+    name: controlled_client_publishing
+  hard_dependencies:
+  - P13 computed closure on protected main
+  docker_first_local_runtime: repo_native_validation_and_governance_commands
+  completeness_standard: full_completeness_for_declared_scope
+scope_lock:
+- order: 1
+  statement: keep the phase narrowly scoped to declared deliverables and update canonical governed artifacts in
+    the same change
+- order: 2
+  statement: Each Slack installation has its own locally protected credential reference and verified workspace/bot
+    binding; a destination never falls back to coordination credentials or acquires a Socket Mode connection. No
+    credential replication or live provisioning is authorized by construction.
+verification_plan:
+- make governance-validate
+- make contract-test

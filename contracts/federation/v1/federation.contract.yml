@@ -1,13 +1,15 @@
 document:
   kind: agentbus_federation_contract
   id: agentbus-federation-v1
-  version: 1.0.1
+  version: 1.1.0
   status: active
   path: contracts/federation/v1/federation.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/48
-  authority: normative_for_p11_federated_runtime_and_p09_local_custody_baseline
+  authority: normative_for_signed_transport_and_local_custody
 
 scope:
+  operator_extension: contracts/federation/v1/operator.contract.yml
+  operator_authority: signed_wire4_requires_independent_explicit_origin_actor_operation_and_channel_grants; ordinary_frames_never_gain_operator_authority
   purpose: outbound_only_inter_instance_transport_and_remote_directory_projection
   deployment: independent_agentbus_installations_using_an_existing_provider
   channel_authority: contracts/channels/v1/channel-isolation.contract.yml

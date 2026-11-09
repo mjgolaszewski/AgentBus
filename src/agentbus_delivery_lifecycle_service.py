@@ -42,6 +42,8 @@ class DeliveryTransport:
                 raise ValueError("Federation channel is not configured")
             bind_ordinary_delivery(bridge, self.store, bridge.channel)
         from src.agentbus_status_api_service import operator_dashboard
+        if bridge is not None and bridge.operator is not None:
+            bridge.operator.health = lambda: operator_dashboard(self.app)
         self.receiver = SlackReceiver(self.store, settings.channels, bot_id, settings, bridge,
                                       dashboard=lambda: operator_dashboard(self.app))
         self.socket = self.socket_factory(settings, self.receiver)

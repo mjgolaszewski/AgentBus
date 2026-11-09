@@ -10,9 +10,23 @@ Use the existing `agentbus` executable and workspace configuration. Start with
 credentials are provisioned by the workspace operator; this skill installs no
 service, token, Slack application, or Codex extension.
 
+## Keep scopes distinct
+
+A location is an AgentBus installation; a channel is immutable membership; a
+publishing destination is an operator-bound client workspace/channel policy.
+Ordinary CLI `send --broadcast` is a message, not a mandatory operator control
+or federated publication. Use canonical `--identity` and `--recipient` (`--to`
+remains an alias), and `reply --to-cursor` with public inbox positions.
+
+Search and MCP are construction capabilities until a qualified matching release
+advertises them. Follow installed `--help` and negotiated capabilities; never
+emulate unsupported federation or publishing with ordinary send. See the
+[participation reference](references/participation.md) for receipt recovery.
+
 ## Use the right identity
 
-One profile represents one conversation in one immutable channel. Resume the profile for this same conversation. `agentbus agents` needs an
+One profile represents one conversation in one immutable channel. Resume the
+profile for this same conversation. `agentbus agents` needs an
 already joined identity; it is not a fresh-onboarding prerequisite. Do not borrow
 another chat's session.
 Two identities belonging to the same orchestration agent remain separate scopes.

@@ -48,7 +48,7 @@ memory_retention_policy:
     - preserve_replacement_reference_when_available
 environment_facts:
   current_repo_state:
-    - Published baseline is stable 0.9.3; the bounded pagination repair requires independent final proof and custody
+    - Published baseline is stable0.9.4 exact-main0c772fab; active issue112 train is not released
     - Certified BCF 2.3.4 Standard contract v3 remains the project runtime; successor adoption is a separate decision, not a retrospective prerequisite
     - Application source lives under src; public client/service shims and protocol2 paths remain stable; Python3.12 and pinned Python3.14 compatibility are required
     - One service, SQLite database, Slack app and socket serve an explicit bounded channel registry; each grant-backed identity has one immutable channel
@@ -66,22 +66,22 @@ environment_facts:
     build_plan: plans/build-plan.yml
     active_phase_ledger: plans/phase-ledger.yml
     phase_history: plans/phase-history.yml
-    active_phase_plan: plans/phase-12-plan.yml
-    active_workitem_ledger: plans/phase-12-workitems.yml
-    active_phase_log: phases/phase-12-log.yml
+    active_phase_plan: plans/phase-13-plan.yml
+    active_workitem_ledger: plans/phase-13-workitems.yml
+    active_phase_log: phases/phase-13-log.yml
 known_constraints:
-  - Owner-wake qualification remains active under Issue75; AHP/native-queue live interoperability and atomic idle-only admission are unqualified, with unknown owners notification-only
+  - Owner-wake qualification remains paused under Issue75; AHP/native-queue live interoperability and atomic idle-only admission are unqualified, with unknown owners notification-only
   - Owner admission must bind backend transport incarnation connection generation and exact thread; upstream reports and idle observations do not grant writer or retry authority
   - Historical federation canaries apply only to their pinned subjects; no new multi-installation or live-provider qualification follows from local regression success
   - AgentBus assumes a trusted workspace with trusted non-hostile agents and operators; hostile OS/process isolation credential theft and independent agent authority inference remain outside its guarantee
   - Existing unresolved or legacy-unknown custody remains pinned; offline migration, backup and repair-forward rules govern incompatible cutovers; public Slack channels provide no confidentiality or indefinite availability guarantee
   - Reported full-service hangs remain unclassified; the snapshot and carrier-classification repairs do not establish their cause or a remote-health guarantee
   - Every final subject requires canonical protected PR exact-main archive and isolated-installation proof; deployment and live canaries remain separate custodian actions with concrete prerequisites
-  - Source work stays in active P12; no inherited hotfix retirement or computed phase closure is inferred from authored DONE entries or component evidence
+  - Source work advances in active P13; P14 awaits computed P13 closure; no inherited hotfix retirement or computed phase closure is inferred from authored DONE entries or component evidence
   - Complete editorial review retains exact line coverage hashes and dispositions, excludes BCF machinery and changelog, and preserves historical proof; current capability text links Experimenters guidance
   - Historical inputs may be cold-archived only with verified content manifests restoration instructions and durable references; live environments Git objects credentials databases and service volumes remain protected
 reusable_commands: [make governance-validate, make architecture-test, make lint, make typecheck, make test, make release-check]
 references:
   governance: [AGENTS.yml, governance-profile.yml, architecture-boundaries.yml, contracts/observability/v1/, contracts/codex-wake/v1/, contracts/participation/v2/participation.contract.yml, contracts/channels/v1/channel-isolation.contract.yml, plans/phase-ledger.yml, plans/phase-history.yml, docs/OPERATIONS.md]
   product: [plans/product-spec.yml, plans/build-plan.yml, docs/contracts.md, docs/audiences/experimenters.md]
-  execution: [plans/phase-12-plan.yml, plans/phase-12-workitems.yml, phases/phase-12-log.yml]
+  execution: [plans/phase-13-plan.yml, plans/phase-13-workitems.yml, phases/phase-13-log.yml]

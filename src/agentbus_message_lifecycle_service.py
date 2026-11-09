@@ -166,6 +166,9 @@ class MessageLifecycleStore:
                     THEN RAISE(ABORT,'immutable channel inbox') END;
                     UPDATE lifecycle_channels SET next_position=NEW.next_position WHERE channel=OLD.channel; END""")
                 for table, in self.owner._db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'").fetchall():
+                    if table in {'mailbox_search', 'mailbox_search_data', 'mailbox_search_idx',
+                                 'mailbox_search_content', 'mailbox_search_docsize', 'mailbox_search_config'}:
+                        continue  # Derived FTS index; authoritative messages retain their writer guard.
                     quoted = '"' + table.replace('"', '""') + '"'
                     for action in ('INSERT','UPDATE','DELETE'):
                         name = '"' + f'lifecycle_writer_{table}_{action}'.replace('"', '""') + '"'

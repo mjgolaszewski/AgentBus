@@ -55,6 +55,18 @@ class OrdinaryFrame(BaseModel):
     signature: str
 
 
+class OperatorFrame(BaseModel):
+    model_config = ConfigDict(extra='forbid', strict=True)
+    agentbus_federation: Literal[4]
+    kind: Literal['operator_request', 'operator_result']
+    origin_instance_id: str
+    origin_message_id: str
+    destination_instance_id: str
+    key_generation: str = Field(pattern=r'^[0-9a-f]{64}$')
+    payload: str
+    signature: str
+
+
 @dataclass(frozen=True)
 class Binding:
     instance_id: str
@@ -63,9 +75,12 @@ class Binding:
     public_key: Ed25519PublicKey = field(repr=False)
     directory_version: int | None = None
     ordinary_version: int | None = None
+    operator_version: int | None = None
 
     def __post_init__(self):
         _validate_identity(self.instance_id, self.route_prefix, self.publisher_id)
+        if self.operator_version is not None and (type(self.operator_version) is not int or self.operator_version != 4):
+            raise ValueError('unsupported operator peer version')
         if self.directory_version is not None and (type(self.directory_version) is not int or self.directory_version != 2):
             raise ValueError("unsupported directory peer version")
         if self.ordinary_version is not None and (type(self.ordinary_version) is not int or self.ordinary_version != 3):
@@ -115,15 +130,17 @@ def encode_frame(identity: Identity, kind: str, message_id: str,
 
 
 def _validate(frame: dict) -> None:
-    if frame.get('agentbus_federation') == 3:
+    if frame.get('agentbus_federation') == 4:
+        OperatorFrame(**frame)
+    elif frame.get('agentbus_federation') == 3:
         OrdinaryFrame(**frame)
     elif frame.get("agentbus_federation") == 2:
         DirectoryFrame(**frame)
     else:
         SignedFrame(**frame)
-    if set(frame) != FIELDS or type(frame['agentbus_federation']) is not int or frame['agentbus_federation'] not in {1, 2, 3}:
+    if set(frame) != FIELDS or type(frame['agentbus_federation']) is not int or frame['agentbus_federation'] not in {1, 2, 3, 4}:
         raise ValueError('unsupported federation frame')
-    if frame['kind'] not in {'message', 'receipt', 'directory'}:
+    if frame['kind'] not in {'message', 'receipt', 'directory', 'operator_request', 'operator_result'}:
         raise ValueError('unsupported federation frame kind')
     for key in ('origin_instance_id', 'destination_instance_id'):
         if not isinstance(frame[key], str) or not INSTANCE.fullmatch(frame[key]):
@@ -147,6 +164,8 @@ def decode_frame(text: str, publisher: str, destination: str, bindings: dict[str
         binding = bindings.get(frame['origin_instance_id'])
         if binding is None or binding.publisher_id != publisher or frame['destination_instance_id'] != destination:
             raise ValueError('untrusted federation publisher or destination')
+        if frame['agentbus_federation'] == 4 and binding.operator_version != 4:
+            raise ValueError('operator peer capability is not approved')
         if frame['agentbus_federation'] == 2 and binding.directory_version != 2:
             raise ValueError('directory peer version is not operator-approved')
         if frame['agentbus_federation'] == 3 and binding.ordinary_version != 3:

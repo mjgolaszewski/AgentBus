@@ -4,7 +4,7 @@ document:
   id: agentbus-phase-12-log
   version: 1.0.0
   generated_at_utc: '2026-10-17T00:00:00Z'
-  status: active
+  status: paused
   path: phases/phase-12-log.yml
 phase:
   id: P12
@@ -418,6 +418,7 @@ closeout_requirements:
     - governance-exposure-scan
   finding_registry: governance/findings.yml
 known_constraints:
+- Issue75 owning-host qualification is paused, not closed; resume only with an approved disposable owner endpoint and atomic non-steering admission evidence. No manual inherited hotfix retirement.
 - No supported AHP owning host, negotiated protocol version or atomic idle-only admission is qualified
 - Recorded extension build inventories are historical context; current owner interoperability is not authenticated
 - Each final subject needs its own release and installation custody; live credentials and host bindings remain custodian-owned
