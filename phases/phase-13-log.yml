@@ -80,6 +80,11 @@ execution_evidence:
   - Candidate498a92b semantic preflight could not discover Pydantic model_validate constructor calls. The exact
     hostile decoder now invokes the same strict canonical models through explicit constructors; validation bounds
     and ownership remain unchanged.
+  - Candidate8a108ef passed preflight but PR truth rejected contract-test and Python3.14 receipts plus dependent
+    security finding proof and review counts. Actual producer lists omitted the four newly declared test files.
+    Populations now match and a cross-authority regression passes; final native proof remains pending. The failed
+    prospective temporary evidence was automatically removed by certified machinery; exact stderr is retained
+    privately and diagnostic-retention behavior reported to its owner without SDK changes.
 closeout_requirements:
   claims:
     workitems_closed:
