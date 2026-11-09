@@ -85,6 +85,10 @@ execution_evidence:
     Populations now match and a cross-authority regression passes; final native proof remains pending. The failed
     prospective temporary evidence was automatically removed by certified machinery; exact stderr is retained
     privately and diagnostic-retention behavior reported to its owner without SDK changes.
+  - Candidate02623d2 canonical prospective passed all19 producers and bounded PR truth, with provider proof
+    still required. Consolidated review then found malformed MCP request identities could be reflected and
+    envelopes misclassified as parameter errors. Explicit envelope validation now returns a null identity and
+    Invalid Request without invoking tools; valid following messages remain usable.
 closeout_requirements:
   claims:
     workitems_closed:

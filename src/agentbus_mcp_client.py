@@ -84,6 +84,10 @@ def tool_argv(identity, name, arguments):
     return argv
 
 
+class InvalidRequest(ValueError):
+    """A malformed envelope has no usable request identity."""
+
+
 def serve(identity, invoke, incoming, outgoing):
     initialized = False
     ready = False
@@ -96,17 +100,20 @@ def serve(identity, invoke, incoming, outgoing):
         request_id = None
         try:
             request = json.loads(raw)
-            if not isinstance(request, dict) or request.get("jsonrpc") != "2.0":
-                raise ValueError("Invalid JSON-RPC request")
+            if (
+                not isinstance(request, dict)
+                or request.get("jsonrpc") != "2.0"
+                or not isinstance(request.get("method"), str)
+                or ("id" in request and type(request["id"]) not in (str, int))
+            ):
+                raise InvalidRequest()
             request_id = request.get("id")
-            method = request.get("method")
-            if request_id is None:
+            method = request["method"]
+            if "id" not in request:
                 if method == "notifications/initialized" and initialized:
                     ready = True
                 continue
-            if type(request_id) not in (str, int):
-                raise ValueError("Invalid request identity")
-            params = request.get("params") or {}
+            params = request.get("params", {})
             if not isinstance(params, dict):
                 raise ValueError("Invalid parameters")
             result: dict[str, Any]
@@ -165,6 +172,8 @@ def serve(identity, invoke, incoming, outgoing):
                 outgoing.flush()
                 continue
             response = {"jsonrpc": "2.0", "id": request_id, "result": result}
+        except InvalidRequest:
+            response = {"jsonrpc": "2.0", "id": None, "error": {"code": -32600, "message": "Invalid request"}}
         except json.JSONDecodeError:
             response = {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "Parse error"}}
         except (ValueError, TypeError, RecursionError):

@@ -69,3 +69,22 @@ def test_failed_tool_preserves_uuid_but_redacts_other_exception_details():
     detail=json.loads(result['content'][0]['text'])
     assert detail['request_id']==request_id and detail['acceptance']=='unknown'
     assert 'private diagnostic secret' not in output.getvalue()
+
+
+@pytest.mark.parametrize("envelope", [
+    [], {"jsonrpc": "1.0", "id": 1, "method": "ping"},
+    {"jsonrpc": "2.0", "id": True, "method": "ping"},
+    {"jsonrpc": "2.0", "id": None, "method": "ping"},
+    {"jsonrpc": "2.0", "id": 1, "method": []},
+])
+def test_malformed_envelope_has_no_reflected_authority_and_stream_recovers(envelope):
+    calls = []
+    output = io.StringIO()
+    incoming = io.StringIO(json.dumps(envelope) + '\n' + json.dumps(
+        {"jsonrpc": "2.0", "id": "recovery", "method": "ping"}) + '\n')
+    serve("local:agentbus:mine", calls.append, incoming, output)
+    responses = [json.loads(line) for line in output.getvalue().splitlines()]
+    assert responses[0] == {"jsonrpc": "2.0", "id": None,
+                            "error": {"code": -32600, "message": "Invalid request"}}
+    assert responses[1] == {"jsonrpc": "2.0", "id": "recovery", "result": {}}
+    assert calls == []
