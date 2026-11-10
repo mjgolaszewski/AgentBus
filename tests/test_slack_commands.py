@@ -843,3 +843,101 @@ def test_private_confirmation_failure_retains_committed_control_and_safe_diagnos
     assert 'stage=private_publication' in caplog.text and 'exception=ModuleNotFoundError' in caplog.text
     assert 'private-path-and-secret' not in caplog.text
     receiver._commands.shutdown()
+
+
+@pytest.mark.parametrize("aliases", [
+    ("/agentbus",), ("/bus-alt", "/bus-alt"), ("",), ("/Upper",), ("/bad name",),
+    tuple("/alias" + str(i) for i in range(9)), ["/bus-alt"],
+])
+def test_configured_aliases_are_explicit_bounded_and_unambiguous(enrolled, aliases):
+    settings, _, _, _ = enrolled
+    with pytest.raises(ValueError, match="AGENTBUS_SLACK_COMMAND_ALIASES"):
+        replace(settings, slack_command_aliases=aliases)
+
+
+def test_configured_alias_preserves_invocation_text_and_authority(enrolled):
+    settings, store, _, web = enrolled
+    settings = replace(settings, slack_command="/bus-main", slack_command_aliases=("/bus-alt",))
+    payload = {"command": "/bus-alt", "channel_id": "C123456", "user_id": "U123", "text": "help"}
+    original = dict(payload)
+    assert "/bus-alt approve" in execute_command(payload, settings, store, web)
+    assert payload == original
+    before = store._db.total_changes
+    assert "not enabled" in execute_command(dict(payload, user_id="U999"), settings, store, web)
+    assert "configured channel" in execute_command(dict(payload, channel_id="COTHER"), settings, store, web)
+    assert "Unsupported" in execute_command(dict(payload, command="/agentbus"), settings, store, web)
+    assert store._db.total_changes == before and not web.posts
+    question = "Literal /agentbus and /bus-alt remain unchanged?"
+    result = execute_command(dict(payload, text="poll " + question, trigger_id="alias-poll"), settings, store, web)
+    control = result.split()[1].removesuffix(":")
+    assert store._db.execute("SELECT reason FROM operator_controls WHERE control_id=?", (control,)).fetchone()[0] == question
+
+
+def test_socket_alias_keeps_original_command_and_private_health(enrolled, monkeypatch):
+    from src import agentbus_slack_socket_service as socket_module
+
+    settings, store, _, web = enrolled
+    settings = replace(settings, slack_command="/bus-main", slack_command_aliases=("/bus-alt",))
+    seen = []
+    def invoke(payload, *args, **kwargs):
+        seen.append(dict(payload))
+        return execute_command(payload, *args, **kwargs)
+    monkeypatch.setattr(socket_module, "execute_command", invoke)
+    receiver = SlackReceiver(store, settings.channels, "BTEST", settings)
+    socket = FakeSocket(web)
+    payload = {"command": "/bus-alt", "channel_id": settings.channels[0], "user_id": "U123",
+               "text": "health", "trigger_id": "alias-health"}
+    try:
+        receiver(socket, SocketModeRequest(type="slash_commands", envelope_id="alias-health", payload=payload))
+    finally:
+        receiver._commands.shutdown(wait=True)
+    assert seen == [payload] and seen[0]["command"] == "/bus-alt"
+    assert len(socket.acks) == 1 and len(web.ephemeral) == 1 and not web.posts
+    assert "Command: `/bus-main`" in web.ephemeral[0]["text"]
+    assert "Aliases: `/bus-alt`" in web.ephemeral[0]["text"]
+    assert "Invoked: `/bus-alt`" in web.ephemeral[0]["text"]
+
+
+def test_socket_alias_still_rejects_unknown_names_users_and_channels(enrolled):
+    settings, store, _, web = enrolled
+    settings = replace(settings, slack_command="/bus-main", slack_command_aliases=("/bus-alt",))
+    receiver = SlackReceiver(store, settings.channels, "BTEST", settings)
+    socket = FakeSocket(web)
+    payload = {"command": "/bus-alt", "channel_id": settings.channels[0], "user_id": "U123",
+               "text": "broadcast must not run", "trigger_id": "alias-denial"}
+    before = store._db.total_changes
+    try:
+        for i, changes in enumerate(({"command": "/unconfigured"}, {"user_id": "U999"}, {"channel_id": "COTHER"})):
+            receiver(socket, SocketModeRequest(type="slash_commands", envelope_id="alias-denial-" + str(i),
+                                               payload={**payload, **changes}))
+    finally:
+        receiver._commands.shutdown(wait=True)
+    assert len(socket.acks) == 3 and store._db.total_changes == before
+    assert not web.ephemeral and not web.posts
+
+
+def test_alias_enrollment_keeps_copyable_command_in_invoked_name(enrolled):
+    import uuid
+
+    settings, store, _, web = enrolled
+    settings = replace(settings, slack_command="/bus-main", slack_command_aliases=("/bus-alt",))
+    request_id = str(uuid.uuid4())
+    store.channels.request_enrollment(request_id=request_id, chat_id=str(uuid.uuid4()), repo="agentbus",
+        route="agentbus:alias-enrollment", display_name="Alias enrollment", session_secret="s" * 40)
+    reply = execute_command({"command": "/bus-alt", "channel_id": settings.channels[0], "user_id": "U123",
+                             "text": "enrollments"}, settings, store, web)
+    assert reply.command_messages == ("/bus-alt approve " + request_id,)
+
+
+def test_alias_environment_uses_primary_validation_and_explicit_list(monkeypatch):
+    for name, value in {"API_TOKEN": "x" * 32, "SLACK_BOT_TOKEN": "xoxb-test", "SLACK_APP_TOKEN": "xapp-test",
+                        "SLACK_CHANNEL": "C123456", "SLACK_COMMAND": "/bus-main",
+                        "SLACK_COMMAND_ALIASES": " /bus-alt, /bus-two "}.items():
+        monkeypatch.setenv("AGENTBUS_" + name, value)
+    monkeypatch.delenv("AGENTBUS_SLACK_CHANNELS", raising=False)
+    settings = Settings.from_env()
+    assert settings.slack_commands == ("/bus-main", "/bus-alt", "/bus-two")
+    assert settings.accepts_slack_command("/bus-alt") and not settings.accepts_slack_command("/agentbus")
+    monkeypatch.setenv("AGENTBUS_SLACK_COMMAND_ALIASES", "/bus-alt,")
+    with pytest.raises(ValueError, match="AGENTBUS_SLACK_COMMAND_ALIASES"):
+        Settings.from_env()

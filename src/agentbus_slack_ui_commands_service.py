@@ -21,19 +21,20 @@ def page_number(value: str) -> int:
     return int(value) - 1
 
 
-def query_reply(parts: list[str], settings, store, channel: str, actor=None) -> str:
+def query_reply(parts: list[str], settings, store, channel: str, actor=None, command=None) -> str:
     """Caller must authorize the verified Slack operator before any query."""
+    command = command or settings.slack_command
     try:
         if parts[0] == 'enrollments':
             if len(parts) > 2:
-                raise ValueError(f'Use {settings.slack_command} enrollments, then choose a request.')
+                raise ValueError(f'Use {command} enrollments, then choose a request.')
             page = page_number(parts[1]) if len(parts) == 2 else 0
             from src.agentbus_enrollment_approval_service import MAX_REQUESTS
             rows = store.channels.pending_enrollments(channel=channel, limit=MAX_REQUESTS)
-            return enrollment_reply(rows, settings.slack_command, channel=channel, page=page)
+            return enrollment_reply(rows, command, channel=channel, page=page)
         if len(parts) == 1 or parts[1] == 'recent':
             if len(parts) == 2 or len(parts) > 3:
-                raise ValueError(f'Use {settings.slack_command} results, then choose Results.')
+                raise ValueError(f'Use {command} results, then choose Results.')
             page = page_number(parts[2]) if len(parts) == 3 else 0
             reply = recent_polls_reply(store.controls.recent_polls(channel), channel=channel, page=page)
             owner = getattr(store, 'operator_federation', None)
@@ -45,7 +46,7 @@ def query_reply(parts: list[str], settings, store, channel: str, actor=None) -> 
             return reply
         from src.agentbus_slack_ui_service import UUID
         if len(parts) > 3 or not UUID.fullmatch(parts[1]):
-            raise ValueError(f'Use {settings.slack_command} results, then choose a poll. No UUID typing required.')
+            raise ValueError(f'Use {command} results, then choose a poll. No UUID typing required.')
         page = page_number(parts[2]) if len(parts) == 3 else 0
         rows = store.controls.status(parts[1], channel=channel)
         roster = store.participation.roster(include_stopped=True, channel=channel)

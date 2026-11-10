@@ -1,10 +1,11 @@
 document:
   kind: participation_authorization_contract
-  version: 2.0.12
+  version: 2.0.13
   status: active
   path: contracts/participation/v2/participation.contract.yml
 extends: contracts/participation/v1/participation.contract.yml
 changes:
+- Optional bounded operator-configured Slack command aliases are checked at both ingress gates; original invocation and text remain unchanged
 - Durable client acceptance receipts expose the original request UUID without implying provider delivery or execution
 - Authorized lifecycle-disabled outcome lookup retains HTTP404 compatibility with an explicit machine-readable reason
 - Private local health labels configured location and federation-prefix conflicts without guessing from roster or hostname

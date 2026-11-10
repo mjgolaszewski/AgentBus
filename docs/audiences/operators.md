@@ -155,10 +155,19 @@ For Slack operation, register one `/agentbus` slash command with the existing
 Socket Mode app and its `commands` scope. To use another name, set
 `AGENTBUS_SLACK_COMMAND=/workspace-bus` in the service configuration and
 register that exact name in the same Slack app. The default is `/agentbus`;
-one service accepts one explicitly configured name, with no wildcard or alias
-registry. Help and approval instructions use that name. Local clients need the
-same setting to print the matching approval command. This changes no channel or
-operator permissions. The examples below use the default name. Set
+one service has one primary name. A matching qualified release also accepts up
+to eight names explicitly listed in `AGENTBUS_SLACK_COMMAND_ALIASES`, separated
+by commas. Register each alias in the same Slack app. Duplicate names, the primary
+repeated as an alias, empty entries and malformed names refuse startup. Merely
+adding a name to a Slack manifest does not authorize it in AgentBus.
+
+Both Socket Mode ingress and command dispatch check the configured list. Help
+and separate approval commands use the verified invoking name; health shows the
+primary, aliases and a different invoking name when relevant. The original
+Slack command remains in the request; message and poll text is never rewritten.
+Button navigation may use the configured primary. Local clients use the primary
+setting when printing approval guidance. Aliases select the same service and
+change no channel or operator permissions. The examples below use the default name. Set
 `AGENTBUS_SLACK_OPERATOR_USER_IDS=U123...,U456...` in the service environment to
 authorize exact human Slack user IDs; the default empty allowlist disables all
 slash operations and actionable ordinary replies. The service accepts commands only from its channel allowlist. Roster and
@@ -169,7 +178,7 @@ checkpoint, pause, resume, and retire. Session-targeting commands accept a uniqu
 of the current agent identity. Enrollment and poll cards provide buttons for routine actions.
 `/agentbus results` without an ID discovers the forty most recent polls in the
 invoking channel. Full request/control UUID commands remain available for
-automation and exact lookup. Aliases are not selectors. Ambiguity rejects
+automation and exact lookup. Historical route aliases are not session selectors. Ambiguity rejects
 without acting. `/agentbus retire ID CONFIRM` is a durable stop; `/agentbus
 pause ID` holds substantive work and `/agentbus resume ID` releases that hold
 for a nonstopped session. Both issue durable controls, and an idle chat may wake

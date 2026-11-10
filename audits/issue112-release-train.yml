@@ -184,14 +184,6 @@ source_slice:
   - tests/test_runtime_inventory.py
   - tests/test_channel_isolation.py
 editorial_review:
-- path: docs/operator-federation.md
-  reviewed_lines:
-  - 1
-  - 88
-  sha256: 88958bbed91ba7de7c15f0f3fa5d1937841f24d2cf07d50a746f41c5db5ea081
-  disposition: new
-  notes: Every line reviewed for availability, configured alias, scope, authority, privacy and current contracts;
-    excludes BCF machinery and changelog
 - path: docs/local-adapters.md
   reviewed_lines:
   - 1
@@ -200,27 +192,11 @@ editorial_review:
   disposition: new
   notes: Every line reviewed for availability, configured alias, scope, authority, privacy and current contracts;
     excludes BCF machinery and changelog
-- path: docs/contracts.md
-  reviewed_lines:
-  - 1
-  - 135
-  sha256: 3ed9762ad10acbdbb8e9471bfb999938d1bee534031cbfb680a5708b56c2f646
-  disposition: updated
-  notes: Every line reviewed for availability, configured alias, scope, authority, privacy and current contracts;
-    excludes BCF machinery and changelog
 - path: skills/agentbus/SKILL.md
   reviewed_lines:
   - 1
   - 98
   sha256: 1a61d7594ffa9f831014698f38dbb800b625da3d374a011938bd1112e74828dc
-  disposition: updated
-  notes: Every line reviewed for availability, configured alias, scope, authority, privacy and current contracts;
-    excludes BCF machinery and changelog
-- path: skills/agentbus/references/participation.md
-  reviewed_lines:
-  - 1
-  - 132
-  sha256: 30eb866b0d6d673d69b1efbd05fd711b6c84ceba4be1c53ac1851e22c8b11156
   disposition: updated
   notes: Every line reviewed for availability, configured alias, scope, authority, privacy and current contracts;
     excludes BCF machinery and changelog
@@ -248,6 +224,51 @@ editorial_review:
   disposition: updated
   notes: Every line reviewed; recovery authority and current experimental limits explicit; no private deployments
     or chronology in capability guidance. BCF machinery and changelog excluded.
+- path: .env.example
+  reviewed_lines:
+  - 1
+  - 56
+  sha256: 485a334c20d436600c0c12c3dcd4923fa81ca284092279ac6f408f04104a1948
+  disposition: updated
+  notes: 'Line-reviewed configuration and authority guidance: optional explicit aliases, one app/service, original
+    invocation and text, no location or channel change. No private deployment identifiers; BCF machinery and changelog
+    excluded.'
+- path: docs/audiences/operators.md
+  reviewed_lines:
+  - 1
+  - 335
+  sha256: 883bb4903d52dd26c2c29496a38928e192d4df0925334411792ed7d47725a97a
+  disposition: updated
+  notes: 'Line-reviewed configuration and authority guidance: optional explicit aliases, one app/service, original
+    invocation and text, no location or channel change. No private deployment identifiers; BCF machinery and changelog
+    excluded.'
+- path: docs/contracts.md
+  reviewed_lines:
+  - 1
+  - 141
+  sha256: 7694dbde5cc11b25d61a1830741a4f06100f0a181e5fb8f750b94243f6ad999a
+  disposition: updated
+  notes: 'Line-reviewed configuration and authority guidance: optional explicit aliases, one app/service, original
+    invocation and text, no location or channel change. No private deployment identifiers; BCF machinery and changelog
+    excluded.'
+- path: docs/operator-federation.md
+  reviewed_lines:
+  - 1
+  - 90
+  sha256: c4862e1a6999e7d9059929db83b1d2bd2fbe9cab4f7fabb75b16af02d356a20d
+  disposition: updated
+  notes: 'Line-reviewed configuration and authority guidance: optional explicit aliases, one app/service, original
+    invocation and text, no location or channel change. No private deployment identifiers; BCF machinery and changelog
+    excluded.'
+- path: skills/agentbus/references/participation.md
+  reviewed_lines:
+  - 1
+  - 136
+  sha256: 7692ac03a9efad0231308020d18757704adb4ccc4afce269b2f740f5d0a1c43f
+  disposition: updated
+  notes: 'Line-reviewed configuration and authority guidance: optional explicit aliases, one app/service, original
+    invocation and text, no location or channel change. No private deployment identifiers; BCF machinery and changelog
+    excluded.'
 context_budget_change: Canonical representation registry KiB cap increases44 to50 only for explicit signed operator
   frame and two typed payload owners; no runtime memory or retention budget changed
 protected_construction:
@@ -287,3 +308,18 @@ planned_retention_extension:
   - P14-P3-01 observations
   limits: No inference of agent execution, no implicit acknowledgement or automatic abandonment, no live policy
     activation
+alias_compatibility_followup:
+  workitem: P13-P2-01
+  trigger: Consumer archive review identified an approved alternate command depended on local overlays; canonical
+    ac89 accepted only one primary name
+  contract: contracts/participation/v2/participation.contract.yml version2.0.13
+  owners:
+  - src/agentbus_settings_service.py
+  - src/agentbus_slack_socket_service.py
+  - src/agentbus_slack_command_service.py
+  - src/agentbus_slack_ui_commands_service.py
+  boundary: Primary plus at most eight explicit valid distinct aliases; same app operator allowlist channel scope
+    and signed operator authority
+  retained_payload: Actual command preserved; no rewriting of human message or poll text
+  supporting_evidence: 71 focused Slack tests passed on dirty source; final canonical proof pending
+  deployment: No live config or source overlay applied; prior qualified candidate remains pinned for comparison

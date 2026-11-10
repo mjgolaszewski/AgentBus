@@ -69,8 +69,8 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
     """Authorize by Slack's verified Socket Mode user ID and exact session ID."""
     from src.agentbus_slack_ui_service import command_receipt
     channel = payload.get("channel_id")
-    command = settings.slack_command
-    if payload.get("command") != command:
+    command = payload.get("command")
+    if not isinstance(command, str) or not settings.accepts_slack_command(command):
         return command_receipt("Unsupported AgentBus slash command.", "rejected")
     if not isinstance(channel, str) or channel not in settings.channels:
         return command_receipt("AgentBus commands are available only in the configured channel.", "rejected")
@@ -171,10 +171,11 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
     if action == "health" and len(parts) == 1:
         from src.agentbus_presentation_service import health_text
         from src.agentbus_status_api_service import service_dashboard
-        return health_text(dashboard() if dashboard is not None else service_dashboard(settings, store))
+        snapshot = dashboard() if dashboard is not None else service_dashboard(settings, store)
+        return health_text({**snapshot, "invoked_command": command})
     if action in {'enrollments', 'results'}:
         from src.agentbus_slack_ui_commands_service import query_reply
-        return query_reply(parts, settings, store, channel, actor=user)
+        return query_reply(parts, settings, store, channel, actor=user, command=command)
     if action == "approve" and len(parts) == 2:
         if not SESSION_ID.fullmatch(parts[1]):
             return "Use approve with the full enrollment request UUID."

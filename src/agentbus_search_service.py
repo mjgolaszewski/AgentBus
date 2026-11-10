@@ -6,12 +6,23 @@ import base64
 import hashlib
 import hmac
 import json
+import sqlite3
 from typing import Annotated
 
 from fastapi import HTTPException, Query, Request
 
 from src.agentbus_channel_api_service import resolve_principal, serialize_message
 from src.agentbus_transaction_service import atomic
+
+
+def require_fts5() -> None:
+    """Probe the selected SQLite runtime before creating any persistent state."""
+    connection = sqlite3.connect(":memory:")
+    try:
+        if connection.execute("SELECT sqlite_compileoption_used('ENABLE_FTS5')").fetchone()[0] != 1:
+            raise RuntimeError("SQLite FTS5 is required before mailbox migration")
+    finally:
+        connection.close()
 
 
 class SearchStore:

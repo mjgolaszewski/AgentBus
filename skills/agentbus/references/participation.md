@@ -130,3 +130,7 @@ Successful durable send/reply output includes the original request receipt when
 supported. Preserve its UUID. If cursor lifecycle lookup is disabled, use the
 supported authored `message-status --message-id UUID` query; unknown custody
 never authorizes replacing or replaying an uncertain request under a new UUID.
+
+A Slack command alias, when explicitly supported and operator-configured, selects
+the same app/service as its primary name. It does not select another location or
+channel, confer operator authority or let an agent change service configuration.
