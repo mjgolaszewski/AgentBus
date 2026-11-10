@@ -133,3 +133,9 @@ without changing the stored schema or public protocol, preserves uncertain
 attempts and original identities, and never relabels conflicting scope. Read-only
 queries remain read-only. Live owner interoperability and atomic idle-only
 admission remain unqualified.
+
+The participation contract also owns optional configured Slack command aliases.
+A qualified matching release checks the primary and at most eight explicit names
+at both ingress gates. Names share one app/service and the same operator/channel
+authority; the original invocation remains intact. This is not alias discovery or
+federation routing. See the [operator configuration](audiences/operators.md).

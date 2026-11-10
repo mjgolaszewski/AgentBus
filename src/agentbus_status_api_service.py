@@ -78,7 +78,7 @@ def service_dashboard(settings, store, *, socket=None, bridge=None, version=None
             'location': {'value': configured_prefix or bridge_prefix,
                          'source': 'configured_prefix' if configured_prefix else 'federation' if bridge_prefix else 'not_configured',
                          'conflict': bool(configured_prefix and bridge_prefix and configured_prefix != bridge_prefix)},
-            'command': settings.slack_command,
+            'command': settings.slack_command, 'command_aliases':list(settings.slack_command_aliases),
             'runtime':{'python':platform.python_version(),
             'implementation':platform.python_implementation(),'platform':platform.system(),'pid':os.getpid(),
             'uptime_seconds':max(0, int(time.monotonic()-started_at)) if started_at is not None else None},

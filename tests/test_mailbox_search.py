@@ -76,3 +76,20 @@ def test_index_migration_failure_is_atomic_and_preserves_original_history(tmp_pa
     index = SearchStore(store)
     assert len(index.search('C111','green'))==1
     store.close()
+
+
+def test_unsupported_fts_refuses_before_creating_any_database_state(tmp_path, monkeypatch):
+    import sqlite3
+
+    from src.agentbus_service import MessageStore
+
+    original = sqlite3.connect
+    def without_fts(*args, **kwargs):
+        db = original(*args, **kwargs)
+        db.create_function("sqlite_compileoption_used", 1, lambda _option: 0)
+        return db
+    monkeypatch.setattr(sqlite3, "connect", without_fts)
+    destination = tmp_path / "new-store" / "messages.sqlite3"
+    with pytest.raises(RuntimeError, match="FTS5"):
+        MessageStore(destination)
+    assert not destination.parent.exists()

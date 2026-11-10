@@ -1,6 +1,8 @@
 # Changelog
 
-## [0.10.0] - 2026-11-09
+## [0.10.0] - 2026-11-10
+
+- Accept explicitly configured Slack command aliases at both ingress gates without rewriting audit payloads, human text or authorization scope.
 
 - Construct reliable operator federation, scoped mailbox search, local MCP tools and explicit request diagnostics. This candidate has not completed release custody or live qualification.
 - Verify the real MCP stdio client boundary and document scoped recovery, continuity backups and explicit issue ownership.
@@ -93,6 +95,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+- Plan acknowledgement-safe automatic retention and quiet-agent backoff for 0.11; preserve the fourteen-day minimum and record the operator-approved live-canary substitution. No runtime policy is enabled by this plan.
 
 - Begin governed0.10/0.11 construction for reliable operator federation, search and local adapters, followed by controlled client publishing. Planned capabilities are not released.
 

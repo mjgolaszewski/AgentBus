@@ -71,14 +71,34 @@ workitems:
   acceptance_evidence:
   - test
   - contract-test
+- id: P14-P3-02
+  priority: P3
+  status: TODO
+  summary: Activity-aware quiet polling and acknowledgement-safe automatic retention
+  acceptance:
+  - Automatic purge preserves the thirty-day default and a fourteen-day floor after meaningful per-message lifecycle
+    transitions; retain original request and retirement identities
+  - Inactive or stopped agents do not imply acknowledgement; unsettled or unacknowledged required recipients and
+    reference or replay dependencies remain pinned
+  - Quiet polling reuses delivered backoff with separately bounded safety controls; routine polling does not extend
+    all historical payload lifetimes
+  - Existing worker performs bounded opt-in dry-run-first retention batches with receipt audit and no new daemon;
+    abandoned work needs explicit operator disposition
+  - Old cursor and UUID lookups distinguish retired history from never accepted; FTS retirement stays transactional
+    and scope-bound
+  acceptance_evidence:
+  - test
+  - contract-test
 - id: P14-P4-01
   priority: P4
   status: TODO
   summary: Complete issue editorial skill and0.11 release custody
   acceptance:
   - All issue112 sections have evidence or agreed external-owner disposition; no planned feature portrayed as released
-  - Final canonical PR main archive isolated install local adapter tests and authorized client publication canary
-    are authenticated
+  - Final canonical PR main archive isolated install local adapter tests and operator-approved two-location substitute
+    canary are authenticated
+  - Production-client live canary waived by operator; retain isolated publication and adapter negative controls
+    without provisioning or credential replication
   acceptance_evidence:
   - test
   - contract-test

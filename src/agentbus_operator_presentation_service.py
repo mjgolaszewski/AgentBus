@@ -35,7 +35,13 @@ def health_text(snapshot):
     location = snapshot.get('location', {})
     label = location.get('value') or 'not configured'
     warning = ' (configuration conflict with federation prefix)' if location.get('conflict') else ''
-    sections = ['*AgentBus health*', f"Location: `{label}`{warning}\nCommand: `{snapshot.get('command', 'not observed')}`", '*Service*\n'
+    command = snapshot.get('command', 'not observed')
+    commands = f"Command: `{command}`"
+    if snapshot.get('command_aliases'):
+        commands += "\nAliases: " + ", ".join(f"`{name}`" for name in snapshot['command_aliases'])
+    if snapshot.get('invoked_command') not in (None, command):
+        commands += f"\nInvoked: `{snapshot['invoked_command']}`"
+    sections = ['*AgentBus health*', f"Location: `{label}`{warning}\n{commands}", '*Service*\n'
         f"Version `{snapshot['version']}`; protocol `{snapshot['protocol_version']}`; participation `{snapshot['participation_version']}`\n"
         f"{runtime['implementation']} Python `{runtime['python']}` on {runtime['platform']}; PID `{runtime['pid']}`\n"
         f"Uptime `{str(uptime)+'s' if uptime is not None else 'not observed'}`; Slack `{connection}`\n"

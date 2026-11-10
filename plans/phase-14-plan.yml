@@ -25,6 +25,7 @@ delivery_contract:
   - Durable publication custody and uncertain delivery recovery
   - Authenticated opt-in loopback A2A mailbox adapter
   - Interruption-aware resume and optional private stale notices
+  - Activity-aware quiet polling and acknowledgement-safe automatic retention
   - Complete issue editorial skill and0.11 release custody
   parallelizable_workstreams:
   - id: P14-WS1
@@ -41,6 +42,14 @@ scope_lock:
   statement: Each Slack installation has its own locally protected credential reference and verified workspace/bot
     binding; a destination never falls back to coordination credentials or acquires a Socket Mode connection. No
     credential replication or live provisioning is authorized by construction.
+- order: 3
+  statement: P14-P3-02 follows interruption observations and versions automatic retention separately; minimum fourteen-day
+    payload floor, actual required acknowledgements and all custody/reference pins precede automatic purge. No new
+    daemon or automatic semantic ACK.
+- order: 4
+  statement: Production-client live canary waived by operator. Use the approved two-location live arrangement plus
+    isolated publication/A2A/MCP controls; no client production installation or credential distribution is required
+    or authorized for release qualification.
 verification_plan:
 - make governance-validate
 - make contract-test

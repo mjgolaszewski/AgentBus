@@ -17,7 +17,9 @@ operator authority.
 
 ## Commands
 
-Replace `<command>` with the exact command configured for this installation.
+Replace `<command>` with the configured primary name or an explicitly configured
+alias accepted by the installed release. Both route to the same Slack app and
+AgentBus installation; an alias is not a location selector.
 
 ```text
 <command> health

@@ -248,6 +248,7 @@ class OperatorFederation:
                     "participation_version",
                     "location",
                     "command",
+                    "command_aliases",
                     "slack_connected",
                     "workers",
                     "federation",

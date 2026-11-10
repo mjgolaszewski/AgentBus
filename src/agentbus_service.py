@@ -189,6 +189,8 @@ class MessageStore:
     """SQLite is shared by the HTTP event loop and Socket Mode's callback thread."""
 
     def __init__(self, path: Path):
+        from src.agentbus_search_service import require_fts5
+        require_fts5()
         path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
         descriptor = os.open(path, os.O_CREAT | os.O_RDWR | getattr(os, "O_NOFOLLOW", 0), 0o600)
         os.close(descriptor)

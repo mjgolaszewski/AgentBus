@@ -83,15 +83,26 @@ execution_evidence:
   - Candidate8a108ef passed preflight but PR truth rejected contract-test and Python3.14 receipts plus dependent
     security finding proof and review counts. Actual producer lists omitted the four newly declared test files.
     Populations now match and a cross-authority regression passes; final native proof remains pending. The failed
-    prospective temporary evidence was automatically removed by certified machinery; exact stderr is retained
-    privately and diagnostic-retention behavior reported to its owner without SDK changes.
-  - Candidate02623d2 canonical prospective passed all19 producers and bounded PR truth, with provider proof
-    still required. Consolidated review then found malformed MCP request identities could be reflected and
-    envelopes misclassified as parameter errors. Explicit envelope validation now returns a null identity and
-    Invalid Request without invoking tools; valid following messages remain usable.
-  - PR113 protected merge06b2b18 and exact-main42724736456 are green. Provider PR42724178676 JUnit archive
-    digests were verified:737 contract and895 Python3.14 cases, zero failures errors or skips; each includes
-    all36 new feature cases. P13P5 continues with real-process MCP client and recovery/editorial traceability.
+    prospective temporary evidence was automatically removed by certified machinery; exact stderr is retained privately
+    and diagnostic-retention behavior reported to its owner without SDK changes.
+  - Candidate02623d2 canonical prospective passed all19 producers and bounded PR truth, with provider proof still
+    required. Consolidated review then found malformed MCP request identities could be reflected and envelopes misclassified
+    as parameter errors. Explicit envelope validation now returns a null identity and Invalid Request without invoking
+    tools; valid following messages remain usable.
+  - PR113 protected merge06b2b18 and exact-main42724736456 are green. Provider PR42724178676 JUnit archive digests
+    were verified:737 contract and895 Python3.14 cases, zero failures errors or skips; each includes all36 new feature
+    cases. P13P5 continues with real-process MCP client and recovery/editorial traceability.
+  - Archive-bound consumer review found its approved command alias depended on local overlays. Explicit bounded
+    aliases now share both ingress checks and preserve actual payload;71 focused Slack cases pass on dirty source,
+    no final proof inferred.
+  - FTS capability failure was reproduced creating filesystem state before rejection. An in-memory capability check
+    now runs before directory or database creation;38 scoped search/channel/inventory cases pass. Alias lint passes
+    and explicit command narrowing resolves the initial typing diagnostic; all77 production files pass typing.
+  - Offline copied-store comparison preserved every original table row hash; FTS added38,232,064 persistent bytes
+    plus observed WAL38,472,592 on a45,375,488-byte private input. Store-only initialization1.072s and peakRSS delta1,836KiB;
+    no service-idle or live-provider inference.
+  - Exact-main42728596142 is green on ac89f8d; reproduced candidate archive hash matches provider release-smoke
+    output. Consumer installer and alias compatibility are being qualified before any live cutover.
 closeout_requirements:
   claims:
     workitems_closed:
@@ -127,4 +138,6 @@ known_constraints:
 - AHP atomic wake hostile-agent isolation and public A2A deployment remain unqualified
 - One executor standard pipeline and consolidated review; no new broker database scheduler or background daemon
 next_work:
-- implement scoped workitems and record execution evidence in this log
+- Finish alias compatibility and exact-subject installer/archive qualification
+- Complete approved two-location live acceptance with explicit destination grants backup rollback and resource admission
+- Authenticate P13 computed closure before activating planned P14

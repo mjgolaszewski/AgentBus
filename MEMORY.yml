@@ -80,6 +80,7 @@ known_constraints:
   - Source work advances in active P13; P14 awaits computed P13 closure; no inherited hotfix retirement or computed phase closure is inferred from authored DONE entries or component evidence
   - Complete editorial review retains exact line coverage hashes and dispositions, excludes BCF machinery and changelog, and preserves historical proof; current capability text links Experimenters guidance
   - Historical inputs may be cold-archived only with verified content manifests restoration instructions and durable references; live environments Git objects credentials databases and service volumes remain protected
+  - Automatic retention is planned for P14 only; fourteen-day minimum, thirty-day default, unresolved and unacknowledged custody pinned; production-client live canary waived for approved two-location substitution
 reusable_commands: [make governance-validate, make architecture-test, make lint, make typecheck, make test, make release-check]
 references:
   governance: [AGENTS.yml, governance-profile.yml, architecture-boundaries.yml, contracts/observability/v1/, contracts/codex-wake/v1/, contracts/participation/v2/participation.contract.yml, contracts/channels/v1/channel-isolation.contract.yml, plans/phase-ledger.yml, plans/phase-history.yml, docs/OPERATIONS.md]

@@ -36,5 +36,5 @@ execution_phases:
   - {phase_id: P11, build_block: "qualified_federation_runtime", objective: "complete Issue #48 federation only after provider fan-out and origin authentication are qualified", release_train: release_11}
   - {phase_id: P12, build_block: owner_wake_qualification, objective: "Issue75 offline owner-wake qualification, immutable channel isolation and bounded reliability repair; live owner capability remains gated", release_train: release_12}
   - {phase_id: P13, build_block: reliable_operator_federation, objective: Reliable operator federation scoped mailbox search and local MCP, release_train: release_13}
-  - {phase_id: P14, build_block: controlled_client_publishing, objective: Approved client publishing local A2A and interruption-aware monitoring, release_train: release_14}
+  - {phase_id: P14, build_block: controlled_client_publishing, objective: Approved client publishing local A2A recovery and acknowledgement-safe retention, release_train: release_14}
 acceptance: {release_gate: make release-check, evidence_location: phases/}
