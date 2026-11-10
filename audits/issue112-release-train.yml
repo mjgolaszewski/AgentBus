@@ -187,7 +187,7 @@ source_slice:
 editorial_review:
   inventory: audits/editorial-review.yml
   scope: Per-document complete current product line ranges, hashes and dispositions; BCF machinery/changelog excluded.
-  qualification: Editorial review only; final-subject release proof remains pending.
+  qualification: "Line coverage, exact source hashes and dispositions are recorded in the inventory; computed final-subject release proof is separate authority."
 context_budget_change: Canonical representation registry KiB cap increases44 to50 only for explicit signed operator
   frame and two typed payload owners; no runtime memory or retention budget changed
 protected_construction:
@@ -228,8 +228,7 @@ planned_retention_extension:
   - P13 computed closure
   - P14-P3-01 observations
   limits: No inference of agent execution, no implicit acknowledgement or automatic abandonment, no live policy activation
-  current_state: Implemented locally with strict semantic ACK and reference closure; optional live enablement not
-    performed.
+  current_state: "Implemented on protected construction subject with strict semantic ACK/reference closure; default stays disabled and no live retention policy was enabled."
 alias_compatibility_followup:
   workitem: P13-P2-01
   trigger: Consumer archive review identified an approved alternate command depended on local overlays; canonical
@@ -263,7 +262,7 @@ planned_mobile_followup:
   owner: P14-P0-02
   operator_disposition: Explicitly deferred to0.11
   scope: Smart-punctuation option entry and clearly visible retained-request refresh
-  current_state: Implemented locally for independent 0.11 qualification, not yet published.
+  current_state: "Implemented and covered by authenticated0.11 construction controls; publication authority is the final immutable release."
 protected_capacity_repair:
   pull_request: 116
   candidate: 682f5e1c270eadf10d88fbb2ce5a26a00a13b68d
@@ -518,8 +517,7 @@ peer_recovery_feedback:
     owners; recovery guidance describes evidence roles without implementing another authority system.
 p14_candidate_review:
   version: 0.11.0
-  qualification: Local implementation only; canonical pipeline, protected main, archive/install, authorized acceptance
-    and publication pending.
+  qualification: "Historical construction review; protected progress and approved live substitute evidence follow below. Current-tree canonical truth and immutable assets govern final closure/publication."
   behavioral_diagnostics:
     contract_producer:
       passed: 852
@@ -547,3 +545,68 @@ p14_candidate_review:
     evidence: 16 focused cases pass; three additive mutation controls registered. Current-source canonical proof still
       pending.
     scope: No runtime dependency, provider credential, worker, public listener or host authority added.
+
+p14_protected_progress:
+  scope: Historical authenticated construction progress on the named subject; final closure is computed separately
+  commit: d02e0a1adbd7c65b1fde9508bbf6b080a707483d
+  tree: de6352e3d9a9f280d74e9ca0ccd2ff9cfeb66c75
+  pull_request: 118
+  protected_pr_run: 42795487070
+  exact_main_run: 42796724782
+  original_provider_zip_digests_verified: 12
+  computed_effective_state: active
+  predicate: pull_request_progress_valid
+  actual_contract_cases: 854
+  actual_python314_cases: 1013
+  new_feature_module_cases_in_each: 58
+  archive_bytes: 6738849
+  archive_sha256: c63794cbbea94b63f10918629d6d5303943d49c4dc76e00f145512eb5bb6c454
+  isolated_install_runtime_and_skill: passed
+  remaining: live substitute acceptance and final closure/custody; not stable publication
+
+p14_footprint_comparison:
+  baseline: 0c772fabd1a08f6602b8c2bf98f7e7a3fc6e0171
+  candidate: d02e0a1adbd7c65b1fde9508bbf6b080a707483d
+  retained_raw_report_sha256: 83f561bd6abeda08f395b9c6af9ad83e3efda9be5f66f78621c8e25ef591d0f3
+  method: Separate immutable source processes; identical external dependency lock and interpreter; public API only; isolated databases and simulated Slack provider
+  workload: Five grant-enrolled sessions, four writers, one reader,100 direct messages,100 measured queries per operation after five warmups
+  optional_features: Default disabled; no live service credentials or provider traffic
+  idle_sample_seconds_each: 120
+  idle_provider_calls_each: 0
+  idle_runtime_output_bytes_each: 0
+  idle_cpu: Both process counters below timer resolution; floating-point near-zero is not a literal zero-CPU guarantee
+  rss_after_bytes: {baseline: 68743168, candidate: 70660096, delta: 1916928}
+  closed_database_bytes: {baseline: 557056, candidate: 655360, delta: 98304}
+  search_index_bytes: {baseline: 0, candidate: 65536}
+  provider_calls_each: {auth_test: 1, chat_postMessage: 100}
+  median_response_bytes_each: {read: 11768, inbox: 13028}
+  median_read_ms: {baseline: 6.146, candidate: 6.104}
+  p95_read_ms: {baseline: 15.854, candidate: 7.503}
+  median_inbox_ms: {baseline: 7.957, candidate: 7.766}
+  p95_inbox_ms: {baseline: 9.944, candidate: 8.773}
+  candidate_search: {median_ms: 5.622, p95_ms: 6.103, median_response_bytes: 12070}
+  baseline_search: unsupported
+  limits: Small sequential shared-host sample with simulated provider; no causal speedup, real Slack performance, long-term growth or universal resource ceiling claim
+
+p14_live_substitute_acceptance:
+  subject: d02e0a1adbd7c65b1fde9508bbf6b080a707483d
+  original_request: a3bd8202-8147-4642-acc0-ccde6295d134
+  single_reply: 60f76f94-5e0d-45b7-9fc0-6d0e9fe8f58c
+  original_signed_wire3_frames_verified: 2
+  durable_custody_payload_and_parent_mapping: verified
+  actual_runtime_member_counts:
+    origin: 100
+    peer: 90
+  runtime_imports_each: 85
+  retained_original_corpus_sha256: fc69428ce03aa39e45a8bd80d63412e7da67c8164410668c07f39b958885bcd1
+  authenticated_review_sha256: 42a48a583a043bfcface20888301561cea2a81d091b306be66ec9d8dc31ebe82
+  production_client_live: Waived by operator; isolated exact-main publication and adapter controls retained
+  manual_011_slack_ui: Optional follow-up; no new blocker; original P13 privacy proof keeps original subject
+  execution_or_semantic_ack_inferred: false
+p14_closeout_authority:
+  authored_state: completed
+  computed_closure: Canonical current-subject BCF truth; not assigned by this audit
+  publication: Requires protected exact-main proof and immutable final tag/assets
+  source_applicability: Compare final runtime member bytes/modes with named live subject; preserve original evidence
+    identities
+  handoff: Final custodian release readback and scheduler acknowledgement required
