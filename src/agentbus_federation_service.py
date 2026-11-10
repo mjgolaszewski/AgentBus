@@ -82,6 +82,7 @@ class FederationStore:
                  *, trusted_origins: dict[str, str] | None = None):
         self._db, self._lock = db, lock
         self._trusted_origins = dict(trusted_origins or {})
+        self._custody_row_limit: int | None = None
         with self._lock, self._db:
             self._db.execute("""
                 CREATE TABLE IF NOT EXISTS bridge_obligations (
@@ -251,6 +252,24 @@ class FederationStore:
         else:
             self._db.execute('RELEASE bridge_accept')
 
+    def configure_capacity(self, rows: int | None) -> None:
+        """Operator startup configuration; lowering a limit never removes custody."""
+        if rows is not None and (type(rows) is not int or not 1 <= rows <= 65536):
+            raise ValueError('Federation custody rows must be an integer in1..65536')
+        self._custody_row_limit = rows
+
+    @property
+    def custody_row_limit(self) -> int:
+        return MAX_CUSTODY_ROWS if self._custody_row_limit is None else self._custody_row_limit
+
+    def capacity(self) -> dict[str, Any]:
+        with self._lock:
+            rows = {table: self._db.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0]
+                    for table in ('bridge_obligations', 'federation_origin_messages',
+                                  'federated_messages', 'federation_inbox_projection')}
+            return {'per_table_limit': self.custody_row_limit, 'rows': rows,
+                    'at_limit': [table for table, count in rows.items() if count >= self.custody_row_limit]}
+
     def _custody_writer(self) -> None:
         """Serialize quota inspection and allocation across independent writers."""
         if not self._db.in_transaction:
@@ -259,7 +278,7 @@ class FederationStore:
     def _custody_capacity(self, table: str) -> None:
         if table not in {'bridge_obligations', 'federation_origin_messages', 'federated_messages', 'federation_inbox_projection'}:
             raise ValueError('invalid custody table')
-        if self._db.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0] >= MAX_CUSTODY_ROWS:
+        if self._db.execute(f'SELECT COUNT(*) FROM {table}').fetchone()[0] >= self.custody_row_limit:
             raise CustodyCapacityError('federation custody capacity requires operator archival')
 
     def transition(self, origin_instance_id: str, origin_message_id: str,

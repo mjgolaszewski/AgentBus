@@ -162,6 +162,10 @@ def api(values: dict[str, str], path: str, payload: dict | None = None, *,
         recovery_code = ("enrollment_request_expired" if path == "/v1/sessions" and exc.code == 403
                          and payload is not None and payload.get("approval_request_id")
                          and exc.headers.get("X-AgentBus-Recovery-Code") == "enrollment_request_expired" else None)
+        if (exc.code == 503 and path in {'/v1/messages', '/v1/federation/messages'}
+                and exc.headers.get('X-AgentBus-Recovery-Code') == 'federation_custody_capacity'):
+            recovery_code = 'federation_custody_capacity'
+            suffix += '; federation custody row limit reached; operator capacity review required'
         raise ClientError(f"AgentBus returned HTTP {exc.code}{suffix}.", status=exc.code,
                           recovery_code=recovery_code) from None
     except (URLError, TimeoutError):

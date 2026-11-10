@@ -96,9 +96,12 @@ def health_text(snapshot):
             ('pickup_seconds','pickup'),('work_lease_seconds','work lease'),('epoch_seconds','epoch'),
             ('replay_seconds','replay'),('archive_seconds','archive'),('retention_seconds','retention'))))
     state = 'disabled' if not federation['configured'] else 'initialized' if federation['initialized'] else 'configured / awaiting transport'
+    custody_capacity = federation.get('custody_capacity')
+    capacity_note = (f"; per-table row limit `{custody_capacity['per_table_limit']}`; at-limit tables "
+                     f"`{', '.join(custody_capacity['at_limit']) or 'none'}`" if custody_capacity else '')
     sections.extend([f"*Federation*\nLocal bridge: `{state}`; channel `{federation['channel'] or 'none'}`\n"
         f"Pinned origins: {', '.join(federation['origins']) or 'none'}\nCheckpoints `{federation['checkpoints']}`; "
-        f"retained obligations `{sum(federation['custody'].values())}`\nRemote health: not observed",
+        f"retained obligations `{sum(federation['custody'].values())}`{capacity_note}\nRemote health: not observed",
         '*Qualification*\nProvider delivery, destination custody and semantic ACK are distinct. '
         'Owner interoperability and atomic idle-only wake remain unqualified.'])
     sections.append('Service health and enrollment are observations, not proof that an agent is actively monitoring or executing.')

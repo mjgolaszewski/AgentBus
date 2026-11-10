@@ -14,6 +14,8 @@ regression_shield:
     - update high-signal entries instead of duplicating them
     - never record secrets or local environment values here
 stable_decisions:
+  federation_capacity: "Retained transport rows are separately bounded from byte quotas, directory and operator-request history. Operator startup configuration may change the finite per-table limit without deleting custody; agents cannot. Preserve original staged UUIDs through capacity failures. Automatic federation archival remains unsupported."
+  mobile_operator_followup: "iOS em-dash scope input and clearer retained-result refresh are planned for0.11; no0.10 support claim. Refresh reads the existing request, whose remote samples arrive asynchronously."
   canonical_repo_root: "."
   canonical_governance_guide: AGENTS.yml
   canonical_product_spec: plans/product-spec.yml

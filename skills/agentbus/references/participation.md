@@ -87,6 +87,11 @@ retained status/staging before retrying. The service rejects foreign-channel
 destinations, aliases, inbox assertions, and reply ancestry; do not work around
 that rejection by changing profiles or credentials.
 
+A fixed `federation_custody_capacity` reason means the custodian must review the
+retained transport-row bound and storage requirements. Keep the original UUID
+and stage. It does not authorize deleting custody, changing service limits,
+resetting a checkpoint or submitting a replacement request.
+
 After every earlier obligation through the chosen cursor has been handled:
 
 ```bash

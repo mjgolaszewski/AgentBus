@@ -512,3 +512,34 @@ def test_recovery_rejects_noncanonical_budget_before_provider_or_checkpoint_work
     with pytest.raises(ValueError):
         asyncio.run(bridge.recover_once(limit=limit))
     assert not calls and stores['remote'].federation.checkpoint(reader) == before
+
+
+def test_configured_custody_bound_preserves_history_and_exact_replay(pair):
+    from src.agentbus_federation_service import CustodyCapacityError
+    bridges, stores, _, _ = pair
+    bridge, store = bridges['home'], stores['home']
+    store.federation.configure_capacity(2)
+    bridge.enqueue('configured-one', 'remote', payload())
+    original = store.federation.obligation('home', 'configured-one', 'remote')
+    bridge.enqueue('configured-two', 'remote', payload())
+    assert store.federation.capacity()['per_table_limit'] == 2
+    with pytest.raises(CustodyCapacityError):
+        bridge.enqueue('configured-three', 'remote', payload())
+    store.federation.configure_capacity(1)
+    bridge.enqueue('configured-one', 'remote', payload())
+    assert store.federation.obligation('home', 'configured-one', 'remote') == original
+    assert store.federation.capacity()['rows']['bridge_obligations'] == 2
+    store.federation.configure_capacity(3)
+    bridge.enqueue('configured-three', 'remote', payload())
+    assert store.federation.capacity()['rows']['bridge_obligations'] == 3
+    assert store.federation.obligation('home', 'configured-one', 'remote') == original
+
+
+@pytest.mark.parametrize('rows', [True, 0, -1, 65537, 1.5, '2048'])
+def test_custody_configuration_rejects_unbounded_or_ambiguous_values(pair, rows):
+    _, stores, _, _ = pair
+    store = stores['home']
+    before = store.federation.capacity()
+    with pytest.raises(ValueError):
+        store.federation.configure_capacity(rows)
+    assert store.federation.capacity() == before

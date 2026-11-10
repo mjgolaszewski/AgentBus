@@ -141,3 +141,17 @@ next_work:
 - Finish alias compatibility and exact-subject installer/archive qualification
 - Complete approved two-location live acceptance with explicit destination grants backup rollback and resource admission
 - Authenticate P13 computed closure before activating planned P14
+capacity_repair:
+  workitems:
+  - P13-P1-01
+  - P13-P2-01
+  - P13-P5-01
+  trigger: Actual ordinary outbound send rejected HTTP503 at retained transport table1024row bound; no payload or
+    checkpoint reset
+  implementation: Bounded operator startup row setting, per-table private health pressure, path/status-allowlisted
+    client recovery code and explicit atomic Slack admission rejection
+  supporting_validation: 231 focused cases passed initially; new fixture binding corrected and four affected cases
+    passed; no product failure inferred from test-secret setup error
+  canonical_proof: pending for repaired subject
+  live_scope: Prior protected candidate completed private human health/broadcast and real cross-location read receipts;
+    recovery exercise remains held for repaired source

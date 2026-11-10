@@ -1,6 +1,6 @@
 document:
   kind: participation_authorization_contract
-  version: 2.0.13
+  version: 2.0.14
   status: active
   path: contracts/participation/v2/participation.contract.yml
 extends: contracts/participation/v1/participation.contract.yml
@@ -158,7 +158,7 @@ mandatory_announcements:
   status: private_channel_scoped_complete_target_snapshot; four_targets_per_page; named_answers_and_pending_receipts
   discovery: results_without_ID_lists_up_to_40_recent_channel_local_polls; exact_control_UUID_lookup_retained
   navigation: private_results_previous_next_refresh_buttons; block_local_action_IDs_unique; page_suffix_must_match_locator; legacy_unsuffixed_buttons_retained; payload_locators_grant_no_authority
-  exclusions: no_forced_model_turn; no_proof_of_comprehension; offline_sessions_remain_pending_unless_declared_optional_lifecycle_read_expiry_applies; no_remote_fanout
+  exclusions: no_forced_model_turn; no_proof_of_comprehension; offline_sessions_remain_pending_unless_declared_optional_lifecycle_read_expiry_applies; plain_commands_have_no_remote_fanout; explicit_federation_uses_operator_federation_contract_v1
 
 slack_enrollment_approval:
   status: construction_unqualified_until_exact_subject_proof_and_bounded_live_validation
@@ -250,7 +250,8 @@ slack_command_configuration:
   owner: src/agentbus_settings_service.py
   setting: AGENTBUS_SLACK_COMMAND
   default: /agentbus
-  population: one_exact_operator_configured_command_per_service
+  aliases_setting: AGENTBUS_SLACK_COMMAND_ALIASES
+  population: one_exact_primary_plus_at_most_eight_explicit_distinct_aliases_on_same_app_and_service
   syntax: slash_then_lowercase_letter_then_at_most_31_lowercase_letters_digits_underscore_or_hyphen
   authorization: same_operator_allowlist_and_invoking_channel_checks_in_both_dispatch_layers
   rejection: unsupported_name_is_private_and_has_no_command_custody_or_effects

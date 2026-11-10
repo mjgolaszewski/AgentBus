@@ -239,3 +239,19 @@ def test_expired_request_never_issues_a_control(pair):
     deliver(b, a, "operator_result")
     assert a.operator.results(key, "U123", "C111")[0]["state"] == "expired"
     assert stores["beta"]._db.execute("SELECT count(*) FROM operator_controls").fetchone()[0] == 0
+
+
+def test_operator_capacity_rejection_rolls_back_local_and_remote_admission(pair):
+    from src.agentbus_operator_scope_service import scoped_command
+    stores, bridges, _ = pair
+    store, owner = stores['alpha'], bridges['alpha'].operator
+    store.operator_federation = owner
+    store.federation.configure_capacity(1)
+    owner.start(actor='U123', channel='C111', operation='health', location='beta',
+                text='', request_key='fill-capacity')
+    before = {table: store._db.execute('SELECT count(*) FROM '+table).fetchone()[0]
+              for table in ('operator_fanout', 'operator_fanout_targets', 'operator_controls', 'bridge_obligations')}
+    reply = scoped_command(('broadcast', None, 'must not partially admit'),
+                           {'user_id':'U123','channel_id':'C111','trigger_id':'full-broadcast'}, None, store)
+    assert reply.outcome == 'rejected' and 'No new operator request was admitted' in reply
+    assert before == {table: store._db.execute('SELECT count(*) FROM '+table).fetchone()[0] for table in before}

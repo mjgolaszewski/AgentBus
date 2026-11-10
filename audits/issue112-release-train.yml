@@ -203,11 +203,11 @@ editorial_review:
 - path: docs/recovery.md
   reviewed_lines:
   - 1
-  - 102
-  sha256: 18070034cad05a37b63837ec36ed46b7c86fea832dfd1e053c09463addd01701
+  - 118
+  sha256: ede2ff25aa296ed2ed150e781b6316de63ee5e6cbd903b905cdd3caa1da49628
   disposition: new
-  notes: Every line reviewed; recovery authority and current experimental limits explicit; no private deployments
-    or chronology in capability guidance. BCF machinery and changelog excluded.
+  notes: Line review of current authority, bounds, recovery, privacy and deferred mobile behavior; no automatic
+    archival or agent configuration authority
 - path: docs/OPERATIONS.md
   reviewed_lines:
   - 1
@@ -227,12 +227,11 @@ editorial_review:
 - path: .env.example
   reviewed_lines:
   - 1
-  - 56
-  sha256: 485a334c20d436600c0c12c3dcd4923fa81ca284092279ac6f408f04104a1948
+  - 60
+  sha256: bb88cbc66f794c3fbbecb36ef0c8a48ae732436909e79dea10e0dbfe95314f96
   disposition: updated
-  notes: 'Line-reviewed configuration and authority guidance: optional explicit aliases, one app/service, original
-    invocation and text, no location or channel change. No private deployment identifiers; BCF machinery and changelog
-    excluded.'
+  notes: Line review of current authority, bounds, recovery, privacy and deferred mobile behavior; no automatic
+    archival or agent configuration authority
 - path: docs/audiences/operators.md
   reviewed_lines:
   - 1
@@ -254,21 +253,35 @@ editorial_review:
 - path: docs/operator-federation.md
   reviewed_lines:
   - 1
-  - 90
-  sha256: c4862e1a6999e7d9059929db83b1d2bd2fbe9cab4f7fabb75b16af02d356a20d
+  - 106
+  sha256: d5541bb49c8ba2ad036b8b5b814113c05c619c8131eea255fd8396dd21a633e7
   disposition: updated
-  notes: 'Line-reviewed configuration and authority guidance: optional explicit aliases, one app/service, original
-    invocation and text, no location or channel change. No private deployment identifiers; BCF machinery and changelog
-    excluded.'
+  notes: Line review of current authority, bounds, recovery, privacy and deferred mobile behavior; no automatic
+    archival or agent configuration authority
 - path: skills/agentbus/references/participation.md
   reviewed_lines:
   - 1
-  - 136
-  sha256: 7692ac03a9efad0231308020d18757704adb4ccc4afce269b2f740f5d0a1c43f
+  - 141
+  sha256: 8672a137317bdb9c1104d7babe925133559d91739956aa5f58066850d685ce02
   disposition: updated
-  notes: 'Line-reviewed configuration and authority guidance: optional explicit aliases, one app/service, original
-    invocation and text, no location or channel change. No private deployment identifiers; BCF machinery and changelog
-    excluded.'
+  notes: Line review of current authority, bounds, recovery, privacy and deferred mobile behavior; no automatic
+    archival or agent configuration authority
+- path: contracts/federation/v1/federation.contract.yml
+  disposition: updated
+  reviewed_lines:
+  - 1
+  - 208
+  sha256: 081c3b28ca09a4d22bec655f21b436a929c96db46956fa3660aad15a1e86244a
+  notes: Line review of current authority, bounds, recovery, privacy and deferred mobile behavior; no automatic
+    archival or agent configuration authority
+- path: contracts/participation/v2/participation.contract.yml
+  disposition: updated
+  reviewed_lines:
+  - 1
+  - 286
+  sha256: 832ae0b0d5a4eb2feeca3ee37bc580a58d4527a9f1c8d6bd83b834254da7940c
+  notes: Line review of current authority, bounds, recovery, privacy and deferred mobile behavior; no automatic
+    archival or agent configuration authority
 context_budget_change: Canonical representation registry KiB cap increases44 to50 only for explicit signed operator
   frame and two typed payload owners; no runtime memory or retention budget changed
 protected_construction:
@@ -312,7 +325,7 @@ alias_compatibility_followup:
   workitem: P13-P2-01
   trigger: Consumer archive review identified an approved alternate command depended on local overlays; canonical
     ac89 accepted only one primary name
-  contract: contracts/participation/v2/participation.contract.yml version2.0.13
+  contract: contracts/participation/v2/participation.contract.yml version2.0.14
   owners:
   - src/agentbus_settings_service.py
   - src/agentbus_slack_socket_service.py
@@ -321,5 +334,19 @@ alias_compatibility_followup:
   boundary: Primary plus at most eight explicit valid distinct aliases; same app operator allowlist channel scope
     and signed operator authority
   retained_payload: Actual command preserved; no rewriting of human message or poll text
-  supporting_evidence: 71 focused Slack tests passed on dirty source; final canonical proof pending
-  deployment: No live config or source overlay applied; prior qualified candidate remains pinned for comparison
+  supporting_evidence: Protected PR115 and exact-main certification passed; repaired capacity subject requires canonical
+    qualification
+  deployment: Qualified prior candidate installed on approved pair; human private health and shared-read UI accepted,
+    no stable publication yet
+capacity_followup:
+  owner: P13-P1-01
+  boundary: Default1024 retained transport rows per table; explicit operator startup choice1..65536, no history
+    deletion/replay or checkpoint change
+  observation: Actual admission503 at full retained custody; original staged request and diagnostics retained privately;
+    logical bytes and host free space are separate
+  disclosed_limit: Automatic federation archival remains unsupported; unresolved rows stay pinned
+  proof: Focused behavioral controls and canonical final-subject proof required
+planned_mobile_followup:
+  owner: P14-P0-02
+  operator_disposition: Explicitly deferred to0.11
+  scope: Smart-punctuation option entry and clearly visible retained-request refresh

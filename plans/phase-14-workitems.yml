@@ -18,6 +18,19 @@ workitems:
   acceptance_evidence:
   - test
   - contract-test
+- id: P14-P0-02
+  priority: P0
+  status: TODO
+  summary: Mobile-safe Slack scope entry and clear retained-results refresh
+  acceptance:
+  - iOS em-dash and ASCII double-hyphen are equivalent only for declared Slack option prefixes and literal separators;
+    message content is unchanged
+  - Conflicting or unknown selectors fail before admission and existing operator/channel checks remain mandatory
+  - Refresh clearly presents updated results for the original request without creating another operation; stale
+    snapshots are labelled honestly
+  acceptance_evidence:
+  - test
+  - contract-test
 - id: P14-P1-01
   priority: P1
   status: TODO
