@@ -82,6 +82,11 @@ Only one text part, at most 6000 characters, is accepted. A server-generated tas
 ID is separate from that original message identity. A changed duplicate fails;
 unknown and foreign task lookups share the same denial. Listing defaults to 20,
 maximum 100, with scope-bound opaque continuation and no cross-channel population.
+This local profile accepts only integer-zero history length and string pagination
+tokens; omit unused settings. Empty output-mode preferences use the declared JSON
+default. The adapter retains at most 4096 task-index records. Capacity exhaustion
+rejects new tasks without pruning accepted identities; exact retained retries and
+lookups remain available.
 
 **Completed means origin durable mailbox admission.** This named operation can
 therefore return a terminal task even with normal blocking configuration. Its

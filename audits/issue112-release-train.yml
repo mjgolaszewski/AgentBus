@@ -539,3 +539,11 @@ p14_candidate_review:
       and extracted-helper mock import repaired; exact4-case regression passes.
     custody: Original diagnostics retained; native process exited and was reaped, original workspace fence independently
       reacquired; no merge, publication or computed closure claim.
+  subsequent_review:
+    terminal_truth: 436e963 rejected the changed hash-pinned external review; original registered report restored
+      exactly, applicability moved to audit index.
+    A2A_schema: Pinned v1.0.0 proto and accepted ADR001 require StringList objects in Agent Card security requirements.
+      Card and strict local-profile history/token decoding repaired; explicit empty output modes use JSON default.
+    evidence: 16 focused cases pass; three additive mutation controls registered. Current-source canonical proof still
+      pending.
+    scope: No runtime dependency, provider credential, worker, public listener or host authority added.

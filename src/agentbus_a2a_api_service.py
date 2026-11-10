@@ -5,7 +5,7 @@ import sqlite3
 from fastapi import HTTPException, Request, Response
 from pydantic import ValidationError
 
-from src.agentbus_a2a_service import A2ARejected, exact
+from src.agentbus_a2a_service import A2ARejected, exact, zero_history
 from src.agentbus_channel_api_service import resolve_principal
 from src.agentbus_delivery_api_service import send_message
 
@@ -50,7 +50,7 @@ def agent_card(request):
             "securitySchemes": {"bearer": {"httpAuthSecurityScheme": {"scheme": "Bearer"}},
                 "session": {"apiKeySecurityScheme": {"location": "header", "name": "X-AgentBus-Session-Token"}},
                 "inbox": {"apiKeySecurityScheme": {"location": "header", "name": "X-AgentBus-Inbox-ID"}}},
-            "securityRequirements": [{"schemes": {"bearer": [], "session": [], "inbox": []}}],
+            "securityRequirements": [{"schemes": {"bearer": {"list": []}, "session": {"list": []}, "inbox": {"list": []}}}],
             "skills": [{"id": "mailbox.accept", "name": "Accept mailbox delivery",
                 "description": "One exact recipient and text part; completion means origin durable admission only.",
                 "tags": ["mailbox", "delivery"]}]}
@@ -87,7 +87,7 @@ async def dispatch(request):
             result = owner.list_tasks(principal, params)
         elif method in {"GetTask", "CancelTask"}:
             exact(params, {"id", "historyLength"} if method == "GetTask" else {"id"})
-            if params.get("historyLength", 0) != 0:
+            if not zero_history(params.get("historyLength", 0)):
                 raise A2ARejected(-32602, "Task message history is unsupported")
             row = owner.row(principal, params.get("id"))
             if method == "CancelTask":

@@ -1,9 +1,4 @@
-# Historical external product review disposition
-
-This is a retained review of its named source baseline. Its phase names and
-deferred items describe that original subject, not current product authority.
-Use the [current contract model](../docs/contracts.md) and [security policy](../SECURITY.md)
-for implemented capabilities and disclosed residuals.
+# External product review disposition
 
 An external source review identified five material concerns in AgentBus 0.3.1:
 

@@ -101,24 +101,26 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 5
-  line_count: 5
-  sha256: 8574defb82a880789be05a319ad0913fc55499ecfe81e11768252d9599c5a714
+    - 10
+  line_count: 10
+  sha256: 0ba88d4a188dd1618b6d40cc259ff799c1bb0b4dd5b8a019455dfd9e8e29b522
   baseline_sha256: 8574defb82a880789be05a319ad0913fc55499ecfe81e11768252d9599c5a714
-  disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  disposition: updates
+  review_basis: 'Every current line reviewed, with changed spans rechecked: pinned historical review bytes preserved
+    outside applicability notices; local A2A follows pinned proto/ADR object shapes and discloses strict profile and
+    finite index. Editorial review does not establish release qualification.'
 - document: audits/2026-09-29-external-product-review.md
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 31
-  line_count: 31
-  sha256: f0e0b54a552de9361c8f7ebfead4d9d4ac39cefb370adb1dc4e6277d033ec7f6
+    - 26
+  line_count: 26
+  sha256: 6776a3d816f485e7437d45ed0eb8b1a9dff56c60846f76c127ad033fbc7acf65
   baseline_sha256: 6776a3d816f485e7437d45ed0eb8b1a9dff56c60846f76c127ad033fbc7acf65
-  disposition: updates
-  review_basis: Historical record retained with explicit applicability; superseded authorization is overridden by
-    the current versioned contract.
+  disposition: retained
+  review_basis: 'Every current line reviewed, with changed spans rechecked: pinned historical review bytes preserved
+    outside applicability notices; local A2A follows pinned proto/ADR object shapes and discloses strict profile and
+    finite index. Editorial review does not establish release qualification.'
 - document: docs/OPERATIONS.md
   review_status: application_sections_line_reviewed
   reviewed_lines:
@@ -332,13 +334,14 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 104
-  line_count: 104
-  sha256: 2181e0287c1ba62998e2fb16fe9f0ec26c60899b0f07d4b292aef0dedbe96f33
+    - 109
+  line_count: 109
+  sha256: 2a5230966107ea44d1245cecb382fedbb01cc94106303c0b59d3d6e2c0ee503e
   baseline_sha256: 4e2345b44376e270697d9b4a5c5b44c7f563d951d4594894c6601a126056bc3d
   disposition: updates
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: 'Every current line reviewed, with changed spans rechecked: pinned historical review bytes preserved
+    outside applicability notices; local A2A follows pinned proto/ADR object shapes and discloses strict profile and
+    finite index. Editorial review does not establish release qualification.'
 - document: docs/message-lifecycle.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -453,13 +456,14 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 29
-  line_count: 29
-  sha256: 42a25aea4c0e3c230f82f0d8063a26df2677638b1ad97c9ea08c7967891baa72
+    - 33
+  line_count: 33
+  sha256: 8d1104f4f3a9ae83edebd2f9ff878af8dcd60b9cde91ee4a9c47bdceb83b7882
   baseline_sha256: null
   disposition: new
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: 'Every current line reviewed, with changed spans rechecked: pinned historical review bytes preserved
+    outside applicability notices; local A2A follows pinned proto/ADR object shapes and discloses strict profile and
+    finite index. Editorial review does not establish release qualification.'
 - document: contracts/mailbox/v1/mailbox.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:

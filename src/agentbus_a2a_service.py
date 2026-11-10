@@ -32,6 +32,11 @@ def exact(value, allowed):
     return value
 
 
+def zero_history(value):
+    """The local mailbox profile accepts only an explicit integer-zero history."""
+    return type(value) is int and value == 0
+
+
 def task_scope(principal):
     return [principal.chat_id, principal.session_id, principal.channel, principal.inbox_id]
 
@@ -61,8 +66,8 @@ def decode_intent(params):
         raise A2ARejected(-32602, "Exactly one bounded text part is supported")
     config = exact(params.get("configuration", {}), {"acceptedOutputModes", "returnImmediately", "historyLength"})
     if ("returnImmediately" in config and type(config["returnImmediately"]) is not bool
-            or "historyLength" in config and config["historyLength"] != 0
-            or "acceptedOutputModes" in config and config["acceptedOutputModes"] != ["application/json"]):
+            or not zero_history(config.get("historyLength", 0))
+            or "acceptedOutputModes" in config and config["acceptedOutputModes"] not in ([], ["application/json"])):
         raise A2ARejected(-32602, "Unsupported send configuration")
     text = parts[0]["text"]
     if not isinstance(text, str) or not text.strip() or len(text) > 6000:
@@ -135,10 +140,12 @@ class A2AStore:
         # no global position, timestamp or foreign activity count is exposed.
         exact(params, {"pageSize", "pageToken", "contextId", "status", "historyLength"})
         limit = params.get("pageSize", 20)
-        if type(limit) is not int or not 1 <= limit <= 100 or params.get("historyLength", 0) != 0:
+        if type(limit) is not int or not 1 <= limit <= 100 or not zero_history(params.get("historyLength", 0)):
             raise A2ARejected(-32602, "Bounded page size and zero history required")
         if params.get("status", "TASK_STATE_COMPLETED") != "TASK_STATE_COMPLETED":
             raise A2ARejected(-32602, "Only completed mailbox-admission tasks are supported")
+        if "pageToken" in params and not isinstance(params["pageToken"], str):
+            raise A2ARejected(-32602, "Pagination token must be a string")
         scope = self._scope(principal)
         where, values = "scope=?", [scope]
         if "contextId" in params:

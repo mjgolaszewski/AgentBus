@@ -94,6 +94,15 @@ def test_a2a_private_card_and_pagination_are_scope_bound(adapter):
     assert card["supportedInterfaces"][0]["protocolVersion"] == "1.0"
     assert not card["capabilities"]["streaming"] and not card["capabilities"]["pushNotifications"]
     assert "roster" not in str(card).lower()
+    # Pinned v1.0.0 a2a.proto: SecurityRequirement.schemes maps to StringList
+    # messages, whose JSON shape is an object containing the repeated list field.
+    requirements = card["securityRequirements"]
+    assert len(requirements) == 1 and set(requirements[0]) == {"schemes"}
+    schemes = requirements[0]["schemes"]
+    assert set(schemes) == {"bearer", "session", "inbox"}
+    for scopes in schemes.values():
+        assert isinstance(scopes, dict) and set(scopes) == {"list"}
+        assert scopes["list"] == []
     ids = {rpc(params=intent()).json()["result"]["task"]["id"] for _ in range(3)}
     first = rpc("ListTasks", {"pageSize": 2}).json()["result"]
     second = rpc("ListTasks", {"pageSize": 2, "pageToken": first["nextPageToken"]}).json()["result"]
@@ -125,3 +134,19 @@ def test_a2a_disabled_or_nonloopback_is_unavailable(tmp_path):
         assert client.post("/a2a", headers={"Authorization": "Bearer test"}, json={}).status_code == 404
     finally:
         client.close()
+
+
+def test_a2a_malformed_history_and_tokens_fail_before_admission(adapter):
+    store, _, _, _, rpc = adapter
+    for invalid in (False, True, "invalid", -1, 1, None, [], {}):
+        params = intent()
+        params["configuration"] = {"historyLength": invalid}
+        assert rpc(params=params).json()["error"]["code"] == -32602
+        assert rpc("GetTask", {"id": str(uuid4()), "historyLength": invalid}).json()["error"]["code"] == -32602
+        assert rpc("ListTasks", {"historyLength": invalid}).json()["error"]["code"] == -32602
+    for invalid in (False, 0, None, [], {}):
+        assert rpc("ListTasks", {"pageToken": invalid}).json()["error"]["code"] == -32602
+    assert store._db.execute("SELECT count(*) FROM local_delivery_obligations").fetchone()[0] == 0
+    params = intent()
+    params["configuration"] = {"acceptedOutputModes": [], "historyLength": 0}
+    assert rpc(params=params).json()["result"]["task"]["status"]["state"] == "TASK_STATE_COMPLETED"

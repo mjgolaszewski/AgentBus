@@ -6,6 +6,8 @@ document:
 protocol:
   specification: https://a2a-protocol.org/v1.0.0/specification/
   version: '1.0'
+  normative_schema: https://github.com/a2aproject/A2A/blob/v1.0.0/specification/a2a.proto
+  serialization: https://github.com/a2aproject/A2A/blob/v1.0.0/adrs/adr-001-protojson-serialization.md
   binding: JSON-RPC 2.0
   methods: [SendMessage, GetTask, ListTasks, CancelTask, GetExtendedAgentCard]
 scope:
@@ -14,6 +16,8 @@ scope:
   discovery: authenticated Agent Card only; unauthenticated callers receive no roster or private configuration
   primitive: named mailbox delivery, never recipient model execution
 invariants:
+- Agent Card security requirements retain ProtoJSON StringList objects for every required scheme; no flat-array shortcut
+- The local profile requires integer-zero history and string pagination tokens; explicit empty output modes mean no preference
 - Thin translation delegates to existing custody and principal owners; no independent mailbox, provider client, execution worker or public listener
 - Task identity binds original request UUID, immutable sender scope, recipient and exact text; changed retries fail
 - Get and List expose only tasks authored by the authenticated principal, with bounded scope-bound pagination
@@ -21,7 +25,7 @@ invariants:
 - Cancellation cannot revoke accepted local or remote delivery; unsupported cancellation is explicit and never fabricates success
 - A caller cannot select a service, borrow operator authority, inspect another identity or introduce an arbitrary remote URL
 unsupported: [streaming, push_callbacks, file_urls, remote_discovery, autonomous_execution, public_A2A_deployment]
-bounds: {request_bytes: 65536, text_characters: 6000, default_page: 20, maximum_page: 100}
+bounds: {request_bytes: 65536, text_characters: 6000, default_page: 20, maximum_page: 100, retained_task_index: 4096}
 acceptance:
 - protocol negotiation and strict malformed-envelope rejection precede all custody effects
 - wrong, revoked, stopped and foreign-channel session proofs fail closed
