@@ -2,6 +2,7 @@
 
 ## [0.11.0] - 2026-11-10
 
+- Retain authenticated two-location receipt and ancestry evidence, isolated installation and adapter controls, and a bounded resource comparison without inferring recipient execution or enabling optional features.
 - Add explicit named client updates with immutable drafts, private exact approval, destination-specific direct policy and honest provider recovery; ordinary bus chatter never forwards to clients.
 - Add an opt-in authenticated loopback A2A 1.0 mailbox-admission subset, preserving recipient work and acknowledgement as separate facts.
 - Add scoped resume gaps, coalesced actual API observations and explicitly requested private stale notices on the existing worker; no host execution authority is introduced.

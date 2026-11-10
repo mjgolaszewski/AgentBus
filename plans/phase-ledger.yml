@@ -19,7 +19,7 @@ active_phase:
   memory: MEMORY.yml
   spec: plans/product-spec.yml
   build_plan: plans/build-plan.yml
-  lifecycle_status: active
+  lifecycle_status: completed
   owner: "agentbus:coordinator"
   validation_commands: [make governance-validate, make architecture-test, make lint, make typecheck, make test, make release-check]
 hotfix_lane:
@@ -97,7 +97,7 @@ release_trains:
   release_9: {target_version: "0.9.0", status: active, focus: [outbound_only_federation, durable_bridge_obligations, remote_directory_sync, owner_mediated_idle_wake, final_bcf_custody]}
   release_10: {target_version: "0.9.1rc4", status: active, focus: [channel_isolation, operator_granted_membership, bounded_local_two_channel_qualification, privacy_safe_documentation, experimental_owner_wake_disclosure, human_reply_parity, private_health, shared_broadcast_and_poll_controls, slack_enrollment_approval, observed_service_workers, scoped_read_only_diagnostics]}
   release_13: {target_version: 0.10.0, status: completed, focus: [reliable_operator_federation]}
-  release_14: {target_version: 0.11.0, status: active, focus: [controlled_client_publishing]}
+  release_14: {target_version: 0.11.0, status: completed, focus: [controlled_client_publishing]}
 release_readiness:
   computed_by: bcf truth
   requirements_source: governance/evidence-policy.yml
