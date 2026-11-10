@@ -14,12 +14,14 @@ from src.agentbus_scope_client import scope, scoped_api
 from src.agentbus_transport_client import ClientError
 
 
-def request_stage(values, profile, key, payload, epoch, *, existing=False):
+def request_stage(values, profile, key, payload, epoch, *, existing=False, purpose="message"):
+    if purpose not in {'message', 'publication'}:
+        raise ClientError('Unknown request staging purpose')
     binding = scope(profile)
     if binding['service_url'] != values.get('AGENTBUS_URL'):
         raise ClientError('Request stage service differs from the joined profile')
     root = Path(values['AGENTBUS_STATE_DIR']).expanduser()
-    directory = root / 'send-requests'
+    directory = root / ('send-requests' if purpose == 'message' else 'publication-requests')
     if any(path.is_symlink() for path in (root, *root.parents, directory)):
         raise ClientError('Request stage directory cannot use symbolic links')
     directory.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -212,3 +214,39 @@ def acknowledge_handled(values, profile, through, *, api_call=None):
             raise ClientError('Lifecycle acknowledgement page did not advance; local state retained')
         after = through if not has_more else min(through, next_cursor)
     return {'through':after, 'requested_through':through, 'more':after < through, 'outcomes':counts}
+
+
+def receipt_capabilities(values, profile, *, api_call=None):
+    from src.agentbus_scope_client import scoped_api
+    try:
+        return scoped_api(values, '/v1/info', profile, api_call=api_call)
+    except ClientError as exc:
+        if exc.status != 423:
+            raise
+        # The protected outcome endpoint must authenticate this exact stopped
+        # session. This grants no fallback for send, history or work admission.
+        return None
+
+
+def status_command(ns, values, profile, *, api_call=None):
+    from src.agentbus_scope_client import scoped_api
+    if ns.message_id is not None:
+        from uuid import UUID
+        try:
+            if str(UUID(ns.message_id)) != ns.message_id:
+                raise ValueError()
+        except ValueError:
+            raise ClientError('Request identity must be a canonical UUID') from None
+        info = receipt_capabilities(values, profile, api_call=api_call)
+        if info is not None and 'authored-request-outcome-v1' not in info.get('features', []):
+            raise ClientError('Service lacks authored request lookup; acceptance remains unknown')
+        route = f'/v1/requests/{ns.message_id}/outcome'
+    else:
+        if ns.cursor < 1:
+            raise ClientError('Message cursor must be positive')
+        info = receipt_capabilities(values, profile, api_call=api_call)
+        if info is not None and 'message-lifecycle-v1' not in info.get('features', []):
+            raise ClientError('Recipient lifecycle is disabled or unsupported; use message-status --message-id UUID for authored custody. No acceptance or execution outcome is inferred.')
+        route = f'/v1/messages/{ns.cursor}/outcome'
+    print(json.dumps(scoped_api(values, route, profile, api_call=api_call), indent=2))
+    return 0

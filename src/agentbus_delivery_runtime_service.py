@@ -122,6 +122,9 @@ async def run_delivery(worker, bridge=None, *, connect=None):
         if observations is not None:
             observations.mark('delivery', 'running')
         try:
+            access = getattr(worker.store, "observations", None)
+            if access is not None:
+                access.tick()
             if worker.store.lifecycle.enabled:
                 worker.store.lifecycle.rotate_epochs()
                 channels = [item.channel for item in worker.workers] if hasattr(worker, 'workers') else [worker.channel]
@@ -130,6 +133,9 @@ async def run_delivery(worker, bridge=None, *, connect=None):
                 storage = worker.store.retention.storage()
                 if storage['accounted_bytes'] * 5 >= storage['limit_bytes'] * 4:
                     worker.store.retention.checkpoint()
+            maintenance = getattr(worker, "automatic_retention", None)
+            if maintenance is not None:
+                maintenance.tick()
             if connect is not None:
                 try:
                     bridge = await connect()
@@ -180,6 +186,9 @@ class DeliveryCoordinator:
         self.wake=asyncio.Event()
         self.offset=0
         self.observations = WorkerObservations()
+        self.publications = None
+        self.stale_notices = None
+        self.automatic_retention = None
 
     def bind_transport(self,bot_id,bridge):
         for worker in self.workers:
@@ -188,7 +197,9 @@ class DeliveryCoordinator:
 
     async def submit_once(self):
         self.cycle_incomplete = False
-        quota,deadline=8,time.monotonic()+30
+        publication_pending = self.publications is not None and self.publications.custody.next_ready() is not None
+        notice_pending = self.stale_notices is not None and self.stale_notices.pending()
+        quota,deadline=8 - int(publication_pending) - int(notice_pending),time.monotonic()+30
         workers=self.workers[self.offset:]+self.workers[:self.offset]
         self.offset=(self.offset+1)%len(workers)
         for worker in workers:
@@ -201,6 +212,19 @@ class DeliveryCoordinator:
                 self.cycle_incomplete = True
                 quota -= worker.cycle_attempts
                 LOGGER.warning('Channel cycle incomplete; retained custody remains channel-bound')
+        if publication_pending and self.publications is not None and time.monotonic() < deadline:
+            try:
+                await self.publications.submit_once(budget=1, deadline=deadline)
+            except (sqlite3.Error, OSError, ValueError):
+                self.cycle_incomplete = True
+                LOGGER.warning('Publication cycle incomplete; retained custody remains unchanged')
+
+        if notice_pending and self.stale_notices is not None and time.monotonic() < deadline:
+            try:
+                await self.stale_notices.submit_once(budget=1, deadline=deadline)
+            except (sqlite3.Error, OSError, ValueError):
+                self.cycle_incomplete = True
+                LOGGER.warning('Private notice observation incomplete; no automatic resubmission')
 
     async def run(self,bridge=None,*,connect=None):
         self.observations.mark('task', 'running')

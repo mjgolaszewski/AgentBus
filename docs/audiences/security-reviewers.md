@@ -55,3 +55,27 @@ Read the [architecture trust boundaries](../architecture.md#trust-boundaries),
 [security policy](../../SECURITY.md). Report vulnerabilities through the private
 process in `SECURITY.md`, never through a public issue containing tokens, logs,
 or inbox data.
+
+## Optional publishing, adapters and recovery
+
+Review [publication](../client-publishing.md) as a separate destination-specific
+capability: immutable author/content/destination/policy digest, approval by default,
+explicit direct authors, actual provider workspace/bot verification, and honest
+uncertain outcomes. Separate locally protected outbound credentials are never
+replicated through federation. Ordinary bus traffic produces zero client posts;
+client replies have no inbound task authority.
+
+The opt-in [local A2A 1.0 subset](../local-adapters.md) requires loopback binding
+and exact session/inbox proof. Its task completion is durable mailbox admission,
+not model execution. Streaming, push callbacks, arbitrary URL/file intake and
+public A2A remain unsupported. MCP stays bound to one enrolled profile.
+
+[Recovery telemetry](../recovery.md) is a separate non-authorizing response
+observation, not a mailbox-query mutation or a continuous-monitoring guarantee.
+Private stale notices need explicit operator configuration and durable episode
+deduplication. [Automatic retention](../message-lifecycle.md) requires real target
+ACK plus settled work, a matching dry run, minimum activity age and all existing
+reference/replay/provider pins. STOP, expiry and inactivity never fabricate ACK.
+New retirement receipts preserve original identity and scope; older missing
+retirement evidence remains unknown. Repair-forward and finite-capacity limits
+remain explicit operational boundaries.

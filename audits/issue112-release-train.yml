@@ -22,8 +22,8 @@ source_continuity:
   publication_remote: https://github.com/mjgolaszewski/AgentBus.git
   historical_primary: 14 qualification changes retained in verified private byte inventory and dedicated reachable
     preservation ref; not adopted
-  historical_workbenches: Clean followup and operator UX heads are incorporated; pagination ancestry is assessed
-    against refreshed main, no retirement yet
+  historical_workbenches: Clean followup and operator UX heads are incorporated; pagination ancestry is assessed against
+    refreshed main, no retirement yet
 issue_disposition:
   '1':
     scope: invariants
@@ -101,8 +101,8 @@ issue_disposition:
     restore_peer_recovery_handoff:
     - P13-P5-01
     guidance: docs/recovery.md
-    external: Custodians own persistent-volume declarations expected-state inventories backups restore execution
-      and installer entrypoint mapping. No mount heuristic or automatic restoration.
+    external: Custodians own persistent-volume declarations expected-state inventories backups restore execution and
+      installer entrypoint mapping. No mount heuristic or automatic restoration.
   '9':
     receipts:
     - P13-P1-02
@@ -160,7 +160,8 @@ external_owner_dispositions:
 - NFS durability and private backup scheduling remain custodian work; AgentBus supplies bounded runbook references
   only
 blocked_live_prerequisites:
-- P13 location pair approved; custodian window rollout and proof remain prerequisites
+- P14 live qualification uses approved two-location arrangement; production-client canary waived, no arbitrary client
+  credential provisioning authorized
 workflow: Canonical prospective submit truth and custody; one executor and actual pipeline; reuse unchanged valid
   evidence
 source_slice:
@@ -184,104 +185,9 @@ source_slice:
   - tests/test_runtime_inventory.py
   - tests/test_channel_isolation.py
 editorial_review:
-- path: docs/local-adapters.md
-  reviewed_lines:
-  - 1
-  - 50
-  sha256: 4e2345b44376e270697d9b4a5c5b44c7f563d951d4594894c6601a126056bc3d
-  disposition: new
-  notes: Every line reviewed for availability, configured alias, scope, authority, privacy and current contracts;
-    excludes BCF machinery and changelog
-- path: skills/agentbus/SKILL.md
-  reviewed_lines:
-  - 1
-  - 98
-  sha256: 1a61d7594ffa9f831014698f38dbb800b625da3d374a011938bd1112e74828dc
-  disposition: updated
-  notes: Every line reviewed for availability, configured alias, scope, authority, privacy and current contracts;
-    excludes BCF machinery and changelog
-- path: docs/recovery.md
-  reviewed_lines:
-  - 1
-  - 118
-  sha256: ede2ff25aa296ed2ed150e781b6316de63ee5e6cbd903b905cdd3caa1da49628
-  disposition: new
-  notes: Line review of current authority, bounds, recovery, privacy and deferred mobile behavior; no automatic
-    archival or agent configuration authority
-- path: docs/OPERATIONS.md
-  reviewed_lines:
-  - 1
-  - 341
-  sha256: 58412cf0f25d2f33f5ec786e1be2b97d6b34d412ab1a9e7937bda76af8283ff9
-  disposition: updated
-  notes: Every line reviewed; recovery authority and current experimental limits explicit; no private deployments
-    or chronology in capability guidance. BCF machinery and changelog excluded.
-- path: docs/audiences/experimenters.md
-  reviewed_lines:
-  - 1
-  - 99
-  sha256: 9245e2576deb229dbe0db5faf46adc63d5219c6bd74d92aa41061fd97c1d1cc1
-  disposition: updated
-  notes: Every line reviewed; recovery authority and current experimental limits explicit; no private deployments
-    or chronology in capability guidance. BCF machinery and changelog excluded.
-- path: .env.example
-  reviewed_lines:
-  - 1
-  - 60
-  sha256: bb88cbc66f794c3fbbecb36ef0c8a48ae732436909e79dea10e0dbfe95314f96
-  disposition: updated
-  notes: Line review of current authority, bounds, recovery, privacy and deferred mobile behavior; no automatic
-    archival or agent configuration authority
-- path: docs/audiences/operators.md
-  reviewed_lines:
-  - 1
-  - 335
-  sha256: 883bb4903d52dd26c2c29496a38928e192d4df0925334411792ed7d47725a97a
-  disposition: updated
-  notes: 'Line-reviewed configuration and authority guidance: optional explicit aliases, one app/service, original
-    invocation and text, no location or channel change. No private deployment identifiers; BCF machinery and changelog
-    excluded.'
-- path: docs/contracts.md
-  reviewed_lines:
-  - 1
-  - 141
-  sha256: 7694dbde5cc11b25d61a1830741a4f06100f0a181e5fb8f750b94243f6ad999a
-  disposition: updated
-  notes: 'Line-reviewed configuration and authority guidance: optional explicit aliases, one app/service, original
-    invocation and text, no location or channel change. No private deployment identifiers; BCF machinery and changelog
-    excluded.'
-- path: docs/operator-federation.md
-  reviewed_lines:
-  - 1
-  - 106
-  sha256: d5541bb49c8ba2ad036b8b5b814113c05c619c8131eea255fd8396dd21a633e7
-  disposition: updated
-  notes: Line review of current authority, bounds, recovery, privacy and deferred mobile behavior; no automatic
-    archival or agent configuration authority
-- path: skills/agentbus/references/participation.md
-  reviewed_lines:
-  - 1
-  - 141
-  sha256: 8672a137317bdb9c1104d7babe925133559d91739956aa5f58066850d685ce02
-  disposition: updated
-  notes: Line review of current authority, bounds, recovery, privacy and deferred mobile behavior; no automatic
-    archival or agent configuration authority
-- path: contracts/federation/v1/federation.contract.yml
-  disposition: updated
-  reviewed_lines:
-  - 1
-  - 208
-  sha256: 081c3b28ca09a4d22bec655f21b436a929c96db46956fa3660aad15a1e86244a
-  notes: Line review of current authority, bounds, recovery, privacy and deferred mobile behavior; no automatic
-    archival or agent configuration authority
-- path: contracts/participation/v2/participation.contract.yml
-  disposition: updated
-  reviewed_lines:
-  - 1
-  - 286
-  sha256: 832ae0b0d5a4eb2feeca3ee37bc580a58d4527a9f1c8d6bd83b834254da7940c
-  notes: Line review of current authority, bounds, recovery, privacy and deferred mobile behavior; no automatic
-    archival or agent configuration authority
+  inventory: audits/editorial-review.yml
+  scope: Per-document complete current product line ranges, hashes and dispositions; BCF machinery/changelog excluded.
+  qualification: Editorial review only; final-subject release proof remains pending.
 context_budget_change: Canonical representation registry KiB cap increases44 to50 only for explicit signed operator
   frame and two typed payload owners; no runtime memory or retention budget changed
 protected_construction:
@@ -291,6 +197,8 @@ protected_construction:
   pr_run: 42724178676
   main_run: 42724736456
   status: both provider workflows green; P13 closure and live acceptance pending
+  record_scope: Historical construction stage; current P13 publication and computed closure are established only by
+    p13_release_custody.
 live_acceptance_override: Production-client canary waived by operator; approved two-location arrangement substitutes,
   while offline publication and adapter controls remain required.
 planned_retention_extension:
@@ -298,16 +206,16 @@ planned_retention_extension:
   invariants:
   - Automatic purge preserves the thirty-day default and a fourteen-day floor after meaningful per-message lifecycle
     transitions; retain original request and retirement identities
-  - Inactive or stopped agents do not imply acknowledgement; unsettled or unacknowledged required recipients and
-    reference or replay dependencies remain pinned
+  - Inactive or stopped agents do not imply acknowledgement; unsettled or unacknowledged required recipients and reference
+    or replay dependencies remain pinned
   - Quiet polling reuses delivered backoff with separately bounded safety controls; routine polling does not extend
     all historical payload lifetimes
   - Existing worker performs bounded opt-in dry-run-first retention batches with receipt audit and no new daemon;
     abandoned work needs explicit operator disposition
   - Old cursor and UUID lookups distinguish retired history from never accepted; FTS retirement stays transactional
     and scope-bound
-  contract: Versioned automatic-retention contract modeled before P14 implementation; existing manual lifecycle
-    contract unchanged now
+  contract: Versioned automatic-retention contract modeled before P14 implementation; existing manual lifecycle contract
+    unchanged now
   owners:
   - src/agentbus_retention_service.py
   - src/agentbus_participation_service.py
@@ -319,8 +227,9 @@ planned_retention_extension:
   dependencies:
   - P13 computed closure
   - P14-P3-01 observations
-  limits: No inference of agent execution, no implicit acknowledgement or automatic abandonment, no live policy
-    activation
+  limits: No inference of agent execution, no implicit acknowledgement or automatic abandonment, no live policy activation
+  current_state: Implemented locally with strict semantic ACK and reference closure; optional live enablement not
+    performed.
 alias_compatibility_followup:
   workitem: P13-P2-01
   trigger: Consumer archive review identified an approved alternate command depended on local overlays; canonical
@@ -338,18 +247,23 @@ alias_compatibility_followup:
     qualification
   deployment: Qualified prior candidate installed on approved pair; human private health and shared-read UI accepted,
     no stable publication yet
+  record_scope: Historical construction stage; current P13 publication and computed closure are established only by
+    p13_release_custody.
 capacity_followup:
   owner: P13-P1-01
-  boundary: Default1024 retained transport rows per table; explicit operator startup choice1..65536, no history
-    deletion/replay or checkpoint change
+  boundary: Default1024 retained transport rows per table; explicit operator startup choice1..65536, no history deletion/replay
+    or checkpoint change
   observation: Actual admission503 at full retained custody; original staged request and diagnostics retained privately;
     logical bytes and host free space are separate
   disclosed_limit: Automatic federation archival remains unsupported; unresolved rows stay pinned
   proof: Focused behavioral controls and canonical final-subject proof required
+  record_scope: Historical construction stage; current P13 publication and computed closure are established only by
+    p13_release_custody.
 planned_mobile_followup:
   owner: P14-P0-02
   operator_disposition: Explicitly deferred to0.11
   scope: Smart-punctuation option entry and clearly visible retained-request refresh
+  current_state: Implemented locally for independent 0.11 qualification, not yet published.
 protected_capacity_repair:
   pull_request: 116
   candidate: 682f5e1c270eadf10d88fbb2ce5a26a00a13b68d
@@ -370,6 +284,8 @@ protected_capacity_repair:
     modules: 75
     unchanged_external_dependency_records: 81
   closure: Implementation authored complete; canonical final-subject closure and publication pending
+  record_scope: Historical construction stage; current P13 publication and computed closure are established only by
+    p13_release_custody.
 retained_live_acceptance:
   original_tested_subject: cae9750211d16c0b637b2c056f6990f3da376f84
   arrangement: Operator-approved two-location deployment; raw health and actor/channel details remain private
@@ -403,9 +319,9 @@ retained_live_acceptance:
     Settings and transport capacity owners have separate exact-main behavioral and negative controls. Original canary
     attribution is preserved, not relabelled as a new final-subject run.
   actual_outage_recovery: Retained-row exhaustion produced503; qualified bound2048 preserved all custody. Original
-    staged UUID and payload recovered to authenticated destination custody and one retained destination record.
-    No deliberate provider disconnect or pause was performed.
-  remaining: Canonical final-subject closure and release custody; no execution or semantic acknowledgement inferred
+    staged UUID and payload recovered to authenticated destination custody and one retained destination record. No
+    deliberate provider disconnect or pause was performed.
+  remaining: P13 complete on its protected release subject; P14 requires independent feature qualification
   final_pair_refresh:
     source: 07fc41161654932159c93488c0cd1ef3873516fa
     ci_receipt_sha256: 0a9179fd934f96bbb065da85e652806c097004d20d9313f44ff345b7e927dfc8
@@ -413,3 +329,221 @@ retained_live_acceptance:
     preserved_custody_and_checkpoints: true
     healthy: true
     scope: Original human canary source retained separately; final closeout has no production-code changes
+p13_release_custody:
+  commit: 46ae7e06507ee34e58e4b7a3840b501e56a94ad8
+  tag: v0.10.0
+  immutable: true
+  main_closure_run: 42762348706
+  computed_effective_state: closed
+  archive_sha256: 2bb0c6b8135233c957aaa0119b754d200c3e96c247d7b25f11fe68ced0d191f7
+  three_asset_bytes_verified_before_and_after_publish: true
+p14_construction_model:
+  P14-P0-01:
+    invariant: optional capabilities preserve immutable membership and default-off networking
+    owner_and_layer: service configuration and contract owners
+    primitive: versioned policy and additive SQLite migration
+    contracts:
+    - contracts/publication/v1/publication.contract.yml
+    - contracts/local-adapters/v1/a2a.contract.yml
+    - contracts/participation/v2/recovery-observation.contract.yml
+    - contracts/retention/v1/automatic-retention.contract.yml
+    dependencies:
+    - P13 computed closure
+    producer_consumer: configuration -> existing service composition
+    evidence_producers:
+      test: scripts/run_project_gate.py test
+      contract-test: scripts/run_project_gate.py contract-test
+    behavioral_population:
+    - tests/test_publications.py
+    - tests/test_a2a.py
+    - tests/test_observations.py
+    - tests/test_message_lifecycle.py
+    qualification: local implementation and diagnostic tests only; canonical final-subject proof pending
+    residuals: trusted workspace only; no production owner wake or public A2A
+  P14-P0-02:
+    invariant: literal text unchanged; malformed scope rejected before custody
+    owner_and_layer: service operator entry/presentation
+    primitive: declared option prefix and retained result projection
+    contracts:
+    - contracts/federation/v1/operator.contract.yml
+    dependencies:
+    - P13-P3-01
+    producer_consumer: Slack invocation -> existing operator command owner
+    evidence_producers:
+      test: scripts/run_project_gate.py test
+      contract-test: scripts/run_project_gate.py contract-test
+    behavioral_population:
+    - tests/test_operator_federation.py
+    - tests/test_slack_commands.py
+    qualification: local implementation and diagnostic tests only; canonical final-subject proof pending
+    residuals: trusted workspace only; no production owner wake or public A2A
+  P14-P1-01:
+    invariant: only explicit authorized updates allocate immutable drafts
+    owner_and_layer: service publication policy/custody infrastructure
+    primitive: PublicationInstallation PublicationDestination PublicationIntent
+    contracts:
+    - contracts/publication/v1/publication.contract.yml
+    dependencies:
+    - P14-P0-01
+    producer_consumer: exact-session CLI/API -> publication admission -> existing SQLite
+    evidence_producers:
+      test: scripts/run_project_gate.py test
+      contract-test: scripts/run_project_gate.py contract-test
+    behavioral_population:
+    - tests/test_publications.py
+    - tests/test_publication_client.py
+    qualification: local implementation and diagnostic tests only; canonical final-subject proof pending
+    residuals: trusted workspace only; no production owner wake or public A2A
+  P14-P1-02:
+    invariant: approval binds exact content and current destination policy
+    owner_and_layer: service publication approval owner and private UI adapter
+    primitive: immutable digest approval and explicit direct-author policy
+    contracts:
+    - contracts/publication/v1/publication.contract.yml
+    dependencies:
+    - P14-P1-01
+    producer_consumer: private operator review -> approved ready obligation
+    evidence_producers:
+      test: scripts/run_project_gate.py test
+      contract-test: scripts/run_project_gate.py contract-test
+    behavioral_population:
+    - tests/test_publications.py
+    qualification: local implementation and diagnostic tests only; canonical final-subject proof pending
+    residuals: trusted workspace only; no production owner wake or public A2A
+  P14-P1-03:
+    invariant: uncertain posting never becomes a blind retry or false cancellation
+    owner_and_layer: service publication persistence and bound provider adapter
+    primitive: durable original UUID and provider submission reservation
+    contracts:
+    - contracts/publication/v1/publication.contract.yml
+    dependencies:
+    - P14-P1-02
+    producer_consumer: ready obligation -> existing aggregate worker -> bound outbound Slack
+    evidence_producers:
+      test: scripts/run_project_gate.py test
+      contract-test: scripts/run_project_gate.py contract-test
+    behavioral_population:
+    - tests/test_publications.py
+    - tests/test_publication_client.py
+    qualification: local implementation and diagnostic tests only; canonical final-subject proof pending
+    residuals: trusted workspace only; no production owner wake or public A2A
+  P14-P2-01:
+    invariant: A2A completion is mailbox admission only
+    owner_and_layer: service A2A owner and thin HTTP adapter
+    primitive: MailboxIntent and exact-session task index
+    contracts:
+    - contracts/local-adapters/v1/a2a.contract.yml
+    dependencies:
+    - P14-P0-01
+    producer_consumer: loopback JSON-RPC -> existing send owner -> local custody
+    evidence_producers:
+      test: scripts/run_project_gate.py test
+      contract-test: scripts/run_project_gate.py contract-test
+    behavioral_population:
+    - tests/test_a2a.py
+    - tests/test_runtime_inventory.py
+    qualification: local implementation and diagnostic tests only; canonical final-subject proof pending
+    residuals: trusted workspace only; no production owner wake or public A2A
+  P14-P3-01:
+    invariant: actual access and unknown gaps confer no work or wake authority
+    owner_and_layer: service observation owner; client resume projection
+    primitive: bounded access episode and scoped resume checkpoint
+    contracts:
+    - contracts/participation/v2/recovery-observation.contract.yml
+    dependencies:
+    - P14-P0-01
+    producer_consumer: verified response -> observation; existing worker -> explicitly requested private notice
+    evidence_producers:
+      test: scripts/run_project_gate.py test
+      contract-test: scripts/run_project_gate.py contract-test
+    behavioral_population:
+    - tests/test_observations.py
+    - tests/test_recovery_client.py
+    - tests/test_poll_client.py
+    qualification: local implementation and diagnostic tests only; canonical final-subject proof pending
+    residuals: trusted workspace only; no production owner wake or public A2A
+  P14-P3-02:
+    invariant: every original target actually ACKs before automatic retirement
+    owner_and_layer: service lifecycle retention owner and existing worker
+    primitive: AutomaticRetentionPolicy semantic ACK time and retired-request receipt
+    contracts:
+    - contracts/retention/v1/automatic-retention.contract.yml
+    dependencies:
+    - P14-P3-01
+    producer_consumer: meaningful lifecycle transitions -> reference-closed dry run -> bounded apply
+    evidence_producers:
+      test: scripts/run_project_gate.py test
+      contract-test: scripts/run_project_gate.py contract-test
+    behavioral_population:
+    - tests/test_message_lifecycle.py
+    qualification: local implementation and diagnostic tests only; canonical final-subject proof pending
+    residuals: trusted workspace only; no production owner wake or public A2A
+  P14-P4-01:
+    invariant: only authenticated final-subject proof supports release closure
+    owner_and_layer: product editorial packaging and release custody owners
+    primitive: exact archive/install subject and line-reviewed capability inventory
+    contracts:
+    - contracts/publication/v1/publication.contract.yml
+    - contracts/local-adapters/v1/a2a.contract.yml
+    - contracts/participation/v2/recovery-observation.contract.yml
+    - contracts/retention/v1/automatic-retention.contract.yml
+    dependencies:
+    - all P14 implementation workitems
+    producer_consumer: qualified source -> protected main -> archive/install -> custodian canary -> release
+    evidence_producers:
+      test: scripts/run_project_gate.py test
+      contract-test: scripts/run_project_gate.py contract-test
+    behavioral_population:
+    - tests/test_runtime_inventory.py
+    - tests/test_architecture.py
+    qualification: local implementation and diagnostic tests only; canonical final-subject proof pending
+    residuals: trusted workspace only; no production owner wake or public A2A
+    external_prerequisites: Custodian-owned HOME/home-ci rollout and bounded acceptance after protected proof; production-client
+      canary explicitly waived. Credentials stay locally protected; no new external client provisioning gate.
+peer_recovery_feedback:
+  source_sha256: 7a229f2f7aa5bdf4df596f7bd9928bfa6658d600545d8057391e45dbfae45dd8
+  source_bytes: 4581
+  LIFECYCLE-CAPABILITY-DIAGNOSTIC:
+    workitems:
+    - P13-P1-01
+    - P13-P1-02
+    disposition: 'Delivered in qualified 0.10: explicit lifecycle-disabled/unsupported diagnostic without automatic
+      enablement, migration or checkpoint reset.'
+  AUTHORED-REQUEST-RECEIPT:
+    workitem: P13-P1-02
+    disposition: 'Delivered in qualified 0.10: original generated UUID and bounded custody receipt; destination custody
+      remains separate from execution and semantic ACK.'
+  remaining_named_suggestions: Runtime/controller inventories, runner readiness, absent-install recovery, durable
+    installation provenance and signed primary evidence indexes remain with existing installer/framework/custodian
+    owners; recovery guidance describes evidence roles without implementing another authority system.
+p14_candidate_review:
+  version: 0.11.0
+  qualification: Local implementation only; canonical pipeline, protected main, archive/install, authorized acceptance
+    and publication pending.
+  behavioral_diagnostics:
+    contract_producer:
+      passed: 852
+      failed: 1
+      failure: Closed API inventory assertion omitted five new operations; corrected and route mappings pass focused
+        check.
+    focused_authority_and_decoder: 41
+    focused_inventory_and_architecture: 9
+  quality: Lint and typing passed before final bounded decoder/registry correction; canonical pipeline requalifies
+    current bytes.
+  semantic_review: No source ownership violation remains at current analysis frontier; generated lock refresh is canonical
+    submission work, not manual repair.
+  first_canonical_attempts:
+    preparation: f7b29e9 inherited closure graph rejected before proof; canonical reconciliation produced cb875e1
+      PR-progress scope.
+    pipeline: cb875e1 failed client producer:316 passes and4 failures; declared compatibility selector population
+      and extracted-helper mock import repaired; exact4-case regression passes.
+    custody: Original diagnostics retained; native process exited and was reaped, original workspace fence independently
+      reacquired; no merge, publication or computed closure claim.
+  subsequent_review:
+    terminal_truth: 436e963 rejected the changed hash-pinned external review; original registered report restored
+      exactly, applicability moved to audit index.
+    A2A_schema: Pinned v1.0.0 proto and accepted ADR001 require StringList objects in Agent Card security requirements.
+      Card and strict local-profile history/token decoding repaired; explicit empty output modes use JSON default.
+    evidence: 16 focused cases pass; three additive mutation controls registered. Current-source canonical proof still
+      pending.
+    scope: No runtime dependency, provider credential, worker, public listener or host authority added.

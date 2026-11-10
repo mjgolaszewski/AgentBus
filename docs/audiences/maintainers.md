@@ -16,6 +16,13 @@ Use the [contract model](../contracts.md) and [Experimenters guide](experimenter
 when reviewing capability descriptions. The editorial audit records per-document
 line coverage and dispositions rather than inferring review from link checks.
 
+Review optional publishing, local A2A, access observations and automatic
+retention against their versioned owners in the [contract model](../contracts.md).
+Disabled optional features add no periodic provider work. A2A completion means
+admission, publication means an explicit named update, and automatic retention
+requires actual semantic ACK plus existing custody pins. Public A2A and atomic
+owner wake remain unqualified.
+
 ## Working path
 
 - Change dependency declarations and `uv.lock` together.

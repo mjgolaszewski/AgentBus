@@ -48,8 +48,10 @@ never reset an uncertain request to obtain another epoch.
 
 Use `agentbus pickup --identity ID --cursor CURSOR` when starting addressed
 work. The default receipt is stable for that session and cursor. After actually
-handling it, use `agentbus complete --identity ID --cursor CURSOR`, or the
-existing `agentbus ack --identity ID --through CURSOR`. ACK commits bounded
+handling it, use `agentbus complete --identity ID --cursor CURSOR`. Completion
+records work handling; the later `agentbus ack --identity ID --through CURSOR`
+records explicit semantic acknowledgement. An ACK may also pick up and complete
+eligible handled work through its existing bounded receipt path. ACK commits bounded
 server handling receipts before advancing the local cursor or retiring the
 presentation. Its result distinguishes handled, already handled, expired and
 legacy-unknown outcomes. Large ACK ranges can return a partial cursor and
@@ -184,7 +186,61 @@ against the migrated database.
 
 Legacy unknown and federated references stay pinned. Shared opaque Slack retry
 keys and control payloads also remain pinned under independent finite limits;
-their retirement is not qualified. Archive/purge require explicit operator
-application; no automatic history reclamation is claimed. Retained administrative
+their retirement is not qualified. Manual archive/purge require explicit operator application. The separately
+configured automatic policy below adds stricter acknowledgement and age checks;
+it supplies no legacy or federation reclamation. Retained administrative
 receipts, safety controls and external/client storage still require capacity
 planning. See [Experimenters](audiences/experimenters.md) for qualification rules.
+
+## Optional acknowledgement-safe automatic retention
+
+A matching qualified 0.11 service can enable bounded maintenance:
+
+```text
+AGENTBUS_AUTO_RETENTION=1
+AGENTBUS_AUTO_RETENTION_APPLY=0
+AGENTBUS_AUTO_RETENTION_DAYS=30
+```
+
+It is disabled by default. Start with dry-run mode and inspect private health for
+the selected channel's eligible archive/purge counts and bounded pinned-reason
+sample. Only after that review set `AGENTBUS_AUTO_RETENTION_APPLY=1` through the
+custodian's configuration workflow. Apply requires a retained matching dry-run
+receipt for the policy and channel/inbox bindings. Changing them invalidates the
+receipt; a missing receipt blocks application instead of silently authorizing it.
+
+The existing worker visits one configured channel per hourly tick with durable
+round-robin selection and mutates at most 100 payloads. It archives or purges one
+batch, not both. There is no new daemon, provider probe, vacuum or file cleanup.
+A stopped worker performs no maintenance; resumption rechecks current custody.
+Disabled channels keep their history and obligations.
+
+The activity window defaults to 30 days, accepts 14–365 days, and never shortens
+the existing creation/replay/provider retention guards. Its age starts after the
+latest meaningful message transition: creation, work outcome, actual semantic
+ACK or new provider observation. Routine polls, unrelated chatter, repeated ACKs
+and duplicate observations do not refresh every old message.
+
+Every original required recipient must have settled work and an actual semantic
+ACK. `complete` alone, expired-unclaimed work, a stopped or absent agent, and old
+handled rows without separate ACK evidence remain pinned. Legacy unknown, claims,
+ancestry, replay, unresolved/uncertain delivery, provider aliases, foreign schema
+references and federation pins remain authoritative. Inactivity never abandons
+work or creates an acknowledgement; unresolved work needs its owning operator's
+explicit disposition.
+
+Retirement removes searchable text transactionally. Public positions never reuse
+numbers. New retired authored UUID receipts retain scoped acceptance, original
+public position and retirement time; `message-status --message-id UUID` can
+separate retired from never-known history. Retirement performed before this
+receipt format cannot be reconstructed and stays unknown. Retired identities
+cannot allocate new custody, even under a fresh epoch. The finite retained UUID
+receipt limit is 65536; reaching it pins further retirement for operator review.
+Shared control payloads and federation history are not reclaimed by this policy.
+
+New extension custody in a lifecycle-enabled database advances an internal startup
+guard to 2 while public lifecycle and receipt wire semantics remain v1. Older
+released startup rejects that database. Preserve a verified backup before new
+writes; after publication/adapter/retirement custody is accepted, repair forward
+with the new binary and database. Non-lifecycle installations also require this
+operator-enforced repair-forward rule; they do not have that lifecycle guard.

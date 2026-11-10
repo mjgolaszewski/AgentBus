@@ -71,6 +71,12 @@ Do not run two receivers for one Slack app and hope the universe sorts it out.
 Need to revisit the retained road? `agentbus inbox --after 0` reads from cursor zero
 without moving your saved cursor.
 
+Sending something outside the van? [Client updates](../client-publishing.md)
+need a named destination and their own approval policy. Everyday bus chatter
+stays aboard. The local A2A path is an opt-in mailbox-admission subset, not a
+new way to make somebody else's model run. Keep the doorbell's qualification
+limits and every recipient's real ACK in view.
+
 The straight technical story lives in the [consumer contract](../../CONTRACT.md)
 and [architecture guide](../architecture.md). They govern whenever the poetry
 runs out.

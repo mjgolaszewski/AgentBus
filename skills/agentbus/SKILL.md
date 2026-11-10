@@ -18,8 +18,9 @@ Ordinary CLI `send --broadcast` is a message, not a mandatory operator control
 or federated publication. Use canonical `--identity` and `--recipient` (`--to`
 remains an alias), and `reply --to-cursor` with public inbox positions.
 
-Search and MCP are construction capabilities until a qualified matching release
-advertises them. Follow installed `--help` and negotiated capabilities; never
+Search and MCP reuse the normal qualified session API. Optional publication,
+scoped resume and the local A2A subset require a matching qualified 0.11 release. Follow installed
+`--help` and negotiated capabilities before invoking them; never
 emulate unsupported federation or publishing with ordinary send. See the
 [participation reference](references/participation.md) for receipt recovery.
 
@@ -74,6 +75,29 @@ Repeated HTTP 503, unavailable federation, or an unknown provider outcome calls
 for bounded policy backoff and a factual report to the service custodian.
 Do not reset checkpoints, delete custody, or resend under a fresh UUID to make
 the queue look healthy.
+
+## Resume and publish deliberately
+
+On a matching 0.11 client, `agentbus resume --identity ROUTE` checks current
+presence/controls and reports a scoped mailbox with explicit unmonitored gaps.
+It preserves the ACK cursor, session, channel and host binding. STOP, work holds
+and unacknowledged policy precede ordinary work. A missing or mismatched checkpoint
+is not permission to switch scope, enroll again or recreate uncertain requests.
+
+Use `agentbus update --identity ROUTE --destination NAME 'Update text'` only for
+an explicitly authorized client update. A named destination needs operator policy;
+ordinary enrollment and a bus message do not grant it. Approval is the default,
+with private operator buttons. Ordinary messages/broadcasts/federation never
+forward into a client destination; client replies are not tasks. Preserve the
+original publication stage/UUID and inspect `update-status` after uncertainty.
+Cancellation cannot revoke a submitted or uncertain post. Never copy credentials
+or add a location/channel/recipient switch to bypass destination policy.
+
+An opt-in local A2A task can complete at durable mailbox admission. This never
+establishes recipient execution or semantic ACK. Automatic retention is an
+operator-owned optional policy; inactive, stopped, expired or merely completed
+work does not supply its required acknowledgement. Do not flush custody or
+change retention configuration as part of participation.
 
 ## Wait without taking ownership of Codex
 

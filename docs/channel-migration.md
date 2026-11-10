@@ -1,11 +1,11 @@
-# Channel migration for 0.9.1
+# Offline channel migration
 
-This is an offline procedure for the 0.9.1 release. A bounded local
-two-channel migration/restart canary passed on its protected construction.
-Deployment remains a separate custodian action requiring a verified backup. Released 0.9.0 must not open
-a migrated database. Live multichannel readiness additionally needs final
-canonical proof, archive installation and a bounded two-channel Slack canary;
-see [Experimenters](audiences/experimenters.md).
+Move a populated single-channel store only with a matching qualified release,
+the service stopped and a verified consistent backup. A bounded two-channel
+migration/restart canary applies to its exact subject, not every installation.
+Old single-channel binaries must not open a migrated database. Each changed
+deployment needs applicable source/archive/install proof and its authorized
+bounded channel validation; see [Experimenters](audiences/experimenters.md).
 
 Channel migration does not activate the experimental message lifecycle.
 That is a separate [offline cutover](message-lifecycle.md) with a verified backup,
@@ -51,8 +51,9 @@ legacy database that has not completed this explicit migration.
 
 Install the matching client. It requires advertised session and channel-local
 cursor capabilities and rejects unsupported servers. Existing joined profiles
-must authenticate the same chat, session, service, channel and inbox. Disable and drain the workspace wake worker and stop the profile
-poll workers, then run `agentbus migrate-profile-scope --identity
+must authenticate the same chat, session, service, channel and inbox. Coordinate
+a drain of long-lived poll/wake clients with their owners, preserving enabled
+preferences and exact bindings, then run `agentbus migrate-profile-scope --identity
 PREFIX:REPO:NAME` to validate and rebuild legacy disposable projections. The
 migration keeps private backups and resumes from the existing ACK position;
 it does not acknowledge pending work. Mismatched state is evidence to retain,
@@ -84,5 +85,5 @@ identities and explicit cross-channel negative controls.
 Before accepting new writes, rollback may restore the verified backup. After
 new custody is accepted, retain the new binary and latest database; disable
 additional channels if needed and repair forward. Never restore an old snapshot
-over accepted obligations or run 0.9 against the migrated database. Live
+over accepted obligations or run an older incompatible writer against the migrated database. Live
 restarts, configuration and publication remain custodian actions.

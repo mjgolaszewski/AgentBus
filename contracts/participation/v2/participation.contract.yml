@@ -1,6 +1,6 @@
 document:
   kind: participation_authorization_contract
-  version: 2.0.14
+  version: 2.0.15
   status: active
   path: contracts/participation/v2/participation.contract.yml
 extends: contracts/participation/v1/participation.contract.yml
@@ -96,7 +96,7 @@ inheritance:
     PO-41: no_unjoined_destination_compatibility
     PO-45: suffix_full_ID_and_unique_current_identity_fragment_resolve_only_within_invoking_channel
 experimental_boundary:
-  multichannel: candidate_until_final_canonical_and_two_channel_live_evidence
+  multichannel: bounded_historical_subject_evidence_in_channel_contract; changed_subject_requires_applicable_release_proof
   AHP_or_native_queue: research_only_no_production_adapter
   atomic_idle_only_wake: unqualified
 slack_interaction:
@@ -161,7 +161,7 @@ mandatory_announcements:
   exclusions: no_forced_model_turn; no_proof_of_comprehension; offline_sessions_remain_pending_unless_declared_optional_lifecycle_read_expiry_applies; plain_commands_have_no_remote_fanout; explicit_federation_uses_operator_federation_contract_v1
 
 slack_enrollment_approval:
-  status: construction_unqualified_until_exact_subject_proof_and_bounded_live_validation
+  status: retained_implemented_contract; release_qualification_requires_exact_subject_proof_and_applicable_live_validation
   agent_command: join_without_grant_file_stages_private_secret_and_random_request_UUID
   http_path: existing_POST_sessions; approval_request_ID_and_profile_UUID_without_channel_selector
   pending: HTTP_202_no_session_or_message_authority; retry_same_private_staged_secret_and_immutable_subject
@@ -281,6 +281,13 @@ authored_request_query:
   capability: authored-request-outcome-v1
   path: GET /v1/requests/{request_id}/outcome
   authority: exact_active_session_and_bound_inbox_before_UUID_lookup; retained_session_sender_same_chat_only
-  absence: unknown_including_foreign_or_retired; never_nonacceptance_or_retry_authority
+  absence: unknown_for_foreign_or_unretained_history; scope-bound_retirement_receipts_distinguish_known_retired_requests_without_resend_authority
   transport: retained_exact_federation_frame_hash_and_message_UUID; destination_custody_is_not_execution_or_semantic_ACK
   compatibility: additive_query; existing_message_status_cursor_and_protocol_2_unchanged
+
+optional_extensions:
+  publication: contracts/publication/v1/publication.contract.yml
+  local_a2a: contracts/local-adapters/v1/a2a.contract.yml
+  recovery_observations: contracts/participation/v2/recovery-observation.contract.yml
+  automatic_retention: contracts/retention/v1/automatic-retention.contract.yml
+  access_observation: successful_exact-session_requests_may_emit_bounded_non-authoritative_access_telemetry; no_custody_ACK_or_business_query_mutation

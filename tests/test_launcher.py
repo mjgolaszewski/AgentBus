@@ -669,6 +669,7 @@ def test_public_cli_operation_inventory_matches_parser_surface(launcher):
         "claim-recovery",
         "control-issue", "pickup", "complete", "message-status",
         "codex-wake", "issue-enrollment", "migrate-channels", "migrate-profile-scope",
+        "update", "update-status", "update-cancel", "resume",
     }
     assert all(callable(operation) for operation in launcher.CLI_OPERATIONS.values())
     command_action = next(action for action in build_parser()._actions

@@ -100,7 +100,7 @@ def api_complete(request: Request, cursor: int, payload: dict):
 
 
 def api_request_outcome(request: Request, request_id: str):
-    principal = resolve_principal(request)
+    principal = resolve_principal(request, receipt_recovery=True)
     try:
         return request.app.state.store.lifecycle.request_outcome(principal, request_id)
     except LifecycleRejected as exc:
@@ -108,7 +108,7 @@ def api_request_outcome(request: Request, request_id: str):
 
 
 def api_outcome(request: Request, cursor: int):
-    principal = resolve_principal(request)
+    principal = resolve_principal(request, receipt_recovery=True)
     store = request.app.state.store
     if not store.lifecycle.enabled:
         raise HTTPException(404, {'code': 'lifecycle_disabled',

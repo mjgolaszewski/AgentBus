@@ -13,12 +13,13 @@ import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Annotated, Callable, Literal
+from typing import TYPE_CHECKING, Annotated, Callable, Literal
 
 import httpx
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, ValidationError, model_validator
 
+from src.agentbus_a2a_api_service import api_a2a
 from src.agentbus_announcement_lifecycle_service import AnnouncementLifecycle
 from src.agentbus_channel_api_service import api_inbox, api_info, api_read, claim_message
 from src.agentbus_channel_store_service import ChannelStore
@@ -62,6 +63,12 @@ from src.agentbus_participation_api_service import (
 )
 from src.agentbus_participation_store_service import ParticipationStore
 from src.agentbus_participation_store_service import StoppedMessageSession as StoppedMessageSession
+from src.agentbus_publication_api_service import (
+    api_publication_cancel,
+    api_publication_create,
+    api_publication_list,
+    api_publication_status,
+)
 from src.agentbus_reply_policy_service import validate_reply
 from src.agentbus_request_limits_service import RequestBodyLimit
 from src.agentbus_retention_service import RetentionStore
@@ -182,11 +189,23 @@ class Info(BaseModel):
     high_water_cursor: int
     features: list[str]
     lifecycle: dict | None = Field(default=None, exclude_if=lambda value: value is None)
+    publication: dict | None = Field(default=None, exclude_if=lambda value: value is None)
     upgrade_notice: str | None = Field(default=None, exclude_if=lambda value: value is None)
+
+
+if TYPE_CHECKING:
+    from asyncio import Event
+
+    from src.agentbus_observation_service import ObservationStore
+    from src.agentbus_publication_service import PublicationStore
 
 
 class MessageStore:
     """SQLite is shared by the HTTP event loop and Socket Mode's callback thread."""
+
+    publications: PublicationStore | None
+    observations: ObservationStore
+    publication_wake: Event
 
     def __init__(self, path: Path):
         from src.agentbus_search_service import require_fts5
@@ -584,6 +603,10 @@ class SlackPoster:
             or not isinstance(bot_id, str) or not re.fullmatch(r"B[A-Z0-9]+", bot_id)
         ):
             raise RuntimeError("Slack bot identity verification failed")
+        team = data.get("team_id")
+        self.workspace_id = team if isinstance(team, str) and re.fullmatch(r"T[A-Z0-9]{2,79}", team) else None
+        if self.settings.publication_config is not None and self.workspace_id is None:
+            raise RuntimeError("Slack coordination workspace verification failed")
         return bot_id
 
     async def observed_messages(self, after: str, limit: int) -> list[dict]:
@@ -650,13 +673,17 @@ def api_claim(request: Request, cursor: int, claim: ClaimRequest,
 
 # BCF inventories this closed population, and FastAPI registers these exact
 # callables below. The governance inventory and runtime dispatch cannot drift.
+
 API_OPERATIONS: dict[str, Callable[..., object]] = {
+    "a2a": api_a2a,
     "health": api_health,
     "status": api_status,
     "send": api_send,
     "federation_enqueue": api_federation_enqueue,
     "read": api_read,
     "search": api_search,
+    "publication_create": api_publication_create, "publication_list": api_publication_list,
+    "publication_status": api_publication_status, "publication_cancel": api_publication_cancel,
     "info": api_info,
     "inbox": api_inbox,
     "claim": api_claim,
@@ -698,9 +725,11 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
         async with delivery_lifespan(app, settings, http_client, socket_factory):
             yield
 
-    app = FastAPI(title="AgentBus", version="0.10.0", lifespan=lifespan,
+    app = FastAPI(title="AgentBus", version="0.11.0", lifespan=lifespan,
                   docs_url=None, redoc_url=None, openapi_url=None)
     app.state.settings = settings
+    from src.agentbus_observation_runtime_service import ApiAccessObservation
+    app.add_middleware(ApiAccessObservation)
     app.add_middleware(RequestBodyLimit)
     auth = [Depends(authenticate)]
     app.add_api_route("/healthz", API_OPERATIONS["health"], methods=["GET"])
@@ -711,6 +740,7 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
                       dependencies=auth, response_model=FederationAcceptance, status_code=202)
     app.add_api_route("/v1/messages", API_OPERATIONS["read"], methods=["GET"],
                       dependencies=auth, response_model=MessagePage)
+    app.add_api_route("/a2a", API_OPERATIONS["a2a"], methods=["POST"], dependencies=auth)
     app.add_api_route("/v1/search", API_OPERATIONS["search"], methods=["GET"], dependencies=auth)
     app.add_api_route("/v1/info", API_OPERATIONS["info"], methods=["GET"],
                       dependencies=auth, response_model=Info)
@@ -722,6 +752,10 @@ def create_app(settings: Settings | None = None, *, http_client: httpx.AsyncClie
     app.add_api_route('/v1/messages/{cursor}/complete', API_OPERATIONS['complete'], methods=['POST'], dependencies=auth)
     app.add_api_route('/v1/messages/{cursor}/outcome', API_OPERATIONS['outcome'], methods=['GET'], dependencies=auth)
     app.add_api_route('/v1/requests/{request_id}/outcome', API_OPERATIONS['request_outcome'], methods=['GET'], dependencies=auth)
+    app.add_api_route('/v1/publications', API_OPERATIONS['publication_create'], methods=['POST'], dependencies=auth)
+    app.add_api_route('/v1/publications', API_OPERATIONS['publication_list'], methods=['GET'], dependencies=auth)
+    app.add_api_route('/v1/publications/{request_id}', API_OPERATIONS['publication_status'], methods=['GET'], dependencies=auth)
+    app.add_api_route('/v1/publications/{request_id}/cancel', API_OPERATIONS['publication_cancel'], methods=['POST'], dependencies=auth)
     app.add_api_route('/v1/receipts/handled', API_OPERATIONS['handled_batch'], methods=['POST'], dependencies=auth)
     app.add_api_route("/v1/messages/{cursor}/claim-recovery", API_OPERATIONS["claim_recovery"],
                       methods=["POST"], dependencies=[Depends(authenticate_operator)])

@@ -173,7 +173,7 @@ authorize exact human Slack user IDs; the default empty allowlist disables all
 slash operations and actionable ordinary replies. The service accepts commands only from its channel allowlist. Roster and
 full-ID/suffix/current-identity-fragment lookup are scoped to the invoking channel before resolution.
 `/agentbus help` lists the fixed surface: health, workers, doctor, pending, explain, enrollments, approve, broadcast, poll, results, roster, status, metrics, send, wake,
-checkpoint, pause, resume, and retire. Session-targeting commands accept a unique
+checkpoint, pause, resume, retire, and optional publication updates. Session-targeting commands accept a unique
 6–12-character session UUID suffix, a full UUID, or a case-insensitive fragment
 of the current agent identity. Enrollment and poll cards provide buttons for routine actions.
 `/agentbus results` without an ID discovers the forty most recent polls in the
@@ -325,7 +325,7 @@ store. Validate the original channel first. Additional-channel activation and
 a bounded two-channel canary need a concrete custodian-approved window.
 Before new custody is accepted a rollback may restore the backup. Afterward,
 keep the new binary/database, disable additional channels if necessary, and
-repair forward. Never run 0.9 against a migrated database.
+repair forward. Never run an older incompatible writer against a migrated database.
 
 AHP/native-queue wake qualification remains experimental; live interoperability
 and atomic idle-only admission are unproved. Workspace opt-in does not authorize
@@ -333,3 +333,31 @@ an unqualified owner. See [Experimenters](experimenters.md).
 
 Start with [the root quick start](../../README.md#quick-start), then use the
 [operations runbook](../OPERATIONS.md) and [architecture guide](../architecture.md).
+
+## Optional controlled publishing and local interoperability
+
+[Client publishing](../client-publishing.md) requires named destinations and
+separate locally installed outbound credentials at each location. It defaults
+to exact human approval with private `<command> updates` buttons. Direct posting
+needs an explicit author grant in that destination's policy. It adds no inbound
+client subscription or extra Socket Mode connection; ordinary bus traffic never
+becomes a client update.
+
+The [local A2A subset](../local-adapters.md) is disabled by default and requires
+an actual loopback service binding. Standard Compose keeps a wildcard container
+listener behind a loopback published port and therefore cannot enable A2A. A
+loopback port mapping is not proof of a loopback-only listener. Use matching
+qualified bytes and explicitly bound isolated clients; public A2A is unqualified.
+
+[Resume and optional stale notices](../recovery.md) keep health, enrollment,
+actual API access, work and unknown gaps distinct. Notices require an explicit
+session/channel/operator configuration, use existing worker ticks and do not
+request wake or repair. [Automatic retention](../message-lifecycle.md) is also
+disabled by default: review its matching dry run before enabling apply. Its
+minimum 14-day activity age and actual target ACK guards do not abandon quiet
+agents' unfinished work or reclaim federation/safety-control history.
+
+These features reuse the existing process/database and aggregate worker budget.
+Back up consistently before rollout; preserve new custody and repair forward
+after accepting new writes. The [Experimenters seat](experimenters.md) explains
+which local interoperability and external-provider claims remain unqualified.

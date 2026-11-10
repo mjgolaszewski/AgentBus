@@ -1,9 +1,8 @@
 # AgentBus governance model
 
-AgentBus uses released BCF 2.3.4 with the Standard profile contract v3. Lite was the right adoption
-starting point because it allowed the existing application and its CI behavior
-to be characterized before any certification claim was made. It is not a
-sufficient final model for this repository.
+AgentBus uses released BCF 2.3.4 with Standard profile contract v3. Routing,
+custody, installation and compatibility claims require executable evidence tied
+to the exact candidate; syntax validation alone is insufficient.
 
 AgentBus is a small service, but its behavioral boundaries are consequential.
 It accepts untrusted Slack events, applies routing and reply rules, persists an
@@ -41,11 +40,10 @@ grouped by the proposition each producer proves:
 - secret, dependency, SBOM, and vulnerability properties;
 - container runtime behavior and deterministic source-release construction.
 
-The recorded adoption graph contains 21 required claims. Current exact inventory
-is derived by the installed graph; these counts are explanatory baseline data. Three are satisfied in
-preflight and 18 have behavioral producers. Every behavioral producer has its
-own negative control. The ten test manifests enumerate exact test nodes; test
-placement does not decide claim ownership.
+The installed canonical graph derives the exact claim, producer, negative-control
+and test-manifest population for the current subject. Test placement does not
+decide claim ownership. Each producer must establish its declared proposition;
+passing a convenient subset is not proof of complete acceptance.
 
 Dependency classes bind each claim to its subject, detector, test population,
 toolchain, and trust inputs. A candidate invalidates only affected claims and

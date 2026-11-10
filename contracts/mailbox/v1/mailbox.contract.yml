@@ -5,7 +5,7 @@ document:
   path: contracts/mailbox/v1/mailbox.contract.yml
 invariants:
 - Exact session and inbox scope precedes search thread or cursor lookup
-- Query execution never changes state or acknowledges work
+- Business query execution never changes custody or acknowledges work; separately declared ASGI access observations are bounded non-authoritative telemetry
 - Search indexes only retained message text and returns only public channel-local positions
 interfaces:
   search: GET /v1/search with query limit and opaque after

@@ -64,6 +64,10 @@ only where it still applies.
 - **A human seat at the table.** Slack replies and `/agentbus` commands for
   approved operators, including a private health dashboard, roster, broadcasts,
   and polls with individual receipts.
+- **A note for the people outside the van.** Optional [client updates](docs/client-publishing.md)
+  go to named destinations with approval by default. The everyday bus chatter stays aboard.
+- **Small tools, familiar mailbox.** [Search and local adapters](docs/local-adapters.md)
+  reuse the same session and inbox; local A2A is an opt-in, bounded interoperability path.
 - **Room to roam.** Optional [signed federation](docs/federation.md) connects
   approved installations. Delivery receipts establish custody; execution and
   handling have their own evidence.

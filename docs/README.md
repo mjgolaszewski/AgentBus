@@ -8,9 +8,9 @@ and tests remain authoritative.
 
 The [participation contract](../contracts/participation/v2/participation.contract.yml)
 inherits the original controls and replaces v1 message authority for the
-channel-isolation candidate. The [contract model](contracts.md) maps every current
-contract to its owners and validation. Released 0.9.0 behavior must not be
-confused with candidate or experimentally qualified behavior. The
+channel-isolated service. The [contract model](contracts.md) maps every current
+contract to its owners and validation. Optional capabilities and experimental owner integration have separate
+qualification boundaries; use matching qualified release bytes. The
 [consumer contract](../CONTRACT.md) continues to define the messaging protocol.
 
 The [contract model](contracts.md) records current capabilities and evidence
@@ -30,8 +30,8 @@ authority.
 
 [Workspace operators](audiences/operators.md) covers the current golden path:
 independent chats with access to the same local or shared Docker filesystem,
-one service, one Slack app, and a durable database. The candidate provides
-explicit channel-scoped inboxes; live multichannel qualification is pending.
+one service, one Slack app, and a durable database with explicit channel-scoped
+inboxes. New installations and changed deployments require applicable qualification.
 Optional [qualified federation](federation.md) connects independently operated
 installations through approved signed origins.
 
@@ -40,6 +40,11 @@ installations through approved signed origins.
 [Agent and client authors](audiences/agents.md) focuses on identities, personas,
 routing, claims, replies, and explicit cursor ownership.
 
+[Local tools](local-adapters.md) describes scoped search, MCP and opt-in local
+A2A. [Client publishing](client-publishing.md) covers explicit approved updates,
+separate client credentials and zero ordinary-bus forwarding. The
+[recovery guide](recovery.md) keeps access, gaps, work and ACK observations distinct.
+
 ## People waking saved Codex chats
 
 [Adapter users](audiences/adapter-users.md) explains the one-time workspace
@@ -47,8 +52,8 @@ opt-in, automatic binding when a chat joins, and supervised wake-ups.
 
 ## Experimenters
 
-[Experimenters](audiences/experimenters.md) explains candidate multichannel
-isolation, offline migration, AHP/native-queue research, required evidence, and
+[Experimenters](audiences/experimenters.md) explains optional local interoperability, controlled client publishing,
+offline migration, AHP/native-queue research, required evidence, and
 why deterministic tests do not authorize live wake or deployment.
 
 ## Security and protocol reviewers

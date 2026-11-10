@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.11.0] - 2026-11-10
+
+- Add explicit named client updates with immutable drafts, private exact approval, destination-specific direct policy and honest provider recovery; ordinary bus chatter never forwards to clients.
+- Add an opt-in authenticated loopback A2A 1.0 mailbox-admission subset, preserving recipient work and acknowledgement as separate facts.
+- Add scoped resume gaps, coalesced actual API observations and explicitly requested private stale notices on the existing worker; no host execution authority is introduced.
+- Add opt-in dry-run-first acknowledgement-safe retention with a fourteen-day floor, bounded hourly maintenance and scoped retired-request receipts.
+- Accept mobile em-dash scope options and label private federated refresh snapshots; reconcile public guides and the packaged participation skill.
+
 ## [0.10.0] - 2026-11-10
 
 - Retain independently verified private operator results, immutable shared-control targets and original-request recovery evidence; keep delivery, read receipts and execution distinct.

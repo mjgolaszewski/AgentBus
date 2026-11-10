@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from src.agentbus_message_assurance_service import route_parts
+from src.agentbus_message_lifecycle_service import LifecycleRejected
 from src.agentbus_participation_store_service import StoppedMessageSession
 from src.agentbus_transaction_service import atomic
 
@@ -122,8 +123,7 @@ class LocalDeliveryStore:
         request_hash = fingerprint({'principal': principal, 'request': request_hash})
         if len(message.model_dump_json().encode()) > MAX_LOCAL_PAYLOAD_BYTES:
             raise LocalDeliveryRejected(422, 'Local custody payload exceeds its byte limit')
-        with store._lock, store._db:
-            store._db.execute('BEGIN IMMEDIATE')
+        with store._lock, atomic(store._db):
             if session_token is not None:
                 try:
                     scope = store.channels.principal(session_token, message.sender)
@@ -133,6 +133,8 @@ class LocalDeliveryStore:
                     raise LocalDeliveryRejected(403, 'Matching session scope required') from None
                 if scope.channel != channel or principal != f'session:{scope.session_id}':
                     raise LocalDeliveryRejected(403, 'Matching session scope required')
+            if store._db.execute('SELECT 1 FROM lifecycle_retired_requests WHERE channel=? AND request_id=?', (channel, key)).fetchone():
+                raise LifecycleRejected(410, 'Original request history is retired; identity cannot be reallocated')
             prior = store._db.execute(
                 'SELECT * FROM local_delivery_obligations WHERE channel=? AND request_id=?',
                 (channel, key)).fetchone()
@@ -322,6 +324,7 @@ class LocalDeliveryStore:
         if occupied is not None and occupied[0] != cursor:
             raise ValueError('provider timestamp collision')
         if existing is None:
+            store.retention.activity(cursor)
             if store._db.execute('SELECT count(*) FROM local_delivery_observations').fetchone()[0] >= self.observation_limit:
                 raise ValueError('local provider observation capacity exhausted')
             store._db.execute('INSERT INTO local_delivery_observations VALUES (?,?,?)', (channel, provider_ref, cursor))

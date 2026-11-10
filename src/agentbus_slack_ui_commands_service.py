@@ -96,6 +96,12 @@ def execute_interaction(payload: dict, settings, store, web_client) -> str:
         action = parse_action(actions[0])
         if action.channel != channel:
             raise ValueError('This button belongs to another channel. Open the local command again.')
+        if action.kind in {'publication_page', 'publication_results', 'publication_approve'}:
+            from src.agentbus_publication_ui_service import publication_interaction
+            owner = getattr(store, 'publications', None)
+            if owner is None:
+                raise ValueError('Client publication is disabled')
+            return publication_interaction(owner, action, uid, channel, wake=getattr(store, 'publication_wake', None))
         if action.kind == 'operator_results':
             from src.agentbus_operator_scope_service import operator_results
             owner = getattr(store, 'operator_federation', None)
@@ -110,7 +116,7 @@ def execute_interaction(payload: dict, settings, store, web_client) -> str:
             text = f'results {action.target} {action.page + 1}'
         else:
             text = f'results recent {action.page + 1}'
-    except ValueError as exc:
+    except (ValueError, PermissionError) as exc:
         return str(exc)
     from src.agentbus_slack_command_service import execute_command
     return execute_command({'command': settings.slack_command, 'channel_id': channel,

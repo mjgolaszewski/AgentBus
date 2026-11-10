@@ -22,7 +22,7 @@ def _read_inventory(db):
     if not required <= tables:
         raise ValueError('Lifecycle cutover requires the channel-isolated database baseline')
     marker = db.execute("SELECT value FROM metadata WHERE key='message_lifecycle_version'").fetchone()
-    if marker and marker[0] != '1':
+    if marker and marker[0] not in {'1', '2'}:
         raise ValueError('Unsupported lifecycle schema requires owner recovery')
     channels = db.execute('SELECT channel,inbox_id,next_position FROM bus_channels ORDER BY channel').fetchall()
     if not 1 <= len(channels) <= 16:

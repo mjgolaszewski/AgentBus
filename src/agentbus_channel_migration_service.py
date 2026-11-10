@@ -81,7 +81,7 @@ def check_startup(path):
         lifecycle='lifecycle_channels' in tables
         if lifecycle:
             marker=db.execute("SELECT value FROM metadata WHERE key='message_lifecycle_version'").fetchone()
-            if marker is None or marker[0]!='1':
+            if marker is None or marker[0] not in {'1', '2'}:
                 raise ValueError('Unsupported or incomplete lifecycle migration')
         registry='lifecycle_channels' if lifecycle else 'bus_channels'
         configured=registry in tables and db.execute(f'SELECT 1 FROM {registry} LIMIT 1').fetchone()

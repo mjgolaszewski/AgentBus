@@ -1,11 +1,11 @@
 document:
   kind: message_lifecycle_contract
-  version: 1.0.3
+  version: 1.0.4
   status: active
   path: contracts/messages/v1/message-lifecycle.contract.yml
 contract:
   id: message-lifecycle-v1
-  status: construction_unqualified
+  status: implemented_contract_subject_to_applicable_release_qualification
   wire_protocol: 2
   local_delivery_version: 2
   authority: local_service_SQLite_transaction_and_exact_session_channel_principal
@@ -58,6 +58,7 @@ states:
   elapsed_non_authority: query_only_never_settles_renews_ACKs_or_revives_expired_parent
   return: canonical_queryable_outcome_not_a_recursive_ordinary_message
   late_transition: no_resurrection_of_expired_or_handled_target
+  semantic_acknowledgement: complete_marks_handled_only; explicit_handled_batch_records_separate_semantic_ACK_time_for_automatic_retention
   observation_is_not_pickup: [inbox_read, polling, presentation_cleanup, provider_submission, wake_queue_acceptance]
   shared_payload: broadcasts_and_polls_keep_fixed_target_snapshot_with_independent_receipts_and_outcomes
   shared_read_states: [unread, read_acknowledged, expired_unread]
@@ -79,6 +80,9 @@ retention:
   provider_replay: purge_filters_all_known_numeric_provider_refs_before_batch_limit_using_exact_decimal_coverage_apply_rechecks_aliases_atomically
   locator_replay: lifecycle_Socket_ingress_ignores_unknown_or_retired_delivery_locators_with_transport_only_ACK_no_new_custody_or_semantic_receipt
   pressure: warning_before_exhaustion_then_fail_closed_no_silent_deletion_of_unknown_custody
+  automatic_policy: contracts/retention/v1/automatic-retention.contract.yml
+  retired_request_receipt: exact_author_chat_channel_inbox_UUID_lookup_distinguishes_retired_from_unknown; no_retry_authority
+  internal_extension_marker: version2_after_extension_custody_or_retirement_receipts; public_wire_remains_v1
 operator_controls:
   authorization: existing_privileged_operator_authority_only
   inspection: distinct_transport_recipient_retention_counts_without_implied_ACK

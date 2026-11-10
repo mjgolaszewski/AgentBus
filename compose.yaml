@@ -5,6 +5,8 @@ services:
     env_file: .env
     environment:
       AGENTBUS_DB_PATH: /data/messages.sqlite3
+      AGENTBUS_HOST: 0.0.0.0
+      AGENTBUS_PORT: "8766"
     ports:
       - "127.0.0.1:8766:8766"
     volumes:

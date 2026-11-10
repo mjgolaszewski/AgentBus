@@ -23,6 +23,7 @@ HELP = "\n".join([
     "`/agentbus retire ID CONFIRM` — irreversible stop",
     "*Targets:* ID is a unique current identity fragment, last 6–12 hex characters, or full session UUID. "
     "Ambiguous matches require the full UUID. Commands cannot target another channel.",
+    "`/agentbus updates` — review separately authorized client updates (when enabled)\n"
     "`/agentbus help` — show this guide\n",
     "*Lifecycle*\n`/agentbus lifecycle` — this channel's recipient outcomes\n"
     "`/agentbus lifecycle settle` — preview due transitions\n"
@@ -173,6 +174,14 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
         from src.agentbus_status_api_service import service_dashboard
         snapshot = dashboard() if dashboard is not None else service_dashboard(settings, store)
         return health_text({**snapshot, "invoked_command": command})
+    if action == 'updates':
+        from src.agentbus_publication_ui_service import publication_review
+        owner = getattr(store, 'publications', None)
+        if owner is None:
+            return 'Client publication is disabled.'
+        if len(parts) != 1:
+            return f'Use `{command} updates`, then the private page buttons.'
+        return publication_review(owner, user, channel)
     if action in {'enrollments', 'results'}:
         from src.agentbus_slack_ui_commands_service import query_reply
         return query_reply(parts, settings, store, channel, actor=user, command=command)

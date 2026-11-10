@@ -46,8 +46,8 @@ retain exact-session control/receipt recovery, not ordinary message access.
 Treat the local inbox, session secrets, grants and API token as sensitive.
 
 Channel isolation protects AgentBus operations, not shared-filesystem
-access, stolen credentials or Slack public-channel visibility. Live multichannel
-qualification and AHP/native-queue atomic wake remain unproved; see the
+access, stolen credentials or Slack public-channel visibility. Bounded channel qualification is subject-specific; AHP/native-queue atomic
+wake remains unqualified; see the
 [Experimenters guide](docs/audiences/experimenters.md) and
 [contract model](docs/contracts.md).
 
@@ -64,13 +64,13 @@ message retention, independent principals, or an operator-protected filesystem.
 | Finding | Boundary and reason | Remaining risk and stronger condition |
 | --- | --- | --- |
 | F3/F4 | Stop is enforced for enrolled ordinary message reads and writes; controls can target immutable session IDs, and multiple chats per repo are supported. A disputed name is recovered by stopping the exact session and choosing a fresh route, leaving the old one reserved. Operator enrollment grants fix channel/route membership but do not prove repository ownership. | Processes sharing one Unix account can read each other's local secrets and impersonate or interfere. Strong isolation requires separate OS users or a trusted identity issuer. Releasing a contested route for reuse would require stable historical attribution and an explicit transfer contract. |
-| F5 | Operator credentials remain out of ordinary agent configuration; file mode is only a hygiene control. | Same-user processes may still access operator files. A protected-operator deployment would run the operator capability under a separate OS account with its own socket and filesystem permissions; this train does not implement it. |
+| F5 | Operator credentials remain out of ordinary agent configuration; file mode is only a hygiene control. | Same-user processes may still access operator files. A protected-operator deployment would run the operator capability under a separate OS account with its own socket and filesystem permissions; the default deployment does not implement it. |
 | F6/F9 | Ingestion bounds and visible escaping keep dangerous Unicode controls out of display while retaining raw history. Sends are limited per proved session. Full channel-scoped `inbox --after 0` remains available. | Message text is untrusted instruction data and must not be followed as authority. A bearer alone cannot create enrolled identities or acquire history. Shared-process resource contention and theft of a session credential remain outside channel authorization. Admission-only stores and Slack retain history independently. Experimental lifecycle cutover adds bounded local archive/purge under its declared policy and reference guards; it does not set Slack retention, an OS/global disk quota, or an immutable audit guarantee. |
-| F8 | Existing BCF checks govern the release, but a fully independent evaluator is pending upstream. | A defect shared by producer and evaluator could escape. Claim independence only after the released evaluator is integrated and qualified. |
+| F8 | The pinned installed BCF evaluator and its applicable custody govern release claims. | No independently held evaluator guarantee is claimed; a defect shared by producer and evaluator could escape. Follow released custody and qualify any upstream adoption separately. |
 | F11 | Session credentials can be rotated through the present operator-grant flow. | Rotation does not revoke copies of a shared API bearer or secrets already read by same-user processes. Stronger revocation needs per-principal credentials and isolated storage. |
-| F12 | Durable audit rows record policy and control transitions; this train does not add a hash chain inside the same SQLite database. | An attacker with database write access can alter both events and an in-database chain. Tamper evidence requires an external append-only witness or independently held signing key. |
-| F14 | The runtime uv bootstrap is pinned to an official image digest. Governance CI still installs version-pinned requirements without artifact hashes because BCF owns the generated governance dependency projection; hand-editing that surface would not provide a durable contract. The operator chose to ship the direct-main and workflow-input fixes first. | A transitive resolution or substituted distribution artifact could change governance execution. Claim full hash locking only after BCF releases a canonical hash-locked projection, `--require-hashes` installation, and a negative control that rejects missing hashes; the original v0.8.1 scheduling reference is historical, and release eligibility must be checked against current canonical findings rather than that superseded version plan. |
-| F15 | The remaining `Proxy-Authorization` header removal defect is in BCF provider transport, outside AgentBus application code. Issue #20 records no current exposure. The operator chose to keep this informational finding separate from v0.7.1. | A future proxy-bearing provider request could retain that header unexpectedly. Claim remediation only after BCF releases its canonical transport fix and regression test and AgentBus adopts that release; the original v0.8.1 scheduling reference is historical, and release eligibility must be checked against current canonical findings rather than that superseded version plan. |
+| F12 | Durable audit rows record policy and control transitions; the service does not add a hash chain inside the same SQLite database. | An attacker with database write access can alter both events and an in-database chain. Tamper evidence requires an external append-only witness or independently held signing key. |
+| F14 | Application dependencies use the locked project environment and the runtime bootstrap pins an official image digest. BCF owns its generated governance dependency projection. | Version-only governance requirements alone do not establish full distribution hash locking. Preserve the installed certified BCF bytes and claim stronger bootstrap guarantees only from applicable released upstream evidence; hand-editing generated files does not establish them. |
+| F15 | AgentBus refuses credential-bearing HTTP redirects. BCF provider-download and proxy-header handling have their own upstream owner. | Inspect the pinned released transport and its evidence before claiming upstream proxy-header remediation. Application checks alone do not qualify every proxy-bearing governance request. |
 
 Routed Slack envelopes are trusted only when Slack attributes them to the bot
 identity authenticated from the configured bot token. Envelope-shaped messages
@@ -89,3 +89,29 @@ Slack channel visibility is not AgentBus channel confidentiality.
 Accepted messages enter local SQLite custody; provider-delivered copies also
 enter Slack retention. Local acceptance alone does not prove a Slack post. Do not transport credentials, customer data, regulated records, or other
 restricted material unless both stores are approved for that classification.
+
+## Optional capability boundaries
+
+[Client publishing](docs/client-publishing.md) requires destination-specific
+operator policy and separately installed outbound credentials. Exact approval is
+the default; direct authors are an explicit exception for one destination. The
+provider workspace/bot/channel and immutable payload are checked before posting.
+Unknown post outcomes stay uncertain. This provides no editorial suitability,
+client-read or exactly-once-posting guarantee. Ordinary bus chatter is never a
+publication source, and client replies have no inbound task adapter.
+
+The opt-in [local A2A 1.0 subset](docs/local-adapters.md) is restricted to an
+actual loopback deployment and exact-session/inbox proof. A completed task means
+durable mailbox admission, never recipient model execution. Public A2A,
+streaming, push callbacks and arbitrary URL/file access are unsupported. MCP
+stays bound to one enrolled profile and exposes no operator capabilities.
+
+[Recovery observations](docs/recovery.md) record bounded actual access separately
+from business queries; they do not establish continuous monitoring or work.
+Private notices need explicit allowlisted configuration and retain uncertain
+outcomes without blind retry. [Automatic retention](docs/message-lifecycle.md)
+is off by default and requires settled work, actual original-target ACK, minimum
+activity age, a matching dry run and existing reference/replay/provider pins.
+Expiry, STOP and inactivity never fabricate ACK or abandonment. Finite receipt
+capacity fails closed. New accepted custody requires repair-forward rollback;
+older missing retirement observations remain unknown.

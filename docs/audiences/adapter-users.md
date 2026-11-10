@@ -1,6 +1,6 @@
 # AgentBus for Codex adapter users
 
-Candidate wake qualification remains experimental: live AHP/Codex queue
+Owner wake qualification remains experimental: live AHP/Codex queue
 interoperability and atomic owner-side idle-only admission are unproved. An idle
 observation followed by turn submission is not that guarantee. Unqualified owners
 remain notification-only. See the [Experimenters guide](experimenters.md).
@@ -9,8 +9,8 @@ The Codex wake adapter is for a workspace where saved conversations should
 notice work addressed to their AgentBus identities. It runs beside the shared
 AgentBus service, using local chat profiles and a Codex host integration.
 AgentBus keeps the inbox; the host decides whether a thread can resume and
-start a turn. The current VS Code extension owns its conversation threads and
-has no supported shared wake endpoint, so those chats are `notification_only`
+start a turn. AgentBus has not qualified a supported shared wake endpoint for VS Code-owned
+conversation threads, so this adapter keeps those chats `notification_only`
 by default. An explicitly configured `standalone` app-server can wake only
 threads it owns.
 
@@ -27,7 +27,7 @@ local host configuration; AgentBus messages cannot choose them.
 | --- | --- |
 | Mode unset | Notification-only; no live host launch. |
 | `standalone` | Adapter-owned saved threads only; the Codex host still controls acceptance and completion. |
-| VS Code executable wrapper | Experimental work in [draft PR #35](https://github.com/mjgolaszewski/AgentBus/pull/35). The wrapper alone does not connect this adapter to the shared daemon. |
+| VS Code executable wrapper | Development-only research; it does not qualify a shared owner endpoint or atomic admission. |
 
 ## Open the door once
 
@@ -95,7 +95,7 @@ exact route, including one labelled informational, regardless of whether its
 kind is request, reply, status, or note.
 Claimed work and required controls or policy changes can also wake it. Send
 routine announcements as broadcasts when no particular chat needs a turn;
-direct status notes now use the ordinary wake budget too. Its short prompt
+direct status notes use the ordinary wake budget too. Its short prompt
 points to event IDs. Its private wake cursor scans the authenticated service
 inbox independently of the local presentation queue, so a saturated queue
 cannot prevent discovery of newer addressed messages. The resumed chat reads
@@ -155,7 +155,7 @@ chat's `codex-wake status`. This preserves AgentBus messages, identities, inbox
 history, and participation while returning wake to notification-only.
 For an experimental VS Code wrapper pilot, restore the isolated profile's
 original `chatgpt.cliExecutable` setting and reload that profile only when its
-conversations are idle, following the instructions in draft PR #35. No global
+conversations are idle, following the custodian-approved instructions for that exact isolated pilot. No global
 Codex CLI or other IDE setting should have changed.
 
 The [root guide](../../README.md#a-gentle-wake-up-for-saved-codex-chats) shows
@@ -180,3 +180,8 @@ status green. Coordinate explicit recovery with the workspace operator. This
 adapter assumes trusted, non-hostile agents in a trusted workspace; it cannot
 police an agent's interpretation of messages or its outside tools. See the
 [security boundary](../../SECURITY.md#trusted-workspace-boundary).
+
+The separate [scoped resume command](../recovery.md) observes AgentBus controls
+and mailbox gaps without resuming a Codex host. Local A2A mailbox-admission
+completion, publication approval, private stale notices and automatic retention
+do not qualify owner wake or change any existing binding or enabled preference.

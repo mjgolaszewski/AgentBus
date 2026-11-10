@@ -33,6 +33,7 @@ def api_status(request: Request) -> dict:
 
 def service_dashboard(settings, store, *, socket=None, bridge=None, version=None, started_at=None, workers=None):
     """Privileged read model; never probe providers, expose credentials or infer remote health."""
+    import json
     import os
     import platform
     import time
@@ -70,9 +71,17 @@ def service_dashboard(settings, store, *, socket=None, bridge=None, version=None
                              'sessions':sessions,'delivery':states,
                              'access':{'last_recorded_contact_at':last_contact,'inbox_monitoring':'not_observed'},
                              'lifecycle':store.lifecycle.status(channel)})
+        access_owner = getattr(store, "observations", None)
+        if access_owner is not None:
+            for item in channels:
+                actual = store._db.execute("SELECT max(last_access) FROM session_api_observations WHERE channel=?", (item["channel"],)).fetchone()[0]
+                item["access"].update({"last_actual_api_access": actual, "access_coalescing_seconds": 30,
+                    "requested_stale_monitors": sum(m["channel"] == item["channel"] for m in access_owner.monitors),
+                    "continuous_monitoring": False, "observation_error": access_owner.last_error})
         custody = dict(store._db.execute('SELECT state,count(*) FROM bridge_obligations GROUP BY state').fetchall())
         checkpoints = store._db.execute('SELECT count(*) FROM federation_checkpoints').fetchone()[0]
         custody_capacity = store.federation.capacity()
+    auto = store._db.execute("SELECT value FROM metadata WHERE key='automatic_retention_latest_v1'").fetchone()
     configured_prefix = settings.local_prefix
     bridge_prefix = getattr(getattr(bridge, 'identity', None), 'route_prefix', None)
     return {'version':version, 'workers': workers,
@@ -89,8 +98,16 @@ def service_dashboard(settings, store, *, socket=None, bridge=None, version=None
             'local_delivery_capacity':store.local_delivery.capacity(),
             'lifecycle_storage':store.retention.storage() if store.lifecycle.enabled else None,
             'storage_maintenance':store.retention.last_checkpoint,
+            'automatic_retention': {'enabled':settings.automatic_retention, 'apply':settings.automatic_retention_apply,
+                'activity_days':settings.automatic_retention_days, 'latest':json.loads(auto[0]) if auto else None},
             'lifecycle_policy':vars(store.lifecycle.policy) if store.lifecycle.enabled else None,
             'announcement_capacity':store.announcements.capacity() if store.lifecycle.enabled else None,
+            'optional_adapters': {'local_a2a':settings.a2a_enabled, 'client_publication':settings.publication_config is not None,
+                'publication_states':dict(store._db.execute('SELECT state,count(*) FROM publication_requests GROUP BY state').fetchall())
+                    if getattr(store, 'publications', None) is not None else {},
+                'requested_stale_monitors':len(access_owner.monitors) if access_owner is not None else 0,
+                'private_notice_states':dict(store._db.execute('SELECT state,count(*) FROM session_stale_notices GROUP BY state').fetchall())
+                    if access_owner is not None else {}},
             'protocol_version':2,'participation_version':2,
             'federation':{'configured':settings.federation_config is not None,'initialized':bridge is not None,
                           'channel':getattr(bridge,'channel',None),

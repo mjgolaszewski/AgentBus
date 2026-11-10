@@ -11,15 +11,15 @@ build_plan_mandate:
   required_fields: [tightly_scoped_deliverables, parallelizable_workstreams, hard_dependencies, docker_first_local_runtime, completeness_standard]
   completeness_standard: full_completeness_for_declared_scope
 active_phase:
-  id: P13
-  build_block: "reliable_operator_federation"
-  plan: plans/phase-13-plan.yml
-  workitems: plans/phase-13-workitems.yml
-  log: phases/phase-13-log.yml
+  id: P14
+  build_block: "controlled_client_publishing"
+  plan: plans/phase-14-plan.yml
+  workitems: plans/phase-14-workitems.yml
+  log: phases/phase-14-log.yml
   memory: MEMORY.yml
   spec: plans/product-spec.yml
   build_plan: plans/build-plan.yml
-  lifecycle_status: completed
+  lifecycle_status: active
   owner: "agentbus:coordinator"
   validation_commands: [make governance-validate, make architecture-test, make lint, make typecheck, make test, make release-check]
 hotfix_lane:
@@ -54,7 +54,7 @@ operator_requirements_choices_disambiguations:
     statement: adopter governance must not install a persistent trusted controller or inherit BCF self-authority
 active_delivery_priorities:
   current_tranche:
-    - "reliable_operator_federation"
+    - "controlled_client_publishing"
 release_trains:
   release_1:
     target_version: "0.3.0"
@@ -97,7 +97,7 @@ release_trains:
   release_9: {target_version: "0.9.0", status: active, focus: [outbound_only_federation, durable_bridge_obligations, remote_directory_sync, owner_mediated_idle_wake, final_bcf_custody]}
   release_10: {target_version: "0.9.1rc4", status: active, focus: [channel_isolation, operator_granted_membership, bounded_local_two_channel_qualification, privacy_safe_documentation, experimental_owner_wake_disclosure, human_reply_parity, private_health, shared_broadcast_and_poll_controls, slack_enrollment_approval, observed_service_workers, scoped_read_only_diagnostics]}
   release_13: {target_version: 0.10.0, status: completed, focus: [reliable_operator_federation]}
-  release_14: {target_version: 0.11.0, status: planned, focus: [controlled_client_publishing]}
+  release_14: {target_version: 0.11.0, status: active, focus: [controlled_client_publishing]}
 release_readiness:
   computed_by: bcf truth
   requirements_source: governance/evidence-policy.yml
