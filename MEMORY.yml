@@ -14,8 +14,6 @@ regression_shield:
     - update high-signal entries instead of duplicating them
     - never record secrets or local environment values here
 stable_decisions:
-  federation_capacity: "Retained transport rows are separately bounded from byte quotas, directory and operator-request history. Operator startup configuration may change the finite per-table limit without deleting custody; agents cannot. Preserve original staged UUIDs through capacity failures. Automatic federation archival remains unsupported."
-  mobile_operator_followup: "iOS em-dash scope input and clearer retained-result refresh are planned for0.11; no0.10 support claim. Refresh reads the existing request, whose remote samples arrive asynchronously."
   canonical_repo_root: "."
   canonical_governance_guide: AGENTS.yml
   canonical_product_spec: plans/product-spec.yml
@@ -72,6 +70,8 @@ environment_facts:
     active_workitem_ledger: plans/phase-13-workitems.yml
     active_phase_log: phases/phase-13-log.yml
 known_constraints:
+  - "Retained federation transport rows default to1024 per table; only operator startup configuration can select a bounded larger capacity after resource review. Preserve all rows, original retry identities and replay; no automatic federation archival."
+  - "Mobile smart-punctuation entry and clearer retained-result refresh belong to planned0.11 work; they do not describe0.10 capabilities."
   - Owner-wake qualification remains paused under Issue75; AHP/native-queue live interoperability and atomic idle-only admission are unqualified, with unknown owners notification-only
   - Owner admission must bind backend transport incarnation connection generation and exact thread; upstream reports and idle observations do not grant writer or retry authority
   - Historical federation canaries apply only to their pinned subjects; no new multi-installation or live-provider qualification follows from local regression success

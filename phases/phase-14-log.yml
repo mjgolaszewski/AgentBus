@@ -51,6 +51,8 @@ execution_evidence:
     activated.
   - Operator waives the production-client live canary; the approved two-location arrangement supplies live acceptance,
     with isolated publication and adapter controls retained.
+  - 'P14-P0-02 is planned by operator disposition: iOS em-dash Slack scope input and clear original-request refresh.
+    Prepared source/tests are retained privately and in reachable history pending activation; no0.10 support claim.'
 closeout_requirements:
   claims:
     workitems_closed:
@@ -87,9 +89,3 @@ known_constraints:
 - One executor standard pipeline and consolidated review; no new broker database scheduler or background daemon
 next_work:
 - implement scoped workitems and record execution evidence in this log
-operator_followup:
-  workitem: P14-P0-02
-  state: planned
-  scope: iOS em-dash option/separator handling and retained-results refresh clarity; no current0.10 delivery claim
-  source_continuity: Prepared source and tests preserved privately and in reachable Git history pending P14 activation
-    and qualification
