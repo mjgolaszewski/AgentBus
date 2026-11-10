@@ -350,3 +350,66 @@ planned_mobile_followup:
   owner: P14-P0-02
   operator_disposition: Explicitly deferred to0.11
   scope: Smart-punctuation option entry and clearly visible retained-request refresh
+protected_capacity_repair:
+  pull_request: 116
+  candidate: 682f5e1c270eadf10d88fbb2ce5a26a00a13b68d
+  merge: 07fc41161654932159c93488c0cd1ef3873516fa
+  tree: 4e81108bf6687c079643d7919dcf64618e2622ec
+  pr_run: 42756209897
+  main_run: 42757020738
+  positive_junit:
+    contract: 772
+    python314: 930
+    failures: 0
+    errors: 0
+  archive:
+    bytes: 6673602
+    sha256: bfec780611939a47e2eccfef551a1896cd33d3c8ac9913262348e4ac5ae4d5c4
+  installed_runtime_population:
+    members: 89
+    modules: 75
+    unchanged_external_dependency_records: 81
+  closure: Implementation authored complete; canonical final-subject closure and publication pending
+retained_live_acceptance:
+  original_tested_subject: cae9750211d16c0b637b2c056f6990f3da376f84
+  arrangement: Operator-approved two-location deployment; raw health and actor/channel details remain private
+  provider_observation_corpus_sha256: 55356ae9c44a7a9f7e36acbcaaa618192a7c76538c320dfc42fce70d39ef0983
+  request_target_result_corpus_sha256: 60bb53e00482c59294d9fd3f742850fd9858b1be0978b8c93c4e874bc68a8edb
+  verification: Eight original signed frames decoded against operator-pinned public keys, exact actual publisher/destination
+    and generation; results bind original request digest and strictly increasing revisions
+  operations:
+    health:
+      requests: 2
+      observed_remote_version: 0.10.0
+      human_confirmed_private: true
+    broadcast:
+      shared_controls_per_location: 1
+      retained_target_population:
+      - 19
+      - 2
+      observed_read_receipts:
+      - 2
+      - 1
+      human_confirmed_private: true
+  unchanged_critical_runtime_sha256:
+    src/agentbus_operator_federation_service.py: a43f9a438c77679799fd423372205cebab9a1c14e2711feb833d786865a9c756
+    src/agentbus_federation_wire_service.py: 4187b6929042a847b4cc5bc5b81acd1d9372e807f5d36ef4b364cf5bb42cc678
+    src/agentbus_control_store_service.py: 187cafac330954c03526a5ed4d7f8c5377742d1f7a790ffd1be39aa545b4ca5d
+    src/agentbus_message_authorization_service.py: 2539e5e624544cf53c84bda8fa1e424e112209c48d0c827f283c22ec5c693af8
+    src/agentbus_slack_socket_service.py: 9431bbceed1dbd24efa39453d384ff1f3d943a741d58f76621fe7560b46d8564
+    src/agentbus_slack_command_service.py: 46fc0e2ec823df0da4e5d3f8021293bdc228c811b863cca24e7cedd1ff3d1183
+    src/agentbus_slack_ui_commands_service.py: 1de76d84ea4fe485096f9604c07237c6dbbb7d26d265893a73d27205c1bfc54c
+  changed_owner_review: Operator scope adds atomic capacity rejection only; health presentation adds capacity observations.
+    Settings and transport capacity owners have separate exact-main behavioral and negative controls. Original canary
+    attribution is preserved, not relabelled as a new final-subject run.
+  actual_outage_recovery: Retained-row exhaustion produced503; qualified bound2048 preserved all custody. Original
+    staged UUID and payload recovered to authenticated destination custody and one retained destination record.
+    No deliberate provider disconnect or pause was performed.
+  remaining: Canonical final-subject closure and release custody; no execution or semantic acknowledgement inferred
+  final_pair_refresh:
+    source: 07fc41161654932159c93488c0cd1ef3873516fa
+    ci_receipt_sha256: 0a9179fd934f96bbb065da85e652806c097004d20d9313f44ff345b7e927dfc8
+    both_effective_capacity: 2048
+    preserved_custody_and_checkpoints: true
+    healthy: true
+    scope: Original human canary source retained separately; final closeout has no production-code changes

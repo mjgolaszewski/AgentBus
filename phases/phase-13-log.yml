@@ -4,46 +4,47 @@ document:
   id: agentbus-phase-13-log
   version: 1.0.0
   generated_at_utc: '2026-11-09T00:00:00Z'
-  status: active
+  status: completed
   path: phases/phase-13-log.yml
 phase:
   id: P13
   build_block: reliable_operator_federation
 summary:
-  outcome: active
+  outcome: completed
   highlights:
-  - P13 is opened for Issue112 reliability operator federation scoped search and local MCP for0.10.0
-  - phase artifacts were scaffolded from the governance template
+  - Implementation complete; authored completion awaits independent canonical computed closure.
+  - Private two-location operator acceptance, original signed frames, exact installation populations and capacity-induced
+    recovery are retained with explicit subject applicability.
 workitems:
 - id: P13-P0-01
-  status: IN_PROGRESS
+  status: DONE
   summary: Baseline continuity contracts and issue traceability
 - id: P13-P1-01
-  status: IN_PROGRESS
+  status: DONE
   summary: Complete installation and classified command diagnostics
 - id: P13-P1-02
-  status: IN_PROGRESS
+  status: DONE
   summary: Durable original request receipts and scoped status
 - id: P13-P2-01
-  status: IN_PROGRESS
+  status: DONE
   summary: Location-labelled health and compatible scoped parsing
 - id: P13-P3-01
-  status: IN_PROGRESS
+  status: DONE
   summary: Versioned authenticated operator federation
 - id: P13-P3-02
-  status: IN_PROGRESS
+  status: DONE
   summary: Bounded asynchronous federated health
 - id: P13-P3-03
-  status: IN_PROGRESS
+  status: DONE
   summary: Federated shared mandatory-read controls
 - id: P13-P4-01
-  status: IN_PROGRESS
+  status: DONE
   summary: Scoped FTS5 mailbox search and thread context
 - id: P13-P4-02
-  status: IN_PROGRESS
+  status: DONE
   summary: Thin session-bound MCP stdio adapter
 - id: P13-P5-01
-  status: IN_PROGRESS
+  status: DONE
   summary: Documentation skill installation and exact-subject release custody
 execution_evidence:
   planned_commands:
@@ -112,6 +113,28 @@ execution_evidence:
     notes without schema changes. Original failure retained; repaired subject still requires canonical proof.
   - Candidate578b11c preflight rejected exact planned deliverable/workitem coverage; P14 plan ledger and log now
     share the same mobile followup title and TODO identity. No0.10 runtime or BCF schema change.
+  - Protected PR116 candidate682f5e1 merged07fc411; provider PR42756209897 and exact-main42757020738 passed. Hash-verified
+    positive JUnit contains772 contract and930 Python3.14 cases including capacity rollback replay and safe503 reason
+    controls. Exact-main archive SHA bfec780611939a47e2eccfef551a1896cd33d3c8ac9913262348e4ac5ae4d5c4 matches locally
+    reproduced6673602 bytes. First nine implementation workitems authored DONE; P13P5 remains active pending final
+    live evidence and canonical closure.
+  - Actual retained-custody exhaustion recovered through qualified operator startup bound2048 with consistent stopped
+    backup. Prior accepted identities and payloads retained without deletion or checkpoint reset. Original failed
+    request retried with its original staged UUID and exact payload; authenticated destination custody and independently
+    retained one-row destination readback confirmed. No execution or semantic acknowledgement inferred. This is
+    a real capacity-induced outage, not a forced provider-disconnect canary.
+  - Eight original signed provider frames authenticate two health results and shared broadcast revisions1/2/3. Private
+    UI confirmed by operator; frozen target populations19/2 and observed reads2/1 remain distinct from execution.
+    Original tested subjectcae9750 is retained. Seven critical authorization/wire/control/ingress owners are byte-identical
+    in repair07fc411; changed capacity settings, atomic rejection and presentation owners have exact-main controls
+    plus actual outage recovery. No relabelled fresh canary, provider disconnect, implicit ACK or work execution
+    claim.
+  - Both approved locations installed protected07fc411. HOME89 members/75 modules and CI79 bound members use unchanged81
+    dependency records/current carrier. Stopped consistent backups verified; all existing custody keys/payload hashes
+    and checkpoint readers preserved. CI maintenance exit0,12.1092s body, fence independently reacquired/released,
+    healthy/Slack connected,2048 effective. CI public/internal cursor correction retained; original request remains
+    one destination record. Closeout edits are governed records/release notes only; final canonical subject proof
+    and publication remain required.
 closeout_requirements:
   claims:
     workitems_closed:
@@ -147,6 +170,6 @@ known_constraints:
 - AHP atomic wake hostile-agent isolation and public A2A deployment remain unqualified
 - One executor standard pipeline and consolidated review; no new broker database scheduler or background daemon
 next_work:
-- Finish alias compatibility and exact-subject installer/archive qualification
-- Complete approved two-location live acceptance with explicit destination grants backup rollback and resource admission
-- Authenticate P13 computed closure before activating planned P14
+- Derive exact P13 computed closure and final-subject release custody through canonical machinery
+- Publish0.10 only after protected PR/main/archive/install proof; activate planned P14 afterwards
+- Retain P12 owning-host resume conditions and unqualified AHP/atomic wake; no inherited hotfix record retirement

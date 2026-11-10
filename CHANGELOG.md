@@ -2,11 +2,13 @@
 
 ## [0.10.0] - 2026-11-10
 
+- Retain independently verified private operator results, immutable shared-control targets and original-request recovery evidence; keep delivery, read receipts and execution distinct.
+
 - Expose retained federation capacity in health and allow a bounded operator-reviewed startup limit without discarding custody; classify capacity rejection without leaking response bodies.
 
 - Accept explicitly configured Slack command aliases at both ingress gates without rewriting audit payloads, human text or authorization scope.
 
-- Construct reliable operator federation, scoped mailbox search, local MCP tools and explicit request diagnostics. This candidate has not completed release custody or live qualification.
+- Add reliable operator federation, scoped mailbox search, local MCP tools and explicit request diagnostics.
 - Verify the real MCP stdio client boundary and document scoped recovery, continuity backups and explicit issue ownership.
 
 ## [0.9.4] - 2026-11-01
