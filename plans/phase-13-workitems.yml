@@ -4,13 +4,13 @@ document:
   id: agentbus-phase-13-workitems
   version: 1.0.0
   generated_at_utc: '2026-11-09T00:00:00Z'
-  status: active
+  status: completed
   path: plans/phase-13-workitems.yml
   phase_id: P13
 workitems:
 - id: P13-P0-01
   priority: P0
-  status: IN_PROGRESS
+  status: DONE
   summary: Baseline continuity contracts and issue traceability
   acceptance:
   - Exact stable baseline and outstanding source disposition are recorded without claiming P12 closure
@@ -20,7 +20,7 @@ workitems:
   - contract-test
 - id: P13-P1-01
   priority: P1
-  status: IN_PROGRESS
+  status: DONE
   summary: Complete installation and classified command diagnostics
   acceptance:
   - Fresh install and upgrade include deferred imports and the full declared runtime population
@@ -31,7 +31,7 @@ workitems:
   - contract-test
 - id: P13-P1-02
   priority: P1
-  status: IN_PROGRESS
+  status: DONE
   summary: Durable original request receipts and scoped status
   acceptance:
   - Successful send and reply expose original UUID and custody status without changing retained fingerprints
@@ -42,7 +42,7 @@ workitems:
   - contract-test
 - id: P13-P2-01
   priority: P2
-  status: IN_PROGRESS
+  status: DONE
   summary: Location-labelled health and compatible scoped parsing
   acceptance:
   - Configured command aliases and location appear consistently in private health and guidance
@@ -52,7 +52,7 @@ workitems:
   - contract-test
 - id: P13-P3-01
   priority: P3
-  status: IN_PROGRESS
+  status: DONE
   summary: Versioned authenticated operator federation
   acceptance:
   - Destination independently authorizes origin generation actor operation and channel mapping
@@ -63,7 +63,7 @@ workitems:
   - contract-test
 - id: P13-P3-02
   priority: P3
-  status: IN_PROGRESS
+  status: DONE
   summary: Bounded asynchronous federated health
   acceptance:
   - Private per-location samples label freshness unreachable and unsupported outcomes
@@ -73,7 +73,7 @@ workitems:
   - contract-test
 - id: P13-P3-03
   priority: P3
-  status: IN_PROGRESS
+  status: DONE
   summary: Federated shared mandatory-read controls
   acceptance:
   - One shared payload and immutable eligible-session snapshot per authorized destination
@@ -83,7 +83,7 @@ workitems:
   - contract-test
 - id: P13-P4-01
   priority: P4
-  status: IN_PROGRESS
+  status: DONE
   summary: Scoped FTS5 mailbox search and thread context
   acceptance:
   - FTS5 support checked before atomic migration; index tracks retained content and retirement
@@ -94,7 +94,7 @@ workitems:
   - contract-test
 - id: P13-P4-02
   priority: P4
-  status: IN_PROGRESS
+  status: DONE
   summary: Thin session-bound MCP stdio adapter
   acceptance:
   - Pinned2025-11-25 protocol tools reuse authenticated API and exact bound profile
@@ -105,7 +105,7 @@ workitems:
   - contract-test
 - id: P13-P5-01
   priority: P5
-  status: IN_PROGRESS
+  status: DONE
   summary: Documentation skill installation and exact-subject release custody
   acceptance:
   - Line-reviewed public guidance and packaged skill match released interfaces and privacy boundaries
