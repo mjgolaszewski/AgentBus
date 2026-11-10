@@ -94,6 +94,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Plan acknowledgement-safe automatic retention and quiet-agent backoff for 0.11; preserve the fourteen-day minimum and record the operator-approved live-canary substitution. No runtime policy is enabled by this plan.
+
 - Begin governed0.10/0.11 construction for reliable operator federation, search and local adapters, followed by controlled client publishing. Planned capabilities are not released.
 
 

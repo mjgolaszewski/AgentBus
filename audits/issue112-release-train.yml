@@ -136,6 +136,11 @@ issue_disposition:
     packaged_skill_installation:
     - P13-P5-01
     - P14-P4-01
+  '12':
+    activity_retention:
+    - P14-P3-02
+    release_acceptance:
+    - P14-P4-01
 interfaces:
   location: AgentBus installation
   channel: Immutable session-derived Slack conversation scope
@@ -156,7 +161,6 @@ external_owner_dispositions:
   only
 blocked_live_prerequisites:
 - P13 location pair approved; custodian window rollout and proof remain prerequisites
-- P14 client workspace/channel and protected local installation credentials unconfirmed
 workflow: Canonical prospective submit truth and custody; one executor and actual pipeline; reuse unchanged valid
   evidence
 source_slice:
@@ -253,3 +257,33 @@ protected_construction:
   pr_run: 42724178676
   main_run: 42724736456
   status: both provider workflows green; P13 closure and live acceptance pending
+live_acceptance_override: Production-client canary waived by operator; approved two-location arrangement substitutes,
+  while offline publication and adapter controls remain required.
+planned_retention_extension:
+  workitem: P14-P3-02
+  invariants:
+  - Automatic purge preserves the thirty-day default and a fourteen-day floor after meaningful per-message lifecycle
+    transitions; retain original request and retirement identities
+  - Inactive or stopped agents do not imply acknowledgement; unsettled or unacknowledged required recipients and
+    reference or replay dependencies remain pinned
+  - Quiet polling reuses delivered backoff with separately bounded safety controls; routine polling does not extend
+    all historical payload lifetimes
+  - Existing worker performs bounded opt-in dry-run-first retention batches with receipt audit and no new daemon;
+    abandoned work needs explicit operator disposition
+  - Old cursor and UUID lookups distinguish retired history from never accepted; FTS retirement stays transactional
+    and scope-bound
+  contract: Versioned automatic-retention contract modeled before P14 implementation; existing manual lifecycle
+    contract unchanged now
+  owners:
+  - src/agentbus_retention_service.py
+  - src/agentbus_participation_service.py
+  - src/agentbus_poll_client.py
+  - src/agentbus_delivery_runtime_service.py
+  primitive: Explicit activity observations plus reference-closed retained payload retirement
+  producer: Existing authenticated participation/client observations and bounded worker maintenance
+  consumer: Exact-session polling, retained history, search index and private operator diagnostics
+  dependencies:
+  - P13 computed closure
+  - P14-P3-01 observations
+  limits: No inference of agent execution, no implicit acknowledgement or automatic abandonment, no live policy
+    activation
