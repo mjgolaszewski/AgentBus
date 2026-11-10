@@ -98,7 +98,8 @@ def configuration(*, include_operator: bool = False) -> tuple[Path, dict[str, st
 def api(values: dict[str, str], path: str, payload: dict | None = None, *,
         bearer_token: str | None = None, session_token: str | None = None,
         timeout_seconds: float | None = None, delivery_key: str | None = None, inbox_id: str | None = None,
-        delivery_epoch: str | None = None) -> dict:
+        delivery_epoch: str | None = None, publication_key: str | None = None,
+        publication_epoch: str | None = None) -> dict:
     token = bearer_token if bearer_token is not None else values.get("AGENTBUS_API_TOKEN", "")
     if path != "/healthz" and not token:
         raise ClientError("Set AGENTBUS_API_TOKEN in the environment or AgentBus .env file.")
@@ -136,6 +137,19 @@ def api(values: dict[str, str], path: str, payload: dict | None = None, *,
                 raise ClientError('Lifecycle delivery requires a verified original request epoch.')
             headers['X-AgentBus-Request-Epoch'] = delivery_epoch
         headers['Idempotency-Key'] = delivery_key
+    if publication_key is not None:
+        try:
+            if str(UUID(publication_key)) != publication_key:
+                raise ValueError()
+        except (ValueError, TypeError, AttributeError):
+            raise ClientError('Publication identity must be a canonical UUID.') from None
+        if (path != '/v1/publications' or not session_token or not inbox_id or delivery_key is not None
+                or not isinstance(publication_epoch, str) or not re.fullmatch('[0-9a-f]{64}', publication_epoch)):
+            raise ClientError('Publication requires its original scoped request epoch.')
+        headers['Idempotency-Key'] = publication_key
+        headers['X-AgentBus-Request-Epoch'] = publication_epoch
+    elif publication_epoch is not None:
+        raise ClientError('Publication epoch requires the original request identity.')
     request = Request(base + path, data=body, headers=headers)
     try:
         with build_opener(NoRedirects, DeferredHTTPSHandler).open(
@@ -150,7 +164,11 @@ def api(values: dict[str, str], path: str, payload: dict | None = None, *,
                     response.headers.get('X-AgentBus-Delivery-Version') != headers['X-AgentBus-Delivery-Version'] or
                     response.headers.get('Idempotency-Key') != delivery_key):
                 raise ClientError('Server did not confirm the negotiated durable acceptance; do not resend blindly.')
-            return json.load(response)
+            result = json.load(response)
+            if publication_key is not None and (response.status != 202 or not isinstance(result, dict)
+                    or result.get('request_id') != publication_key):
+                raise ClientError('Publication acceptance is uncertain; inspect the original request receipt.')
+            return result
     except HTTPError as exc:
         retry = exc.headers.get("Retry-After")
         suffix = f"; retry after {retry} seconds" if retry else ""

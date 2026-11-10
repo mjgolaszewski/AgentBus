@@ -25,8 +25,13 @@ LOGGER = logging.getLogger("agentbus")
 
 class SlackReceiver:
     def __init__(self, store, channel: str, trusted_bot_id: str,
-                 settings: Settings | None = None, federation_bridge=None, *, dashboard=None):
+                 settings: Settings | None = None, federation_bridge=None, *, dashboard=None, workspace_id=None):
         self.store, self.trusted_bot_id = store, trusted_bot_id
+        if workspace_id is not None and (not isinstance(workspace_id, str) or not re.fullmatch(r"T[A-Z0-9]{2,79}", workspace_id)):
+            raise ValueError('Invalid coordination workspace binding')
+        if settings is not None and settings.publication_config is not None and workspace_id is None:
+            raise ValueError('Publication requires a verified coordination workspace binding')
+        self.workspace_id = workspace_id
         self.channels = (channel,) if isinstance(channel, str) else tuple(channel)
         self.channel = self.channels[0]
         self.settings = settings
@@ -85,18 +90,29 @@ class SlackReceiver:
     def _finish_interaction(self, client, payload: dict, principal: tuple[str, str]) -> None:
         from src.agentbus_slack_ui_commands_service import execute_interaction
         user, channel = principal
+        result = None
         try:
             result = execute_interaction(payload, self.settings, self.store, client.web_client)
             self._post_reply(client, channel, user, result)
         except Exception:
             LOGGER.error('Could not finish AgentBus operator button; inspect status before retrying')
             try:
-                self._post_reply(client, channel, user,
-                    'Button outcome is uncertain. Review enrollments or results before retrying.')
+                outcome = getattr(result, 'outcome', 'unknown')
+                warning = ('Button action completed; private confirmation failed. Review publications, enrollments or results before retrying.'
+                           if outcome in {'accepted', 'committed'} else
+                           'Button outcome is uncertain. Review publications, enrollments or results before retrying.')
+                self._post_reply(client, channel, user, warning)
             except Exception:
                 LOGGER.error('Could not report uncertain AgentBus operator button outcome')
 
     def __call__(self, client: BaseSocketModeClient, request: SocketModeRequest) -> None:
+        payload = request.payload if isinstance(request.payload, dict) else {}
+        if self.workspace_id is not None:
+            team = payload.get('team')
+            actual = team.get('id') if request.type == 'interactive' and isinstance(team, dict) else payload.get('team_id')
+            if actual != self.workspace_id or (payload.get('team_id') is not None and payload['team_id'] != self.workspace_id):
+                client.send_socket_mode_response(SocketModeResponse(envelope_id=request.envelope_id))
+                return
         if request.type == 'interactive':
             from src.agentbus_slack_ui_commands_service import interaction_principal
             payload = request.payload if isinstance(request.payload, dict) else {}

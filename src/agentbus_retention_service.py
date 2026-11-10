@@ -39,9 +39,24 @@ class RetentionStore:
                 cursor INTEGER PRIMARY KEY REFERENCES messages(cursor),
                 parent INTEGER NOT NULL REFERENCES messages(cursor))''')
             owner._db.execute('CREATE INDEX IF NOT EXISTS lifecycle_parent ON lifecycle_edges(parent)')
+            owner._db.execute("CREATE TABLE IF NOT EXISTS lifecycle_activity (cursor INTEGER PRIMARY KEY REFERENCES messages(cursor),at REAL NOT NULL)")
+            owner._db.execute("""CREATE TABLE IF NOT EXISTS lifecycle_retired_requests (
+                channel TEXT NOT NULL,request_id TEXT NOT NULL,chat_id TEXT NOT NULL,position INTEGER NOT NULL,
+                retired_at REAL NOT NULL,PRIMARY KEY(channel,request_id))""")
             owner._db.execute('''CREATE TABLE IF NOT EXISTS lifecycle_retired_positions (
                 channel TEXT NOT NULL,first_position INTEGER NOT NULL,last_position INTEGER NOT NULL,
                 PRIMARY KEY(channel,first_position))''')
+
+    def activity(self, cursor, instant=None):
+        """New provider observations are meaningful; duplicates never extend payload age."""
+        current = self.owner.lifecycle.now(instant)
+        self.owner._db.execute("INSERT INTO lifecycle_activity VALUES(?,?) ON CONFLICT(cursor) DO UPDATE SET at=MAX(at,excluded.at)",
+                               (cursor, current))
+
+    def retired_request(self, principal, request_id):
+        row = self.owner._db.execute("SELECT position,retired_at FROM lifecycle_retired_requests WHERE channel=? AND chat_id=? AND request_id=?",
+                                   (principal.channel, principal.chat_id, request_id)).fetchone()
+        return dict(row) if row is not None else None
 
     def has_retired_positions(self, channel, after, through):
         with self.owner._lock:
@@ -122,13 +137,24 @@ class RetentionStore:
                 raise ValueError('Archived payload is not a message')
             return result
 
-    def _eligible(self, channel, current, *, purge=False):
+    def _eligible(self, channel, current, *, purge=False, automatic_age_seconds=None):
         # Legacy and federated custody stay pinned; no remote expiry is inferred.
         field = 'purge_after' if purge else 'archive_after'
         provider_guard = ''
+        automatic_guard = ''
         parameters = [channel, current, current]
-        if purge:
-            cutoff = str(max(0, current-self.owner.lifecycle.policy.retention_seconds))
+        if automatic_age_seconds is not None:
+            if type(automatic_age_seconds) is not int or not 14 * 86400 <= automatic_age_seconds <= 365 * 86400:
+                raise LifecycleRejected(422, 'Automatic retention requires14..365 days')
+            automatic_guard = """AND EXISTS (SELECT 1 FROM lifecycle_targets t WHERE t.cursor=m.cursor)
+                AND NOT EXISTS (SELECT 1 FROM lifecycle_targets t WHERE t.cursor=m.cursor
+                    AND (t.state!='handled' OR t.semantic_ack_at IS NULL))
+                AND MAX(p.created_at,COALESCE((SELECT max(t.outcome_at) FROM lifecycle_targets t WHERE t.cursor=m.cursor),p.created_at),
+                    COALESCE((SELECT max(t.semantic_ack_at) FROM lifecycle_targets t WHERE t.cursor=m.cursor),p.created_at),
+                    COALESCE((SELECT at FROM lifecycle_activity a WHERE a.cursor=m.cursor),p.created_at))<=?"""
+            parameters.append(current - automatic_age_seconds)
+        if purge or automatic_age_seconds is not None:
+            cutoff = str(max(0, current-max(self.owner.lifecycle.policy.retention_seconds, automatic_age_seconds or 0)))
             parameters.extend((cutoff, cutoff))
             provider_guard = """AND agentbus_provider_ref_covered_v1(m.slack_ts,?)=1
                 AND NOT EXISTS (SELECT 1 FROM local_delivery_observations observed
@@ -150,11 +176,12 @@ class RetentionStore:
                 AND child.cursor!=m.cursor AND (child.thread_ts=m.slack_ts OR child.thread_ts IN
                     (SELECT provider_ref FROM local_delivery_observations o WHERE o.channel=m.channel AND o.local_cursor=m.cursor)))
             AND m.payload {'=' if purge else '!='} 'null'
+            {automatic_guard}
             {provider_guard}
             ORDER BY m.cursor LIMIT 100''', parameters).fetchall()
         return rows
 
-    def archive(self, channel, *, actor, request_key=None, apply=False, instant=None):
+    def archive(self, channel, *, actor, request_key=None, apply=False, instant=None, automatic_age_seconds=None):
         lifecycle = self.owner.lifecycle
         if not lifecycle.enabled:
             raise LifecycleRejected(409, 'Message lifecycle is not enabled')
@@ -172,7 +199,7 @@ class RetentionStore:
                         raise LifecycleRejected(409, 'Operation identity already binds another command')
                     return json.loads(prior['result'])
             current = lifecycle.now(instant)
-            rows = self._eligible(channel, current)
+            rows = self._eligible(channel, current, automatic_age_seconds=automatic_age_seconds)
             result = {'channel':channel, 'applied':apply, 'eligible':len(rows), 'batch_limit':100,
                       'storage_before':self.storage()}
             if apply:
@@ -191,7 +218,7 @@ class RetentionStore:
                     (request_key, channel, actor, 'archive', current, json.dumps(result, sort_keys=True)))
             return result
 
-    def purge(self, channel, *, actor, request_key=None, apply=False, instant=None):
+    def purge(self, channel, *, actor, request_key=None, apply=False, instant=None, automatic_age_seconds=None):
         """Retire verified closed payloads and their retry rows after reference closure."""
         lifecycle = self.owner.lifecycle
         if not lifecycle.enabled:
@@ -210,11 +237,11 @@ class RetentionStore:
                         raise LifecycleRejected(409, 'Operation identity already binds another command')
                     return json.loads(prior['result'])
             current = lifecycle.now(instant)
-            rows = self._eligible(channel, current, purge=True)
+            rows = self._eligible(channel, current, purge=True, automatic_age_seconds=automatic_age_seconds)
             # Refuse future schema references instead of guessing their retirement policy.
             owned = {'lifecycle_targets','lifecycle_payloads','lifecycle_archive','lifecycle_requests',
                      'local_delivery_obligations','local_delivery_observations','channel_positions',
-                     'lifecycle_edges'}
+                     'lifecycle_edges','lifecycle_activity'}
             foreign = []
             for table, in self.owner._db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall():
                 if table in owned:
@@ -235,6 +262,17 @@ class RetentionStore:
                                                       (channel, row['cursor'])).fetchone()
                     if position is None:
                         raise ValueError('Retirement requires its original channel-local position')
+                    authored = self.owner._db.execute("SELECT chat_id FROM chat_identities WHERE current_route=? UNION SELECT chat_id FROM routing_aliases WHERE route=?",
+                                                      (row['sender'], row['sender'])).fetchall()
+                    keys = self.owner._db.execute("SELECT request_id FROM local_delivery_obligations WHERE channel=? AND local_cursor=?",
+                                                  (channel, row['cursor'])).fetchall()
+                    if row['sender_assurance'] == 'session' and len(authored) == 1:
+                        for key in keys:
+                            if self.owner._db.execute("SELECT count(*) FROM lifecycle_retired_requests").fetchone()[0] >= 65536:
+                                raise LifecycleRejected(503, 'Retired request receipt capacity requires operator review')
+                            lifecycle.protect_extensions()
+                            self.owner._db.execute("INSERT INTO lifecycle_retired_requests VALUES(?,?,?,?,?)",
+                                (channel, key[0], authored[0][0], position[0], current))
                     refs = [row['slack_ts'], *(item[0] for item in self.owner._db.execute(
                         'SELECT provider_ref FROM local_delivery_observations WHERE channel=? AND local_cursor=?',
                         (channel, row['cursor'])))]
@@ -243,7 +281,7 @@ class RetentionStore:
                     old = self.owner._db.execute('SELECT provider_floor FROM lifecycle_ingress WHERE channel=?', (channel,)).fetchone()
                     floor = max(floor, Decimal(old[0]) if old else Decimal('0'))
                     self.owner._db.execute('INSERT OR REPLACE INTO lifecycle_ingress VALUES (?,?)', (channel, str(floor)))
-                    for table, column in (('lifecycle_edges','cursor'), ('lifecycle_targets','cursor'),
+                    for table, column in (('lifecycle_activity','cursor'), ('lifecycle_edges','cursor'), ('lifecycle_targets','cursor'),
                         ('lifecycle_requests','cursor'), ('lifecycle_archive','cursor'),
                         ('lifecycle_payloads','cursor'), ('local_delivery_observations','local_cursor'),
                         ('local_delivery_obligations','local_cursor'), ('channel_positions','message_id')):

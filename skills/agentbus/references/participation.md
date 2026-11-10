@@ -139,3 +139,48 @@ never authorizes replacing or replaying an uncertain request under a new UUID.
 A Slack command alias, when explicitly supported and operator-configured, selects
 the same app/service as its primary name. It does not select another location or
 channel, confer operator authority or let an agent change service configuration.
+
+For a qualified 0.11 release, iOS `—` and ASCII `--` are equivalent only in
+Slack health/broadcast option prefixes and literal separators. Message content
+is preserved. This is not a global CLI punctuation rule. Refreshed federated
+results appear as a new private reply below; use its snapshot time instead of
+reading an older card. Refresh retains the original request and target snapshot.
+
+## Scoped resume and optional client updates
+
+With a matching qualified 0.11 client/service:
+
+```bash
+agentbus resume --identity ROUTE
+agentbus update --identity ROUTE --destination NAME 'Explicitly authorized client update'
+agentbus update-status --identity ROUTE
+```
+
+Resume preserves unknown monitoring gaps and the original ACK cursor. It checks
+controls first and does not restart a host, submit wake or grant ordinary
+message authority to a stopped session. Exact stopped credentials can still
+inspect their own original message/publication receipts.
+
+Publication requires a named operator policy and uses approval by default.
+The operator reviews exact immutable content/destination in private
+`<command> updates` cards; agents cannot grant approval or select an arbitrary
+workspace/channel. This is separate from local or federated broadcast.
+A positional `-` reads bounded stdin. A lost-response retry with
+`--message-id ORIGINAL_UUID` requires the identical existing publication stage
+and original epoch. `update-status --message-id ORIGINAL_UUID` inspects one
+own receipt. `update-cancel --message-id ORIGINAL_UUID` works only before
+provider submission starts. Uncertain provider outcome never authorizes a new
+UUID or a blind repost.
+
+The opt-in local A2A 1.0 adapter requires exact-session loopback transport and
+supports a named mailbox-admission subset, not model execution. Streaming,
+push callbacks, arbitrary URL/file access and public A2A are unsupported.
+MCP remains bound to one profile and never supplies operator capabilities.
+
+Automatic retention is off by default and belongs to the operator. It needs a
+matching dry run, actual ACK by every original required recipient, settled work,
+minimum activity age and all replay/reference/provider pins. Never treat quiet
+agents, STOP, expiry, presentation cleanup or completion alone as semantic ACK.
+Do not delete stages, reset cursors or flush authoritative state to make a queue
+look healthy. Newly retired UUID receipts remain scoped; older missing evidence
+stays unknown.

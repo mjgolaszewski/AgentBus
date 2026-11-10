@@ -1,9 +1,8 @@
 # AgentBus consumer contract
 
 This document describes channel isolation and experimental lifecycle behavior
-in the current release line. Released 0.9.0 remains
-the single-channel migration baseline. Updated clients and an offline migration
-are required. Bounded two-channel evidence applies to the exact released subject;
+in the current release line. Populated single-channel stores require the explicit
+offline migration and matching updated clients. Bounded two-channel evidence applies to the exact released subject;
 it does not qualify other installations or owner-wake interoperability. The [contract model](docs/contracts.md) identifies current rules,
 inherited participation rules, source owners, and evidence boundaries.
 [Participation v2](contracts/participation/v2/participation.contract.yml) and
@@ -32,7 +31,7 @@ the service. See the [security boundary](SECURITY.md#trusted-workspace-boundary)
 ## Chat identity
 
 New identities use `prefix:repo:name`; `AGENTBUS_LOCAL_PREFIX` supplies the
-required local prefix (for example, `home`). Onboarding can derive `repo` from the current Git
+required local prefix (for example, `local`). Onboarding can derive `repo` from the current Git
 checkout and creates local persona state. Grant-backed enrollment supplies the
 stable service `chat_id` UUID; an eligible unjoined profile keeps its UUID through
 a handoff or secret-bound Slack approval. The joined profile records a display name,
@@ -122,7 +121,9 @@ custody while ordinary access and posting are paused.
 
 `GET /v1/sessions/{id}/self-presence` requires that exact session's private
 credential and reads only its current route, participation state, and presence
-facts. It does not refresh check-in or grant the operator roster. The local
+facts. It does not refresh check-in or grant the operator roster. A separate response
+observer records coalesced actual API access; this is non-authorizing telemetry,
+not evidence that a model is monitoring or working. The local
 `codex-wake status` command combines that projection with this host's binding,
 opt-in, worker, rate, and assured pending-event facts. Its readiness says
 whether the adapter can attempt a wake; current Codex host ownership and turn
@@ -237,3 +238,24 @@ creates no local session, owner, wake eligibility, or operator authority. AgentB
 transports data; an explicitly enabled local adapter may request a host-authorized
 turn, but neither the message nor its receipt executes work or extends the user's
 authorization.
+
+## Explicit optional interfaces
+
+[Client publishing](docs/client-publishing.md) accepts only a named destination
+and text under the author session. Approval binds one immutable draft by default;
+explicit destination-specific direct policy is separate. The original publication
+UUID, stopped-session receipt access, provider uncertainty and cancellation stay
+separate from ordinary bus messages. Client replies never enter the bus.
+
+The [local A2A subset](docs/local-adapters.md) pins 1.0, requires opt-in loopback
+transport and exact session/inbox proof, and completes only the named durable
+mailbox-admission operation. MCP stays bound to one enrolled profile. Neither
+adapter grants operator authority, arbitrary network access or model execution.
+
+[Resume](docs/recovery.md) preserves unknown gaps, controls and the original ACK
+cursor. Optional private stale notices require an explicit scoped operator
+request and never authorize wake or retry. [Automatic retention](docs/message-lifecycle.md)
+is off by default, requires a matching dry run before apply, and pins unsettled,
+unacknowledged and referenced work. Completion, semantic ACK and inactivity remain
+different facts. Retired original UUIDs remain scoped acceptance receipts and
+cannot be reused for fresh custody.

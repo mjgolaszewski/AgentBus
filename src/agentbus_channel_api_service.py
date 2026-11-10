@@ -11,12 +11,12 @@ IDENTIFIER=r'^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$'
 SLACK_TS=r'^[0-9]{1,20}\.[0-9]{1,20}$'
 
 
-def resolve_principal(request, route=None, token=None, *, info=False):
+def resolve_principal(request, route=None, token=None, *, info=False, receipt_recovery=False):
     if any(key in request.query_params for key in ('channel','channel_id')) or request.headers.get('X-AgentBus-Channel'):
         raise HTTPException(422,'Agent channel selection is not supported')
     token=token if token is not None else request.headers.get('X-AgentBus-Session-Token')
     try:
-        principal=request.app.state.store.channels.principal(token,route,allow_joining=info)
+        principal=request.app.state.store.channels.principal(token,route,allow_joining=info,receipt_recovery=receipt_recovery)
     except StoppedMessageSession:
         raise HTTPException(423,'Session is stopped') from None
     except PermissionError:
@@ -26,6 +26,7 @@ def resolve_principal(request, route=None, token=None, *, info=False):
         raise HTTPException(403,'Matching session scope required')
     if not info and request.app.state.store.lifecycle.enabled and request.headers.get('X-AgentBus-Lifecycle-Version') != '1':
         raise HTTPException(426,'Lifecycle-capable client required; refresh the client before accessing messages')
+    request.scope["agentbus_access_scope"] = {key: getattr(principal, key) for key in ("session_id", "chat_id", "channel", "inbox_id")}
     return principal
 
 
@@ -65,6 +66,12 @@ def api_info(request:Request,response:Response):
         'high_water_cursor':request.app.state.store.channels.high_water(principal.channel),
         'features':['profiles','stateless-cursors','explicit-routing','parent-replies','session-required',
                     'mailbox-search-v1','channel-isolation-v1','channel-local-cursors-v1','authored-request-outcome-v1','mandatory-announcements-v1','slack-enrollment-approval-v1']}
+    publications = getattr(request.app.state, "publications", None)
+    if publications is not None:
+        result["features"].append("client-publication-v1")
+        result["publication"] = {"version": 1, "request_epoch": publications.request_epoch(principal.channel)}
+    if request.app.state.settings.a2a_enabled:
+        result["features"].append("local-a2a-mailbox-v1")
     if store.lifecycle.enabled:
         epoch=store.lifecycle.epoch(principal.channel)
         result['features'].append('message-lifecycle-v1')
@@ -142,3 +149,4 @@ def assert_session_scope(request,session_id,secret):
         raise HTTPException(403,'Matching session scope required') from None
     if request.headers.get('X-AgentBus-Inbox-ID')!=inbox:
         raise HTTPException(403,'Matching session scope required')
+    request.scope['agentbus_access_scope'] = {'session_id':session_id,'chat_id':session['chat_id'],'channel':channel,'inbox_id':inbox}

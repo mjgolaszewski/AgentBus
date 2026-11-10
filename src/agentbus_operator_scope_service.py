@@ -4,16 +4,25 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime, timezone
 
 from src.agentbus_presentation_service import section_blocks
 from src.agentbus_slack_ui_service import OperatorAction, OperatorReply, action_button
+
+
+def option_prefix(text):
+    """Accept iOS smart punctuation only where a scope option is expected."""
+    return "--" + text[1:] if text.startswith("—") else text
 
 
 def parse_scope(raw):
     pieces = raw.strip().split(maxsplit=1)
     action = pieces[0] if pieces else ""
     rest = pieces[1].strip() if len(pieces) > 1 else ""
-    if action not in {"health", "broadcast"} or not rest.startswith("--"):
+    if action not in {"health", "broadcast"}:
+        return None
+    rest = option_prefix(rest)
+    if not rest.startswith("--"):
         return None
     if rest == "--" or rest.startswith("-- "):
         text = rest[2:].lstrip()
@@ -33,9 +42,10 @@ def parse_scope(raw):
         location, text = None, tail
     else:
         raise ValueError("Unsupported scope option; use -- before literal flag-like text")
-    if text.startswith("-- "):
-        text = text[3:].lstrip()
-    elif text.startswith("--"):
+    option_text = option_prefix(text)
+    if option_text.startswith("-- "):
+        text = text[1 if text.startswith("—") else 2:].lstrip()
+    elif option_text.startswith("--"):
         raise ValueError("Scope selectors conflict or an option is unknown")
     if (action == "health" and text) or (action == "broadcast" and not text):
         raise ValueError("Health accepts no text; broadcast requires text")
@@ -82,6 +92,8 @@ def operator_results(owner, request_id, actor, channel, page=0):
                 f"Federation initialized `{value(federation.get('initialized', 'not observed'))}`; monitoring not inferred."
             )
         sections.append("\n".join(lines))
+    stamp = datetime.fromtimestamp(owner.bridge.now(), timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    sections.insert(1, f"Snapshot `{stamp}`. Refresh posts a new private reply below; older cards stay unchanged.")
     text = "\n\n".join(sections)
     buttons = []
     for label, index in [("Previous", page - 1), ("Refresh", page), ("Next", page + 1)]:

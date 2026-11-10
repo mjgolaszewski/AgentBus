@@ -610,3 +610,27 @@ def test_cached_nonterminal_outcome_refreshes_flags_without_retirement_or_ack(tm
     assert retained[0]['message']['lifecycle']['lease_elapsed'] is True
     assert event['message']['lifecycle']['owned_by_this_session'] is False
     assert json.loads(path.read_text())['ack_cursor'] == 0
+
+
+def test_unrelated_chatter_does_not_reset_quiet_inbox_backoff(tmp_path, monkeypatch):
+    path, profile = profile_at(tmp_path)
+    profile["quiet_mode"] = True
+    path.write_text(json.dumps(profile))
+    clock, reports, reads = [0.0], [], []
+    monkeypatch.setattr(poll.time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(poll.time, "sleep", lambda seconds: clock.__setitem__(0, clock[0] + seconds))
+    def fake_api(values, route, payload=None, **kwargs):
+        if route.endswith("/check-in"):
+            reports.append(payload["current_backoff_seconds"])
+            if len(reports) >= 10:
+                profile["participation"]["stopped"] = True
+                path.write_text(json.dumps(profile))
+            return {"revision": "r1", "values": POLICY, "sources": {}, "ack_required": False}
+        reads.append(clock[0])
+        return {"messages": [{"cursor": len(reads), "audience": "direct", "recipient": "agentbus:someone-else",
+                              "kind": "status", "actionable": False}], "next_cursor": len(reads), "has_more": False}
+    monkeypatch.setattr(poll, "api", fake_api)
+    poll._worker(path, {"AGENTBUS_URL": profile["service_url"]})
+    assert max(reports) > POLICY["initial_interval_seconds"]
+    assert json.loads(poll.spool_path(path).read_text())["events"] == []
+    assert profile["ack_cursor"] == 0

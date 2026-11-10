@@ -8,6 +8,8 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from src.agentbus_automatic_retention_service import DEFAULT_RETENTION_DAYS, AutomaticRetentionPolicy
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -28,6 +30,14 @@ class Settings:
     local_prefix: str | None = None
     slack_command_aliases: tuple[str, ...] = ()
     federation_custody_rows: int | None = None
+    publication_config: Path | None = None
+    automatic_retention: bool = False
+    automatic_retention_apply: bool = False
+    automatic_retention_days: int = DEFAULT_RETENTION_DAYS
+    stale_monitor_config: Path | None = None
+    a2a_enabled: bool = False
+    bind_host: str = "127.0.0.1"
+    bind_port: int = 8766
 
     @property
     def channels(self) -> tuple[str, ...]:
@@ -41,6 +51,15 @@ class Settings:
         return isinstance(command, str) and command in self.slack_commands
 
     def __post_init__(self):
+        AutomaticRetentionPolicy(self.automatic_retention_days, self.automatic_retention_apply)
+        if (type(self.automatic_retention) is not bool
+                or self.automatic_retention_apply and not self.automatic_retention):
+            raise ValueError("Automatic retention requires explicit enable/apply flags and14..365 days")
+        if type(self.a2a_enabled) is not bool:
+            raise ValueError("AGENTBUS_A2A_ENABLED must be boolean")
+        if self.a2a_enabled and (self.bind_host not in {"127.0.0.1", "::1", "localhost"}
+                                 or type(self.bind_port) is not int or not 1 <= self.bind_port <= 65535):
+            raise ValueError("Local A2A requires an explicitly loopback-bound service")
         if self.local_prefix is not None and not re.fullmatch(r"[a-z][a-z0-9-]{0,31}", self.local_prefix):
             raise ValueError("AGENTBUS_LOCAL_PREFIX must be a lowercase route prefix of at most32 characters")
         if not isinstance(self.slack_command, str) or not re.fullmatch(r"/[a-z][a-z0-9_-]{0,31}", self.slack_command):
@@ -100,6 +119,8 @@ class Settings:
         if any(not re.fullmatch(r"[UW][A-Z0-9]{2,59}", item) for item in users):
             raise ValueError("AGENTBUS_SLACK_OPERATOR_USER_IDS must contain Slack user IDs")
         federation_config = os.environ.get('AGENTBUS_FEDERATION_CONFIG', '').strip()
+        monitor_config = os.environ.get("AGENTBUS_STALE_MONITOR_CONFIG", "").strip()
+        publication_config = os.environ.get('AGENTBUS_PUBLICATIONS_CONFIG', '').strip()
         delivery_version = os.environ.get('AGENTBUS_LOCAL_DELIVERY_VERSION', '').strip()
         if delivery_version not in {'', '1'}:
             raise ValueError('AGENTBUS_LOCAL_DELIVERY_VERSION must be 1 when set')
@@ -116,11 +137,25 @@ class Settings:
         custody_rows = int(raw_custody) if raw_custody else None
         raw_aliases = os.environ.get("AGENTBUS_SLACK_COMMAND_ALIASES", "").strip()
         aliases = tuple(name.strip() for name in raw_aliases.split(",")) if raw_aliases else ()
-        return cls(api_token=values["api_token"], slack_bot_token=values["slack_bot_token"],
+        retention = os.environ.get("AGENTBUS_AUTO_RETENTION", "0")
+        retention_apply = os.environ.get("AGENTBUS_AUTO_RETENTION_APPLY", "0")
+        retention_days = os.environ.get("AGENTBUS_AUTO_RETENTION_DAYS", str(DEFAULT_RETENTION_DAYS))
+        if retention not in {"0", "1"} or retention_apply not in {"0", "1"} or not re.fullmatch(r"[0-9]{1,3}", retention_days):
+            raise ValueError("Invalid automatic retention configuration")
+        a2a = os.environ.get("AGENTBUS_A2A_ENABLED", "0")
+        if a2a not in {"0", "1"}:
+            raise ValueError("AGENTBUS_A2A_ENABLED must be0 or1")
+        raw_port = os.environ.get("AGENTBUS_PORT", "8766")
+        if not re.fullmatch(r"[0-9]{1,5}", raw_port):
+            raise ValueError("AGENTBUS_PORT must be an integer in1..65535")
+        return cls(automatic_retention=retention == "1", automatic_retention_apply=retention_apply == "1",
+                   automatic_retention_days=int(retention_days), stale_monitor_config=Path(monitor_config).expanduser() if monitor_config else None, a2a_enabled=a2a == "1", bind_host=os.environ.get("AGENTBUS_HOST", "127.0.0.1"),
+                   bind_port=int(raw_port), api_token=values["api_token"], slack_bot_token=values["slack_bot_token"],
                    slack_app_token=values["slack_app_token"],
                    slack_command=os.environ.get("AGENTBUS_SLACK_COMMAND", "/agentbus").strip(),
                    local_prefix=os.environ.get("AGENTBUS_LOCAL_PREFIX", "").strip() or None,
                    slack_command_aliases=aliases, federation_custody_rows=custody_rows,
+                   publication_config=Path(publication_config).expanduser() if publication_config else None,
                    slack_channel=channels[0] if len(channels)==1 else "",
                    slack_channels=channels if multiple is not None else (),
                    db_path=db_path.expanduser(), operator_token=operator_token,

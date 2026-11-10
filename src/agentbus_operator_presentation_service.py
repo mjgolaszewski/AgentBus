@@ -52,6 +52,12 @@ def health_text(snapshot):
         sections.append(f"*{c['channel']}* — {'enabled' if c['enabled'] else 'disabled / retained'}\n"
             f"Messages `{c['messages']}`; local high-water `{c['high_water_cursor']}`; sessions `{sum(c['sessions'].values())}`\n"
             f"Last recorded client contact `{c.get('access', {}).get('last_recorded_contact_at') or 'not observed'}`; inbox monitoring not observed")
+    for c in channels:
+        access = c.get('access', {})
+        if 'last_actual_api_access' in access:
+            sections.append(f"*{c['channel']} — observations*\nLast actual API access `{_timestamp(access['last_actual_api_access'])}` "
+                f"(coalesced `{access['access_coalescing_seconds']}s`); requested stale monitors `{access['requested_stale_monitors']}`. "
+                "Continuous inbox monitoring and model work are not inferred.")
     if snapshot['channel_details_truncated'] or len(channels) < len(snapshot['channels']):
         sections.append('Additional retained channel details omitted from this bounded dashboard.')
     sections.append('*Queues*\nTransport custody, recipient work and shared read receipts are separate.')
@@ -104,6 +110,15 @@ def health_text(snapshot):
         f"retained obligations `{sum(federation['custody'].values())}`{capacity_note}\nRemote health: not observed",
         '*Qualification*\nProvider delivery, destination custody and semantic ACK are distinct. '
         'Owner interoperability and atomic idle-only wake remain unqualified.'])
+    if adapters := snapshot.get('optional_adapters'):
+        notices = '; '.join(f"{key} `{value}`" for key, value in sorted(adapters['private_notice_states'].items())) or 'none'
+        publication = '; '.join(f"{key} `{value}`" for key, value in sorted(adapters['publication_states'].items())) or 'none'
+        sections.append('*Optional adapters*\n' + f"Local A2A `{adapters['local_a2a']}`; explicit client publication `{adapters['client_publication']}`\n"
+            f"Publication custody: {publication}\nPrivate notice observations: {notices}\nRequested private stale monitors `{adapters['requested_stale_monitors']}`; no host execution authority.")
+    if automatic := snapshot.get('automatic_retention'):
+        latest = automatic.get('latest') or {}
+        sections.append('*Automatic retention*\n' + f"Enabled `{automatic['enabled']}`; apply `{automatic['apply']}`; "
+            f"activity age `{automatic['activity_days']}d`\nLatest `{latest.get('state', 'not observed')}`; actual ACK and custody pins remain required.")
     sections.append('Service health and enrollment are observations, not proof that an agent is actively monitoring or executing.')
     return '\n\n'.join(sections)
 

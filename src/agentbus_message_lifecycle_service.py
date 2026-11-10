@@ -75,8 +75,11 @@ class MessageLifecycleStore:
                 'CREATE INDEX IF NOT EXISTS lifecycle_target_deadline ON lifecycle_targets(state,deadline)',
             ):
                 owner._db.execute(statement)
+            columns = {row['name'] for row in owner._db.execute('PRAGMA table_info(lifecycle_targets)')}
+            if 'semantic_ack_at' not in columns:
+                owner._db.execute('ALTER TABLE lifecycle_targets ADD COLUMN semantic_ack_at REAL')
         marker = owner._db.execute("SELECT value FROM metadata WHERE key='message_lifecycle_version'").fetchone()
-        if marker is not None and marker[0] != '1':
+        if marker is not None and marker[0] not in {'1', '2'}:
             raise ValueError('Unsupported message lifecycle version')
         self.enabled = marker is not None
         if self.enabled:
@@ -175,7 +178,9 @@ class MessageLifecycleStore:
                         self.owner._db.execute(f'CREATE TRIGGER {name} BEFORE {action} ON {quoted} '
                             'BEGIN SELECT agentbus_message_lifecycle_v1(); END')
             self.policy = policy
-            self.owner._db.execute("INSERT OR REPLACE INTO metadata VALUES ('message_lifecycle_version','1')")
+            prior = self.owner._db.execute("SELECT value FROM metadata WHERE key='message_lifecycle_version'").fetchone()
+            version = '2' if prior is not None and prior[0] == '2' else '1'
+            self.owner._db.execute("INSERT OR REPLACE INTO metadata VALUES ('message_lifecycle_version',?)", (version,))
             self.owner._db.execute("INSERT OR REPLACE INTO metadata VALUES ('message_lifecycle_policy',?)",
                                    (json.dumps(vars(policy), sort_keys=True),))
             current = self.now(instant, persist=True)
@@ -188,6 +193,11 @@ class MessageLifecycleStore:
                     (current, current + policy.archive_seconds, current + policy.retention_seconds))
             self.rotate_epochs(current)
         self.enabled = True
+
+    def protect_extensions(self):
+        """Caller transaction owns first accepted extension custody; wire remainsv1."""
+        if self.enabled:
+            self.owner._db.execute("UPDATE metadata SET value='2' WHERE key='message_lifecycle_version'")
 
     def now(self, instant=None, *, persist=False):
         current = time.time() if instant is None else instant
@@ -322,6 +332,10 @@ class MessageLifecycleStore:
                    'destination_custody':'unknown', 'execution':'unknown',
                    'semantic_acknowledgement':'unknown'}
         with self.owner._lock:
+            retired = self.owner.retention.retired_request(principal, request_id)
+            if retired is not None:
+                return {**unknown, 'known': True, 'accepted': True, 'history': 'retired',
+                        'cursor': retired['position'], 'retired_at': retired['retired_at']}
             row = self.owner._db.execute('SELECT o.*,m.sender,m.sender_assurance FROM local_delivery_obligations o '
                 'JOIN messages m ON m.cursor=o.local_cursor WHERE o.channel=? AND m.channel=? AND o.request_id=?',
                 (principal.channel, principal.channel, request_id)).fetchone()
@@ -429,6 +443,8 @@ class MessageLifecycleStore:
             for cursor, token in receipts:
                 target = self.target(principal, cursor, current)
                 if target['state'] == 'handled':
+                    self.owner._db.execute('UPDATE lifecycle_targets SET semantic_ack_at=COALESCE(semantic_ack_at,?) WHERE cursor=? AND chat_id=?',
+                                           (current, cursor, principal.chat_id))
                     result['already_handled'] += 1
                     continue
                 if target['state'] == 'expired_unclaimed' or target['deadline_elapsed']:
@@ -441,6 +457,8 @@ class MessageLifecycleStore:
                     raise LifecycleRejected(423, 'Stopped sessions cannot pick up new work')
                 self.pickup(principal, cursor, token, current)
                 self.finish(principal, cursor, token, current)
+                self.owner._db.execute('UPDATE lifecycle_targets SET semantic_ack_at=COALESCE(semantic_ack_at,?) WHERE cursor=? AND chat_id=?',
+                                       (current, cursor, principal.chat_id))
                 result['handled'] += 1
         return result
 

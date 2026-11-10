@@ -1,0 +1,53 @@
+document:
+  kind: client_publication_contract
+  version: 1.0.0
+  status: active
+  path: contracts/publication/v1/publication.contract.yml
+scope:
+  availability: opt-in 0.11 capability; no authority on older services
+  owner: service publication custody and bound provider adapters
+  storage: existing SQLite database
+  execution: existing delivery worker; no extra Socket Mode connection
+invariants:
+- Only an explicit update operation creates a publication; ordinary bus sends, controls, receipts and federation create zero publication obligations
+- A named destination binds a Slack installation, verified workspace/bot/channel, permitted author routes and source channels, policy revision and approval mode
+- Every installation has an explicit locally protected credential reference; there is no implicit coordination-token fallback or credential replication
+- Exact active session and inbox scope precede destination lookup; unknown and unauthorized destinations share a non-disclosing denial
+- Draft text, author identity, destination, original UUID and policy revision are immutable; altered duplicates fail
+- Original request UUIDs are scoped by exact author/session/channel/inbox; independent authors may reuse the same UUID without conflict or disclosure
+- A replacement session cannot reuse a prior session original UUID for the same chat; retained custody stays session-private and cannot be reposted by handoff
+- Provider and operator handles use a deterministic scoped publication UUID; the original author UUID remains the retry and status handle
+- Default approval and explicit destination-specific direct policy remain separate from enrollment and federation grants
+- Approval binds exact content and policy digest; recheck current destination and author policy immediately before provider submission
+- Clients supply no arbitrary endpoint, workspace, channel, recipient, forwarding selector or approval bypass
+- A client destination cannot overlap this service coordination workspace/channel; client messages and replies have no inbound adapter or task authority
+state:
+  transitions: [draft, awaiting_approval, ready, submitted, uncertain, delivered, failed, cancelled]
+  cancellation: only before provider submission starts; uncertain or delivered is never reported safely cancelled
+  uncertain: retained original identity, no blind provider retry; no exactly-once posting claim
+interfaces:
+  cli: agentbus update --identity ROUTE --destination NAME TEXT
+  stdin: a lone positional dash reads bounded text from stdin
+  retry: original privately staged request UUID and identical payload only
+  status_cli: agentbus update-status --identity ROUTE [--message-id UUID]
+  cancel_cli: agentbus update-cancel --identity ROUTE --message-id UUID
+  receipts: authors inspect their own records; private operator buttons require destination-specific authorization
+bounds:
+  destinations: 16
+  installations: 16
+  text_characters: 6000
+  retained_publications: 1024
+  submission_attempts_per_existing_cycle: 1
+  draft_lifetime_seconds: 86400
+  rate: existing per-session send budget and durable per-workspace/bot/method cooldown in existing metadata
+  backoff_entries: 128
+  rate_hint: honor Retry-After; hints beyond the draft lifetime or invalid hints never cause an early provider retry
+  storage: existing lifecycle aggregate reservation plus bounded publication-row capacity
+migration:
+  additive: bounded custody tables in the existing writer transaction; no existing row or cursor rewrite
+  rollback: preserve new accepted custody and repair forward; disable publishing without discarding uncertainty
+acceptance:
+- wrong or stopped session, foreign inbox, unknown destination, revoked author and disabled policy fail before posting
+- exact approval substitution, replay, concurrent clicks, restart and policy revision changes preserve immutable custody
+- provider workspace/channel mismatch and response loss retain honest uncertain outcomes
+- ordinary bus activity produces zero client-publication calls; optional disabled features add no periodic network work

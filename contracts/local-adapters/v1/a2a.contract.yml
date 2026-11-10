@@ -1,0 +1,29 @@
+document:
+  kind: local_a2a_adapter_contract
+  version: 1.0.0
+  status: active
+  path: contracts/local-adapters/v1/a2a.contract.yml
+protocol:
+  specification: https://a2a-protocol.org/v1.0.0/specification/
+  version: '1.0'
+  binding: JSON-RPC 2.0
+  methods: [SendMessage, GetTask, ListTasks, CancelTask, GetExtendedAgentCard]
+scope:
+  availability: opt-in 0.11 capability on the existing loopback-bound service only
+  authority: exact active session and immutable channel/inbox principal
+  discovery: authenticated Agent Card only; unauthenticated callers receive no roster or private configuration
+  primitive: named mailbox delivery, never recipient model execution
+invariants:
+- Thin translation delegates to existing custody and principal owners; no independent mailbox, provider client, execution worker or public listener
+- Task identity binds original request UUID, immutable sender scope, recipient and exact text; changed retries fail
+- Get and List expose only tasks authored by the authenticated principal, with bounded scope-bound pagination
+- Task completion reports the declared delivery boundary; read and work observations remain separate structured facts
+- Cancellation cannot revoke accepted local or remote delivery; unsupported cancellation is explicit and never fabricates success
+- A caller cannot select a service, borrow operator authority, inspect another identity or introduce an arbitrary remote URL
+unsupported: [streaming, push_callbacks, file_urls, remote_discovery, autonomous_execution, public_A2A_deployment]
+bounds: {request_bytes: 65536, text_characters: 6000, default_page: 20, maximum_page: 100}
+acceptance:
+- protocol negotiation and strict malformed-envelope rejection precede all custody effects
+- wrong, revoked, stopped and foreign-channel session proofs fail closed
+- duplicate and lost-response recovery preserve original request identity and separate delivery/read/work outcomes
+- disabled or non-loopback configuration cannot expose the adapter; isolated local clients qualify the supported subset

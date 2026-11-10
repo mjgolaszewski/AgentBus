@@ -20,6 +20,8 @@ from urllib.parse import urlencode
 from src.agentbus_delivery_client import send_command
 from src.agentbus_profile_client import Profile
 from src.agentbus_profile_client import save_profile as persist_profile
+from src.agentbus_publication_client import cli_update, cli_update_cancel, cli_update_status
+from src.agentbus_recovery_client import cli_resume
 from src.agentbus_transport_client import ClientError, api, configuration, profile_session_token
 
 NAME_RE = r"^[a-z0-9][a-z0-9-]{0,31}$"
@@ -540,28 +542,9 @@ def cli_lifecycle_message(ns: argparse.Namespace, project: Path, values: dict[st
 
 
 def cli_message_status(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
-    from src.agentbus_scope_client import scoped_api
+    from src.agentbus_lifecycle_client import status_command
     profile = load_profile(values, resolve_identity(ns.identity), save_migration=False)
-    if ns.message_id is not None:
-        from uuid import UUID
-        try:
-            if str(UUID(ns.message_id)) != ns.message_id:
-                raise ValueError()
-        except ValueError:
-            raise ClientError('Request identity must be a canonical UUID') from None
-        info = scoped_api(values, '/v1/info', profile, api_call=api)
-        if 'authored-request-outcome-v1' not in info.get('features', []):
-            raise ClientError('Service lacks authored request lookup; acceptance remains unknown')
-        route = f'/v1/requests/{ns.message_id}/outcome'
-    else:
-        if ns.cursor < 1:
-            raise ClientError('Message cursor must be positive')
-        info = scoped_api(values, '/v1/info', profile, api_call=api)
-        if 'message-lifecycle-v1' not in info.get('features', []):
-            raise ClientError('Recipient lifecycle is disabled or unsupported; use message-status --message-id UUID for authored custody. No acceptance or execution outcome is inferred.')
-        route = f'/v1/messages/{ns.cursor}/outcome'
-    print(json.dumps(scoped_api(values, route, profile, api_call=api), indent=2))
-    return 0
+    return status_command(ns, values, profile, api_call=api)
 
 
 def cli_mcp(ns, project, values):
@@ -720,8 +703,13 @@ def cli_codex_wake(ns: argparse.Namespace, project: Path, values: dict[str, str]
     return run(ns, project, values)
 
 
+
 # BCF inventories this closed population, and main dispatches through it.
 CLI_OPERATIONS = {
+    "resume": cli_resume,
+    'update': cli_update,
+    'update-status': cli_update_status,
+    'update-cancel': cli_update_cancel,
     'pickup': cli_lifecycle_message,
     'complete': cli_lifecycle_message,
     'message-status': cli_message_status,

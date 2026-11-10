@@ -1475,3 +1475,176 @@ def test_epoch_overlap_accepts_new_custody_and_keeps_original_retry(lifecycle, m
     assert replay.cursor == first.cursor
     assert store._db.execute('SELECT epoch FROM lifecycle_requests WHERE channel=? AND request_id=?',
                              ('C111', key)).fetchone()[0] == original
+
+
+def test_stopped_session_keeps_only_its_scoped_receipt_reads(lifecycle):
+    from pathlib import Path
+
+    from fastapi.testclient import TestClient
+
+    from src.agentbus_service import Settings, create_app
+
+    store, principals = lifecycle
+    sent = message(store, principals["sender"], principals["recipient"])
+    for principal in principals.values():
+        store._db.execute("UPDATE participation_sessions SET state='stopped' WHERE session_id=?", (principal.session_id,))
+    store._db.commit()
+    app = create_app(Settings(api_token="receipt-bearer", slack_bot_token="xoxb-test", slack_app_token="xapp-test",
+                              slack_channel="", slack_channels=("C111", "C222"),
+                              db_path=Path(store._db.execute('PRAGMA database_list').fetchone()[2])))
+    app.state.store = store
+    def headers(name):
+        return {"Authorization": "Bearer receipt-bearer", "X-AgentBus-Inbox-ID": principals[name].inbox_id,
+                "X-AgentBus-Lifecycle-Version": "1",
+                "X-AgentBus-Session-Token": ("lifecycle-private-" + name).ljust(40, "x")}
+    client = TestClient(app)
+    try:
+        assert client.get("/v1/messages/1/outcome", headers=headers("recipient")).status_code == 200
+        assert client.get("/v1/messages/1/outcome", headers=headers("sender")).status_code == 200
+        assert client.get("/v1/messages/1/outcome", headers=headers("foreign")).status_code == 404
+        for route in ("/v1/info", "/v1/messages", "/v1/inbox?identity=" + principals["sender"].route):
+            assert client.get(route, headers=headers("sender")).status_code == 423
+        wrong = headers("sender")
+        wrong["X-AgentBus-Inbox-ID"] = principals["foreign"].inbox_id
+        assert client.get("/v1/messages/1/outcome", headers=wrong).status_code == 403
+        missing = headers("sender")
+        missing.pop("X-AgentBus-Session-Token")
+        assert client.get("/v1/messages/1/outcome", headers=missing).status_code == 403
+        assert sent.cursor == 1
+    finally:
+        client.close()
+
+
+def test_completion_and_expiry_never_fabricate_semantic_acknowledgement(lifecycle):
+    store, p = lifecycle
+    first = message(store, p["sender"], p["recipient"])
+    token = str(uuid4())
+    store.lifecycle.pickup(p["recipient"], first.cursor, token, 101)
+    store.lifecycle.finish(p["recipient"], first.cursor, token, 102)
+    assert store.lifecycle.target(p["recipient"], first.cursor, 102)["semantic_ack_at"] is None
+    store.lifecycle.handle_batch(p["recipient"], [(first.cursor, token)])
+    acknowledged = store.lifecycle.target(p["recipient"], first.cursor, 103)["semantic_ack_at"]
+    assert acknowledged is not None
+    store.lifecycle.handle_batch(p["recipient"], [(first.cursor, token)])
+    assert store.lifecycle.target(p["recipient"], first.cursor, 104)["semantic_ack_at"] == acknowledged
+    second = message(store, p["sender"], p["recipient"])
+    store.lifecycle.settle(120)
+    store.lifecycle.handle_batch(p["recipient"], [(second.cursor, str(uuid4()))])
+    assert store.lifecycle.target(p["recipient"], second.cursor, 120)["semantic_ack_at"] is None
+
+
+def test_automatic_retention_requires_actual_ack_and_age_after_latest_transition(lifecycle):
+    store, p = lifecycle
+    m = message(store, p["sender"], p["recipient"])
+    receipt = str(uuid4())
+    store.lifecycle.pickup(p["recipient"], m.cursor, receipt, 101)
+    store.lifecycle.finish(p["recipient"], m.cursor, receipt, 102)
+    days = 14 * 86400
+    assert store.retention.archive("C111", actor="automatic", instant=days + 103,
+                                   automatic_age_seconds=days)["eligible"] == 0
+    store.lifecycle.handle_batch(p["recipient"], [(m.cursor, receipt)])
+    acked = store.lifecycle.target(p["recipient"], m.cursor)["semantic_ack_at"]
+    assert store.retention.archive("C111", actor="automatic", instant=acked + days - 1,
+                                   automatic_age_seconds=days)["eligible"] == 0
+    assert store.retention.archive("C111", actor="automatic", instant=acked + days,
+                                   automatic_age_seconds=days)["eligible"] == 1
+    with pytest.raises(LifecycleRejected):
+        store.retention.archive("C111", actor="automatic", instant=acked + days,
+                                automatic_age_seconds=days - 1)
+
+
+def test_expired_or_stopped_unacknowledged_targets_remain_automatic_pins(lifecycle):
+    store, p = lifecycle
+    m = message(store, p["sender"], p["recipient"])
+    store.lifecycle.settle(120)
+    store._db.execute("UPDATE participation_sessions SET state='stopped' WHERE session_id=?", (p["recipient"].session_id,))
+    store._db.commit()
+    report = store.retention.archive("C111", actor="automatic", instant=31 * 86400,
+                                     automatic_age_seconds=30 * 86400)
+    assert report["eligible"] == 0 and store.message("C111", m.cursor) is not None
+
+
+def test_retirement_preserves_own_original_uuid_and_never_reallocates(lifecycle):
+    from src.agentbus_local_delivery_service import fingerprint
+    store, p = lifecycle
+    body = SendMessage(sender=p["sender"].route, recipient=p["recipient"].route, text="Retire without erasing acceptance", kind="request")
+    body._sender_assurance = "session"
+    epoch = store.lifecycle.epoch("C111", 100)["epoch"]
+    key = str(uuid4())
+    m = store.local_delivery.accept("C111", key, fingerprint(body.model_dump()), body,
+                                    "sender-session", epoch=epoch)
+    store.local_delivery.complete("C111", key, "100.1")
+    token = str(uuid4())
+    store.lifecycle.pickup(p["recipient"], m.cursor, token, 101)
+    store.lifecycle.finish(p["recipient"], m.cursor, token, 102)
+    store.lifecycle.handle_batch(p["recipient"], [(m.cursor, token)])
+    store.retention.archive("C111", actor="operator", request_key="retired-uuid-archive", apply=True, instant=200)
+    store.retention.purge("C111", actor="operator", request_key="retired-uuid-purge", apply=True, instant=221)
+    own = store.lifecycle.request_outcome(p["sender"], key)
+    assert own["known"] and own["accepted"] and own["history"] == "retired" and own["cursor"] == 1
+    assert not store.lifecycle.request_outcome(p["recipient"], key)["known"]
+    assert not store.lifecycle.request_outcome(p["foreign"], key)["known"]
+    assert store.search.search(p["sender"].channel, "acceptance") == []
+    with pytest.raises(LifecycleRejected) as retired:
+        store.local_delivery.accept("C111", key, fingerprint(body.model_dump()), body, "sender-session", epoch=epoch)
+    assert retired.value.status == 410
+
+
+def test_automatic_worker_requires_retained_matching_dry_run_before_apply(lifecycle):
+    from types import SimpleNamespace
+
+    from src.agentbus_automatic_retention_service import AutomaticRetention
+    store, p = lifecycle
+    m = message(store, p["sender"], p["recipient"])
+    token = str(uuid4())
+    store.lifecycle.pickup(p["recipient"], m.cursor, token, 101)
+    store.lifecycle.finish(p["recipient"], m.cursor, token, 102)
+    store.lifecycle.handle_batch(p["recipient"], [(m.cursor, token)])
+    clock = [31 * 86400]
+    settings = SimpleNamespace(automatic_retention_days=30, automatic_retention_apply=True, channels=("C111",))
+    blocked = AutomaticRetention(store, settings, now=lambda: clock[0])
+    blocked.tick()
+    assert blocked.last_report["state"] == "blocked_matching_dry_run_required"
+    assert store._db.execute("SELECT count(*) FROM lifecycle_archive").fetchone()[0] == 0
+    settings.automatic_retention_apply = False
+    dry = AutomaticRetention(store, settings, now=lambda: clock[0])
+    dry.tick()
+    assert dry.last_report["archive_eligible"] == 1 and not dry.last_report["applied"]
+    settings.automatic_retention_apply = True
+    restarted = AutomaticRetention(store, settings, now=lambda: clock[0])
+    restarted.tick()
+    assert restarted.last_report["state"] == "archive" and restarted.last_report["applied"]
+    clock[0] += 3600
+    restarted.tick()
+    assert restarted.last_report["state"] == "purge"
+    assert store.message("C111", m.cursor) is None
+
+
+def test_automatic_retention_policy_change_invalidates_dry_run(lifecycle):
+    from types import SimpleNamespace
+
+    from src.agentbus_automatic_retention_service import AutomaticRetention
+    store, _ = lifecycle
+    settings = SimpleNamespace(automatic_retention_days=30, automatic_retention_apply=False, channels=("C111",))
+    AutomaticRetention(store, settings, now=lambda: 31 * 86400).tick()
+    settings.automatic_retention_days = 14
+    settings.automatic_retention_apply = True
+    changed = AutomaticRetention(store, settings, now=lambda: 31 * 86400)
+    changed.tick()
+    assert changed.last_report["state"] == "blocked_matching_dry_run_required"
+
+
+def test_extension_custody_marks_internal_rollback_guard_without_wire_change(lifecycle):
+    store, _ = lifecycle
+    with store._lock, store._db:
+        store.lifecycle.protect_extensions()
+    assert store._db.execute("SELECT value FROM metadata WHERE key='message_lifecycle_version'").fetchone()[0] == '2'
+    from src.agentbus_channel_migration_service import check_startup
+    path = store._db.execute('PRAGMA database_list').fetchone()['file']
+    check_startup(path)
+    reopened = MessageStore(__import__('pathlib').Path(path))
+    try:
+        assert reopened.lifecycle.enabled
+        assert reopened._db.execute("SELECT value FROM metadata WHERE key='message_lifecycle_version'").fetchone()[0] == '2'
+    finally:
+        reopened.close()

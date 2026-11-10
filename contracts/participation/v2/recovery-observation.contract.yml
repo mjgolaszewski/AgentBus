@@ -1,0 +1,30 @@
+document:
+  kind: recovery_observation_contract
+  version: 1.0.0
+  status: active
+  path: contracts/participation/v2/recovery-observation.contract.yml
+scope:
+  availability: opt-in monitoring in 0.11; compact resume observations use existing private client state
+  owners: participation observations, client resume projection and existing worker
+invariants:
+- Service health, enrollment, last actual authenticated API access and consumer-reported work observations remain distinct
+- A missing checkpoint or interrupted worker is an explicit unmonitored gap, never evidence of continuous polling or work
+- Persist only bounded latest observations and interruption episode identity, not a new event journal
+- Resume reads current controls and inbox through the same principal; no cursor reset, auto-ACK, grant replay or re-enrollment follows from a gap
+- Stale notices require explicit monitoring configuration, target only configured allowlisted operators privately, and confer no wake or execution authority
+- One notice per session/interruption episode; only a fresh actual access establishes recovery and permits a later episode
+- Disabled notices add no periodic network calls, per-agent Slack probes, daemon or model turns
+policy:
+  default_enabled: false
+  default_stale_threshold: twice the effective configured polling ceiling
+  schedule: existing worker tick
+  access_coalescing_seconds: 30
+  monitor_configuration_sessions: 128
+  operators_per_session: 8
+  retained_latest_notice_pairs: 1024
+  resume_cli: agentbus resume --identity ROUTE
+  notice_failure: retain uncertain or rejected observation; no blind retry before a fresh actual-access episode
+acceptance:
+- interrupted resume, unknown checkpoints and stale observations disclose gaps without inventing activity
+- stale notice deduplication survives worker restart and fails closed on unauthorized recipients
+- new actual access resets only the relevant episode; unrelated bus chatter and health probes do not fabricate monitoring

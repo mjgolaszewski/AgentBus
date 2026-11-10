@@ -29,10 +29,14 @@ interpretation of message text. Follow the [security boundary](../../SECURITY.md
 | Slack enrollment approval | File-free pending request, private operator approval in the intended channel, canonical staged-secret redemption | Exact protected source, legacy grant compatibility, archive installs and bounded live human approval; pending requests have no message authority |
 | Multiple channels | One service, database, Slack app and socket; explicit allowlist of at most 16 channels | Bounded local two-channel canary passed on the protected construction; each release subject requires fresh canonical custody and archive/install verification |
 | Channel authorization | One immutable channel per identity; grant-backed enrollment; exact-session reads and writes; channel-local public cursors | Protected construction includes negative controls and populated-store migration/restart continuity; see the exact [qualification record](../../audits/channel-live-qualification.yml) |
-| Federation | Existing bridge channel only; additional channels stay local | New source must establish applicability; historical 0.9 canary does not certify changed runtime bytes |
-| Operator federation | Candidate signed health/broadcast requests with explicit destination-local grants | Protected source/install proof and a separately authorized two-location canary; ordinary federation trust grants no operator authority |
-| Mailbox search | Candidate retained-text FTS5 query in the authenticated channel | Scope/token/retention/migration controls and bounded query/storage measurements; no combined inbox or vector service |
-| MCP stdio | Candidate local tools over one exact enrolled profile | Pinned protocol and isolated real-process client checks, with explicit lifecycle actions and no identity/service selection |
+| Federation | Existing bridge channel only; additional channels stay local | New source must establish applicability; past canary does not certify changed runtime bytes |
+| Operator federation | Signed health/broadcast requests with explicit destination-local grants | Protected source/install proof and a separately authorized two-location canary; ordinary federation trust grants no operator authority |
+| Mailbox search | Retained-text FTS5 query in the authenticated channel | Scope/token/retention/migration controls and bounded query/storage measurements; no combined inbox or vector service |
+| MCP stdio | Local tools over one exact enrolled profile | Pinned protocol and isolated real-process client checks, with explicit lifecycle actions and no identity/service selection |
+| Explicit client publication | Opt-in named outbound policy, exact approval/direct authors and scoped provider custody | Isolated approval/forgery/replay/binding/rate/uncertainty controls and applicable release proof; broader external client deployments need their own provisioning and rollout; no ordinary-bus forwarding |
+| Local A2A 1.0 | Experimental loopback JSON-RPC mailbox-admission subset | Isolated exact-version clients and source/install proof; completion means admission, not recipient execution; public listener/streaming/push remain unsupported |
+| Resume and stale notices | Compact scoped gaps and separately requested private access notices on the existing worker | Interrupted/mismatched state, real access vs health, durable episode deduplication and failure controls; no continuous-monitoring or wake claim |
+| Automatic retention | Disabled-by-default dry-run-first bounded hourly archive/purge with actual target ACK | Minimum activity age, late ACK, original population, restart/reference/FTS/retired UUID controls; no abandonment or federation reclamation |
 | AHP owner-mediated wake | Offline contract/reducer research and owner/backend binding requirements | An authorized disposable host-managed chat, supported owner endpoint, live interoperability and restart evidence |
 | Native Codex queue | Research fallback, not a production adapter | Supported admission and recovery contract; no active-turn steering or unwanted later turn |
 | Atomic idle-only wake | Required owner-side admission property | Proof that state check and admission are atomic at the actual owner; observing idle then submitting is insufficient |
@@ -65,6 +69,21 @@ and request IDs, foreign inbox assertions, stopped/rotated credentials, grant
 replay and lost responses, aliases, reply ancestry, disabled channels, outages,
 provider echoes, federation containment, and profile/spool/wake scope mismatch.
 No negative control may acquire another channel by editing local profile fields.
+
+For controlled publishing, exercise exact approval substitution/replay, revocation,
+changed policy, duplicate admission, restart/unknown provider outcomes, real
+workspace/bot mismatch and zero ordinary-bus forwarding. Keep client credentials
+local. Local A2A needs actual loopback binding and supported 1.0 methods; test
+scope spoofing, partial custody failure, cancellation and private pagination.
+Production-client qualification cannot be inferred from a fake provider or a
+coordination-channel test. Record any explicit operator canary substitution and
+its narrower external-deployment claim.
+
+For recovery, distinguish an actual API observation from enrollment, process
+health, work and an unmonitored gap. Notice failure never permits repeated
+private posts. For automatic retirement, completion without actual semantic ACK,
+expired/stopped recipients and unresolved references remain pinned; operator
+policy must pass a matching dry run before apply. No cleanup acquires authority.
 
 For [experimental message lifecycle](../message-lifecycle.md), exercise pickup/expiry and
 ACK races, stopped/rotated credentials, unknown provider outcomes, old-epoch and

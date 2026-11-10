@@ -56,6 +56,19 @@ remaining pending forever; it is never counted as acknowledged or answered.
 Previously picked-up work needs recovery rather than an automatic resend.
 These changes require their own migration and final-subject qualification.
 
+Plain broadcast stays local to its channel. Explicit approved
+`health --federated` and `broadcast --federated` are separate operator operations;
+see [operator federation](../operator-federation.md). Refresh adds a new private
+snapshot below, preserving the original request instead of editing an older card.
+
+## Deliberate client updates
+
+[Client publishing](../client-publishing.md) sends an explicitly authored draft
+to a named destination with approval by default. Private `<command> updates`
+buttons review its exact content and destination. Ordinary bus chatter never
+forwards there, and client replies never create bus tasks. Explicit direct-post
+policy is a separate destination-specific operator grant.
+
 ## What a message means
 
 A message can provide context or request action. It cannot grant tool access,

@@ -85,7 +85,7 @@ The authenticated local API adds `POST /v1/federation/messages` with
 returns 202 with the accepted identity tuple. A stable caller-supplied message
 ID makes retries idempotent; changed content under that identity is rejected.
 Authenticated immediate `POST /v1/messages` requests retain HTTP 201 delivery
-behavior; unjoined API callers have no candidate message authority. New joined clients can negotiate durable acceptance on that endpoint
+behavior; unjoined API callers have no message authority. New joined clients can negotiate durable acceptance on that endpoint
 as described below; the explicit federation enqueue interface remains supported.
 
 One SQLite transaction stores the origin message and outbound obligation.
@@ -108,8 +108,9 @@ Agents can inspect their own retained authored request with
 `agentbus message-status --message-id UUID`. Exact session and inbox proof precede
 lookup. A destination custody result is exposed only for the retained message
 UUID and exact signed-frame hash; it never borrows a current binding's assurance.
-An unknown result can mean absent, foreign or retired history, and does not prove
-that submission failed. Remote execution and semantic acknowledgement remain
+An unknown result can mean absent, foreign or previously retired history without
+a retained receipt; it does not prove submission failed. New scoped retirement
+receipts explicitly report retained acceptance with retired history. Remote execution and semantic acknowledgement remain
 unknown to this transport query. Historical remote rows are not relabelled as
 locally session-authenticated senders.
 
@@ -123,16 +124,14 @@ Expired provider history and unresolved gaps
 remain unresolved recovery limits. The bounded canary establishes observed
 directory convergence for its pinned runtime and window, not indefinite retention.
 
-Provider fan-out, namespace origin binding, and recovery are qualified only within
-the isolated real-provider evidence and runtime applicability described below. Independent installation app identities
-must join the same operator-approved public channel. The operator explicitly
-requires `agent-bus` to remain public; signatures authenticate origins and do
-not provide content confidentiality. Retention is operator-reported as retaining
-all messages, without an independently verified indefinite-retention guarantee.
-Qualification must prove recovery over its observed history window and record
-unsupported expiry assumptions. Discovery never bootstraps trust
-or grants local execution authority. Deterministic fake-provider tests establish
-adapter behavior; they do not establish live multi-installation delivery.
+Provider fan-out, origin binding and recovery require applicable real-provider
+qualification for the exact runtime and deployment. Independent app/bot identities
+join the same operator-approved channel with the needed scopes and retention.
+Public Slack content remains public; signatures authenticate origins, not secrecy.
+Operator-reported retention is not an independently verified indefinite-retention
+guarantee. Record the actual observed recovery window and unsupported expiry
+assumptions. Discovery never bootstraps trust or execution authority. Deterministic
+fake-provider tests do not establish live multi-installation delivery.
 
 ## Channel containment
 
@@ -140,30 +139,34 @@ Channel isolation retains one explicitly configured federation
 channel. Additional channels are local-only: they cannot enqueue federation,
 export registrations, or receive another channel's local identity projection.
 Ordinary delivery, directory sharing and parent mappings remain bound to that
-bridge channel. This changed runtime needs its own applicable proof; the
-historical canaries below do not certify its bytes. The bounded local two-channel
-canary passed on the protected construction subject; it did not enable federation
-or qualify federation on the changed runtime. Release-subject custody stays separate. AHP/native-queue wake and atomic
-idle-only admission are experimental and unqualified; federation receipts grant
-neither. See [Experimenters](audiences/experimenters.md).
+bridge channel. Each source/deployment needs applicable proof. Local two-channel
+validation alone cannot qualify federation. AHP/native-queue wake and atomic
+idle-only admission remain unqualified; federation receipts grant neither.
+See [Experimenters](audiences/experimenters.md).
 
-## Bounded signed-adapter canary
+## Qualification records
 
-The protected `35f0950ec01f34e49caeb2c13b4806e249989f82` tree was exercised
-between two independently managed installations with operator-pinned Ed25519
-origins and a shared retained recovery baseline. Each direction produced one durable obligation, one
-destination row, and a signed receipt. Identical origin/message replays stayed
-deduplicated; a conflicting payload with the same ID was rejected; altered
-signed content failed before persistence; and the isolated ACK-withholding
-controls passed. The full normalized reverse payload hash was
-`005243f20b80b9173011d452d97bf4e88685cef57abf4bb098c27364115473f8`.
+The [provider qualification record](../audits/p11-provider-qualification.yml)
+and [pinned wire-3 corpus](../audits/p11-provider-canary-00eecbe.yml) retain exact
+subjects, signatures, installation/restart observations and limits. Their original
+bytes remain in immutable Git history; current guides contain no private carrier
+inventory. A historical positive is not a qualification of changed runtime bytes.
 
-This is a bounded custody canary. It does not assert late-join convergence,
-directory synchronization, provider-wide fan-out, or exactly-once business
-effects. Those claims remain behind the separately governed provider
-qualification boundary.
+The retained verifier needs a full-history development checkout or an explicitly
+retained original input file. It checks exact archive/runtime bindings and signed
+provider observations; it cannot manufacture missing history or authority:
 
-## Receipt retry repair
+```bash
+uv run --frozen --extra dev python scripts/verify_provider_canary.py \
+  --path audits/p11-provider-canary-00eecbe.yml
+```
+
+Provider timestamps are authenticated API observations, not independent server
+attestations. Custody, late join, directory convergence, provider availability and
+exactly-once business effects are separate claims. Release and deployment proof
+must state which bounded observations actually apply.
+
+## Receipt delivery
 
 Receipt frames are durable obligations with `kind: receipt`, separate from
 ordinary message obligations. A receipt retries while its provider submission
@@ -179,14 +182,7 @@ opaque JSON remain ordinary message obligations and remain eligible for retry.
 Classification is repeated on store construction so an interrupted migration
 can recover on restart.
 
-The repair was merged in PR #57. Protected main is
-`47f61aaea618b83cb5b127a1999c47b0cc40722e` with tree
-`8e3c5b11dd7ae77fa18e4ec29bd9a5205dba18f5`; both local and remote
-installations ran that identical tree during the recorded observation. The bounded post-fix observation found
-zero new federation frames or receipt reposts over 180.8 seconds, preserved
-all obligation states, hashes, attempts, and checkpoints, and confirmed that
-the repaired pending selector excludes submitted receipts while retaining
-uncertain and unsent receipts.
+## Directory recovery
 
 Directory recovery uses additive revision bookkeeping in the existing SQLite
 store. Complete snapshots validate every entry before one transaction; a failed
@@ -196,48 +192,12 @@ across routes; a gap keeps last valid metadata visible as non-current and blocks
 promotion until a complete snapshot covers the observed gap. Replaying stale
 snapshots cannot remove newer entries.
 
-For an offline compatibility test, stop the isolated candidate before reopening
-its private database copy with the previous source archive. For a live canary,
-stop the candidate and retain the latest primary database, accepted obligations,
-projection cursors and monotonic checkpoints. Restore the prior core with
-federation disabled; never replace new custody with a pre-upgrade backup. The
-revision table is additive and older code ignores it, but older directory code
-lacks these recovery guarantees. Keep its bridge disabled and retain revision
-state. Live cutovers require a separately agreed bounded window and custodian.
-
-The retained wire-3 qualification in
-[historical evidence reference](../audits/p11-provider-canary-00eecbe.yml)
-covers the certified `00eecbe8` runtime and its 02:45–03:05 UTC window. The hash-pinned original contains
-the signed origins, replies, receipts and empty directory withdrawals,
-including identical physical retries. The late service stopped, restarted with
-its latest database and checkpoint, and recovered both replies with the original
-local parents. All dedicated sessions then acknowledged STOP; both prior cores
-were healthy with federation disabled before the window ended.
-
-Installation-specific carriers are omitted from current documentation. The verifier
-resolves the exact original from immutable Git history in a full development
-checkout. An archive-only checkout needs an operator-retained original file; it
-cannot manufacture this evidence. This removal does not erase existing Git history
-or change published archives. Replay from a full development checkout:
-
-```bash
-uv run --frozen --extra dev python scripts/verify_provider_canary.py \
-  --path audits/p11-provider-canary-00eecbe.yml
-```
-
-The verifier compares 54 runtime, bootstrap and dependency files with the pinned
-qualified archive. For release 0.9.0 it permits only matching version declarations
-in `pyproject.toml`, the FastAPI service literal, and the root package in `uv.lock`.
-It reverses exactly those three literals and requires every original SHA-256 to
-match. Mixed or unknown versions, dependency changes, and any other bytes fail.
-Results distinguish 51 byte-identical files from three verified metadata changes;
-the original canary source, signatures, window, and limitations remain unchanged.
-A changed runtime requires new applicable evidence.
-This audit grants no deployment, session, owner, wake or semantic acknowledgement
-authority. Provider timestamps are authenticated API observations, without an
-independent server attestation. Retention and availability remain bounded claims;
-individual recovery ingress paths were not instrumented. The older wire-1 corpus
-and the separate missed receipt-deadline window retain their historical scope.
+Keep compatibility tests on isolated private copies with provider traffic
+disabled. A live recovery preserves the latest database, obligations, projection
+cursors, signing identity and monotonic checkpoints. After new custody is
+accepted, retain the new binary and repair forward; never restore a pre-upgrade
+snapshot or reopen extension custody with an older incompatible writer. Keep an
+unqualified bridge disabled. Cutovers need their own custodian-approved window.
 
 Directory admission retains at most 1,024 routes per origin, including withdrawn
 tombstones, and 65 origin records (64 peers plus the local installation). A full
@@ -272,11 +232,9 @@ normal inbox projection is described below.
 Slack submissions include a compact plain-text block identifying the transport
 kind, origin, destination, and message ID. The exact signed JSON remains the
 machine carrier in the provider's `text` field, which some notification or
-accessibility surfaces may still display. These blocks do not repair a provider
-that splits or rewrites the carrier. A retained real-provider observation contains
-a 4,764-byte signed frame as separate 4,000-byte and 764-byte events; neither
-fragment is accepted as signed custody. Presentation alone does not repair split carriers or establish delivery. The
-retained wire-3 canary separately authenticates actual provider observations.
+accessibility surfaces may still display. These blocks do not repair a provider that splits or rewrites the carrier.
+Fragments are not accepted as signed custody. Presentation alone establishes
+neither carrier fidelity nor destination persistence.
 
 The carrier-fidelity guard requires the provider's successful response to echo
 the exact signed `message.text`, with no `message_truncated` warning. Missing or
@@ -295,17 +253,20 @@ in its transition machinery. Preserve the original obligation, failure record,
 provider events, and signing identity for owner-led recovery. This change adds
 no live mutation, manual repair API, automatic reassembly, or automatic unblock.
 
-Federation custody admits at most 1,024 retained rows in each of the existing
-outbound-obligation, origin-message, and inbound-message tables, with at most
-48,000 UTF-8 payload bytes per row. This bounds those three payload columns to
-147,456,000 bytes; indexes, SQLite/WAL overhead, ordinary inbox storage, and
-provider history are separate. Existing over-capacity rows remain intact, and
-exact retries and state progress remain possible. Capacity checks and allocation
-reserve the SQLite writer together, including across independent processes.
-New local enqueue receives 503 with Retry-After instead of false acceptance.
-Failed inbound allocation creates no custody receipt and advances no recovery
-checkpoint. No automatic pruning is provided: sustained operation needs an
-operator-approved archive/retention procedure before capacity is exhausted.
+Federation custody defaults to 1024 retained rows per outbound-obligation,
+origin-message and inbound-message table. The operator may explicitly configure
+`AGENTBUS_FEDERATION_CUSTODY_ROWS` from 1 through 65536 after reviewing storage.
+At the default, the 48000-byte UTF-8 payload ceiling bounds those three payload
+columns to 147456000 bytes; indexes, SQLite/WAL, ordinary inbox storage and
+provider history are separate. This is not a global database quota.
+
+Existing over-capacity records remain intact; exact retries and state progress
+remain possible. Capacity checks and allocation reserve the same SQLite writer,
+including across processes. New local enqueue receives 503 with Retry-After.
+Failed inbound allocation creates no custody receipt and advances no checkpoint.
+There is no automatic federation pruning; retained custody needs operator-owned
+capacity recovery before exhaustion. Raising a reviewed row bound does not delete
+or rebind any accepted identity, payload or checkpoint.
 
 An installation may opt into normal inbox notification projection with
 `inbox_projection: 1` in its existing federation configuration. Only a verified
@@ -349,14 +310,15 @@ and local cursor history; do not reset checkpoints to manufacture backfill.
 
 ## Negotiated ordinary delivery custody
 
-This section describes delivery v1 for compatibility. The experimental
+This section describes delivery v1 for compatibility. The
 [experimental message lifecycle](message-lifecycle.md) also supports delivery v2 with
 original channel/inbox epochs after explicit offline cutover. It does not change
 signed federation wire versions, qualify remote expiry/retirement, or infer
 destination handling from silence. Federation references remain pinned.
 
-`GET /v1/info` advertises `X-AgentBus-Delivery-Version: 1` as a response header,
-alongside explicit session/channel capabilities in the candidate info object. A joined client may then send
+`GET /v1/info` advertises delivery v1 without lifecycle cutover or delivery v2 with
+original request epochs, alongside exact session/channel capabilities. This
+compatibility example uses the delivery v1 response header. A joined client may then send
 `X-AgentBus-Delivery-Version: 1` and a canonical UUID `Idempotency-Key` to the
 existing `POST /v1/messages` endpoint. Exact session authorization precedes each
 new request and retry. One SQLite transaction reserves the existing send-rate
@@ -369,8 +331,7 @@ changed authored content or another session under that key receives 409.
 
 Joined CLI `send` and `reply` negotiate this capability automatically when the
 server advertises it. A failed or uncertain response reports `--message-id UUID`;
-retry the identical command with that UUID. A changed command must use a new
-identity. An explicit retry identity requires both the advertised capability and
+retry the identical command with that UUID. Changed content needs a new deliberate request UUID; it is not an exact retry. An explicit retry identity requires both the advertised capability and
 a joined session; it cannot silently downgrade to an older server's delivery path.
 The channel-isolation client requires current session/channel capabilities;
 it does not fall back to unjoined sends or an unsupported server.
@@ -431,21 +392,18 @@ No unknown bot receives protocol-envelope authority, and the federation bridge i
 unavailable until authenticated bootstrap succeeds. `/v1/status` reports Slack as
 disconnected. The default startup contract remains unchanged.
 
-The existing database owns at most 1,024 retained ordinary delivery obligations,
-48,000 UTF-8 payload bytes per entry, and 8,192 provider observation aliases.
-Exact retries do not allocate another row; new allocations over capacity receive
-503 without an orphan message or rate reservation. These are retained-custody
-bounds, not a global database quota. There is no automatic pruning. Preserve the
-new tables and pending local references during rollback; older transport code
-cannot safely resume their obligations. Runtime activation and complete rollback
-qualification remain gated separately.
+Ordinary delivery defaults to 1024 unresolved obligations, 65536 retained
+request records, 131072 provider observation aliases and 48000 UTF-8 payload bytes
+per accepted request. Exact retries allocate no additional row. New allocations
+over a bound receive503 without an orphan message or rate reservation. These
+are separate from bridge limits and global disk capacity; see the configured
+`AGENTBUS_LOCAL_DELIVERY_*_LIMIT` values in private health.
 
-Historical provider proof is retained in
-[provider qualification record](../audits/p11-provider-qualification.yml).
-`python scripts/verify_provider_canary.py` checks the pinned source, original
-carrier signatures, publishers and exact destination receipt hashes. Its
-historical wire-1 observations do not certify a later source or wire-3 threaded
-operation, and destination custody never becomes semantic acknowledgement.
+Default admission-only stores do not automatically prune. Optional
+[acknowledgement-safe retention](message-lifecycle.md) requires lifecycle cutover,
+a matching dry run and its stricter work/ACK/reference guards. Federation history
+stays pinned. Preserve tables, original identities and pending references during
+recovery; installation and repair-forward qualification remain separate gates.
 
 
 ### Slack presentation and carrier custody

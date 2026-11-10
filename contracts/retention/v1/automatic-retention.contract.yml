@@ -1,0 +1,35 @@
+document:
+  kind: automatic_retention_contract
+  version: 1.0.0
+  status: active
+  path: contracts/retention/v1/automatic-retention.contract.yml
+scope:
+  availability: explicit opt-in 0.11 policy; existing deployments retain their current policy
+  owner: existing retention store and bounded delivery-worker maintenance
+  primitive: acknowledgement-safe reference-closed payload retirement
+policy:
+  default_retention_days: 30
+  minimum_retention_days: 14
+  age_origin: latest meaningful per-message lifecycle transition, not routine polling
+  default_enabled: false
+  default_apply: false
+  maximum_batch: 100
+  maintenance_interval_seconds: 3600
+  scheduling: one configured channel per existing hourly maintenance tick, durable round-robin
+  retired_request_receipts: 65536
+  receipt_capacity_exhaustion: pins further retirement
+  dry_run: matching policy and channel/inbox binding must be retained before apply
+invariants:
+- Every original required recipient must have actually acknowledged and all work must be settled before automatic deletion
+- Inactivity, STOP, expiry and disappearance never fabricate acknowledgement or silently abandon work
+- Original immutable target populations are not expanded by later enrollment or unrelated activity
+- Replay, reference ancestry, uncertain delivery, claims, legacy and federation pins remain authoritative
+- Dry-run explains eligibility and pinned reasons; explicit apply retains bounded audit receipts and original retirement identities
+- Search-index retirement is transactional with payload retirement; retired history stays distinguishable from never accepted
+- Existing public positions are never reused, checkpoints never reset and semantic ACKs never advanced by cleanup
+- Quiet clients reuse delivered backoff and separate control checks; no new daemon, network probe or model-turn polling
+rollback: disabling automatic maintenance preserves accepted custody and receipts; lifecycle extension custody uses internal marker 2 while the public lifecycle wire stays v1; older startup rejects the marker; non-lifecycle installations still require operator-enforced repair-forward rollback after accepting extension custody
+acceptance:
+- fourteen-day boundary and late lifecycle transition, stopped recipients and unacknowledged original targets stay pinned
+- restart, concurrent reference creation, replay and uncertain provider outcomes cannot race deletion
+- scope-bound retired UUID/cursor lookup and FTS removal expose no foreign content or counts

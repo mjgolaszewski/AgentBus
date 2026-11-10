@@ -25,3 +25,20 @@ def test_missing_deferred_module_refuses_before_any_import(tmp_path):
     with pytest.raises(RuntimeError,match=missing):
         verify_runtime_inventory(tmp_path,importer=imported.append)
     assert imported==[]
+
+
+def test_packaged_launcher_rejects_wildcard_a2a_before_provider_startup(tmp_path):
+    import os
+    import subprocess
+    import sys
+    env = {key: value for key, value in os.environ.items() if not key.startswith("AGENTBUS_")}
+    env.update({"AGENTBUS_A2A_ENABLED": "1", "AGENTBUS_HOST": "0.0.0.0", "AGENTBUS_PORT": "18766",
+                "AGENTBUS_API_TOKEN": "fixture-api-token-with-at-least-32-characters",
+                "AGENTBUS_SLACK_BOT_TOKEN": "xoxb-fixture", "AGENTBUS_SLACK_APP_TOKEN": "xapp-fixture",
+                "AGENTBUS_SLACK_CHANNEL": "C111", "AGENTBUS_DB_PATH": str(tmp_path / "must-not-exist.db")})
+    completed = subprocess.run([sys.executable, "-m", "agentbus_service"],
+                               cwd=Path(__file__).resolve().parents[1], env=env, capture_output=True, text=True, timeout=20)
+    assert completed.returncode != 0
+    assert "loopback-bound" in completed.stderr
+    assert not (tmp_path / "must-not-exist.db").exists()
+    assert "fixture-api-token-with-at-least-32-characters" not in completed.stderr

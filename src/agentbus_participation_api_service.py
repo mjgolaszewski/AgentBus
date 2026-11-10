@@ -275,7 +275,12 @@ def api_session_self_presence(
     from src.agentbus_channel_api_service import assert_session_scope
     assert_session_scope(request, session_id, session_token)
     try:
-        return request.app.state.store.participation.self_presence(session_id, session_token or "")
+        store = request.app.state.store
+        result = store.participation.self_presence(session_id, session_token or "")
+        observations = getattr(store, "observations", None)
+        if observations is not None:
+            result["observations"] = observations.snapshot_scope(request.scope["agentbus_access_scope"])
+        return result
     except PermissionError:
         raise HTTPException(401, "Session authorization required") from None
 

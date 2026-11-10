@@ -39,6 +39,13 @@ def assert_query_nonmutation(operations, *, inject=None):
         store.lifecycle.activate_fresh()
         message = store.append(CHANNEL, '123.456', message)
         principal = store.channels.principal(secret, 'agentbus:query-probe')
+        from src.agentbus_publication_service import PublicationPolicy, PublicationStore
+        config = {"version": 1, "installations": [{"name": "client", "team_id": "T123", "bot_id": "B123", "token_env": "TEST_CLIENT"}],
+                  "destinations": [{"name": "updates", "installation": "client", "channel": "C999", "source_channels": [CHANNEL],
+                                    "authors": [principal.route], "approvers": ["U123"]}]}
+        app.state.publications = PublicationStore(store, PublicationPolicy(config, channels=settings.channels,
+                                                     operators=("U123",), environ={"TEST_CLIENT": "xoxb-test-client"}))
+        app.state.publications.admit(principal, "11111111-1111-4111-8111-111111111111", "updates", "Query fixture update")
         cursor = store.channels.public_cursor(CHANNEL, message.cursor)
         fixtures = {'session_id':session,'control_id':control,'cursor':cursor,'request_id':'11111111-1111-4111-8111-111111111111'}
         query_params = {'query':'hello','repo':'agentbus','chat_id':chat,'identity':principal.route}
@@ -93,7 +100,7 @@ def assert_cli_query_nonmutation(operations):
     from src.agentbus_parser_client import parse_args
     cases = {'search':['--query','hello'], 'status':[], 'read':[], 'agents':[], 'roster':['--json'],
         'policy-show':['--session-id','session-one'], 'control-status':['control-one'],
-        'session-presence':['session-one'], 'message-status':['--cursor','1']}
+        'session-presence':['session-one'], 'message-status':['--cursor','1'], 'update-status':[]}
     queries = {o['population_key'] for o in operations
                if o['population'] == 'cli' and o['semantic_kind'] == 'query'}
     assert set(cases) == queries
@@ -109,7 +116,7 @@ def assert_cli_query_nonmutation(operations):
         def read_only(_values, path, payload=None, **kwargs):
             assert payload is None and kwargs.get('method', 'GET') == 'GET', (path,payload,kwargs)
             calls.append(path)
-            return {'features':['message-lifecycle-v1','authored-request-outcome-v1'],'messages':[],'sessions':[],'revision':'r1','values':POLICY,'sources':{},'status':'ok'}
+            return {'chat_id':profile['chat_id'],'session_id':profile['participation']['session_id'],'channel':profile['channel'],'inbox_id':profile['inbox_id'],'features':['message-lifecycle-v1','authored-request-outcome-v1'],'messages':[],'sessions':[],'revision':'r1','values':POLICY,'sources':{},'status':'ok'}
         for module in (client,operator,transport):
             patch.setattr(module,'api',read_only)
         patch.setattr(client,'checked_profile',lambda *_args,**_kwargs:(dict(profile),{}))

@@ -10,6 +10,11 @@ its session secret. No agent-supplied channel selector is accepted.
 | --- | --- | --- |
 | `GET` | `/healthz` | Public liveness only |
 | `GET` | `/v1/status` | Slack connectivity; aggregate footprint only with operator capability |
+| `GET` | `/v1/search` | Literal retained-text search with exact session scope and opaque continuation |
+| `POST` | `/v1/publications` | Opt-in explicit named-destination draft admission under original UUID and publication epoch |
+| `GET` | `/v1/publications`, `/v1/publications/{request_id}` | Author-session-only publication receipts, including exact stopped-session recovery |
+| `POST` | `/v1/publications/{request_id}/cancel` | Active author cancels only before provider submission starts |
+| `POST` | `/a2a` | Opt-in authenticated loopback A2A 1.0 subset; separate protocol negotiation required |
 | `GET` | `/v1/info` | Protocol features, inbox ID, channel, and high-water cursor |
 | `POST` | `/v1/messages` | Negotiate durable local acceptance, or use authenticated immediate posting |
 | `POST` | `/v1/federation/messages` | Opt-in signed remote enqueue under exact sender session proof |
@@ -34,7 +39,7 @@ Operator control requests accept either `routes`, `session_ids`, or
 `all_current`; exactly one target mode is required. Session IDs avoid ambiguity
 when multiple chats work in the same repository.
 
-POST accepts `sender`, `text`, and optional `recipient`, `audience`, `kind`,
+Message POST accepts `sender`, `text`, and optional `recipient`, `audience`, `kind`,
 `repo`, `correlation_id`, `thread_ts`, and `reply_to_cursor`. Clients cannot
 choose another Slack channel, supply a bot token, or assert their own assurance
 label. A send cannot use `slack:` as its sender or an unknown Slack thread
@@ -53,3 +58,29 @@ Public cursors are monotonic integers local to one channel inbox. Neither their
 numbers nor high-water marks reveal other channels' activity. Slack timestamps
 remain strings and are resolved only in the authenticated channel.
 
+
+## Explicit publication and local adapter bounds
+
+Publication admission uses `Idempotency-Key` for the original author UUID and
+`X-AgentBus-Request-Epoch` for its privately staged publication epoch. Info exposes
+`client-publication-v1` and the channel-bound publication epoch only when enabled.
+JSON accepts only `destination` and `text`; there is no arbitrary channel or URL.
+A matching 202 receipt confirms admission, not approval, provider delivery or read.
+Own receipt listing defaults to 20 and is bounded to 20 records per page.
+See [client publishing](client-publishing.md) for exact approval and retry rules.
+
+The [local A2A adapter](local-adapters.md) requires `A2A-Version: 1.0` and the
+normal exact-session/inbox proof. Its task completion means origin durable
+mailbox admission only. Streaming/push and public A2A deployment are unsupported.
+These opt-in interfaces grant no host execution or operator capability.
+
+A stopped exact session can query its own authored and recipient outcomes without
+ordinary information, history or send authority. Missing, revoked or foreign
+scope still fails closed. Newly retired authored UUIDs report retained acceptance
+with `history: retired`; unknown legacy retirement remains unknown.
+
+A non-authorizing ASGI output observer records actual successful session API
+access at most once per 30 seconds. `/healthz`, minimal status, failed proof and
+unproved operator inspection do not refresh it. Self-presence exposes only the
+proved session's latest observation and explicit service gap; model work and
+continuous inbox monitoring remain unobserved.

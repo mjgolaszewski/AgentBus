@@ -34,6 +34,8 @@ class DeliveryTransport:
         self.next_bootstrap = time.monotonic() + 60
         bot_id = await self.poster.authenticated_bot_id()
         settings = self.settings
+        if self.app.state.publications is not None:
+            self.app.state.publications.bind_coordination(self.poster.workspace_id)
         bridge = (load_bridge(settings.federation_config, self.store, self.client,
                               settings.slack_bot_token, bot_id)
                   if settings.federation_config is not None else None)
@@ -45,7 +47,8 @@ class DeliveryTransport:
         if bridge is not None and bridge.operator is not None:
             bridge.operator.health = lambda: operator_dashboard(self.app)
         self.receiver = SlackReceiver(self.store, settings.channels, bot_id, settings, bridge,
-                                      dashboard=lambda: operator_dashboard(self.app))
+                                      dashboard=lambda: operator_dashboard(self.app),
+                                      workspace_id=self.poster.workspace_id if self.app.state.publications is not None else None)
         self.socket = self.socket_factory(settings, self.receiver)
         try:
             await asyncio.to_thread(self.socket.connect)
@@ -70,8 +73,11 @@ class DeliveryTransport:
 @asynccontextmanager
 async def delivery_lifespan(app, settings, http_client, socket_factory):
     from src.agentbus_channel_migration_service import check_startup, database_lease
+    from src.agentbus_publication_service import PublicationStore, load_publication_policy
     from src.agentbus_service import MessageStore, SlackPoster
-
+    publication_policy = load_publication_policy(settings)
+    from src.agentbus_observation_service import ObservationStore, load_monitors
+    monitors = load_monitors(settings)
     lease = database_lease(settings.db_path)
     lease.__enter__()
     try:
@@ -98,7 +104,26 @@ async def delivery_lifespan(app, settings, http_client, socket_factory):
     app.state.posters = posters
     app.state.socket, app.state.federation_bridge = None, None
     app.state.delivery = DeliveryCoordinator(store, posters)
+    app.state.a2a = None
+    app.state.publications = None
+    store.publications = None
     try:
+        store.observations = ObservationStore(store, monitors)
+        if settings.automatic_retention:
+            from src.agentbus_automatic_retention_service import AutomaticRetention
+            app.state.delivery.automatic_retention = AutomaticRetention(store, settings)
+        if monitors:
+            from src.agentbus_observation_runtime_service import StaleNoticeWorker
+            app.state.delivery.stale_notices = StaleNoticeWorker(store.observations, client, settings)
+        if settings.a2a_enabled:
+            from src.agentbus_a2a_service import A2AStore
+            app.state.a2a = A2AStore(store)
+        if publication_policy is not None:
+            from src.agentbus_publication_runtime_service import PublicationWorker
+            app.state.publications = PublicationStore(store, publication_policy)
+            store.publications = app.state.publications
+            store.publication_wake = app.state.delivery.wake
+            app.state.delivery.publications = PublicationWorker(app.state.publications, client)
         try:
             await transport.connect()
         except RuntimeError:

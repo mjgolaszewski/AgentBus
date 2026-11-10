@@ -45,7 +45,7 @@ receipts, directory revisions, and wire-3 parent mappings in the same SQLite own
 Remote projections remain legacy local assurance and grant no session or wake
 authority. See [federation](federation.md) for versions, bounds, and qualification.
 
-Candidate wake qualification remains experimental: live AHP/Codex queue
+Owner wake qualification remains experimental: live AHP/Codex queue
 interoperability and atomic owner-side idle-only admission are unproved. An idle
 observation followed by turn submission is not that guarantee. Unqualified owners
 remain notification-only. See the [Experimenters guide](audiences/experimenters.md).
@@ -76,6 +76,10 @@ one surface while remaining absent from the other inventory.
 | Chat identity and persona | CLI profile load/save/onboard operations and service-issued chat UUIDs |
 | Participation, controls, and aliases | `ParticipationStore` and `ControlStore` |
 | Sender assurance and rate limits | Service-derived assurance and persistent send admission |
+| Explicit client publication | Immutable installation/destination policy, publication custody, private approval projection and bound outbound worker |
+| Local A2A subset | Frozen `MailboxIntent` decoder and exact-scope task index delegating to existing durable admission |
+| Access and interruption observations | Central proof context, non-authorizing ASGI response observer, compact resume projection and existing-worker private notices |
+| Automatic retention | Immutable policy, actual semantic ACK timestamps, original target/work/reference guards and existing retention owner |
 | Optional Codex wake | Local binding, worker projection, and host-owned resume adapter |
 | Slack delivery | `SlackPoster`, `SlackReceiver`, and `normalize_event` |
 | Lifecycle and configuration | `Settings`, CLI configuration, and lifecycle operations |
@@ -126,7 +130,7 @@ The native launcher and Compose image run the same service code and locked
 dependencies. Fresh native deployments use XDG state directories;
 `AGENTBUS_CONSUMER_STATE_DIR` can preserve an existing profile location.
 Compose uses a named volume. Only one receiver may connect for a Slack app.
-Container builds run as UID 10001 and write only to `/data`.
+The container runtime uses UID 10001 and writes service state to `/data`.
 
 An adopting workspace can consume a released source archive by immutable version,
 commit, and SHA-256. Its installer may copy application files into a deployment
@@ -139,7 +143,7 @@ semantics, or release eligibility.
 inherits the retained participation controls and supersedes v1 message authority
 with immutable channel membership and mandatory session proof. The
 [channel contract and model](contracts.md) maps these rules to implementation.
-The channel-isolation candidate is not a live-qualified deployment. A supervised client
+Channel-isolation qualification applies only to its exact source and deployment. A supervised client
 worker is required because a foreground command
 cannot keep checking controls after it returns a message to an agent. Service
 state owns identities, policy, sessions, controls, aliases, and audit records;
@@ -155,3 +159,41 @@ or agent channel selector is introduced. Verified Slack operator approval fixes
 the channel, and redemption invokes canonical grant/enrollment owners atomically.
 No raw grant is retained or sent to Slack. Existing file grants remain supported;
 new-source protected and live qualification are separate requirements.
+
+## Optional publishing and adapter paths
+
+[Client updates](client-publishing.md) have a separate explicit admission path:
+exact sender scope → named destination policy → immutable draft/approval → bound
+provider submission → retained outcome. Ordinary messages, controls, receipts and
+federation have no edge into publication custody. Client installations use
+separate locally installed outbound credentials and no additional Socket Mode
+connection. The existing coordinator reserves at most one of its aggregate
+submission slots for a pending publication and one for a requested private notice.
+
+The [local A2A 1.0 adapter](local-adapters.md) translates a named mailbox-admission
+operation into the existing send owner inside the same SQLite transaction. Its
+bounded task index contains scope, request identity, digest and public position;
+it is not a second mailbox or scheduler. Index failure rolls back admission.
+Queries remain exact-scope; cancellation cannot revoke accepted delivery. Task
+completion means origin admission and keeps recipient work/ACK facts separate.
+
+The packaged service entrypoint consumes the declared host/port. Compose keeps
+its wildcard container binding and loopback published port; this configuration
+cannot enable A2A. A deliberately loopback-bound service and actual loopback
+peer/server checks are required. Custom ASGI launchers must honor that binding.
+Public A2A and production owner-wake interoperability remain unqualified.
+
+Successful exact-session API responses can feed a separately declared bounded
+access observation. The business query owners remain read-only. This ASGI output
+effect reuses central authenticated scope, never a caller-supplied channel or a
+second identity issuer. Health probes and unproved operator reads supply no
+agent activity. [Resume](recovery.md) reports unknown gaps without advancing ACK,
+while explicitly requested private notices use the existing worker and durable
+episode deduplication.
+
+[Automatic retention](message-lifecycle.md) also reuses that worker, with one
+batch of at most 100 payloads for one channel per hourly tick. It requires a matching
+dry run, settled original work, actual semantic ACK and minimum activity age,
+then delegates existing archive/purge and transactional FTS retirement. No
+federation/safety-control reclamation, new daemon, broker, database, credential
+replication or model execution authority is introduced.

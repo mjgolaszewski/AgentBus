@@ -48,7 +48,7 @@ memory_retention_policy:
     - preserve_replacement_reference_when_available
 environment_facts:
   current_repo_state:
-    - Published baseline is stable0.9.4 exact-main0c772fab; active issue112 train is not released
+    - Published baseline is immutable0.10.0 exact-main46ae7e0 with computed P13 closure; P14 implements the independently qualified0.11 release
     - Certified BCF 2.3.4 Standard contract v3 remains the project runtime; successor adoption is a separate decision, not a retrospective prerequisite
     - Application source lives under src; public client/service shims and protocol2 paths remain stable; Python3.12 and pinned Python3.14 compatibility are required
     - One service, SQLite database, Slack app and socket serve an explicit bounded channel registry; each grant-backed identity has one immutable channel
@@ -61,17 +61,20 @@ environment_facts:
     - Authored request lookup is an additive exact-session and inbox query; retained sender ownership and exact frame hash gate transport facts; missing evidence stays unknown and supplies no resend authority
     - Queue acceptance provider posting destination custody host completion and semantic ACK are separate; presentation cleanup never substitutes for them
     - Operational worker views report local observations; observability templates are not a qualified collector or immutable audit service
+    - Optional publication credentials bind each outbound installation independently; exact retained drafts and destination policy authorize posting, never ordinary bus chatter
+    - Local A2A tasks mean mailbox admission only; resume and coalesced API-access observations grant no execution or acknowledgement authority
+    - Automatic retirement requires explicit semantic acknowledgement by every original target, meaningful-transition age and existing reference closure; dry-run precedes apply
   active_artifacts:
     spec: plans/product-spec.yml
     build_plan: plans/build-plan.yml
     active_phase_ledger: plans/phase-ledger.yml
     phase_history: plans/phase-history.yml
-    active_phase_plan: plans/phase-13-plan.yml
-    active_workitem_ledger: plans/phase-13-workitems.yml
-    active_phase_log: phases/phase-13-log.yml
+    active_phase_plan: plans/phase-14-plan.yml
+    active_workitem_ledger: plans/phase-14-workitems.yml
+    active_phase_log: phases/phase-14-log.yml
 known_constraints:
   - "Retained federation transport rows default to1024 per table; only operator startup configuration can select a bounded larger capacity after resource review. Preserve all rows, original retry identities and replay; no automatic federation archival."
-  - "Mobile smart-punctuation entry and clearer retained-result refresh belong to planned0.11 work; they do not describe0.10 capabilities."
+  - "Mobile smart-punctuation entry and clearer retained-result refresh are implemented in the unqualified 0.11 candidate; they do not describe 0.10 capabilities."
   - Owner-wake qualification remains paused under Issue75; AHP/native-queue live interoperability and atomic idle-only admission are unqualified, with unknown owners notification-only
   - Owner admission must bind backend transport incarnation connection generation and exact thread; upstream reports and idle observations do not grant writer or retry authority
   - Historical federation canaries apply only to their pinned subjects; no new multi-installation or live-provider qualification follows from local regression success
@@ -79,12 +82,12 @@ known_constraints:
   - Existing unresolved or legacy-unknown custody remains pinned; offline migration, backup and repair-forward rules govern incompatible cutovers; public Slack channels provide no confidentiality or indefinite availability guarantee
   - Reported full-service hangs remain unclassified; the snapshot and carrier-classification repairs do not establish their cause or a remote-health guarantee
   - Every final subject requires canonical protected PR exact-main archive and isolated-installation proof; deployment and live canaries remain separate custodian actions with concrete prerequisites
-  - P13 implementation is authored complete; final canonical closure and publication remain required. P14 awaits computed P13 closure; no inherited hotfix retirement or computed phase closure is inferred from authored DONE entries or component evidence
+  - P13 has computed closure on protected46ae7e0 and immutable0.10 publication; P14 is active for0.11 construction; no inherited hotfix retirement or computed phase closure is inferred from authored DONE entries or component evidence
   - Complete editorial review retains exact line coverage hashes and dispositions, excludes BCF machinery and changelog, and preserves historical proof; current capability text links Experimenters guidance
   - Historical inputs may be cold-archived only with verified content manifests restoration instructions and durable references; live environments Git objects credentials databases and service volumes remain protected
-  - Automatic retention is planned for P14 only; fourteen-day minimum, thirty-day default, unresolved and unacknowledged custody pinned; production-client live canary waived for approved two-location substitution
+  - Automatic retention is implemented locally for P14 but remains unqualified; fourteen-day minimum, thirty-day default, unresolved and unacknowledged custody pinned; production-client live canary waived for approved two-location substitution
 reusable_commands: [make governance-validate, make architecture-test, make lint, make typecheck, make test, make release-check]
 references:
   governance: [AGENTS.yml, governance-profile.yml, architecture-boundaries.yml, contracts/observability/v1/, contracts/codex-wake/v1/, contracts/participation/v2/participation.contract.yml, contracts/channels/v1/channel-isolation.contract.yml, plans/phase-ledger.yml, plans/phase-history.yml, docs/OPERATIONS.md]
   product: [plans/product-spec.yml, plans/build-plan.yml, docs/contracts.md, docs/audiences/experimenters.md]
-  execution: [plans/phase-13-plan.yml, plans/phase-13-workitems.yml, phases/phase-13-log.yml]
+  execution: [plans/phase-14-plan.yml, plans/phase-14-workitems.yml, phases/phase-14-log.yml]

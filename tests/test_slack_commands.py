@@ -948,3 +948,22 @@ def test_federation_custody_setting_is_operator_bounded(enrolled,value):
     settings,_,_,_=enrolled
     with pytest.raises(ValueError,match='AGENTBUS_FEDERATION_CUSTODY_ROWS'):
         replace(settings,federation_custody_rows=value)
+
+
+def test_ios_scope_dispatch_preserves_literal_text_and_existing_authorization(enrolled, monkeypatch):
+    from src import agentbus_operator_scope_service as scope
+    settings, store, _, web = enrolled
+    captured = []
+
+    def dispatch(parsed, *_args):
+        captured.append(parsed)
+        return "scoped request"
+
+    monkeypatch.setattr(scope, "scoped_command", dispatch)
+    text = "broadcast —federated — —location literal — punctuation"
+    assert "not enabled" in command(settings, store, web, text, user="U999")
+    assert "configured channel" in command(settings, store, web, text, channel="COTHER")
+    assert not captured
+    assert command(settings, store, web, text) == "scoped request"
+    assert captured == [("broadcast", None, "—location literal — punctuation")]
+    assert not web.posts

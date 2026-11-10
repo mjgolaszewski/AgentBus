@@ -7,6 +7,7 @@ scope:
   service_processes: 1
   sqlite_databases: 1
   slack_apps: 1
+  slack_app_scope: coordination app only; optional outbound publication installations have separate credentials and no Socket Mode connection
   socket_connections: 1
   maximum_channels: 16
   immutable_channel_per_identity: true
@@ -38,7 +39,7 @@ invariants:
 - Bearer authentication alone cannot read info history inbox context or message content or submit claims and messages
 - Session credentials are unambiguous across all identities including rotation and grant retries
 - Replies derive parent recipient and thread only within authenticated channel; foreign cursors have no meaning there
-- Broadcast reaches only the originating channel; no cross-channel forwarding or combined inbox
+- Plain broadcast reaches only the originating channel; separately authorized federated operator controls use explicit location mappings, never membership transfer or a combined inbox
 - No global message sequence database size foreign roster or foreign metrics reaches agent projections
 - Trusted Slack bot frames still require local route channel ownership; provider echoes bind actual channel
 - Admission custody provider delivery host execution completion and semantic ACK remain separate

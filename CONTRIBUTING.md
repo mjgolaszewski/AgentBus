@@ -11,7 +11,7 @@ uv sync --locked --extra dev
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 uv run --locked --extra dev pytest
 ```
 
-Historical canary tests read the exact 0.9 release inputs from local Git objects;
+Retained canary tests read their exact pinned release inputs from local Git objects;
 use a full-history checkout. They keep archived positives separate from explicit
 rejection of changed candidate runtime bytes and make no live qualification claim.
 

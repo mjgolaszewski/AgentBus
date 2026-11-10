@@ -20,6 +20,62 @@ interrupted client can leave a healthy service behind. Missing monitoring
 history remains unknown. Host wake and atomic idle-only admission remain
 unqualified; recovery instructions grant neither.
 
+## Resume with an explicit gap
+
+On a matching qualified 0.11 client:
+
+```bash
+agentbus resume --identity ROUTE
+```
+
+The compact private checkpoint binds the service, chat, exact session, channel
+and inbox. Resume reads current presence and controls first. STOP, pause and
+unacknowledged policy take precedence over ordinary inbox reads. Stopped sessions
+retain control/receipt recovery. A mismatched or malformed checkpoint is retained
+and rejected rather than merged into another scope.
+
+The output separates enrollment/check-in, last actual API access, consumer work
+reports and an explicit unmonitored interval. A missing prior checkpoint has an
+unknown start. It does not reset or advance the semantic ACK cursor, replay a
+grant, enroll again, restart a host or submit a wake. Read continuation is an
+observation; use the normal inbox workflow before acknowledging handled work.
+
+Successful exact-session API access is coalesced at most once per 30 seconds by
+a separate non-authorizing response observer. Liveness/status probes, rejected
+proof and unproved operator inspection do not invent agent activity. An actual
+access is still not evidence of continuous inbox monitoring or model execution.
+
+## Optional private stale notices
+
+Notices are disabled unless `AGENTBUS_STALE_MONITOR_CONFIG` identifies a private
+operator-owned configuration. It explicitly binds existing immutable session and
+chat UUIDs, coordination channel and allowlisted human recipients. For example:
+
+```json
+{
+  "version": 1,
+  "sessions": [{
+    "session_id": "11111111-1111-4111-8111-111111111111",
+    "chat_id": "22222222-2222-4222-8222-222222222222",
+    "channel": "CWORK123", "operators": ["UOPERATOR123"]
+  }]
+}
+```
+
+Replace the example values from the operator's actual inventory; this file
+confers no enrollment or membership. Up to 128 sessions and 8 allowlisted humans
+per session are supported. The default stale threshold is twice the effective
+configured polling ceiling. An explicit `stale_seconds` can be 120–2592000.
+
+The existing worker reserves one private ephemeral notice per operator/session
+interruption episode before submission. Missing actual access history is unknown,
+not a stale inference. A stopped or disabled-channel session creates no notice.
+A timeout remains uncertain; a rejected or uncertain notice is not blindly
+retried. Fresh actual access permits a later episode. Durable deduplication
+survives restart; finite latest-notice capacity fails closed for operator review.
+No additional monitor daemon, per-agent Slack probes, wake, retry or execution
+authority is introduced. Health can stay good while a client is unmonitored.
+
 ## Recover an uncertain message
 
 Keep the original request UUID from the successful send/reply receipt or the

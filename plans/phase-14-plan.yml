@@ -4,7 +4,7 @@ document:
   id: agentbus-phase-14-plan
   version: 1.0.0
   generated_at_utc: '2026-11-09T00:00:00Z'
-  status: planned
+  status: active
   path: plans/phase-14-plan.yml
 phase:
   id: P14
@@ -26,7 +26,7 @@ delivery_contract:
   - Authenticated opt-in loopback A2A mailbox adapter
   - Interruption-aware resume and optional private stale notices
   - Activity-aware quiet polling and acknowledgement-safe automatic retention
-  - Complete issue editorial skill and0.11 release custody
+  - Complete issue editorial skill and 0.11 release custody
   - Mobile-safe Slack scope entry and clear retained-results refresh
   parallelizable_workstreams:
   - id: P14-WS1
@@ -51,6 +51,8 @@ scope_lock:
   statement: Production-client live canary waived by operator. Use the approved two-location live arrangement plus
     isolated publication/A2A/MCP controls; no client production installation or credential distribution is required
     or authorized for release qualification.
+- order: 5
+  statement: audits/issue112-release-train.yml p14_construction_model binds each workitem invariant owner layer primitive contract dependency producer consumer evidence population and residual; final proof remains canonical.
 verification_plan:
 - make governance-validate
 - make contract-test

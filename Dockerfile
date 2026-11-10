@@ -14,5 +14,6 @@ RUN useradd --uid 10001 --create-home agentbus \
     && mkdir /data && chown agentbus:agentbus /data
 USER agentbus
 ENV AGENTBUS_DB_PATH=/data/messages.sqlite3
+ENV AGENTBUS_HOST=0.0.0.0 AGENTBUS_PORT=8766
 EXPOSE 8766
-CMD ["/app/.venv/bin/python", "-m", "uvicorn", "agentbus_service:create_app", "--factory", "--host", "0.0.0.0", "--port", "8766", "--no-access-log"]
+CMD ["/app/.venv/bin/python", "-m", "agentbus_service"]

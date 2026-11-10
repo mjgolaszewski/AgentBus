@@ -168,6 +168,15 @@ def test_shared_control_joins_caller_transaction_without_early_commit(pair):
     "text,expected",
     [
         ("health --federated", ("health", None, "")),
+        ("health —federated", ("health", None, "")),
+        ("health —location beta", ("health", "beta", "")),
+        ("broadcast —federated hello —literal --literal", ("broadcast", None, "hello —literal --literal")),
+        ("broadcast —location beta — —federated literal", ("broadcast", "beta", "—federated literal")),
+        ("broadcast --location beta — —federated literal", ("broadcast", "beta", "—federated literal")),
+        ("broadcast — —location literal", ("local", None, "—location literal")),
+        ("broadcast -- —federated literal", ("local", None, "—federated literal")),
+        ("broadcast —federated -- —content", ("broadcast", None, "—content")),
+        ("broadcast we use — here", None),
         ("health --location beta", ("health", "beta", "")),
         ("broadcast --federated hello --literal", ("broadcast", None, "hello --literal")),
         ("broadcast --location beta -- --federated text", ("broadcast", "beta", "--federated text")),
@@ -184,6 +193,10 @@ def test_scope_parser_preserves_literal_text_and_explicit_scope(text, expected):
     "text",
     [
         "health --location",
+        "health —location",
+        "health —federated extra",
+        "broadcast —federated —location beta hello",
+        "broadcast —unknown hi",
         "health --federated extra",
         "health --location beta --federated",
         "broadcast --unknown hi",
@@ -255,3 +268,22 @@ def test_operator_capacity_rejection_rolls_back_local_and_remote_admission(pair)
                            {'user_id':'U123','channel_id':'C111','trigger_id':'full-broadcast'}, None, store)
     assert reply.outcome == 'rejected' and 'No new operator request was admitted' in reply
     assert before == {table: store._db.execute('SELECT count(*) FROM '+table).fetchone()[0] for table in before}
+
+
+def test_refresh_snapshot_preserves_original_request_and_admission(pair):
+    from src.agentbus_operator_scope_service import operator_results
+
+    stores, bridges, _ = pair
+    owner = bridges["alpha"].operator
+    request = owner.start(actor="U123", channel="C111", operation="health",
+                          location="beta", text="", request_key="refresh-original")
+    before = stores["alpha"]._db.execute("SELECT count(*) FROM operator_fanout").fetchone()[0]
+    first = operator_results(owner, request, "U123", "C111")
+    bridges["alpha"].now = lambda: 1002.0
+    refreshed = operator_results(owner, request, "U123", "C111")
+    assert first.receipt == refreshed.receipt == request
+    assert first.text != refreshed.text
+    assert "new private reply below" in refreshed.text and "older cards stay unchanged" in refreshed.text
+    assert stores["alpha"]._db.execute("SELECT count(*) FROM operator_fanout").fetchone()[0] == before
+    with pytest.raises(ValueError):
+        operator_results(owner, request, "U999", "C111")

@@ -1,6 +1,6 @@
 document:
   kind: federated_operator_contract
-  version: 1.0.0
+  version: 1.1.0
   status: active
   path: contracts/federation/v1/operator.contract.yml
 wire: {version: 4, kinds: [operator_request, operator_result], unchanged_versions: [1, 2, 3]}
@@ -14,3 +14,9 @@ results:
 - Health is an immutable sampled observation with explicit freshness and unknown outcomes
 - Broadcast keeps one shared destination control and separate exact-session read receipts
 - Private refresh and pagination expose partial results without execution or semantic ACK claims
+
+slack_entry:
+  smart_punctuation: U+2014 em-dash equals ASCII double-hyphen only at declared option-prefix and literal-separator positions
+  payload: Original literal message typography remains unchanged; unknown and conflicting selectors reject before custody
+  refresh: Same immutable request identity and retained target population; never allocates another operation
+  snapshot: Each private result shows generation time and explains that refresh posts a new private reply below, leaving older cards unchanged
