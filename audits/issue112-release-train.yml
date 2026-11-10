@@ -4,9 +4,10 @@ document:
   id: agentbus-issue112-train
   version: 1.0.0
   path: audits/issue112-release-train.yml
-  status: planned
+  status: active
   generated_at_utc: '2026-11-09T00:00:00Z'
-authority: Operator approved full issue112 two-release plan; no release publication or live deployment grant
+authority: Operator approved the full two-release train and scheduling through0.11 publication; no live deployment
+  provider or trust-configuration mutation inferred.
 baseline:
   commit: 0c772fabd1a08f6602b8c2bf98f7e7a3fc6e0171
   tree: c6d83695769df25d6e47755fb8da3b317b08f4bf
@@ -24,17 +25,117 @@ source_continuity:
   historical_workbenches: Clean followup and operator UX heads are incorporated; pagination ancestry is assessed
     against refreshed main, no retirement yet
 issue_disposition:
-  '1': P13 and P14 canonical contract and acceptance coverage
-  '2': P13 and P14 canonical contract and acceptance coverage
-  '3': P13 and P14 canonical contract and acceptance coverage
-  '4': P13 and P14 canonical contract and acceptance coverage
-  '5': P13 and P14 canonical contract and acceptance coverage
-  '6': P13 and P14 canonical contract and acceptance coverage
-  '7': P13 and P14 canonical contract and acceptance coverage
-  '8': P13 and P14 canonical contract and acceptance coverage
-  '9': P13 and P14 canonical contract and acceptance coverage
-  '10': P14 client publication and interface contract
-  '11': P13 and P14 canonical contract and acceptance coverage
+  '1':
+    scope: invariants
+    workitems:
+    - P13-P0-01
+    - P13-P3-01
+    - P13-P4-01
+    - P13-P4-02
+    - P14-P0-01
+  '2':
+    scope: domains ownership and architectural layers
+    workitems:
+    - P13-P0-01
+    - P14-P0-01
+  '3':
+    scope: versioned primitives contracts producers consumers evidence
+    workitems:
+    - P13-P0-01
+    - P13-P3-01
+    - P14-P0-01
+  '4':
+    F0:
+    - P13-P0-01
+    F1:
+    - P13-P1-01
+    - P13-P1-02
+    F2:
+    - P13-P2-01
+    F3:
+    - P13-P3-01
+    - P13-P3-02
+    F4:
+    - P13-P3-01
+    - P13-P3-03
+    F5:
+    - P13-P2-01
+    - P13-P3-01
+    F6:
+    - P13-P5-01
+  '5':
+    scope: behavioral negative recovery and live acceptance matrix
+    workitems:
+    - P13-P1-01
+    - P13-P1-02
+    - P13-P2-01
+    - P13-P3-01
+    - P13-P3-02
+    - P13-P3-03
+    - P13-P4-01
+    - P13-P4-02
+    - P13-P5-01
+  '6':
+    scope: trusted workspace experimental limits and public editorial disclosure
+    workitems:
+    - P13-P5-01
+    - P14-P4-01
+  '7':
+    installation:
+    - P13-P1-01
+    search:
+    - P13-P4-01
+    MCP:
+    - P13-P4-02
+    A2A:
+    - P14-P2-01
+    measured_footprint:
+    - P13-P5-01
+    - P14-P4-01
+    external: Scheduling file reservations and OS isolation remain with their existing owners; no AgentBus enforcement.
+  '8':
+    installation_diagnostics:
+    - P13-P1-01
+    scoped_receipts:
+    - P13-P1-02
+    restore_peer_recovery_handoff:
+    - P13-P5-01
+    guidance: docs/recovery.md
+    external: Custodians own persistent-volume declarations expected-state inventories backups restore execution
+      and installer entrypoint mapping. No mount heuristic or automatic restoration.
+  '9':
+    receipts:
+    - P13-P1-02
+    health_freshness:
+    - P13-P2-01
+    resume_stale_notices:
+    - P14-P3-01
+    recovery_evidence_guidance:
+    - P13-P5-01
+    external: Controller installation resource-floor enforcement identity-safe cleanup and NFS durability stay with
+      their current owners; references confer no authority.
+  '10':
+    destination_drafts:
+    - P14-P1-01
+    approval_direct_policy:
+    - P14-P1-02
+    custody_provider_recovery:
+    - P14-P1-03
+    live_editorial_qualification:
+    - P14-P4-01
+  '11':
+    operator_scope_parser:
+    - P13-P2-01
+    - P13-P3-01
+    search_MCP:
+    - P13-P4-01
+    - P13-P4-02
+    publication_parser:
+    - P14-P0-01
+    - P14-P1-01
+    packaged_skill_installation:
+    - P13-P5-01
+    - P14-P4-01
 interfaces:
   location: AgentBus installation
   channel: Immutable session-derived Slack conversation scope
@@ -119,5 +220,36 @@ editorial_review:
   disposition: updated
   notes: Every line reviewed for availability, configured alias, scope, authority, privacy and current contracts;
     excludes BCF machinery and changelog
+- path: docs/recovery.md
+  reviewed_lines:
+  - 1
+  - 102
+  sha256: 18070034cad05a37b63837ec36ed46b7c86fea832dfd1e053c09463addd01701
+  disposition: new
+  notes: Every line reviewed; recovery authority and current experimental limits explicit; no private deployments
+    or chronology in capability guidance. BCF machinery and changelog excluded.
+- path: docs/OPERATIONS.md
+  reviewed_lines:
+  - 1
+  - 341
+  sha256: 58412cf0f25d2f33f5ec786e1be2b97d6b34d412ab1a9e7937bda76af8283ff9
+  disposition: updated
+  notes: Every line reviewed; recovery authority and current experimental limits explicit; no private deployments
+    or chronology in capability guidance. BCF machinery and changelog excluded.
+- path: docs/audiences/experimenters.md
+  reviewed_lines:
+  - 1
+  - 99
+  sha256: 9245e2576deb229dbe0db5faf46adc63d5219c6bd74d92aa41061fd97c1d1cc1
+  disposition: updated
+  notes: Every line reviewed; recovery authority and current experimental limits explicit; no private deployments
+    or chronology in capability guidance. BCF machinery and changelog excluded.
 context_budget_change: Canonical representation registry KiB cap increases44 to50 only for explicit signed operator
   frame and two typed payload owners; no runtime memory or retention budget changed
+protected_construction:
+  pull_request: 113
+  head: 039b5cb22ec5de6066c63006af70eb4d92321b90
+  merge: 06b2b18eaadba370ace553da921275a38241e35d
+  pr_run: 42724178676
+  main_run: 42724736456
+  status: both provider workflows green; P13 closure and live acceptance pending

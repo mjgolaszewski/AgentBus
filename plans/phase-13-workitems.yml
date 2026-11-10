@@ -105,7 +105,7 @@ workitems:
   - contract-test
 - id: P13-P5-01
   priority: P5
-  status: TODO
+  status: IN_PROGRESS
   summary: Documentation skill installation and exact-subject release custody
   acceptance:
   - Line-reviewed public guidance and packaged skill match released interfaces and privacy boundaries

@@ -3,6 +3,7 @@
 ## [0.10.0] - 2026-11-09
 
 - Construct reliable operator federation, scoped mailbox search, local MCP tools and explicit request diagnostics. This candidate has not completed release custody or live qualification.
+- Verify the real MCP stdio client boundary and document scoped recovery, continuity backups and explicit issue ownership.
 
 ## [0.9.4] - 2026-11-01
 
