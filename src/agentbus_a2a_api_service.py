@@ -43,7 +43,7 @@ def agent_card(request):
     settings = request.app.state.settings
     host = "[::1]" if settings.bind_host == "::1" else "127.0.0.1"
     return {"name": "AgentBus local mailbox", "description": "Mailbox admission only; no recipient execution guarantee.",
-            "version": "0.11.0", "supportedInterfaces": [{"url": f"http://{host}:{settings.bind_port}/a2a",
+            "version": request.app.version, "supportedInterfaces": [{"url": f"http://{host}:{settings.bind_port}/a2a",
                 "protocolBinding": "JSONRPC", "protocolVersion": "1.0"}],
             "capabilities": {"streaming": False, "pushNotifications": False, "extendedAgentCard": True},
             "defaultInputModes": ["text/plain"], "defaultOutputModes": ["application/json"],

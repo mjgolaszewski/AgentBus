@@ -89,8 +89,9 @@ def test_a2a_envelopes_scope_and_unsupported_paths_fail_before_custody(adapter):
 
 
 def test_a2a_private_card_and_pagination_are_scope_bound(adapter):
-    _, _, _, _, rpc = adapter
+    _, _, client, _, rpc = adapter
     card = rpc("GetExtendedAgentCard").json()["result"]
+    assert card["version"] == client.app.version
     assert card["supportedInterfaces"][0]["protocolVersion"] == "1.0"
     assert not card["capabilities"]["streaming"] and not card["capabilities"]["pushNotifications"]
     assert "roster" not in str(card).lower()
