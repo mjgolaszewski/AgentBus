@@ -85,7 +85,7 @@ def enqueue_authenticated(bridge, store, channel, message_id, destination, paylo
     except SendRateExceeded as exc:
         raise EnqueueRejected(429, 'Federation send rate exceeded', {'Retry-After': str(exc.retry_after)}) from None
     except CustodyCapacityError:
-        raise EnqueueRejected(503, 'Federation custody capacity requires operator archival', {'Retry-After': '60'}) from None
+        raise EnqueueRejected(503, 'Federation custody row limit reached; operator capacity review required', {'Retry-After': '60', 'X-AgentBus-Recovery-Code': 'federation_custody_capacity'}) from None
     except (ValueError, KeyError):
         raise EnqueueRejected(422, 'Federation message or route is invalid') from None
 

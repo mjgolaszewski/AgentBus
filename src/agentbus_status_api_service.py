@@ -72,6 +72,7 @@ def service_dashboard(settings, store, *, socket=None, bridge=None, version=None
                              'lifecycle':store.lifecycle.status(channel)})
         custody = dict(store._db.execute('SELECT state,count(*) FROM bridge_obligations GROUP BY state').fetchall())
         checkpoints = store._db.execute('SELECT count(*) FROM federation_checkpoints').fetchone()[0]
+        custody_capacity = store.federation.capacity()
     configured_prefix = settings.local_prefix
     bridge_prefix = getattr(getattr(bridge, 'identity', None), 'route_prefix', None)
     return {'version':version, 'workers': workers,
@@ -94,7 +95,8 @@ def service_dashboard(settings, store, *, socket=None, bridge=None, version=None
             'federation':{'configured':settings.federation_config is not None,'initialized':bridge is not None,
                           'channel':getattr(bridge,'channel',None),
                           'origins':sorted(bridge.bindings) if bridge is not None else [],
-                          'remote_health':'not_observed','custody':custody,'checkpoints':checkpoints},
+                          'remote_health':'not_observed','custody':custody,'checkpoints':checkpoints,
+                          'custody_capacity':custody_capacity},
             'qualification':{'owner_interoperability':'unqualified','atomic_idle_only_wake':'unqualified'}}
 
 

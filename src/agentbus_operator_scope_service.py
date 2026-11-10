@@ -93,6 +93,8 @@ def operator_results(owner, request_id, actor, channel, page=0):
 
 
 def scoped_command(parsed, payload, settings, store):
+    from src.agentbus_federation_service import CustodyCapacityError
+    from src.agentbus_slack_ui_service import command_receipt
     operation, location, text = parsed
     owner = getattr(store, "operator_federation", None)
     if owner is None:
@@ -114,6 +116,9 @@ def scoped_command(parsed, payload, settings, store):
             request_key=payload.get("trigger_id"),
         )
         return operator_results(owner, request_id, payload["user_id"], payload["channel_id"])
+    except CustodyCapacityError:
+        return command_receipt('Federation custody row limit reached; operator capacity review required. '
+                               'No new operator request was admitted.', 'rejected')
     except ValueError as exc:
         return str(exc)
 

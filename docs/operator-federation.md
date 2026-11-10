@@ -75,8 +75,24 @@ read receipts and recipient execution are distinct.
 Aggregate requests are bounded to 64 locations and 1024 retained operations per
 store. Capacity exhaustion fails closed and requires an operator retention
 assessment; unresolved history is never discarded automatically. Existing bridge
-retry and provider budgets remain authoritative. Health samples are observations,
-not continuous monitoring. A live transport or enrolled session does not prove
+retry and provider budgets remain authoritative.
+
+Transport custody has a separate per-table retained-row bound: default 1024,
+operator-configurable at service startup with `AGENTBUS_FEDERATION_CUSTODY_ROWS`
+from 1 to 65536. Health reports the limit and tables at capacity. A full table
+rejects new allocation; exact replay and existing custody remain available.
+After reviewing complete storage/resource requirements, a custodian may raise
+the bound without deleting history. Lowering it never evicts rows. This does
+not change the independent operator-history, directory or byte limits.
+There is no automatic federation archival or safe-delete shortcut.
+
+A send blocked by this bound returns HTTP 503 with the fixed recovery code
+`federation_custody_capacity`. Retain the original staged UUID and payload;
+retry only through the documented identical-request path after the cause is
+resolved. A new Slack operator request rejected at admission is reported as
+rejected rather than as an uncertain committed operation.
+
+Health samples are observations, not continuous monitoring. A live transport or enrolled session does not prove
 an agent is actively polling.
 
 

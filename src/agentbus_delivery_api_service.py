@@ -51,8 +51,8 @@ async def send_message(request, message, session_token, response):
             return serialize_message(store, channel, accepted)
         store.send_rate.reserve(principal)
     except CustodyCapacityError:
-        raise HTTPException(503, 'Federation custody capacity requires operator archival',
-                            headers={'Retry-After': '60'}) from None
+        raise HTTPException(503, 'Federation custody row limit reached; operator capacity review required',
+                            headers={'Retry-After': '60', 'X-AgentBus-Recovery-Code': 'federation_custody_capacity'}) from None
     except KeyError:
         raise HTTPException(422, 'reply parent does not exist in this inbox') from None
     except StoppedMessageSession as exc:

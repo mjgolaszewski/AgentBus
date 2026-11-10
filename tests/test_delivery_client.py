@@ -421,3 +421,27 @@ def test_successful_durable_send_returns_original_uuid_receipt_without_mutating_
                        'provider_delivery': 'not_inferred', 'recipient_execution': 'not_inferred'}
     assert str(UUID(receipt['request_id'])) == receipt['request_id']
     assert 'delivery_receipt' not in response and 'private-session' not in str(result)
+
+
+@pytest.mark.parametrize('path,status,code,expected', [
+    ('/v1/messages',503,'federation_custody_capacity',True),
+    ('/v1/federation/messages',503,'federation_custody_capacity',True),
+    ('/v1/messages',403,'federation_custody_capacity',False),
+    ('/v1/sessions',503,'federation_custody_capacity',False),
+    ('/v1/messages',503,'private-untrusted-code',False),
+])
+def test_transport_capacity_diagnostic_is_fixed_and_path_scoped(monkeypatch,path,status,code,expected):
+    import io
+    from urllib.error import HTTPError
+
+    from src import agentbus_transport_client as transport
+    class Opener:
+        def open(self,*_args,**_kwargs):
+            raise HTTPError('http://localhost',status,'blocked',
+                {'X-AgentBus-Recovery-Code':code,'Retry-After':'60'},io.BytesIO(b'private-response-body'))
+    monkeypatch.setattr(transport,'build_opener',lambda *_:Opener())
+    with pytest.raises(ClientError) as failed:
+        transport.api({'AGENTBUS_URL':'http://localhost','AGENTBUS_API_TOKEN':'private-bearer'},path,{})
+    assert (failed.value.recovery_code=='federation_custody_capacity') is expected
+    assert ('custody row limit' in str(failed.value)) is expected
+    assert 'private-' not in str(failed.value)

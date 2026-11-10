@@ -103,6 +103,15 @@ execution_evidence:
     no service-idle or live-provider inference.
   - Exact-main42728596142 is green on ac89f8d; reproduced candidate archive hash matches provider release-smoke
     output. Consumer installer and alias compatibility are being qualified before any live cutover.
+  - Live retained federation custody reached1024 rows and rejected ordinary outbound admission with HTTP503; original
+    UUID and retry diagnostics retained, no data or checkpoint reset.
+  - Repair adds operator startup row bound, private capacity pressure, fixed path/status-scoped503 reason and atomic
+    Slack rejection;235 distinct focused cases passed across initial and corrected runs, with lint and typing77
+    source files green.
+  - Candidate428151f preflight rejected new memory keys; notes moved to existing allowed fields and phase evidence
+    notes without schema changes. Original failure retained; repaired subject still requires canonical proof.
+  - Candidate578b11c preflight rejected exact planned deliverable/workitem coverage; P14 plan ledger and log now
+    share the same mobile followup title and TODO identity. No0.10 runtime or BCF schema change.
 closeout_requirements:
   claims:
     workitems_closed:

@@ -800,6 +800,7 @@ def test_delivery_environment_limits_are_applied_to_running_store(tmp_path, monk
     monkeypatch.setenv('AGENTBUS_DB_PATH', str(tmp_path / 'configured.sqlite3'))
     for name, value in [('OUTSTANDING', 2), ('RETAINED', 3), ('OBSERVATION', 4)]:
         monkeypatch.setenv('AGENTBUS_LOCAL_DELIVERY_' + name + '_LIMIT', str(value))
+    monkeypatch.setenv('AGENTBUS_FEDERATION_CUSTODY_ROWS','2048')
     settings = Settings.from_env()
     def respond(request):
         return httpx.Response(200, json={'ok': True, 'bot_id': BOT_ID})
@@ -808,6 +809,7 @@ def test_delivery_environment_limits_are_applied_to_running_store(tmp_path, monk
         with TestClient(create_app(settings, http_client=http, socket_factory=FakeSocket)) as client:
             store = client.app.state.store
             capacity = store.local_delivery.capacity()
+            assert store.federation.custody_row_limit == 2048
             assert (capacity['outstanding_limit'], capacity['retained_request_limit'],
                     capacity['provider_observation_limit']) == (2, 3, 4)
             accepted(store)
@@ -815,5 +817,39 @@ def test_delivery_environment_limits_are_applied_to_running_store(tmp_path, monk
             assert 'outstanding' in store.local_delivery.capacity()['warnings']
             with pytest.raises(LocalDeliveryRejected, match='outstanding'):
                 accepted(store)
+    finally:
+        asyncio.run(http.aclose())
+
+
+@pytest.mark.parametrize('kind',['federation','local','lifecycle'])
+def test_http_capacity_reason_does_not_mislabel_other_storage_rejections(tmp_path,monkeypatch,kind):
+    from src.agentbus_federation_service import CustodyCapacityError
+    from src.agentbus_message_lifecycle_service import LifecycleRejected
+    settings=Settings(api_token='local-test-secret',slack_bot_token='xoxb-test',
+        slack_app_token='xapp-test',slack_channel=CHANNEL,db_path=tmp_path/'reason.sqlite3')
+    http=httpx.AsyncClient(transport=httpx.MockTransport(
+        lambda _request:httpx.Response(200,json={'ok':True,'bot_id':BOT_ID})))
+    app=create_app(settings,http_client=http,socket_factory=FakeSocket)
+    try:
+        with TestClient(app) as client:
+            store=app.state.store
+            secret='capacity-reason-session-secret-verified'
+            enroll_for_thread(store,'agentbus:flower',secret)
+            enroll_for_thread(store,'agentbus:other','other-capacity-session-secret-verified')
+            def reject(*_args,**_kwargs):
+                if kind=='federation':
+                    raise CustodyCapacityError('full')
+                if kind=='local':
+                    raise LocalDeliveryRejected(503,'local custody full')
+                raise LifecycleRejected(503,'byte quota full')
+            monkeypatch.setattr(store.local_delivery,'accept',reject)
+            headers={**AUTH,'X-AgentBus-Session-Token':secret,'X-AgentBus-Delivery-Version':'1',
+                'Idempotency-Key':str(uuid4()),'X-AgentBus-Inbox-ID':store.channels.inbox_id(CHANNEL)}
+            response=client.post('/v1/messages',headers=headers,
+                json={'sender':'agentbus:flower','recipient':'agentbus:other','text':'no admission'})
+            assert response.status_code==503
+            expected='federation_custody_capacity' if kind=='federation' else None
+            assert response.headers.get('X-AgentBus-Recovery-Code')==expected
+            assert not store.read(CHANNEL).messages
     finally:
         asyncio.run(http.aclose())

@@ -19,6 +19,9 @@ workitems:
 - id: P14-P0-01
   status: TODO
   summary: Publication local adapter configuration and migration contracts
+- id: P14-P0-02
+  status: TODO
+  summary: Mobile-safe Slack scope entry and clear retained-results refresh
 - id: P14-P1-01
   status: TODO
   summary: Named client destinations and immutable publication drafts
@@ -51,6 +54,8 @@ execution_evidence:
     activated.
   - Operator waives the production-client live canary; the approved two-location arrangement supplies live acceptance,
     with isolated publication and adapter controls retained.
+  - 'P14-P0-02 is planned by operator disposition: iOS em-dash Slack scope input and clear original-request refresh.
+    Prepared source/tests are retained privately and in reachable history pending activation; no0.10 support claim.'
 closeout_requirements:
   claims:
     workitems_closed:

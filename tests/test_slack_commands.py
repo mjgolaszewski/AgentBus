@@ -941,3 +941,10 @@ def test_alias_environment_uses_primary_validation_and_explicit_list(monkeypatch
     monkeypatch.setenv("AGENTBUS_SLACK_COMMAND_ALIASES", "/bus-alt,")
     with pytest.raises(ValueError, match="AGENTBUS_SLACK_COMMAND_ALIASES"):
         Settings.from_env()
+
+
+@pytest.mark.parametrize('value',[True,0,65537,1.5,'2048'])
+def test_federation_custody_setting_is_operator_bounded(enrolled,value):
+    settings,_,_,_=enrolled
+    with pytest.raises(ValueError,match='AGENTBUS_FEDERATION_CUSTODY_ROWS'):
+        replace(settings,federation_custody_rows=value)

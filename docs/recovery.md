@@ -44,6 +44,22 @@ successful. A committed action followed by failed private confirmation still
 needs inspection of that original action. Distinguish the recorded original
 failure from a later independent reproduction.
 
+## Capacity rejection is not lost delivery
+
+A fixed `federation_custody_capacity` recovery reason identifies a full retained
+transport-custody table. It is distinct from unavailable provider service, local
+custody limits, database-byte quotas and disk headroom. The operator health view
+reports the configured per-table limit and tables at capacity. Agents cannot
+change this setting or remove rows.
+
+The custodian reviews current counts, retained obligations and complete resource
+requirements before changing `AGENTBUS_FEDERATION_CUSTODY_ROWS` at startup.
+The default is 1024 rows per table; the supported range is 1–65536. A larger
+bound retains every accepted identity and payload. A lower bound rejects new
+allocations without deleting existing history. Automatic federation archival
+is not provided. Never purge unresolved custody, reset checkpoints or replace
+an uncertain UUID to clear a capacity alarm.
+
 ## Intact restart or lost state?
 
 For an intact restart, the custodian verifies the existing continuity set before

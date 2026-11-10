@@ -27,6 +27,7 @@ class Settings:
     slack_command: str = "/agentbus"
     local_prefix: str | None = None
     slack_command_aliases: tuple[str, ...] = ()
+    federation_custody_rows: int | None = None
 
     @property
     def channels(self) -> tuple[str, ...]:
@@ -44,6 +45,10 @@ class Settings:
             raise ValueError("AGENTBUS_LOCAL_PREFIX must be a lowercase route prefix of at most32 characters")
         if not isinstance(self.slack_command, str) or not re.fullmatch(r"/[a-z][a-z0-9_-]{0,31}", self.slack_command):
             raise ValueError("AGENTBUS_SLACK_COMMAND must be a slash followed by 1–32 lowercase command characters")
+        if self.federation_custody_rows is not None and (
+            type(self.federation_custody_rows) is not int or not 1 <= self.federation_custody_rows <= 65536
+        ):
+            raise ValueError("AGENTBUS_FEDERATION_CUSTODY_ROWS requires an integer in1..65536")
         aliases = self.slack_command_aliases
         if (
             not isinstance(aliases, tuple) or len(aliases) > 8
@@ -105,13 +110,17 @@ class Settings:
             if not re.fullmatch(r'[0-9]{1,7}', raw):
                 raise ValueError(name + ' must be a bounded positive integer')
             limits['local_delivery_' + suffix + '_limit'] = int(raw)
+        raw_custody = os.environ.get("AGENTBUS_FEDERATION_CUSTODY_ROWS", "")
+        if raw_custody and not re.fullmatch(r"[0-9]{1,5}", raw_custody):
+            raise ValueError("AGENTBUS_FEDERATION_CUSTODY_ROWS requires an integer in1..65536")
+        custody_rows = int(raw_custody) if raw_custody else None
         raw_aliases = os.environ.get("AGENTBUS_SLACK_COMMAND_ALIASES", "").strip()
         aliases = tuple(name.strip() for name in raw_aliases.split(",")) if raw_aliases else ()
         return cls(api_token=values["api_token"], slack_bot_token=values["slack_bot_token"],
                    slack_app_token=values["slack_app_token"],
                    slack_command=os.environ.get("AGENTBUS_SLACK_COMMAND", "/agentbus").strip(),
                    local_prefix=os.environ.get("AGENTBUS_LOCAL_PREFIX", "").strip() or None,
-                   slack_command_aliases=aliases,
+                   slack_command_aliases=aliases, federation_custody_rows=custody_rows,
                    slack_channel=channels[0] if len(channels)==1 else "",
                    slack_channels=channels if multiple is not None else (),
                    db_path=db_path.expanduser(), operator_token=operator_token,

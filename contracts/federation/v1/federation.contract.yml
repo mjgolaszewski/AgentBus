@@ -1,7 +1,7 @@
 document:
   kind: agentbus_federation_contract
   id: agentbus-federation-v1
-  version: 1.1.0
+  version: 1.2.0
   status: active
   path: contracts/federation/v1/federation.contract.yml
   source: https://github.com/mjgolaszewski/AgentBus/issues/48
@@ -101,7 +101,13 @@ contracts:
     overflow: no_checkpoint_reset_or_bounds_increase_no_schema_change_provider_retention_and_repeated_restarts_remain_limits
   custody_capacity:
     retained_rows_per_table: 1024
-    tables: [bridge_obligations, federation_origin_messages, federated_messages]
+    retained_rows_interpretation: default_when_operator_setting_is_absent
+    operator_setting: AGENTBUS_FEDERATION_CUSTODY_ROWS
+    configured_range: {minimum: 1, maximum: 65536}
+    configuration: startup_only; no_agent_HTTP_or_CLI_authority
+    resizing: preserve_all_rows_payloads_receipts_replay_and_checkpoints; lower_bound_never_evicts
+    diagnostics: operator_health_reports_per_table_limit_counts_and_exhausted_tables; HTTP503_fixed_recovery_code_federation_custody_capacity
+    tables: [bridge_obligations, federation_origin_messages, federated_messages, federation_inbox_projection]
     payload_bytes_per_row: 48000
     exhaustion: reject_new_allocation_without_deletion_or_false_acceptance
     existing_rows: preserve_exact_retry_receipts_and_state_recovery_even_if_legacy_over_capacity
@@ -111,6 +117,7 @@ contracts:
   inbox_projection:
     version: 1
     retained_mapping_rows: 1024
+    retained_mapping_rows_setting: shared_operator_federation_custody_rows_bound
     activation: explicit_operator_inbox_projection_1
     identity: authenticated_origin_message_destination_to_unique_local_cursor
     provider_reference: actual_verified_event_timestamp_never_fabricated
