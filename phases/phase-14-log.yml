@@ -19,6 +19,9 @@ workitems:
 - id: P14-P0-01
   status: TODO
   summary: Publication local adapter configuration and migration contracts
+- id: P14-P0-02
+  status: TODO
+  summary: Mobile-safe Slack scope entry and clear retained-results refresh
 - id: P14-P1-01
   status: TODO
   summary: Named client destinations and immutable publication drafts

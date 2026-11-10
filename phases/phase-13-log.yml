@@ -110,6 +110,8 @@ execution_evidence:
     source files green.
   - Candidate428151f preflight rejected new memory keys; notes moved to existing allowed fields and phase evidence
     notes without schema changes. Original failure retained; repaired subject still requires canonical proof.
+  - Candidate578b11c preflight rejected exact planned deliverable/workitem coverage; P14 plan ledger and log now
+    share the same mobile followup title and TODO identity. No0.10 runtime or BCF schema change.
 closeout_requirements:
   claims:
     workitems_closed:

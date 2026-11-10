@@ -27,7 +27,7 @@ delivery_contract:
   - Interruption-aware resume and optional private stale notices
   - Activity-aware quiet polling and acknowledgement-safe automatic retention
   - Complete issue editorial skill and0.11 release custody
-  - Mobile-safe Slack scope entry and clear retained-results refresh deferred by operator until0.11
+  - Mobile-safe Slack scope entry and clear retained-results refresh
   parallelizable_workstreams:
   - id: P14-WS1
     name: controlled_client_publishing
