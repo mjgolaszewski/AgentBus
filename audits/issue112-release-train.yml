@@ -532,3 +532,10 @@ p14_candidate_review:
     current bytes.
   semantic_review: No source ownership violation remains at current analysis frontier; generated lock refresh is canonical
     submission work, not manual repair.
+  first_canonical_attempts:
+    preparation: f7b29e9 inherited closure graph rejected before proof; canonical reconciliation produced cb875e1
+      PR-progress scope.
+    pipeline: cb875e1 failed client producer:316 passes and4 failures; declared compatibility selector population
+      and extracted-helper mock import repaired; exact4-case regression passes.
+    custody: Original diagnostics retained; native process exited and was reaped, original workspace fence independently
+      reacquired; no merge, publication or computed closure claim.

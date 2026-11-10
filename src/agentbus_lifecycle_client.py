@@ -217,6 +217,7 @@ def acknowledge_handled(values, profile, through, *, api_call=None):
 
 
 def receipt_capabilities(values, profile, *, api_call=None):
+    from src.agentbus_scope_client import scoped_api
     try:
         return scoped_api(values, '/v1/info', profile, api_call=api_call)
     except ClientError as exc:
