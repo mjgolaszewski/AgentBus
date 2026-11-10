@@ -43,7 +43,7 @@ workitems:
   status: IN_PROGRESS
   summary: Thin session-bound MCP stdio adapter
 - id: P13-P5-01
-  status: TODO
+  status: IN_PROGRESS
   summary: Documentation skill installation and exact-subject release custody
 execution_evidence:
   planned_commands:
@@ -89,6 +89,9 @@ execution_evidence:
     still required. Consolidated review then found malformed MCP request identities could be reflected and
     envelopes misclassified as parameter errors. Explicit envelope validation now returns a null identity and
     Invalid Request without invoking tools; valid following messages remain usable.
+  - PR113 protected merge06b2b18 and exact-main42724736456 are green. Provider PR42724178676 JUnit archive
+    digests were verified:737 contract and895 Python3.14 cases, zero failures errors or skips; each includes
+    all36 new feature cases. P13P5 continues with real-process MCP client and recovery/editorial traceability.
 closeout_requirements:
   claims:
     workitems_closed:

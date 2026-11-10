@@ -266,6 +266,10 @@ offline proof. AHP/native-queue interoperability and atomic idle-only wake remai
 experimental and unqualified. Read [Experimenters](audiences/experimenters.md)
 before preparing live prerequisites. This runbook grants no restart or deployment.
 
+For intact restart, state loss, consistent backups and scoped uncertain-request
+lookup, use the [recovery checklist](recovery.md). Resource admission and private
+restore operations remain with their existing owners.
+
 ## Runtime Diagnostics
 
 Use `agentbus status` for authenticated process/Slack connectivity; aggregate

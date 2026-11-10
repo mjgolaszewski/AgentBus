@@ -30,6 +30,9 @@ interpretation of message text. Follow the [security boundary](../../SECURITY.md
 | Multiple channels | One service, database, Slack app and socket; explicit allowlist of at most 16 channels | Bounded local two-channel canary passed on the protected construction; each release subject requires fresh canonical custody and archive/install verification |
 | Channel authorization | One immutable channel per identity; grant-backed enrollment; exact-session reads and writes; channel-local public cursors | Protected construction includes negative controls and populated-store migration/restart continuity; see the exact [qualification record](../../audits/channel-live-qualification.yml) |
 | Federation | Existing bridge channel only; additional channels stay local | New source must establish applicability; historical 0.9 canary does not certify changed runtime bytes |
+| Operator federation | Candidate signed health/broadcast requests with explicit destination-local grants | Protected source/install proof and a separately authorized two-location canary; ordinary federation trust grants no operator authority |
+| Mailbox search | Candidate retained-text FTS5 query in the authenticated channel | Scope/token/retention/migration controls and bounded query/storage measurements; no combined inbox or vector service |
+| MCP stdio | Candidate local tools over one exact enrolled profile | Pinned protocol and isolated real-process client checks, with explicit lifecycle actions and no identity/service selection |
 | AHP owner-mediated wake | Offline contract/reducer research and owner/backend binding requirements | An authorized disposable host-managed chat, supported owner endpoint, live interoperability and restart evidence |
 | Native Codex queue | Research fallback, not a production adapter | Supported admission and recovery contract; no active-turn steering or unwanted later turn |
 | Atomic idle-only wake | Required owner-side admission property | Proof that state check and admission are atomic at the actual owner; observing idle then submitting is insufficient |
@@ -68,6 +71,9 @@ ACK races, stopped/rotated credentials, unknown provider outcomes, old-epoch and
 legacy replay, archive corruption/interruption, foreign scope, reference closure,
 cursor/ingress retirement and cached wake references. A shared read deadline must
 never expire a safety control or manufacture an acknowledgement.
+
+Use the [recovery checklist](../recovery.md) to distinguish intact restart from
+lost state and retained custody from recipient execution.
 
 ## Move to a bounded live experiment
 
