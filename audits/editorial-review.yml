@@ -1,7 +1,7 @@
 document:
   kind: editorial_audit
   path: audits/editorial-review.yml
-  status: candidate_line_review_complete_final_subject_qualification_pending
+  status: editorial_review_complete
 request:
   scope: Current public product guidance, application contracts, packaged skill and historical authored prose; explicit
     per-document line review and disposition.
@@ -13,14 +13,15 @@ request:
   - This inventory and structured audit result data are excluded from self-hashing
   history_policy: Historical audit inventories remain reachable at the pinned baseline; current guidance is capability-oriented.
     No historical proof is relabelled as current qualification.
-  completion_rule: Line review is an editorial claim only; canonical protected PR/exact-main/archive/install and approved
-    acceptance remain independently required.
+  completion_rule: Line review is an editorial claim only; canonical protected PR/exact-main/archive/install and
+    approved acceptance remain independently required.
 baseline_review:
-  source: 46ae7e06507ee34e58e4b7a3840b501e56a94ad8
+  source: 89eb2e35f040741a5031e1255edbdb0d695c128d
   inventory: audits/editorial-review.yml
-  sha256: 31e7d321c7d43b6ed9c24be0c97717d3eb6da442c27c2dfd7b954c7e762354a9
+  sha256: 6e25f4b8b777b0d140300842273ec5a8c61873bc3c3520854332b6019a3c4628
 experimental_claims:
-  candidate: 0.11 implementation is local and not yet release-qualified or published.
+  candidate: 0.11.0 was published with exact-subject custody; this documentation hotfix requires its own canonical
+    proof. Prior release authority is not relabelled.
   AHP_native_queue: Live interoperability and atomic idle-only admission remain unqualified.
   publication: Explicit optional named-destination policy only; production-client canary waived by operator in favor
     of approved two-location substitution, with isolated provider controls; broader client deployments not inferred.
@@ -38,8 +39,8 @@ documents:
     - 73
   line_count: 73
   sha256: 0645cc21ca7d83f600486a5d30ef9b07a26b542531b3302729cf104085c2a6f4
-  baseline_sha256: bb88cbc66f794c3fbbecb36ef0c8a48ae732436909e79dea10e0dbfe95314f96
-  disposition: updates
+  baseline_sha256: 0645cc21ca7d83f600486a5d30ef9b07a26b542531b3302729cf104085c2a6f4
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: LICENSE
@@ -57,13 +58,13 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 231
-  line_count: 231
-  sha256: 60b3b30f06ca7dce13f1e7a349cb5fc33eb63813c75ba1dd67e70bdb215a8a8b
-  baseline_sha256: 0c6e2134e4e49c1c6e998143fe3826c85327ae10a1246578d179b5ce87e6b2ab
+    - 232
+  line_count: 232
+  sha256: b63c759710ce26dc647d73f131fe26f1da4a90d44fc1b397d3b4694f088faedc
+  baseline_sha256: 60b3b30f06ca7dce13f1e7a349cb5fc33eb63813c75ba1dd67e70bdb215a8a8b
   disposition: updates
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Changed document reviewed line by line for current capability, setup, scope, recovery and public
+    privacy; original release proof remains tied to its original subject.
 - document: CONTRACT.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -71,8 +72,8 @@ documents:
     - 261
   line_count: 261
   sha256: f82232c553aa7f8ce5af8a64861c64f57d6dabedfc6f05abf6d460c25b554689
-  baseline_sha256: 11c83c1ff7f2e5c1a7c2cc7bb71ce65abbcfa54d949b56642131f6fca3c8274c
-  disposition: updates
+  baseline_sha256: f82232c553aa7f8ce5af8a64861c64f57d6dabedfc6f05abf6d460c25b554689
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: CONTRIBUTING.md
@@ -82,8 +83,8 @@ documents:
     - 26
   line_count: 26
   sha256: 655c8b006fe35d4742d5db91714eb882532df94d09e02d65566c7a6a32f95369
-  baseline_sha256: 834ad0ddbde3dc4b8caa28d9e47783aa75ebd351fd594ca880baac13dd9cd53e
-  disposition: updates
+  baseline_sha256: 655c8b006fe35d4742d5db91714eb882532df94d09e02d65566c7a6a32f95369
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: SECURITY.md
@@ -93,22 +94,21 @@ documents:
     - 117
   line_count: 117
   sha256: e7f012607adf9b109f11c3d092cc7bad883f76408bb4f1f5caddc347223fdbc2
-  baseline_sha256: 489981f34949e3b3b03aada2cc1321a1e89e5f06f9d2ec21cdcf2b5c34f8b51e
-  disposition: updates
+  baseline_sha256: e7f012607adf9b109f11c3d092cc7bad883f76408bb4f1f5caddc347223fdbc2
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: audits/README.md
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 10
-  line_count: 10
-  sha256: 0ba88d4a188dd1618b6d40cc259ff799c1bb0b4dd5b8a019455dfd9e8e29b522
-  baseline_sha256: 8574defb82a880789be05a319ad0913fc55499ecfe81e11768252d9599c5a714
+    - 18
+  line_count: 18
+  sha256: 84127d9dedf25034cd7b658eec9b5980ee2267c410d5287cca55df45c0e8f1f5
+  baseline_sha256: 0ba88d4a188dd1618b6d40cc259ff799c1bb0b4dd5b8a019455dfd9e8e29b522
   disposition: updates
-  review_basis: 'Every current line reviewed, with changed spans rechecked: pinned historical review bytes preserved
-    outside applicability notices; local A2A follows pinned proto/ADR object shapes and discloses strict profile and
-    finite index. Editorial review does not establish release qualification.'
+  review_basis: Changed document reviewed line by line for current capability, setup, scope, recovery and public
+    privacy; original release proof remains tied to its original subject.
 - document: audits/2026-09-29-external-product-review.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -119,8 +119,8 @@ documents:
   baseline_sha256: 6776a3d816f485e7437d45ed0eb8b1a9dff56c60846f76c127ad033fbc7acf65
   disposition: retained
   review_basis: 'Every current line reviewed, with changed spans rechecked: pinned historical review bytes preserved
-    outside applicability notices; local A2A follows pinned proto/ADR object shapes and discloses strict profile and
-    finite index. Editorial review does not establish release qualification.'
+    outside applicability notices; local A2A follows pinned proto/ADR object shapes and discloses strict profile
+    and finite index. Editorial review does not establish release qualification.'
 - document: docs/OPERATIONS.md
   review_status: application_sections_line_reviewed
   reviewed_lines:
@@ -128,21 +128,21 @@ documents:
     - 287
   line_count: 341
   sha256: 6c6e5e7482e4e2028f7880a00ae08cc345c453ea3294955b6c992bf6b861ce0f
-  baseline_sha256: 58412cf0f25d2f33f5ec786e1be2b97d6b34d412ab1a9e7937bda76af8283ff9
-  disposition: updates
+  baseline_sha256: 6c6e5e7482e4e2028f7880a00ae08cc345c453ea3294955b6c992bf6b861ce0f
+  disposition: retained
   review_basis: Application channel/recovery/diagnostic section reviewed; BCF-owned release/helper/resource machinery
     excluded.
 - document: docs/README.md
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 73
-  line_count: 73
-  sha256: cab047a87bd57c7e27a1efea4971b38b63e87e60bec840e980132d6ff5805f0d
-  baseline_sha256: ae4c9a257f13a4315fe8cc800d8599e074d1351a57b37fb96906c2ee737cd3a3
+    - 98
+  line_count: 98
+  sha256: 3f2eae71ec87697d84f154cd98f0b52b7eeca05737a724d0c451580d9106bad3
+  baseline_sha256: cab047a87bd57c7e27a1efea4971b38b63e87e60bec840e980132d6ff5805f0d
   disposition: updates
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Changed document reviewed line by line for current capability, setup, scope, recovery and public
+    privacy; original release proof remains tied to its original subject.
 - document: docs/adoption-measurements.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -161,8 +161,8 @@ documents:
     - 199
   line_count: 199
   sha256: 4cac0aaac4bd69d9c1a5b8f55219bae4c78e9253bba86d31bae5c23e75cf88cb
-  baseline_sha256: 3e3111797f4d6b1908d8242fae419d41ce8d46bd3c393b022a6d6ca6429bb8a9
-  disposition: updates
+  baseline_sha256: 4cac0aaac4bd69d9c1a5b8f55219bae4c78e9253bba86d31bae5c23e75cf88cb
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/audiences/adapter-users.md
@@ -172,8 +172,8 @@ documents:
     - 187
   line_count: 187
   sha256: 566e4be06b1819e098d381ee1162a1d28c4c4a4d135b073c3b71ea4ce1eadb6b
-  baseline_sha256: 61449c047dccb0bf08334679ea8c3e183904fa209e4cff1e1d037c439b93df97
-  disposition: updates
+  baseline_sha256: 566e4be06b1819e098d381ee1162a1d28c4c4a4d135b073c3b71ea4ce1eadb6b
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/audiences/agents.md
@@ -183,8 +183,8 @@ documents:
     - 181
   line_count: 181
   sha256: fd45f5a2f26f9e8a5e409dce614eb6233b5e79ade4dd577d8dce733b9039d38c
-  baseline_sha256: e67a2d9992f2e4ca9f7aef1e8e90ee2cf75aa12657a73b67a3d729c2ef723b51
-  disposition: updates
+  baseline_sha256: fd45f5a2f26f9e8a5e409dce614eb6233b5e79ade4dd577d8dce733b9039d38c
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/audiences/experimenters.md
@@ -194,8 +194,8 @@ documents:
     - 118
   line_count: 118
   sha256: b7d47959342edee8556ab0401b0d845c88bc6c3e321db086c4a294598598cfbd
-  baseline_sha256: 9245e2576deb229dbe0db5faf46adc63d5219c6bd74d92aa41061fd97c1d1cc1
-  disposition: updates
+  baseline_sha256: b7d47959342edee8556ab0401b0d845c88bc6c3e321db086c4a294598598cfbd
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/audiences/hippiebots.md
@@ -205,8 +205,8 @@ documents:
     - 86
   line_count: 86
   sha256: 5249bab938f9d1a01fa948f3ed5607b6ba79e33935da7329be524b91e1195c24
-  baseline_sha256: d26aa69ce4e7ccccdb6127277fcca1224863a95db41253a6043b4e4cdb17e217
-  disposition: updates
+  baseline_sha256: 5249bab938f9d1a01fa948f3ed5607b6ba79e33935da7329be524b91e1195c24
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/audiences/humans.md
@@ -216,8 +216,8 @@ documents:
     - 94
   line_count: 94
   sha256: b19f81eec39010100a471f13b8ea7ca0abdf591bb76dffae610c4f736a8a42f3
-  baseline_sha256: 0958c054d5393707b69491002c55be814cacd5aaa449ca19131b10ce11b2f6ae
-  disposition: updates
+  baseline_sha256: b19f81eec39010100a471f13b8ea7ca0abdf591bb76dffae610c4f736a8a42f3
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/audiences/maintainers.md
@@ -227,8 +227,8 @@ documents:
     - 40
   line_count: 40
   sha256: 785c8c12a9f2a5a91b070dd968b20875fd85b24cfd33babd562ba00a0913f015
-  baseline_sha256: 5cf29024d71e939eb15dc0e6299a622221a4341cc27210b59b8515c3a8461ba7
-  disposition: updates
+  baseline_sha256: 785c8c12a9f2a5a91b070dd968b20875fd85b24cfd33babd562ba00a0913f015
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/audiences/operators.md
@@ -238,8 +238,8 @@ documents:
     - 363
   line_count: 363
   sha256: 915beb26c573a37f95066f010e6d1700ccce37d57d23075a3d4e129eba66e5c2
-  baseline_sha256: 883bb4903d52dd26c2c29496a38928e192d4df0925334411792ed7d47725a97a
-  disposition: updates
+  baseline_sha256: 915beb26c573a37f95066f010e6d1700ccce37d57d23075a3d4e129eba66e5c2
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/audiences/security-reviewers.md
@@ -249,8 +249,8 @@ documents:
     - 81
   line_count: 81
   sha256: 241f0de1a6ea2ca120044e4e1aa9bd9c965adb597c835d0a66020bd17b6319e3
-  baseline_sha256: ebaefa026953bfa63a94984a7b5787afe118638a2fd7b64d5b4ee56126b2c001
-  disposition: updates
+  baseline_sha256: 241f0de1a6ea2ca120044e4e1aa9bd9c965adb597c835d0a66020bd17b6319e3
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/channel-migration.md
@@ -260,21 +260,21 @@ documents:
     - 89
   line_count: 89
   sha256: c928e36f2c9a518d77c9f4637e8cb00c8062986b6af691cdd8ee86266f3c155e
-  baseline_sha256: 58c0ff36988d1fecf908c4cd51bbda449a552a65065f3a944465674e5e3654b9
-  disposition: updates
+  baseline_sha256: c928e36f2c9a518d77c9f4637e8cb00c8062986b6af691cdd8ee86266f3c155e
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/client-publishing.md
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 119
-  line_count: 119
-  sha256: 594e4081d10862a846a2d7d324c236c351db28a23acc97ae2dbcf684cd40f3a0
-  baseline_sha256: null
-  disposition: new
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+    - 199
+  line_count: 199
+  sha256: c7aca5d3a6260167493b0621ee35ec0d18cbbcd34886fe1987dda7162c62816f
+  baseline_sha256: 594e4081d10862a846a2d7d324c236c351db28a23acc97ae2dbcf684cd40f3a0
+  disposition: updates
+  review_basis: Changed document reviewed line by line for current capability, setup, scope, recovery and public
+    privacy; original release proof remains tied to its original subject.
 - document: docs/codex-skill.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -293,8 +293,8 @@ documents:
     - 164
   line_count: 164
   sha256: 567c1bc556a5fa22dce9adc6b9a450490049d0bb1ac6c62bbfe91896496efeb9
-  baseline_sha256: 7694dbde5cc11b25d61a1830741a4f06100f0a181e5fb8f750b94243f6ad999a
-  disposition: updates
+  baseline_sha256: 567c1bc556a5fa22dce9adc6b9a450490049d0bb1ac6c62bbfe91896496efeb9
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/federation.md
@@ -304,8 +304,8 @@ documents:
     - 420
   line_count: 420
   sha256: 7b95c78a01f7aee059c8f8bd0612e79caf8b520f241a4e55bda06991bcf7de3d
-  baseline_sha256: bdbcf40a94047c7bbdd4632907a32bdfa7a5efbeda63644bfe0f26e4723ea743
-  disposition: updates
+  baseline_sha256: 7b95c78a01f7aee059c8f8bd0612e79caf8b520f241a4e55bda06991bcf7de3d
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/governance-model.md
@@ -315,8 +315,8 @@ documents:
     - 64
   line_count: 64
   sha256: 1e5f60fce0342269b6953dce27cd63d38bc782d1a2bd802d7fd85f1f7be8f400
-  baseline_sha256: 85bfa81d7ad040be882f2bb44e486fd25beb88f8761cc3864be0f7cc9cd4bbc7
-  disposition: updates
+  baseline_sha256: 1e5f60fce0342269b6953dce27cd63d38bc782d1a2bd802d7fd85f1f7be8f400
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/http-api.md
@@ -326,22 +326,21 @@ documents:
     - 86
   line_count: 86
   sha256: 83cc033b1eda58cfd66732c2b78e542b8604c487ad83cb05064f2097fb98ecb2
-  baseline_sha256: 457cd683388ddcc4ed62544541de6ab474bbe0566f6293ff1e1c999891f5a0da
-  disposition: updates
+  baseline_sha256: 83cc033b1eda58cfd66732c2b78e542b8604c487ad83cb05064f2097fb98ecb2
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/local-adapters.md
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 109
-  line_count: 109
-  sha256: 2a5230966107ea44d1245cecb382fedbb01cc94106303c0b59d3d6e2c0ee503e
-  baseline_sha256: 4e2345b44376e270697d9b4a5c5b44c7f563d951d4594894c6601a126056bc3d
+    - 113
+  line_count: 113
+  sha256: 7710900646c383dce478b87ab4487af42a71492350dc0ae2367392d15b39468f
+  baseline_sha256: 2a5230966107ea44d1245cecb382fedbb01cc94106303c0b59d3d6e2c0ee503e
   disposition: updates
-  review_basis: 'Every current line reviewed, with changed spans rechecked: pinned historical review bytes preserved
-    outside applicability notices; local A2A follows pinned proto/ADR object shapes and discloses strict profile and
-    finite index. Editorial review does not establish release qualification.'
+  review_basis: Changed document reviewed line by line for current capability, setup, scope, recovery and public
+    privacy; original release proof remains tied to its original subject.
 - document: docs/message-lifecycle.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -349,21 +348,21 @@ documents:
     - 246
   line_count: 246
   sha256: 7d3fb4a4421478d05ddf5a92fff0f53edd1c864a2c52b9f62dbf993b6d747e22
-  baseline_sha256: 438d14a1e97a9a155593a4d4681fa1ab1353e098667302cc300586a679c56ef7
-  disposition: updates
+  baseline_sha256: 7d3fb4a4421478d05ddf5a92fff0f53edd1c864a2c52b9f62dbf993b6d747e22
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/operator-federation.md
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 113
-  line_count: 113
-  sha256: c38d1940a8c14bdc2ccb2957a763bf36b57df7394456b00caba78a6908a2b004
-  baseline_sha256: d5541bb49c8ba2ad036b8b5b814113c05c619c8131eea255fd8396dd21a633e7
+    - 152
+  line_count: 152
+  sha256: 891adc15adfef495508bdaaa33dee05f1b8c6c8fc9ba47b830209e3745ae047b
+  baseline_sha256: c38d1940a8c14bdc2ccb2957a763bf36b57df7394456b00caba78a6908a2b004
   disposition: updates
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Changed document reviewed line by line for current capability, setup, scope, recovery and public
+    privacy; original release proof remains tied to its original subject.
 - document: docs/recovery.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -371,32 +370,32 @@ documents:
     - 174
   line_count: 174
   sha256: 373df2ff2d66a2243c4fea7b314d0dfdccb7db58d3b27c4bcd22e185aa443935
-  baseline_sha256: ede2ff25aa296ed2ed150e781b6316de63ee5e6cbd903b905cdd3caa1da49628
-  disposition: updates
+  baseline_sha256: 373df2ff2d66a2243c4fea7b314d0dfdccb7db58d3b27c4bcd22e185aa443935
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: skills/agentbus/SKILL.md
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 122
-  line_count: 122
-  sha256: 353201627faf0efed4a9f98211eaab00498827440b7f1620c4709d3ad0be7b3f
-  baseline_sha256: 1a61d7594ffa9f831014698f38dbb800b625da3d374a011938bd1112e74828dc
+    - 126
+  line_count: 126
+  sha256: 7fe60f206b6725b55298a27894dd2f7fd63952fbcf83ab5be706fb4f805412fb
+  baseline_sha256: 353201627faf0efed4a9f98211eaab00498827440b7f1620c4709d3ad0be7b3f
   disposition: updates
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Changed document reviewed line by line for current capability, setup, scope, recovery and public
+    privacy; original release proof remains tied to its original subject.
 - document: skills/agentbus/references/participation.md
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 186
-  line_count: 186
-  sha256: 964efd6e8c235942564b34d0849c0fb7441c4862519643883cd7d15d702fdf3a
-  baseline_sha256: 8672a137317bdb9c1104d7babe925133559d91739956aa5f58066850d685ce02
+    - 222
+  line_count: 222
+  sha256: e0a8b2df362ed7fc2f5c6408040369d89175443b1416443233f7b560bd17db3d
+  baseline_sha256: 964efd6e8c235942564b34d0849c0fb7441c4862519643883cd7d15d702fdf3a
   disposition: updates
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Changed document reviewed line by line for current capability, setup, scope, recovery and public
+    privacy; original release proof remains tied to its original subject.
 - document: skills/agentbus/agents/openai.yaml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -415,8 +414,8 @@ documents:
     - 72
   line_count: 72
   sha256: 4327bdecdfa070191b16728231890ecd12436b15f5429c2232e943f8bf730001
-  baseline_sha256: ef6171057b8dace7a03847ce88a93b0f15b02e58683ae81921ff96a967a20b83
-  disposition: updates
+  baseline_sha256: 4327bdecdfa070191b16728231890ecd12436b15f5429c2232e943f8bf730001
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: contracts/codex-wake/v1/codex-wake.contract.yml
@@ -448,8 +447,8 @@ documents:
     - 22
   line_count: 22
   sha256: 5d527427afa06ec900b8c1160a5b3a953dd12c89398e12849f8a59c4e7e0180f
-  baseline_sha256: 5db015408c8c70d97a902568d991041144872e23c1206b0ede0d765ed8a7d534
-  disposition: updates
+  baseline_sha256: 5d527427afa06ec900b8c1160a5b3a953dd12c89398e12849f8a59c4e7e0180f
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: contracts/local-adapters/v1/a2a.contract.yml
@@ -459,11 +458,11 @@ documents:
     - 33
   line_count: 33
   sha256: 8d1104f4f3a9ae83edebd2f9ff878af8dcd60b9cde91ee4a9c47bdceb83b7882
-  baseline_sha256: null
-  disposition: new
+  baseline_sha256: 8d1104f4f3a9ae83edebd2f9ff878af8dcd60b9cde91ee4a9c47bdceb83b7882
+  disposition: retained
   review_basis: 'Every current line reviewed, with changed spans rechecked: pinned historical review bytes preserved
-    outside applicability notices; local A2A follows pinned proto/ADR object shapes and discloses strict profile and
-    finite index. Editorial review does not establish release qualification.'
+    outside applicability notices; local A2A follows pinned proto/ADR object shapes and discloses strict profile
+    and finite index. Editorial review does not establish release qualification.'
 - document: contracts/mailbox/v1/mailbox.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -471,8 +470,8 @@ documents:
     - 16
   line_count: 16
   sha256: b9fcd3c7903d87b8fe2fc3b115ff6b16d34f6dd82c58174b99cb9fdb6352746f
-  baseline_sha256: 1fbe50c3d8666ea97c510b9fa27d1c1c657d8722f5209cfc42ee04b7d4555000
-  disposition: updates
+  baseline_sha256: b9fcd3c7903d87b8fe2fc3b115ff6b16d34f6dd82c58174b99cb9fdb6352746f
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: contracts/mailbox/v1/mcp.contract.yml
@@ -493,8 +492,8 @@ documents:
     - 123
   line_count: 123
   sha256: 3f993620f1c50e7e0b88765a83f93f12acf26641fa5e0a2a62c08c4526dfa4a3
-  baseline_sha256: f3d6d23e9e88e7752e8e07a959a41a8aaef681d3c58ea558994a3269bd21b1e0
-  disposition: updates
+  baseline_sha256: 3f993620f1c50e7e0b88765a83f93f12acf26641fa5e0a2a62c08c4526dfa4a3
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: contracts/participation/v1/participation.contract.yml
@@ -515,8 +514,8 @@ documents:
     - 293
   line_count: 293
   sha256: 6a39b511d0425e536a519af2ec9b4db4013cbbf32c4333d52f49e844d302395f
-  baseline_sha256: 832ae0b0d5a4eb2feeca3ee37bc580a58d4527a9f1c8d6bd83b834254da7940c
-  disposition: updates
+  baseline_sha256: 6a39b511d0425e536a519af2ec9b4db4013cbbf32c4333d52f49e844d302395f
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: contracts/participation/v2/recovery-observation.contract.yml
@@ -526,8 +525,8 @@ documents:
     - 30
   line_count: 30
   sha256: 400e78573e93f7d45ca50c4a342cf3d13ec9f3b7f60c67353c9e02b44ad8ec6e
-  baseline_sha256: null
-  disposition: new
+  baseline_sha256: 400e78573e93f7d45ca50c4a342cf3d13ec9f3b7f60c67353c9e02b44ad8ec6e
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: contracts/publication/v1/publication.contract.yml
@@ -537,8 +536,8 @@ documents:
     - 53
   line_count: 53
   sha256: ae0fe3e29b9ce7798decd7d3b22ccc9ca8f15909baf7831eeb43cef363016526
-  baseline_sha256: null
-  disposition: new
+  baseline_sha256: ae0fe3e29b9ce7798decd7d3b22ccc9ca8f15909baf7831eeb43cef363016526
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: contracts/retention/v1/automatic-retention.contract.yml
@@ -548,21 +547,47 @@ documents:
     - 35
   line_count: 35
   sha256: d08d45f36481240771a434f0801398167518825c8219b02a4cd1e6ddb8c95940
-  baseline_sha256: null
-  disposition: new
+  baseline_sha256: d08d45f36481240771a434f0801398167518825c8219b02a4cd1e6ddb8c95940
+  disposition: retained
   review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
     deployment privacy; hashes identify reviewed bytes, not release proof.
+- document: docs/audiences/mailbox-tool-users.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 200
+  line_count: 200
+  sha256: eee417f2426c467a296750386fe01e5a989883a0389814bb3898798d922a3899
+  baseline_sha256: null
+  disposition: new
+  review_basis: Complete seat reviewed against exact-profile CLI/MCP code, A2A decoder and HTTP principal checks;
+    copyable examples contain placeholders only and perform no live operations.
+- document: docs/examples/client-slack-manifest.json
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 17
+  line_count: 17
+  sha256: f53cfbe889a6f4654f4d34ad13adfd1dcefd965698da6613c2e2fd03ac89fe24
+  baseline_sha256: null
+  disposition: new
+  review_basis: Minimal outbound-only Slack app manifest reviewed with client installation walkthrough; no secrets,
+    event subscriptions, slash commands, inbound handler or new socket.
 summary:
-  documents: 47
+  documents: 49
   dispositions:
-    updates: 33
+    retained: 39
+    updates: 8
+    new: 2
     merged: 0
     removed: 0
-    new: 5
-    retained: 9
-  merged_or_removed: No current product document needed merging or removal; superseded participation v1 remains explicitly
-    historical because v2 inherits its non-conflicting controls.
-  private_details: Current public guidance contains generic example identifiers only; historical subjects retain public
-    commit/evidence references without local deployment inventories.
-  remaining: Canonical candidate/release qualification, custodian acceptance and final-subject inventory refresh after
-    any material prose change.
+  merged_or_removed: No current product document needed merging or removal; superseded participation v1 remains
+    explicitly historical because v2 inherits its non-conflicting controls.
+  private_details: Current public guidance contains generic example identifiers only; historical subjects retain
+    public commit/evidence references without local deployment inventories.
+  remaining: Release and hotfix proof is established independently by canonical CI/custody on its exact subject;
+    no authored inventory status establishes runtime qualification.
+visual_inventory: audits/editorial-visual-review.yml
+review_continuity: Unchanged files inherit their baseline line review with byte/hash verification; changed documents
+  and the new seat were reviewed in full. The pinned baseline inventory retains original 0.11 dispositions.
+usability_inventory: audits/editorial-usability-review.yml

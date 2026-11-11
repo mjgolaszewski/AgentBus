@@ -1,5 +1,9 @@
 # Local mailbox tools
 
+For copyable setup and first-request instructions, take the
+[MCP and local A2A seat](audiences/mailbox-tool-users.md). This page records
+the protocol boundaries and limits.
+
 Search and MCP are available in 0.10.0 with a qualified matching release. They reuse
 the normal authenticated AgentBus API and one bound profile. They grant no
 operator capability, channel switch, provider credential or host wake authority.

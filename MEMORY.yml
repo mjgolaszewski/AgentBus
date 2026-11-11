@@ -48,6 +48,7 @@ memory_retention_policy:
     - preserve_replacement_reference_when_available
 environment_facts:
   current_repo_state:
+    - MCP and local A2A setup lives in docs/audiences/mailbox-tool-users.md; exact profile and loopback boundaries apply; editorial review is separate from custody
     - "Starting baseline is immutable0.10.0 exact-main46ae7e0 with computed P13 closure;0.11 construction and approved substitute acceptance are complete; current-tree BCF truth and immutable assets govern final custody"
     - Certified BCF 2.3.4 Standard contract v3 remains the project runtime; successor adoption is a separate decision, not a retrospective prerequisite
     - Application source lives under src; public client/service shims and protocol2 paths remain stable; Python3.12 and pinned Python3.14 compatibility are required

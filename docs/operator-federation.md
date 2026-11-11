@@ -71,6 +71,45 @@ admission; retained accepted operations remain inspectable under their original
 identities. Old-origin history and unresolved obligations are not adopted or
 quarantined by changing an active binding.
 
+### Configure a destination-local grant
+
+Custodians first establish the approved [ordinary federation](federation.md)
+binding with distinct publisher/signing identities. In the receiving location's
+existing federation JSON, the origin peer binding must declare
+`"operator_version": 4`. Merge this object into that same configuration:
+
+```json
+{
+  "operator_controls": {
+    "version": 1,
+    "grants": [{
+      "origin": "site-a",
+      "actor": "UOPERATOR123",
+      "source_channel": "CWORK123",
+      "channel": "CWORK123",
+      "operations": ["health", "broadcast"]
+    }]
+  }
+}
+```
+
+This is an addition to the complete federation configuration, not a replacement.
+Replace the origin with an existing approved binding, the actor with the exact
+human Slack user ID, and both channels with the approved bridge channel. Current
+operator federation requires both channel fields to equal that bridge channel;
+this is not an arbitrary channel-mapping or forwarding mechanism. Authorize
+only the needed operations. Configure a reciprocal grant independently if the
+other installation should accept requests in the reverse direction.
+
+Install/reload through the custodian's configuration workflow with a consistent
+backup and existing trust retained. Test `health --location site-a` from the
+allowlisted human's configured command, then inspect the newest private Refresh
+response for location/version/sample time. A grant does not repair an offline
+peer or upgrade an unsupported one. Test mandatory-read broadcast separately
+with an explicitly authorized target population; do not use a real work request
+as a transport probe. Revoking a grant denies new requests without deleting
+accepted history.
+
 ## Recovery and bounds
 
 The request UUID, content and target snapshot survive repeated Slack delivery,
