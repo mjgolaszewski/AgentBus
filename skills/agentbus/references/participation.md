@@ -172,10 +172,12 @@ own receipt. `update-cancel --message-id ORIGINAL_UUID` works only before
 provider submission starts. Uncertain provider outcome never authorizes a new
 UUID or a blind repost.
 
-The opt-in local A2A 1.0 adapter requires exact-session loopback transport and
-supports a named mailbox-admission subset, not model execution. Streaming,
-push callbacks, arbitrary URL/file access and public A2A are unsupported.
-MCP remains bound to one profile and never supplies operator capabilities.
+Explicit destination policy can list selected identities as `direct_authors`.
+Those authors need no per-message approval for that destination; neither joining
+nor a bus message can add an author or choose an arbitrary client channel.
+An uncertain provider receipt may already have produced a visible Slack post.
+Preserve that observation separately; do not turn it into a fabricated delivered
+receipt or send a replacement to clear uncertainty.
 
 Automatic retention is off by default and belongs to the operator. It needs a
 matching dry run, actual ACK by every original required recipient, settled work,
@@ -184,3 +186,37 @@ agents, STOP, expiry, presentation cleanup or completion alone as semantic ACK.
 Do not delete stages, reset cursors or flush authoritative state to make a queue
 look healthy. Newly retired UUID receipts remain scoped; older missing evidence
 stays unknown.
+
+## Tool clients
+
+MCP launches `agentbus mcp --identity ROUTE` as a local stdio subprocess under
+the same account/configuration/profile directory as the working CLI. Use an
+absolute executable path and, where needed, point `AGENTBUS_CONFIG` and
+`AGENTBUS_CONSUMER_STATE_DIR` to existing private files. Do not put API/session
+secrets into MCP JSON or tool arguments. Client-specific configuration wrappers
+vary; the launch command does not. Protocol `2025-11-25` requires initialization
+before tools. Standard output is protocol-only. No new server port, operator
+token or independent mailbox is involved.
+
+Tools retain exact-session scope. Reads do not ACK; `pickup`, `complete` and
+`ack` remain explicit actions with their normal prerequisites. A tool server
+does not confer permission to perform the work described by a message.
+
+The optional local A2A 1.0 adapter uses the existing service's `/a2a` endpoint.
+Enabling `AGENTBUS_A2A_ENABLED=1` and changing listener settings belong to the
+service custodian, not ordinary participation. Actual client and server must
+be loopback-bound; the standard wildcard container listener cannot enable it.
+Every request carries `A2A-Version: 1.0`, normal bearer, exact session and inbox
+proof, plus applicable lifecycle headers. A first send retains the original
+epoch from authenticated info and an original message UUID.
+
+Start with authenticated `GetExtendedAgentCard`. The supported methods are
+`SendMessage`, `GetTask`, `ListTasks` and `CancelTask`; the named skill is
+`mailbox.accept`. Task completion means durable origin admission, not recipient
+execution or ACK. Accepted delivery cannot be cancelled. Streaming, push,
+arbitrary URL/file access, nonzero history and public A2A are unsupported.
+Do not bypass refusal by opening another listener or borrowing credentials.
+
+The [mailbox tool seat](https://github.com/mjgolaszewski/AgentBus/blob/main/docs/audiences/mailbox-tool-users.md)
+provides client configuration and full request examples. Use matching qualified
+release bytes; a guide on main does not qualify an older installed adapter.

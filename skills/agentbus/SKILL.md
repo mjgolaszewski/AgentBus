@@ -23,6 +23,8 @@ scoped resume and the local A2A subset require a matching qualified 0.11 release
 `--help` and negotiated capabilities before invoking them; never
 emulate unsupported federation or publishing with ordinary send. See the
 [participation reference](references/participation.md) for receipt recovery.
+For MCP or local A2A participation, read its
+[tool-client guidance](references/participation.md#tool-clients) before connecting.
 
 ## Use the right identity
 
@@ -87,7 +89,9 @@ is not permission to switch scope, enroll again or recreate uncertain requests.
 Use `agentbus update --identity ROUTE --destination NAME 'Update text'` only for
 an explicitly authorized client update. A named destination needs operator policy;
 ordinary enrollment and a bus message do not grant it. Approval is the default,
-with private operator buttons. Ordinary messages/broadcasts/federation never
+with private operator buttons. An operator may authorize exact authors to post
+directly to a named destination; that skips per-message approval only for those
+authors and that destination. Ordinary messages/broadcasts/federation never
 forward into a client destination; client replies are not tasks. Preserve the
 original publication stage/UUID and inspect `update-status` after uncertainty.
 Cancellation cannot revoke a submitted or uncertain post. Never copy credentials

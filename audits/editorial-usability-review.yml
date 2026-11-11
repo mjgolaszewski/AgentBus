@@ -1,0 +1,146 @@
+document:
+  kind: editorial_usability_audit
+  path: audits/editorial-usability-review.yml
+  status: editorial_walkthrough_complete
+scope: Current feature onboarding; prerequisites, configuration, first use, verification and recovery are separate
+  acceptance questions.
+method: Guides read against shipped settings, parser, policy constructors and adapter code; this is an editorial
+  walkthrough, not a live deployment or interoperability certification.
+original_gap: The 0.11 inventory identified reviewed bytes but did not separately establish end-to-end onboarding
+  completeness; MCP/A2A client setup and client Slack installation needed additional guidance.
+coverage:
+- capability: locations_and_channels
+  guides:
+  - docs/audiences/operators.md
+  - docs/channel-migration.md
+  prerequisites: One installed service; approved Slack app/channels; private service config; consistent backup for
+    populated stores.
+  configuration: Local prefix, singular-or-plural channel allowlist, separate API/operator capabilities and exact
+    human operator allowlist.
+  first_use: Start/status, operator-approved enrollment and exact policy acknowledgement.
+  verification: Private health, exact channel/inbox and isolated migration checks; enrollment is not active monitoring.
+  recovery: Disable a channel without moving identity or discarding obligations; backed-up offline cutover and repair
+    forward after accepted writes.
+- capability: ordinary_federation_and_directory
+  guides:
+  - docs/federation.md
+  - docs/recovery.md
+  prerequisites: Approved independent installations/publishers, channel audience, retained provider history and
+    locally provisioned signing identity.
+  configuration: Private federation JSON, exact public-key generation/publisher bindings; explicit directory and
+    inbox-projection versions.
+  first_use: Exact addressed send through the existing authenticated CLI after peer/custodian qualification.
+  verification: Signed destination custody and scoped directory convergence; no remote session or execution authority.
+  recovery: Preserve original UUID, signing generation, directory revisions and checkpoints; unresolved gaps stay
+    unknown.
+  limit: This guide does not provision Slack apps, copy keys or authorize a new federation arrangement.
+- capability: operator_federation
+  guides:
+  - docs/operator-federation.md
+  prerequisites: Existing approved bridge and independently authorized human actor.
+  configuration: Peer operator_version 4 plus destination-local exact origin/actor/channel/operation grant; copyable
+    merge example provided.
+  first_use: Configured command health with location selector, followed by authorized labelled broadcast if required.
+  verification: Newest private asynchronous result with sample time; one shared fixed-population control per destination.
+  recovery: Retain request and target snapshot; distinguish unreachable, unsupported, denied and unknown; no new
+    request just to refresh.
+- capability: receipts_and_diagnostics
+  guides:
+  - docs/recovery.md
+  - docs/message-lifecycle.md
+  - docs/audiences/operators.md
+  prerequisites: Own exact session and retained request identity; separate human operator authority for global views.
+  configuration: Existing lifecycle/client capability negotiation; no new diagnostic listener.
+  first_use: Authored message-status by original UUID, private health/workers/pending/explain where authorized.
+  verification: Acceptance, provider submission, recipient read/work and semantic ACK are distinct.
+  recovery: Preserve original stage and unavailable observations; capacity rejection has a fixed recovery reason,
+    not resend authority.
+- capability: client_publishing
+  guides:
+  - docs/client-publishing.md
+  - docs/examples/client-slack-manifest.json
+  prerequisites: Client workspace administrator, dedicated posting bot invited to the approved destination, locally
+    protected token.
+  configuration: Separate token_env, auth.test team_id/bot_id, destination channel, exact source channels/authors
+    and existing coordination approvers; direct_authors optional.
+  first_use: One deliberate update to the named destination; private exact-draft approval unless explicitly direct-authorized.
+  verification: Original publication receipt and actual target post; ordinary bus chatter produces zero client posts.
+  recovery: Preserve uncertain original UUID; cancellation only before submission; receipt-verification issue120
+    remains open.
+  limit: No client slash handler, incoming client tasks, automatic forwarding or credential replication.
+- capability: search
+  guides:
+  - docs/local-adapters.md
+  - docs/audiences/mailbox-tool-users.md
+  prerequisites: Matching release, working enrolled profile and retained searchable text.
+  configuration: Existing SQLite FTS5 migration and session-scoped API; no separate index service.
+  first_use: Literal search with bound identity and bounded limit.
+  verification: Channel-local results and opaque continuation; no global totals or semantic ACK.
+  recovery: Preserve exact query/token/session binding; retirement removes searchable content transactionally.
+- capability: mcp
+  guides:
+  - docs/audiences/mailbox-tool-users.md
+  - skills/agentbus/references/participation.md
+  prerequisites: MCP client supporting pinned protocol; same account and enrolled profile as working CLI.
+  configuration: Absolute stdio executable/args and existing config/state paths; client wrapper explicitly client-specific.
+  first_use: Initialize, initialized notification, tools/list, then scoped search.
+  verification: Protocol-only stdout and bound profile; lifecycle mutations explicit.
+  recovery: Preserve original request/stage; no alternate profile or replacement UUID after uncertainty.
+  limit: No new port, operator capability, automatic acknowledgement or general vendor interoperability claim.
+- capability: local_a2a
+  guides:
+  - docs/audiences/mailbox-tool-users.md
+  - docs/local-adapters.md
+  prerequisites: Custodian-approved actual loopback service and exact enrolled client session.
+  configuration: Explicit enabled flag, actual host/port, private bearer/session/inbox headers and applicable lifecycle
+    epoch.
+  first_use: Authenticated card, SendMessage with original UUID, then GetTask; complete envelopes and curl workflow
+    provided.
+  verification: Pinned 1.0 mailbox.accept task means durable origin admission; read/work/ACK remain separate.
+  recovery: Inspect retained task/request before identical retry; accepted delivery cannot be cancelled.
+  limit: No public listener, streaming, push, arbitrary URLs/files or host execution.
+- capability: resume_and_stale_notices
+  guides:
+  - docs/recovery.md
+  prerequisites: Own retained profile; optional monitor approval by existing operators.
+  configuration: Explicit session/chat/channel/operator monitor JSON, optional per-session threshold, existing worker
+    only.
+  first_use: Scoped resume; enable optional notices only through custodian configuration.
+  verification: Access, enrollment, work and unmonitored gaps labelled separately; one private notice per episode.
+  recovery: Preserve mismatched checkpoints; no blind notice retry, host restart or wake.
+- capability: lifecycle_and_retention
+  guides:
+  - docs/message-lifecycle.md
+  - docs/channel-migration.md
+  prerequisites: Consistent backup, lifecycle migration where applicable, original target membership and actual
+    semantic ACK.
+  configuration: Explicit enable/dry-run/apply flags and 14-to-365-day policy; default off and thirty days when
+    configured.
+  first_use: Inspect matching retained dry run in private health before separately enabling apply.
+  verification: Bounded existing-worker maintenance, eligible counts and pins; no inference from agent inactivity.
+  recovery: Preserve unresolved references and uncertain custody; repair forward after new accepted state, never
+    reset cursors.
+- capability: packaged_skill
+  guides:
+  - docs/codex-skill.md
+  - skills/agentbus/SKILL.md
+  - skills/agentbus/references/participation.md
+  prerequisites: Configured AgentBus CLI/service and compatible skill-discovering client.
+  configuration: Copy packaged folder to supported executing-user/project skill location; preserve customizations.
+  first_use: Discover/invoke skill and use own enrollment workflow.
+  verification: Packaged reference/metadata layout and client discovery are separate checks; no automatic enrollment.
+  recovery: Compare local customized copy before replacement; do not install duplicate copies blindly.
+- capability: host_wake_experiments
+  guides:
+  - docs/audiences/adapter-users.md
+  - docs/audiences/experimenters.md
+  prerequisites: Explicit workspace consent and authorized owner-managed test environment for live qualification.
+  configuration: Default notification-only; standalone only for adapter-owned conversations, preserving binding
+    generation.
+  first_use: Read own wake status; workspace enable only with authorization.
+  verification: Doorbell illustration is not proof of atomic idle-only admission or execution.
+  recovery: Retain uncertain attempts; never steal writer lock, infer ownership or acknowledge from host completion.
+  limit: Live AHP/native-queue and atomic idle-only admission remain unqualified.
+result: All listed feature paths have documented ownership, setup, observations and recovery boundaries; changed
+  examples must pass offline validation and canonical proof before delivery. No live configuration was changed by
+  this review.

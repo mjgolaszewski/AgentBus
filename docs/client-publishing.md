@@ -51,6 +51,42 @@ again. Failed private confirmation calls for inspecting results, not a new draft
 
 ## Configure the outbound installation locally
 
+### Install the client Slack app
+
+A client receiving updates does not need its own AgentBus service or location.
+Install a dedicated posting app in the client workspace; the existing AgentBus
+location makes outbound Web API calls with that app's locally protected token.
+Keep the coordination app and client posting app separate.
+
+1. In [Slack app management](https://api.slack.com/apps), choose **Create New App**,
+   **From a manifest**, then the client workspace. Import the
+   [client manifest](examples/client-slack-manifest.json). Customize its name
+   and branding if desired; request workspace-administrator approval as needed.
+2. Install the app and invite its bot into the chosen updates channel, including
+   for private channels. The manifest requests only `chat:write`; it does not
+   request history, public-channel posting without membership, incoming events,
+   slash commands or Socket Mode. No app-level token is needed.
+3. Obtain the **Bot User OAuth Token** under **OAuth & Permissions**. Install it
+   through the host custodian's protected credential procedure, never in Git,
+   Slack messages or AgentBus messages. Store it in the service environment
+   variable named by `token_env` below. There is no coordination-token fallback.
+4. Verify the installed token with Slack's
+   [`auth.test`](https://docs.slack.dev/reference/methods/auth.test). Use its
+   `team_id` (`T…`) and `bot_id` (`B…`), not the App ID (`A…`) or bot-user
+   `user_id` (`U…`). The custodian can retrieve these locally once the token is
+   installed. Record the intended channel ID from Slack's channel details or
+   copied channel link.
+5. Select exact enrolled author routes and their coordination channels. Select
+   approvers from the existing coordination service's human operator allowlist.
+   Client-workspace IDs do not identify those operators in a different
+   workspace; receiving client users need no AgentBus enrollment.
+
+This connector exposes no `/agentbus` or `/ab` in the client workspace and does
+not turn client replies into tasks. Adding slash commands to this manifest
+without a supported client-side handler would not make them functional.
+
+### Bind the destination and authors
+
 Keep a private configuration file outside Git and point
 `AGENTBUS_PUBLICATIONS_CONFIG` at its absolute path. Example identifiers below
 are placeholders to replace with the operator-approved installation and channels:
@@ -77,6 +113,50 @@ client Slack installation. `token_env` names the local environment variable; the
 configuration contains no token. There is no implicit coordination-token fallback
 or credential replication through federation. The provider's actual workspace
 and bot must match the configured binding before a post.
+
+For example, keep the actual token in a protected local service environment:
+
+```dotenv
+AGENTBUS_CLIENT_SLACK_BOT_TOKEN='REPLACE_LOCALLY_WITH_CLIENT_BOT_TOKEN'
+AGENTBUS_PUBLICATIONS_CONFIG=/absolute/private/path/client-publications.json
+```
+
+These are service inputs; this is not a complete replacement for the existing
+service environment. Workspace/bot/channel/author/operator IDs belong in the
+JSON policy above, not invented environment switches. Do not add the client
+channel to `AGENTBUS_SLACK_CHANNELS` or replace the coordination app's tokens.
+The existing launcher must load the protected environment; coordinate the
+backup/configuration/restart boundary with the custodian.
+
+To skip per-message approval for one exact authorized author, set:
+
+```json
+{
+  "authors": ["local:demo:writer"],
+  "direct_authors": ["local:demo:writer"]
+}
+```
+
+These are fields in the same destination object, not a standalone JSON document.
+Keep `approvers` configured even when all current authors post directly.
+Direct permission applies only to that destination and those exact authors.
+New authors require another deliberate policy change; no agent self-enrollment
+or federation trust can supply it.
+
+### Verify one deliberate update
+
+After activation, use the `update` command above for one labelled test. Inspect
+the original `update-status` receipt and the actual destination post. With
+approval required, review the exact draft through the coordination channel's
+configured `<command> updates`; with direct policy, no approval click is needed.
+Ordinary bus sends must produce no client posts. Confirm that human replies in
+the client channel do not become AgentBus inbox work.
+
+An uncertain receipt can coexist with a visible post. Preserve the original UUID
+and report that discrepancy; do not post another copy to test delivery. The
+[receipt-verification defect](https://github.com/mjgolaszewski/AgentBus/issues/120)
+is tracked separately from this setup guidance. Human observation must not be
+silently substituted for missing provider evidence in canonical custody.
 
 Use a client channel outside this service's coordination allowlist. A destination
 that overlaps the same coordination workspace/channel is rejected. Client

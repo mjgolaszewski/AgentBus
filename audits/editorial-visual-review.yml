@@ -1,0 +1,173 @@
+document:
+  kind: editorial_visual_audit
+  path: audits/editorial-visual-review.yml
+  status: reviewed
+scope: Public README/docs imagery, Markdown tables and Mermaid diagrams; no assets removed. Embedded code examples
+  are reviewed with their containing editorial file.
+baseline: 89eb2e35f040741a5031e1255edbdb0d695c128d
+review_method: Images visually inspected; all recorded diagram/table source spans read for semantics, labels and
+  qualification boundaries. Hashes identify source, not browser-rendering or accessibility certification.
+images:
+- path: docs/assets/AgentBusCodexWake.png
+  sha256: e8483244bf4386468d9fba8aa51b06c029dbf7e59077acff85b8d6622d2227f6
+  disposition: reviewed_retained
+  basis: 'Visual inspection: existing illustration/branding preserved unchanged; no embedded configuration or deployment
+    identifiers.'
+- path: docs/assets/AgentBusHero.png
+  sha256: 83ae11225d3675b1e0b2666d8b3aa357c31e4e06a05386f2c887e5d2a100d99e
+  disposition: reviewed_retained
+  basis: 'Visual inspection: existing illustration/branding preserved unchanged; no embedded configuration or deployment
+    identifiers.'
+- path: docs/assets/bcf-governance-pack-hero.jpg
+  sha256: 44be4fec4f7d0ef1576338fafa2455f2aa4d52faa08b7fcf3242e1828bc46218
+  disposition: reviewed_retained
+  basis: 'Visual inspection: existing illustration/branding preserved unchanged; no embedded configuration or deployment
+    identifiers.'
+embedded:
+- path: README.md
+  kind: mermaid
+  lines:
+  - 20
+  - 31
+  sha256: dc8aa17f19a6d70d73851b46413c76da2d3daf63868dbc49fbe9901af6c417bb
+  disposition: reviewed_retained
+- path: README.md
+  kind: mermaid
+  lines:
+  - 163
+  - 173
+  sha256: 5f506ed321ed50fdf3f4954dcc4319d1ebbe42dddea8f243089bcbe418a7175f
+  disposition: reviewed_retained
+- path: README.md
+  kind: table
+  lines:
+  - 197
+  - 206
+  sha256: 1db8b1b0a9775659b1e0a060a7243b8ba7265b3bba955644375a1cd6df237fad
+  disposition: edited
+- path: docs/README.md
+  kind: table
+  lines:
+  - 28
+  - 40
+  sha256: 98ab776e735a6eb983685ebff69b9e6677605e1b7318b89a8b3281c430707860
+  disposition: edited
+- path: docs/adoption-measurements.md
+  kind: table
+  lines:
+  - 21
+  - 32
+  sha256: 1cebaa2543d26ca7dbe2c523b606d413c580e5c1d4075b08f657036806675658
+  disposition: reviewed_retained
+- path: docs/adoption-measurements.md
+  kind: table
+  lines:
+  - 44
+  - 49
+  sha256: 0c34debcd87ba41632269146733297aedfea7f790e8a201e8386ff35fd20bdf9
+  disposition: reviewed_retained
+- path: docs/adoption-measurements.md
+  kind: table
+  lines:
+  - 73
+  - 79
+  sha256: bd461e802a07a1a661e8cb12290f481475abbe4bda5a36062896ce0e3debc559
+  disposition: reviewed_retained
+- path: docs/architecture.md
+  kind: mermaid
+  lines:
+  - 10
+  - 25
+  sha256: ffd10399ee48dadcbcd32918008962e2f828a480b31dc81a1b92d96a6f7a269d
+  disposition: reviewed_retained
+- path: docs/architecture.md
+  kind: table
+  lines:
+  - 70
+  - 86
+  sha256: 4e890e48a08fcd219130fd5565512d570d13d0d4c0b60ae42d6d3410601670f2
+  disposition: reviewed_retained
+- path: docs/audiences/adapter-users.md
+  kind: table
+  lines:
+  - 26
+  - 30
+  sha256: bcfd6cd6c16fdce0d135e2708c6d0598b406e397f00ec958ac258542344fad7b
+  disposition: reviewed_retained
+- path: docs/audiences/adapter-users.md
+  kind: table
+  lines:
+  - 122
+  - 135
+  sha256: 73c6ad0b614dadd4a606aa6ab376eb11ebd958393ab7c355baebf11c33675c34
+  disposition: reviewed_retained
+- path: docs/audiences/experimenters.md
+  kind: table
+  lines:
+  - 24
+  - 42
+  sha256: 0b1e51be14719123f60ef7f8ea3be55c1c747fb7551412cb32179559e416ae1c
+  disposition: reviewed_retained
+- path: docs/audiences/mailbox-tool-users.md
+  kind: table
+  lines:
+  - 12
+  - 16
+  sha256: f6ad2836beaa3e9d78ef1ec8a871e6ab3c51fec2103bb581ed9e5eb3e047664b
+  disposition: added
+- path: docs/audiences/mailbox-tool-users.md
+  kind: table
+  lines:
+  - 67
+  - 72
+  sha256: 04906507b34276b7892b8e50d520c6818357b503d22e6b46452f3c9db66af4e0
+  disposition: added
+- path: docs/audiences/mailbox-tool-users.md
+  kind: table
+  lines:
+  - 188
+  - 196
+  sha256: 03fe5fd3bc87a40b1ba894fcf3b002b6ac7ceb332af448a124e44abeaa74e8cd
+  disposition: added
+- path: docs/contracts.md
+  kind: table
+  lines:
+  - 32
+  - 48
+  sha256: 748649b9bf8593a29b66bfd03966b322b4e0de0b159d0b17d54ff4a87073612b
+  disposition: reviewed_retained
+- path: docs/contracts.md
+  kind: mermaid
+  lines:
+  - 75
+  - 87
+  sha256: 06db2bf82765ecae3c7db2d386d0df7dacda48eb647be5fa649714532938038c
+  disposition: reviewed_retained
+- path: docs/contracts.md
+  kind: table
+  lines:
+  - 104
+  - 122
+  sha256: 63ecc0831043a36b84d6bf8c21e57cb6579b5495ca51dd70eb2b1ffd8c944b28
+  disposition: reviewed_retained
+- path: docs/http-api.md
+  kind: table
+  lines:
+  - 9
+  - 36
+  sha256: c4460accbf42e6dc5be3ae9ab2033e4e052ce47afe2f52a5818f3e9b94f75464
+  disposition: reviewed_retained
+- path: docs/message-lifecycle.md
+  kind: table
+  lines:
+  - 13
+  - 20
+  sha256: 1ae74be483fcaf71cdbf53817bb13510dc8bb2f3fbc14a35c9fd017f2d93cac7
+  disposition: reviewed_retained
+preservation:
+  removed: 0
+  bcf_section: README Good vibes, governed builds remains near the front with its original graphic; unchanged section
+    bytes.
+  graphics: All three assets retain exact baseline bytes.
+  limits: No Mermaid renderer/browser screenshots or assistive-technology audit claimed. Historical measurement
+    tables retain their historical labels; wake illustrations confer no live wake guarantee.

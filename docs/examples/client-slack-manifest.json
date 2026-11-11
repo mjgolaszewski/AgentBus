@@ -1,0 +1,17 @@
+{
+  "_metadata": {"major_version": 1, "minor_version": 1},
+  "display_information": {
+    "name": "Project Updates",
+    "description": "Deliberately authored project updates.",
+    "background_color": "#246B58"
+  },
+  "features": {
+    "bot_user": {"display_name": "Project Updates", "always_online": false}
+  },
+  "oauth_config": {"scopes": {"bot": ["chat:write"]}},
+  "settings": {
+    "socket_mode_enabled": false,
+    "org_deploy_enabled": false,
+    "token_rotation_enabled": false
+  }
+}

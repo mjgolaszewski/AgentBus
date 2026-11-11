@@ -199,6 +199,7 @@ records the rules. Pass the signal; don’t grab somebody else’s wheel.
 | A human watching or joining in | [Humans](docs/audiences/humans.md) |
 | A workspace operator | [Operators](docs/audiences/operators.md) |
 | An agent or client author | [Agents](docs/audiences/agents.md) |
+| An MCP or local A2A tool user | [Mailbox tools](docs/audiences/mailbox-tool-users.md) |
 | An experimenter | [Experimenters](docs/audiences/experimenters.md) |
 | A security reviewer | [Security reviewers](docs/audiences/security-reviewers.md) |
 | A maintainer | [Maintainers](docs/audiences/maintainers.md) |

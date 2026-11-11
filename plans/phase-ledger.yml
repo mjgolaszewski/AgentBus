@@ -27,16 +27,14 @@ hotfix_lane:
   default_mode: full
   modes:
     lite:
-      allowed_when:
-        - single_commit_fix
-        - no_public_contract_change
-        - no_security_scope_change
+      allowed_when: [single_commit_fix, no_public_contract_change, no_security_scope_change]
     full:
       required_when:
         - default_branch_red_ci
         - release_blocking_regression
         - security_or_expiring_external_breakage
   open_records:
+    - {id: P14-HF01, mode: lite, status: active, triggered_by_commits: [89eb2e35f040741a5031e1255edbdb0d695c128d], failing_workflows: [], root_cause: Published adapter setup lacks complete client examples; editorial inventory retains candidate wording and omits visual dispositions, remediated_in_phase: P14, canonical_artifacts: [docs/audiences/mailbox-tool-users.md, audits/editorial-review.yml, audits/editorial-visual-review.yml, skills/agentbus/SKILL.md, skills/agentbus/references/participation.md], hotfix_log: phases/phase-14-hotfix01.yml}
     - {id: P07-HF01, mode: full, status: active, triggered_by_commits: [d1370afee90251f58caa7ccc524dd2fd35f449ef], failing_workflows: [], root_cause: presentation spool saturation blocks service inbox fetch and the dependent Codex wake, remediated_in_phase: P07, hotfix_log: phases/phase-07-hotfix01.yml, canonical_artifacts: [contracts/codex-wake/v1/codex-wake.contract.yml, plans/phase-ledger.yml, phases/phase-07-hotfix01.yml]}
     - {id: P07-HF02, mode: full, status: active, triggered_by_commits: [0e071cf2757cc580bf073780ef59fe741c65c594], failing_workflows: [], root_cause: "host-interrupted wake accepted without handling, restart-stale transport alarm, unbounded client inbox page argument, and old-first compact wake refs", remediated_in_phase: P07, hotfix_log: phases/phase-07-hotfix02.yml, canonical_artifacts: [contracts/codex-wake/v1/codex-wake.contract.yml, contracts/participation/v1/participation.contract.yml, plans/phase-ledger.yml, phases/phase-07-hotfix02.yml]}
     - {id: P07-HF03, mode: full, status: active, triggered_by_commits: [6caed153206a20bd1eb0d082d1a2ae0ac5686030], failing_workflows: [], root_cause: "accepted turn lost when transient stdio host exits before terminal; controlled disable kills process group; full-history recovery overflows frame; VS Code owns writer locks", remediated_in_phase: P07, hotfix_log: phases/phase-07-hotfix03.yml, canonical_artifacts: [contracts/codex-wake/v1/codex-wake.contract.yml, plans/phase-ledger.yml, phases/phase-07-hotfix03.yml]}

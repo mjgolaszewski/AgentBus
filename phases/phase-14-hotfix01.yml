@@ -1,0 +1,73 @@
+document:
+  kind: hotfix_execution_log
+  name: P14-HF01 Hotfix Log
+  id: project-phase-14-hotfix01
+  version: 1.0.0
+  generated_at_utc: '2026-11-11T00:00:00Z'
+  status: completed
+  path: phases/phase-14-hotfix01.yml
+hotfix:
+  id: P14-HF01
+  mode: lite
+  related_phase_id: P14
+  hotfix_number: 1
+  summary: Complete adapter/client onboarding, feature configuration coverage and audited editorial/visual dispositions
+execution_evidence:
+  planned_commands:
+  - make governance-validate
+  executed_commands:
+  - command: source/link checker; skill quick_validate; embedded examples and editorial/visual verifier
+    result: Passed on 9af7c2c3bfe8b9b67cda223105dad37205d62b3e; no live calls
+    exit_code: 0
+  - command: bcf validate --repo-root . --format json --compact
+    result: 'First failure on 9af7c2c: unsupported MEMORY governance_process.adapter_guidance key; semantic checks
+      did not run. Moved note to existing environment_facts list; recheck pending.'
+    exit_code: 1
+  - command: bcf validate --repo-root . --format json --compact (schema repair)
+    result: Schema passed on 1f3083e; semantic check rejected a second malformed Unreleased heading. Moved the new
+      entry into the existing canonical [Unreleased] section; recheck pending.
+    exit_code: 1
+  - command: bcf validate --repo-root . --format json --compact (final formatting repair)
+    result: Passed schema/placeholders/semantic validation on 266ffb4. Earlier source/link, skill and example/audit/visual
+      checks apply to unchanged inputs; native submit supplies final-subject proof.
+    exit_code: 0
+  - command: bcf ci submit --repo-root . --python verified-project-interpreter --format json
+    result: 'First native attempt on 714e291 failed during python314-compatibility dependency setup: uv SIGABRT/allocation
+      failure under launcher RLIMIT_AS=2GiB. No Python 3.14 test result or provider submission claimed. First SDK
+      failure bundle retained; retry requires scheduler boundary and corrected launcher.'
+    exit_code: 1
+  - command: Expanded source/link, JSON policy/manifest, audit/visual and canonical governance validation
+    result: All passed on c3996e06ec23012fdc2674cfd494a42725dfee9c; 4.261s. Real publication policy including direct
+      authors, operator grant constructor and stale-monitor loader accepted offline examples; no provider calls.
+      Unchanged skill validation reused.
+    exit_code: 0
+  notes:
+  - 'Documentation-only scope: MCP/A2A seat, packaged participation skill, editorial/visual audit; no production
+    code, public contract, credentials or deployment changed.'
+  - Preserve all three image bytes, existing diagrams/tables, README tone and BCF section. New setup examples follow
+    existing exact-session and loopback contracts.
+  - Original 0.11 review inherited only for byte-identical files; changed documents reviewed in full; visual source
+    review and image inspection recorded explicitly.
+  - Publication receipt defect remains separately tracked in issue120; cursor-first headers remain backlog issue108.
+  - Completed means implementation authored; validation and exact-subject certification remain independent computed
+    results.
+  - 'Operator expanded documentation review to all 0.10/0.11 feature setup: add client Slack app manifest/walkthrough,
+    explicit location/channel/destination distinction, operator grant example, feature configuration map and per-feature
+    usability acceptance inventory. New input validation and canonical retry require scheduler admission.'
+closeout_requirements:
+  claims:
+    required_suites_green:
+      required_evidence:
+      - test
+      - contract-test
+    security_review_complete:
+      required_evidence:
+      - governance-validate
+    health_checks_green:
+      required_evidence:
+      - runtime-smoke
+  reconciliation:
+    required_evidence:
+    - governance-validate
+    - governance-exposure-scan
+  finding_registry: governance/findings.yml
