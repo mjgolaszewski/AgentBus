@@ -1,0 +1,48 @@
+document:
+  kind: bounded_resource_measurement
+  path: audits/p16-default-off-footprint.yml
+  status: isolated_measurement_complete
+baseline:
+  release: 0.11.1
+  commit: c0d81f1bdf46904250244cda7f71a70e3dd6d9f7
+candidate:
+  version: 0.12.0
+  commit: 0bab882c9102abe0cca4a4decf9d47432ca3297c
+measurements:
+- label: baseline-0.11.1
+  window_seconds: 30.001227799992193
+  process_cpu_seconds: 4.224900000004972e-05
+  one_cpu_percent: 0.00014082423653361518
+  rss_kib_start: 74932
+  rss_kib_end: 74932
+  http_requests_during_window: 0
+  fresh_database_files_bytes: 1013336
+  scope: isolated existing TestClient/FakeSocket fixture, optional features off; includes pytest/ASGI test harness,
+    not production-server footprint
+  source_hash: 97b3fe4cd11526f1dd3997ca6d7911bd3a55096797434c5d05f6bb7e873ae311
+  new_listener: false
+  real_provider_credentials: false
+  model_call: false
+  production_qualification: false
+- label: candidate-0.12.0
+  window_seconds: 30.000116534996778
+  process_cpu_seconds: 4.184700000009478e-05
+  one_cpu_percent: 0.0001394894581535307
+  rss_kib_start: 75200
+  rss_kib_end: 75200
+  http_requests_during_window: 0
+  fresh_database_files_bytes: 1050416
+  scope: isolated existing TestClient/FakeSocket fixture, optional features off; includes pytest/ASGI test harness,
+    not production-server footprint
+  source_hash: 17be23a15da742f2c46ddbc72bae7121bbbea8fd91a169204b27e9924d2fac91
+  new_listener: false
+  real_provider_credentials: false
+  model_call: false
+  production_qualification: false
+dependency_population_equal: true
+source_inputs_unchanged: true
+scope: one finite matched idle window each, not production workload or statistical throughput guarantee
+limitations:
+- One window per subject; no production load, statistical CPU difference or production idle guarantee inferred.
+- No listener, real provider credentials or model call; same installed dependency population and immutable source
+  inputs.

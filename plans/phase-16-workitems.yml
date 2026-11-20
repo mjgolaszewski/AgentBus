@@ -4,13 +4,13 @@ document:
   id: agentbus-phase-16-workitems
   version: 1.0.0
   generated_at_utc: '2026-11-19T00:00:00Z'
-  status: active
+  status: completed
   path: plans/phase-16-workitems.yml
   phase_id: P16
 workitems:
 - id: P16-P0-01
   priority: P0
-  status: IN_PROGRESS
+  status: DONE
   summary: Contract Racecar recovery suggestions and security residual owners
   acceptance:
   - Every Racecar suggestion maps to a canonical existing store/owner or explicit external-owner disposition
@@ -21,7 +21,7 @@ workitems:
   - contract-test
 - id: P16-P1-01
   priority: P1
-  status: IN_PROGRESS
+  status: DONE
   summary: Extend local resume continuity and source/update-deadline observations
   acceptance:
   - Credential-free record binds exact source commit/branch/tree, dirty source locations, report deadline, held
@@ -34,7 +34,7 @@ workitems:
   - contract-test
 - id: P16-P2-01
   priority: P2
-  status: IN_PROGRESS
+  status: DONE
   summary: Expose scoped custodian handoff freshness as non-authorizing context
   acceptance:
   - Use existing accepted messages and operator configuration for optional current-channel contact/receipt hints;
@@ -47,7 +47,7 @@ workitems:
   - contract-test
 - id: P16-P3-01
   priority: P3
-  status: IN_PROGRESS
+  status: DONE
   summary: Render local cursor first without modifying signed wire custody
   acceptance:
   - Channel-local public cursor appears first with location label wherever known before posting
@@ -58,7 +58,7 @@ workitems:
   - contract-test
 - id: P16-P3-02
   priority: P3
-  status: IN_PROGRESS
+  status: DONE
   summary: Private configured-command diagnostics with recent receipt incident buttons
   acceptance:
   - Primary configured command and explicitly registered aliases route diagnostics through the same human allowlist/channel
@@ -73,7 +73,7 @@ workitems:
   - contract-test
 - id: P16-P3-03
   priority: P3
-  status: IN_PROGRESS
+  status: DONE
   summary: Private configured-command identity management with explicit previews and confirmations
   acceptance:
   - Configured command identities provides channel-scoped private selection/buttons and exact unambiguous targets;
@@ -95,7 +95,7 @@ workitems:
   - contract-test
 - id: P16-P4-01
   priority: P4
-  status: IN_PROGRESS
+  status: DONE
   summary: Advance current offline owner and provenance qualification
   acceptance:
   - Exact installed owner/static capability inventory covers documented native mailbox/queue/AHP paths with zero
@@ -109,7 +109,7 @@ workitems:
   - contract-test
 - id: P16-P5-01
   priority: P5
-  status: IN_PROGRESS
+  status: DONE
   summary: Deliver bounded recovery runbooks and release proof
   acceptance:
   - Reviewed launcher/NFS/cache/portable evidence guidance refers to canonical custodian/resource owners instead

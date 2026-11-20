@@ -4,40 +4,39 @@ document:
   id: agentbus-phase-16-log
   version: 1.0.0
   generated_at_utc: '2026-11-19T00:00:00Z'
-  status: active
+  status: completed
   path: phases/phase-16-log.yml
 phase:
   id: P16
   build_block: lightweight_recovery_and_owner_qualification
 summary:
-  outcome: in_progress
+  outcome: completed
   highlights:
-  - P16 begins from the immutable 0.11.1 protected-main subject after BCF computed P15 closed; implementation and
-    final-subject proof remain pending.
+  - P16 implementation is complete; protected progress proof is recorded below. BCF must authenticate final closeout and release custody independently.
 workitems:
 - id: P16-P0-01
-  status: IN_PROGRESS
+  status: DONE
   summary: Contract Racecar recovery suggestions and security residual owners
 - id: P16-P1-01
-  status: IN_PROGRESS
+  status: DONE
   summary: Extend local resume continuity and source/update-deadline observations
 - id: P16-P2-01
-  status: IN_PROGRESS
+  status: DONE
   summary: Expose scoped custodian handoff freshness as non-authorizing context
 - id: P16-P3-01
-  status: IN_PROGRESS
+  status: DONE
   summary: Render local cursor first without modifying signed wire custody
 - id: P16-P3-02
-  status: IN_PROGRESS
+  status: DONE
   summary: Private configured-command diagnostics with recent receipt incident buttons
 - id: P16-P3-03
-  status: IN_PROGRESS
+  status: DONE
   summary: Private configured-command identity management with explicit previews and confirmations
 - id: P16-P4-01
-  status: IN_PROGRESS
+  status: DONE
   summary: Advance current offline owner and provenance qualification
 - id: P16-P5-01
-  status: IN_PROGRESS
+  status: DONE
   summary: Deliver bounded recovery runbooks and release proof
 execution_evidence:
   planned_commands:
@@ -99,6 +98,17 @@ execution_evidence:
     skill quick format validation passed; installation evidence remains governed separately. Consolidated changed-production
     source review and successful19-producer local input are recorded without claiming provider custody or a production
     idle-footprint comparison.
+  - Protected PR123 on e2121d8208d3cac7bb3946e86b3cd60ffe131bba and exact-main 0bab882c9102abe0cca4a4decf9d47432ca3297c
+    passed all four provider shards and Terminal Governance Truth on runs44823419371 and44824103924. Original provider
+    artifacts were SHA256-verified before inspection; this progress certification is not final phase closure.
+  - Matched optional-off 30-second isolated pytest/ASGI fixture windows on protected 0.11.1 and P16 source used
+    identical dependency populations and zero provider HTTP calls. Candidate RSS increased268KiB and fresh database
+    storage37080bytes. The sample is not a production workload, statistically significant CPU comparison or live deployment qualification.
+  - Complete52-file editorial audit, visual/example inventory, packaged skill review and29-file changed-production
+    review remain bound to their recorded bytes. Low-level wire guide documents ordinary/signed dispatch and honest
+    rejection/ACK boundaries. Issue75 remains open and notification-only; no live identity deletion or new client post.
+  - First canonical closeout stopped before suites/provider because installer-owned CI projection retained PR-progress scope after authored completion. Original diagnostic candidate evaluation proposition is not unique retained; canonical BCF reconcile owns closure projection before a new submit. No generated manual edit, provider retry or SDK upgrade.
+  - Corrected closure submit reached cheap validation, which required this new PR to update CHANGELOG relative to its already-merged progress base. Add the delivered protocol/measurement entry; preserve original diagnostic. No provider action or SDK defect inferred.
 closeout_requirements:
   claims:
     workitems_closed:

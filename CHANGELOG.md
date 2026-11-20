@@ -2,6 +2,7 @@
 
 ## [0.12.0] - 2026-11-20
 
+- Document ordinary and signed wire formats, routing and acknowledgement boundaries; retain audited guidance and a bounded default-off comparison without claiming production performance.
 - Add private configured-command identity previews, exact-route rename confirmation, explicit bus-access revocation and bounded acknowledgement-safe local history cleanup. Preserve tombstones, external copies and unresolved custody.
 - Retain optional scoped recovery notes and operator contact hints without restoring resource grants, publishing updates, advancing ACKs or waking hosts.
 - Put known channel-local cursors first in local Slack headers while preserving machine envelopes and signed federation carriers.

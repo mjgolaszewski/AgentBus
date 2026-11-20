@@ -1,7 +1,7 @@
 document:
   kind: production_code_review
   path: audits/p16-code-review.yml
-  status: source_review_complete_provider_qualification_pending
+  status: source_review_complete_protected_progress_verified_final_closeout_pending
 baseline:
   release: 0.11.1
   commit: c0d81f1bdf46904250244cda7f71a70e3dd6d9f7
