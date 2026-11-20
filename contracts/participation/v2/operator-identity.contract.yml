@@ -28,6 +28,11 @@ limits:
   preview_seconds: 600
   sessions_per_intent: 256
   history_positions_per_batch: 100
+  operation_records: 4096
+  expired_preview_prune_batch: 100
+  canonical_intent_bytes: 32768
+  canonical_result_bytes: 32768
+  name_characters: 32
 laws:
 - Authorize verified operator and channel before target lookup; a button locator grants no authority.
 - Rename preserves chat/channel/inbox, same repository, reserved namespaces, aliases, original staged requests and
@@ -47,6 +52,8 @@ laws:
   daemon or credential replication.
 - A configured prefix change invalidates a retained rename preview; prior accepted exact request replay remains
   custody recovery, not new delivery authority.
+- Committed operation receipts do not automatically expire; capacity rejects new previews without deleting existing
+  outcomes.
 evidence:
 - tests/test_identity_management.py
 - test

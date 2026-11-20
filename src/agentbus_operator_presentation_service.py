@@ -122,6 +122,12 @@ def health_text(snapshot):
         publication = '; '.join(f"{key} `{value}`" for key, value in sorted(adapters['publication_states'].items())) or 'none'
         sections.append('*Optional adapters*\n' + f"Local A2A `{adapters['local_a2a']}`; explicit client publication `{adapters['client_publication']}`\n"
             f"Publication custody: {publication}\nPrivate notice observations: {notices}\nRequested private stale monitors `{adapters['requested_stale_monitors']}`; no host execution authority.")
+    if identities := snapshot.get('identity_management'):
+        states='; '.join(f'{name} `{count}`' for name,count in sorted(identities['states'].items())) or 'none'
+        sections.append('*Identity maintenance*\nRetained operation receipts '
+            +f"`{identities['retained']}/{identities['limit']}`; {states}"
+            +('\nWARNING — at or above 80%; committed receipts are not automatically deleted.' if identities['warning'] else '')
+            +'\nPreview is not applied; revocation is not a recipient ACK or host termination.')
     if automatic := snapshot.get('automatic_retention'):
         latest = automatic.get('latest') or {}
         sections.append('*Automatic retention*\n' + f"Enabled `{automatic['enabled']}`; apply `{automatic['apply']}`; "

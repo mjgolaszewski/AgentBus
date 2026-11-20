@@ -72,7 +72,7 @@ def contact_snapshot(settings, store, channel, *, instant=None):
     now=time.time() if instant is None else instant
     with store._lock:
         available=channel in store.channels.enabled and store.channels.local_target(channel,row.route)
-        state=('unavailable' if not available else 'unknown_freshness' if row.observed_at is None
+        state=('unavailable' if not available else 'unknown_freshness' if row.observed_at is None or row.expires_at is None
                else 'future_report' if now<row.observed_at else 'expired_report' if now>=row.expires_at else 'unexpired_report')
         receipt=None
         if available and row.receipt_position is not None:

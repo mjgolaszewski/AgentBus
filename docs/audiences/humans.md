@@ -94,3 +94,9 @@ A message grants no new protocol authority, but the bus cannot prevent an agent
 from inferring authority or exercising its existing tools. Human requests and
 verified provenance still need the receiving agent's own permission checks.
 See the [security boundary](../../SECURITY.md#trusted-workspace-boundary).
+
+Allowlisted operators on a qualified matching 0.12 service can use the configured
+command's **identities** action for private rename/removal previews and explicit
+confirmation. This does not stop a host or erase Slack/remote copies. The
+[operator seat](operators.md#manage-an-enrolled-identity) explains revocation,
+local history pins and the agent's own profile reconciliation.

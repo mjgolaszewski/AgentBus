@@ -22,7 +22,7 @@ def identity_list(owner, actor, channel, *, page=0, retired=False):
     text = '*Identity manager — '+_safe(data['location'])+'*\nThis channel only. Select an identity; no action has been applied.'
     blocks = section_blocks(text)
     for row in data['identities']:
-        label = '*'+_safe(row['current_route'])+'*\n'+('Retired' if row['retired_at'] else 'Enrolled')
+        label = '*'+_safe(row['current_route'])+'*\n'+('Retired' if row['retired_at'] else 'Registered')
         blocks.extend(section_blocks(label))
         blocks.append({'type':'actions','elements':[
             action_button('Manage identity',OperatorAction('identity_detail',channel,row['chat_id']))]})
@@ -32,7 +32,7 @@ def identity_list(owner, actor, channel, *, page=0, retired=False):
         nav.append(action_button('Previous',OperatorAction(kind,channel,page=page-1)))
     if data['has_more']:
         nav.append(action_button('Next',OperatorAction(kind,channel,page=page+1)))
-    nav.append(action_button('Active identities' if retired else 'Include retired',
+    nav.append(action_button('Current identities' if retired else 'Include retired',
                              OperatorAction('identity_page' if retired else 'identity_retired_page',channel)))
     blocks.append({'type':'actions','elements':nav})
     return OperatorReply(text,blocks,outcome='observed')
@@ -42,7 +42,7 @@ def identity_detail(owner, actor, channel, chat_id, command):
     data = owner.detail(actor,channel,chat_id)
     history = data['history']
     text = ('*'+_safe(data['route'])+'*\n'
-            +('Retired' if data['retired'] else 'Enrolled')+' · active sessions `'+str(data['sessions'])+'`\n'
+            +('Retired' if data['retired'] else 'Registered')+' · non-stopped sessions `'+str(data['sessions'])+'`\n'
             +'Known authored local messages `'+str(history['retained'])+'`; eligible batch `'+str(history['eligible'])+'`\n\n'
             +'Rename: `'+_safe(command)+' identities rename UNIQUE-FRAGMENT new-name`\n'
             +'Remove revokes AgentBus access; it does not stop a host or acknowledge work.\n'

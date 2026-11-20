@@ -234,3 +234,77 @@ def test_recipient_retirement_preserves_exact_accepted_replay_but_blocks_new_adm
                                      session_token=ids['first'][2],target_check=check)
     assert denied.value.status_code==403
     assert store._db.execute('SELECT count(*) FROM local_delivery_obligations').fetchone()[0]==before
+
+
+def test_private_identity_capacity_observes_preview_and_commit_without_expiring_receipts(managed):
+    from src.agentbus_identity_management_service import identity_capacity
+    store,_,owner,ids=managed
+    preview=owner.preview('UOP','C111',ids['first'][0],'retire')
+    before=store._db.total_changes
+    assert identity_capacity(store)['states']=={'preview':1}
+    assert store._db.total_changes==before
+    owner.perform('UOP','C111',preview['intent']['request_id'],preview['digest'])
+    assert identity_capacity(store)['states']=={'committed':1}
+    assert identity_capacity(store)['retained']==1 and identity_capacity(store)['limit']==4096
+
+
+def test_identity_preview_and_committed_receipt_survive_service_restart(managed):
+    from src.agentbus_identity_management_service import IdentityManagement
+    from src.agentbus_service import MessageStore
+    store,settings,owner,ids=managed
+    preview=owner.preview('UOP','C111',ids['first'][0],'rename',name='after-restart')
+    key=preview['intent']['request_id']
+    store.close()
+    reopened=MessageStore(settings.db_path)
+    reopened.channels.configure(settings.channels)
+    try:
+        recovered=IdentityManagement(reopened,settings,clock=lambda:101)
+        assert recovered.receipt('UOP','C111',key)['intent']==preview['intent']
+        result=recovered.perform('UOP','C111',key,preview['digest'])
+        assert result['route']=='local:demo:after-restart'
+    finally:
+        reopened.close()
+    final=MessageStore(settings.db_path)
+    final.channels.configure(settings.channels)
+    try:
+        recovered=IdentityManagement(final,settings,clock=lambda:1000)
+        assert recovered.receipt('UOP','C111',key)==result
+        assert recovered.perform('UOP','C111',key,preview['digest'])==result
+        assert final.channels.principal(ids['first'][2]).chat_id==ids['first'][0]
+    finally:
+        final.close()
+
+
+def test_concurrent_identity_confirmations_share_one_revocation_receipt(managed):
+    from concurrent.futures import ThreadPoolExecutor
+    store,_,owner,ids=managed
+    preview=owner.preview('UOP','C111',ids['first'][0],'retire')
+    def confirm(_):
+        return owner.perform('UOP','C111',preview['intent']['request_id'],preview['digest'])
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        first,second=executor.map(confirm,range(2))
+    assert first==second and first['sessions_revoked']==1
+    assert store._db.execute("SELECT count(*) FROM participation_audit WHERE action='operator_identity_revocation'").fetchone()[0]==1
+
+
+def test_identity_confirmation_rechecks_revoked_operator_and_retains_preview(managed):
+    from dataclasses import replace
+
+    from src.agentbus_identity_management_service import IdentityManagement
+    store,settings,owner,ids=managed
+    preview=owner.preview('UOP','C111',ids['first'][0],'retire')
+    revoked=IdentityManagement(store,replace(settings,slack_operator_user_ids=frozenset()),clock=lambda:101)
+    with pytest.raises(PermissionError):
+        revoked.perform('UOP','C111',preview['intent']['request_id'],preview['digest'])
+    assert owner.receipt('UOP','C111',preview['intent']['request_id'])['state']=='preview'
+    assert store.participation.session_state(ids['first'][1])['state']=='active'
+
+
+def test_identity_preview_capacity_never_discards_a_retained_operation(managed,monkeypatch):
+    import src.agentbus_identity_management_service as domain
+    _,_,owner,ids=managed
+    monkeypatch.setattr(domain,'MAX_OPERATIONS',1)
+    preview=owner.preview('UOP','C111',ids['first'][0],'retire')
+    with pytest.raises(ValueError,match='capacity'):
+        owner.preview('UOP','C111',ids['second'][0],'retire')
+    assert owner.receipt('UOP','C111',preview['intent']['request_id'])['state']=='preview'

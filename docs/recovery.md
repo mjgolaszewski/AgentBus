@@ -53,7 +53,7 @@ A matching qualified 0.12 client adds an optional local context file:
 agentbus resume --identity ROUTE --context-file /absolute/private/path/recovery.json
 ```
 
-This construction candidate is not available on older clients. The note is
+Older clients do not provide this option. The note is
 consumer-reported metadata, not an independently verified source snapshot,
 restored resource lease, publishing deadline authorization or automatic retry.
 It stays in the private scoped resume checkpoint; it creates no server registry,

@@ -43,8 +43,8 @@ a successful historical test does not certify changed bytes or another installat
 | [Operator federation v1](../contracts/federation/v1/operator.contract.yml) | Signed wire 4 requests/results and independent origin/actor/channel grants | Ordinary messages becoming controls or delivery implying execution |
 | [Client publication v1](../contracts/publication/v1/publication.contract.yml) | Opt-in named outbound destinations, exact draft approval/direct policy, scoped custody and bound provider recovery | Ordinary-bus forwarding, client task ingestion, arbitrary destination selection or client read claims |
 | [Local A2A v1](../contracts/local-adapters/v1/a2a.contract.yml) | Opt-in A2A 1.0 loopback mailbox-admission subset over existing custody | Public discovery, streaming, push callbacks, arbitrary URL access or recipient model execution |
-| [Operator identity management v1](../contracts/participation/v2/operator-identity.contract.yml) | Candidate: exact operator/channel identity previews, same-scope rename, explicit retirement and guarded local history cleanup | Published availability before matching release proof, recipient STOP ACK, host termination or Slack/remote/backup erasure |
-| [Recovery observations v1](../contracts/participation/v2/recovery-observation.contract.yml) | Compact scoped resume gaps, coalesced actual API access and explicitly requested private stale notices; candidate bounded consumer context, operator contact hints and checkpoint conflict checks | Continuous monitoring, independently verified source recovery, restored resource admission, host restart, wake or execution authority |
+| [Operator identity management v1](../contracts/participation/v2/operator-identity.contract.yml) | Exact operator/channel identity previews, same-scope rename, explicit retirement and guarded local history cleanup | Published availability before matching release proof, recipient STOP ACK, host termination or Slack/remote/backup erasure |
+| [Recovery observations v1](../contracts/participation/v2/recovery-observation.contract.yml) | Compact scoped resume gaps, coalesced actual API access and explicitly requested private stale notices; optional bounded consumer context, operator contact hints and checkpoint conflict checks | Continuous monitoring, independently verified source recovery, restored resource admission, host restart, wake or execution authority |
 | [Automatic retention v1](../contracts/retention/v1/automatic-retention.contract.yml) | Opt-in dry-run-first bounded retention after actual target ACK and meaningful activity age | Abandonment by inactivity, federation reclamation, semantic ACK by expiry or arbitrary cache deletion |
 | [Logging](../contracts/observability/v1/logging.contract.yml) and [telemetry](../contracts/observability/v1/telemetry.contract.yml) | Retained observability reference templates; deployment identity/backend still unspecialized | Implemented full OpenTelemetry collection, immutable audit storage, retention or cross-channel agent metrics |
 
@@ -151,6 +151,10 @@ authority; the original invocation remains intact. This is not alias discovery o
 federation routing. See the [operator configuration](audiences/operators.md).
 
 ## Optional delivery and recovery capabilities
+
+Identity maintenance, bounded recovery context and optional contact hints require
+a matching qualified 0.12 release; they do not appear on older runtimes merely
+because their contracts are documented here.
 
 [Client publishing](client-publishing.md), [local A2A](local-adapters.md),
 [resume observations](recovery.md) and [automatic retention](message-lifecycle.md)

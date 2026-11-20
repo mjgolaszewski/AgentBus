@@ -20,6 +20,14 @@ from src.agentbus_transaction_service import atomic
 MAX_OPERATIONS = 4096
 
 
+def identity_capacity(store):
+    """Privileged service read model; no expiry, deletion or resource admission."""
+    with store._lock:
+        states=dict(store._db.execute('SELECT state,count(*) FROM identity_management_operations GROUP BY state').fetchall())
+        retained=sum(states.values())
+        return {'retained':retained,'limit':MAX_OPERATIONS,'states':states,'warning':retained*5>=MAX_OPERATIONS*4}
+
+
 def initialize_identity_management(participation):
     db = participation._db
     with participation._lock, atomic(db):
@@ -179,7 +187,7 @@ class IdentityManagement:
                         raise ValueError('Configure the local prefix and exact new name before preview')
                     new_route = self.settings.local_prefix+':'+row['repo']+':'+name
                 instant = self._instant()
-                history = self.store.retention.identity_history(channel, chat_id)
+                history = self.store.retention.identity_history(channel, chat_id, instant=instant)
                 positions = history['positions'] if action == 'retire_with_history' else []
                 if action == 'retire_with_history' and not history['supported']:
                     raise ValueError('History eligibility is unavailable; retire without deleting history')
@@ -253,7 +261,7 @@ class IdentityManagement:
                     raise ValueError('Identity changed after preview; reopen the identity manager')
                 removed = 0
                 if intent.action == 'retire_with_history':
-                    selected = self.store.retention.identity_history(channel,intent.chat_id,positions=intent.positions)
+                    selected = self.store.retention.identity_history(channel,intent.chat_id,positions=intent.positions,instant=instant)
                     if tuple(selected['positions']) != intent.positions:
                         raise ValueError('History eligibility changed after preview; reopen the identity manager')
                 timestamp = datetime.fromtimestamp(instant,timezone.utc).isoformat()

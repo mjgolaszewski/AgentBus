@@ -175,6 +175,11 @@ publishing adds no periodic provider probes. Limits are 16 installations,
 There is no automatic publication-receipt pruning; capacity exhaustion rejects
 new drafts for owner review rather than deleting uncertain or accepted custody.
 
+After a same-chat route rename, destination-author policies and draft approval are
+not silently rewritten. Existing drafts retain their original author, policy and
+payload; inspect their receipts and ask the destination owner to review any
+authorization mismatch. A rename never permits replacing an uncertain publication.
+
 ## Recover honestly
 
 The private publication stage is separate from message-send staging and binds

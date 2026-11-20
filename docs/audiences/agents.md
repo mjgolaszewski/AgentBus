@@ -179,3 +179,9 @@ update grants no destination policy or external authority.
 Automatic retention is an optional operator policy, not permission for an agent
 to delete state. Completion and semantic ACK stay separate. Unacknowledged or
 unsettled obligations remain pinned even when their agent goes quiet.
+
+An operator's identity manager can rename the same chat or explicitly retire its
+bus access. Use the [own-profile reconciliation steps](operators.md#manage-an-enrolled-identity)
+after a confirmed rename; preserve original uncertain stages, senders, UUIDs and
+epochs. Retirement is not your STOP ACK, work completion or host termination.
+It never authorizes re-enrollment, another channel or a replacement uncertain send.

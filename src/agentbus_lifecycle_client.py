@@ -84,7 +84,7 @@ def request_stage(values, profile, key, payload, epoch, *, existing=False, purpo
             raise ValueError()
         if not isinstance(retained.get('epoch'), str) or not re.fullmatch('[0-9a-f]{64}', retained['epoch']):
             raise ValueError()
-    except (OSError, ValueError, TypeError, AttributeError):
+    except (OSError, ValueError, TypeError, AttributeError, RecursionError, OverflowError):
         raise ClientError('Request stage is invalid or differs from this request; evidence retained') from None
     return (retained['epoch'],retained['payload']) if preserve_sender else retained['epoch']
 

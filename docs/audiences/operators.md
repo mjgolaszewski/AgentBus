@@ -94,8 +94,8 @@ forward rules when installing its additive request table.
 
 ## Manage an enrolled identity
 
-A matching qualified 0.12 release adds `<command> identities`. This candidate
-surface requires its own release proof; older runtimes do not implement it.
+A matching qualified 0.12 release adds `<command> identities`. Use matching
+qualified client/service bytes; older runtimes do not implement this surface.
 It lists identities in the invoking channel, with private **Manage identity**,
 preview and confirmation buttons. Use **Include retired** for retained
 identities. A chat with multiple sessions appears once. No UUID typing is needed.
@@ -110,7 +110,7 @@ identities. A chat with multiple sessions appears once. No UUID typing is needed
 
 The last three commands create a private preview, not an immediate mutation.
 Confirm the exact retained action within ten minutes. Current operator authority,
-channel/inbox, identity revision and active-session population are rechecked;
+channel/inbox, identity revision and non-stopped session population are rechecked;
 changed or expired previews must be reopened. Ambiguous fragments are denied.
 The original operation receipt recovers duplicate clicks and lost confirmation.
 No identity administration is federated to another location.
@@ -122,6 +122,22 @@ repository, channel, inbox and sessions, retaining the old route as a reserved a
 payloads and identities. The agent must reconcile its local profile through the
 supported rename recovery workflow; operator action cannot edit another chat's
 private files or redirect its scope.
+
+The agent reconciles its own profile using the retained old route:
+
+```bash
+agentbus resume --identity OLD_ROUTE
+agentbus rename --identity OLD_ROUTE --name NEW_NAME
+export AGENTBUS_IDENTITY=NEW_ROUTE
+```
+
+First check that resume's current service route matches the operator's confirmed
+result and the client's configured prefix plus repository/name would produce
+that exact route. Otherwise preserve the profile and resolve the configuration
+mismatch; do not accidentally request a second rename. The rename command
+reuses its existing atomic profile/spool handoff. Conflicting private state stays
+retained. Matching clients preserve original staged senders and epochs on exact
+retry after rename; do not edit the stage or invent another UUID.
 
 Remove retires the identity and explicitly revokes its AgentBus message access,
 including offline sessions. It records operator revocation separately from a
@@ -143,6 +159,12 @@ History cleanup does not delete Slack posts, remote copies, client updates,
 consumer spools, exports or backups, and does not promise physical secure erasure.
 There is no generic credential/profile-file deletion. Back up consistently before
 upgrade; after new operation custody, preserve the new database and repair forward.
+
+Identity-operation custody retains at most 4,096 previews/results. New previews
+may retire up to 100 expired, unapplied previews; committed receipts are never
+automatically discarded. Private health shows retained states/capacity and an
+80% warning. At capacity, inspect existing receipts and ask the custodian to
+review retention; no generic delete/reset operation is provided.
 
 ## The shape of the deployment
 
@@ -224,7 +246,7 @@ change no channel or operator permissions. The examples below use the default na
 authorize exact human Slack user IDs; the default empty allowlist disables all
 slash operations and actionable ordinary replies. The service accepts commands only from its channel allowlist. Roster and
 full-ID/suffix/current-identity-fragment lookup are scoped to the invoking channel before resolution.
-`/agentbus help` lists the fixed surface: health, workers, doctor, pending, explain, enrollments, approve, broadcast, poll, results, roster, status, metrics, send, wake,
+`/agentbus help` lists the fixed surface: health, workers, doctor, pending, explain, identities, enrollments, approve, broadcast, poll, results, roster, status, metrics, send, wake,
 checkpoint, pause, resume, retire, and optional publication updates. Session-targeting commands accept a unique
 6–12-character session UUID suffix, a full UUID, or a case-insensitive fragment
 of the current agent identity. Enrollment and poll cards provide buttons for routine actions.

@@ -225,6 +225,11 @@ Tools retain exact-session scope. Reads do not ACK; `pickup`, `complete` and
 `ack` remain explicit actions with their normal prerequisites. A tool server
 does not confer permission to perform the work described by a message.
 
+After a confirmed same-chat rename and own-profile reconciliation, coordinate a
+safe MCP subprocess restart with its launch argument set to the verified route.
+It retains the same immutable session/channel/inbox; this is not authority to
+select another identity or recreate uncertain requests.
+
 The optional local A2A 1.0 adapter uses the existing service's `/a2a` endpoint.
 Enabling `AGENTBUS_A2A_ENABLED=1` and changing listener settings belong to the
 service custodian, not ordinary participation. Actual client and server must

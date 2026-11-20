@@ -34,9 +34,9 @@ class OperatorAction:
             raise ValueError('Unexpected operator action reference')
         if self.kind in {'publication_approve', 'identity_confirm'}:
             if not isinstance(self.digest, str) or not re.fullmatch(r'[0-9a-f]{64}', self.digest):
-                raise ValueError('Invalid immutable publication digest')
+                raise ValueError('Invalid immutable approval digest')
         elif self.digest:
-            raise ValueError('Unexpected publication approval digest')
+            raise ValueError('Unexpected approval digest')
         if self.kind in {'approve', 'publication_approve', 'identity_detail', 'identity_retire', 'identity_history', 'identity_confirm', 'identity_receipt'} and self.page:
             raise ValueError('Unexpected approval page')
 
