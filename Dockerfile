@@ -10,7 +10,10 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 COPY agentbus_service.py ./
 COPY src/ ./src/
-RUN useradd --uid 10001 --create-home agentbus \
+# Public application inputs stay root-owned, readable and immutable to the runtime.
+RUN chmod 0644 /app/pyproject.toml /app/uv.lock /app/agentbus_service.py \
+    && chmod -R u=rwX,go=rX /app/src \
+    && useradd --uid 10001 --create-home agentbus \
     && mkdir /data && chown agentbus:agentbus /data
 USER agentbus
 ENV AGENTBUS_DB_PATH=/data/messages.sqlite3

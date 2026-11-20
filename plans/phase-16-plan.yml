@@ -1,0 +1,50 @@
+document:
+  kind: execution_phase_plan
+  name: Phase 16 Plan
+  id: agentbus-phase-16-plan
+  version: 1.0.0
+  generated_at_utc: '2026-11-19T00:00:00Z'
+  status: planned
+  path: plans/phase-16-plan.yml
+phase:
+  id: P16
+  build_block: lightweight_recovery_and_owner_qualification
+  planner: codex
+  date: '2026-11-19'
+  scope_source:
+  - AGENTS.yml
+  - plans/product-spec.yml
+  - plans/build-plan.yml
+  - plans/phase-ledger.yml
+  - MEMORY.yml
+delivery_contract:
+  tightly_scoped_deliverables:
+  - Contract Racecar recovery suggestions and security residual owners
+  - Extend local resume continuity and source/update-deadline observations
+  - Expose scoped custodian handoff freshness as non-authorizing context
+  - Render local cursor first without modifying signed wire custody
+  - Private configured-command diagnostics with recent receipt incident buttons
+  - Advance current offline owner and provenance qualification
+  - Deliver bounded recovery runbooks and release proof
+  parallelizable_workstreams:
+  - id: P16-WS1
+    name: recovery_and_qualification
+  hard_dependencies:
+  - P15 computed closed on its protected release subject
+  docker_first_local_runtime: repo_native_validation_and_governance_commands
+  completeness_standard: full_completeness_for_declared_scope
+scope_lock:
+- order: 1
+  statement: Invariants -> existing canonical domain owner/law -> primitive/contract -> producer/consumer -> evidence,
+    using only installed BCF2.3.4 vocabulary.
+- order: 2
+  statement: audits/reliability-recovery-train.yml owns exact intake, construction edges, external dispositions
+    and acceptance; lifecycle remains governed by canonical phase machinery.
+- order: 3
+  statement: No new registry broker scheduler remote listener credential replication production wake adapter or
+    unsafe live host intervention.
+verification_plan:
+- make governance-validate
+- make test
+- make contract-test
+- make release-check

@@ -1,0 +1,49 @@
+document:
+  kind: execution_phase_plan
+  name: Phase 15 Plan
+  id: agentbus-phase-15-plan
+  version: 1.0.0
+  generated_at_utc: '2026-11-19T00:00:00Z'
+  status: completed
+  path: plans/phase-15-plan.yml
+phase:
+  id: P15
+  build_block: reliable_publication_and_recovery
+  planner: codex
+  date: '2026-11-19'
+  scope_source:
+  - AGENTS.yml
+  - plans/product-spec.yml
+  - plans/build-plan.yml
+  - plans/phase-ledger.yml
+  - MEMORY.yml
+delivery_contract:
+  tightly_scoped_deliverables:
+  - Inventory baseline, issue reports and exact owner/dispositions
+  - Correct publication response validation and retain safe diagnostics
+  - Validate audience before staging and clarify rejected request recovery
+  - Capture bounded private service diagnostics and characterize hang risks
+  - Refresh installed skill safely and reconcile audited guidance
+  - Qualify and publish bounded patch repair
+  parallelizable_workstreams:
+  - id: P15-WS1
+    name: reliability
+  hard_dependencies:
+  - P14 and P14-HF01 computed closed on protected main a72c7c03
+  docker_first_local_runtime: repo_native_validation_and_governance_commands
+  completeness_standard: full_completeness_for_declared_scope
+scope_lock:
+- order: 1
+  statement: Invariants -> existing canonical domain owner/law -> primitive/contract -> producer/consumer -> evidence,
+    using only installed BCF2.3.4 vocabulary.
+- order: 2
+  statement: audits/reliability-recovery-train.yml owns exact intake, construction edges, external dispositions
+    and acceptance; lifecycle remains governed by canonical phase machinery.
+- order: 3
+  statement: No new registry broker scheduler remote listener credential replication production wake adapter or
+    unsafe live host intervention.
+verification_plan:
+- make governance-validate
+- make test
+- make contract-test
+- make release-check

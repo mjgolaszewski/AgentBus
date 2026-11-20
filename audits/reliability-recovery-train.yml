@@ -1,0 +1,155 @@
+document:
+  kind: construction_intake_and_disposition
+  path: audits/reliability-recovery-train.yml
+  status: active
+baseline:
+  commit: a72c7c03a20a4167760a83f746eb90766ca5b66d
+  tree: d370f2ff78d3c0e3041e94c810b77051a6bc838d
+  computed_closure: P14 and P14-HF01 closed by exact-main run 42975499023 attempt 1
+  bcf: Released 2.3.4 is the entry authority; no implicit successor adoption or generated-file repair.
+execution:
+  scheduler: Workspace custodian owns the coordinated shared queue; Recovery project priority is respected
+  storage_and_service_owner: workspace custodian
+  workflow: One designated executor, one applicable automated pipeline, consolidated review on actual results; canonical proof reuse, no bookkeeping reruns.
+  preservation: Existing source/history, credentials, service state, databases, environment pins and wake preference remain protected.
+  retirement: Owner-scoped temporary copies are registered and retired at authenticated boundaries; preserve unique source and required proof first.
+train:
+  P15: Repair checkpoint and independently qualified 0.11.1 patch; no unrelated authority expansion.
+  P16: Additive 0.12.0 recovery observations, configured-command diagnostics and offline owner qualification; requires canonical P15 closure.
+construction_order: Invariant -> existing canonical owner and law -> primitive and versioned contract -> operation -> producer/consumer -> evidence. These are explanatory planning headings, not new BCF types.
+construction_edges:
+  publication:
+    invariant: Provider confirmation must bind the accepted destination and exact immutable update; uncertainty never authorizes replay.
+    owner: PublicationStore and PublicationWorker
+    canonical_primitives: [agentbus.publication-installation.v1, agentbus.publication-destination.v1, agentbus.publication-intent.v1]
+    contract: contracts/publication/v1/publication.contract.yml
+    producer: existing bounded Slack response adapter
+    consumer: immutable publication custody, exact author receipts and destination-authorized private operator views
+    evidence: [tests/test_publications.py, tests/test_publication_client.py, test, contract-test]
+  message_admission:
+    invariant: Invalid audience/destination combinations fail before new stage or custody; retained identities are not replaced.
+    owner: existing delivery client and send authorization
+    canonical_primitives: [agentbus.message-envelope.v1, agentbus.channel-principal.v1]
+    contract: contracts/messages/v1/message-lifecycle.contract.yml
+    producer: CLI preflight and exact-session HTTP boundary
+    consumer: durable delivery and original UUID outcome query
+    evidence: [tests/test_delivery_client.py, tests/test_channel_isolation.py, test, contract-test]
+  recovery_context:
+    invariant: Freshness and contact observations are not host reconciliation or per-job admission grants.
+    owner: existing recovery client, accepted message store and operator configuration
+    canonical_primitives: [agentbus.channel-principal.v1, agentbus.message-envelope.v1]
+    contract: contracts/participation/v2/recovery-observation.contract.yml
+    producer: own local continuity record and explicitly configured contact's authenticated existing messages
+    consumer: own scoped resume/info and private configured operator command
+    evidence: [tests/test_recovery_client.py, tests/test_observations.py, tests/test_slack_commands.py]
+  capacity_observation:
+    invariant: Occupancy warnings grant no configuration, archival, retry, restart or execution authority.
+    owner: Existing FederationStore.capacity and private operator health/diagnostics owners
+    canonical_primitives: [agentbus.federation.signed-frame.v1]
+    representation: Derived read-only custody counts; no new authoritative primitive or operator grant
+    contract: contracts/observability/v1/telemetry.contract.yml
+    producer: Existing bounded table-count projection; no additional periodic network work
+    consumer: Private operator per-table counts, finite limits and existing 80-percent warning convention
+    evidence: [tests/test_federation_service.py, tests/test_slack_commands.py, test, contract-test]
+  wake_qualification:
+    invariant: No external agent text is promoted to human authority; only the actual owner may admit a turn without interference.
+    owner: existing wake binding/intent owners and actual external conversation owner
+    canonical_primitives: [agentbus.codex-wake-binding.v1]
+    contract: contracts/codex-wake/v1/codex-wake.contract.yml
+    producer: zero-model installed-owner capability inventory and deterministic intent/admission guards
+    consumer: notification-only eligibility or explicit unsupported capability; no production submission adapter
+    evidence: [tests/test_codex_wake_contract.py, tests/test_wake_intent_lifecycle.py, tests/test_codex_rpc_client.py]
+intake:
+  - source: issue120
+    kind: confirmed_receipt_defect
+    disposition: P15-P1-01
+    acceptance: Correct bound success, precise safe failure reasons, preserved uncertain originals; final controlled canary only with concrete authorization.
+  - source: issue108 lifecycle projection/control ordering/text bounds/enrollment/aliases
+    kind: previously_delivered_repairs
+    disposition: P15-P0-01 regression inventory; revalidate applicable cases, do not reimplement authored completed work.
+    evidence: Protected PR109 and 0.9.2 custody; source applicability remains canonical.
+  - source: issue108 historical service hang
+    kind: unclassified_incident
+    disposition: P15-P3-01 diagnosis/characterization; P16-P3-02 safe operator diagnostics.
+    limit: No original stack or demonstrated common cause; adding diagnostics is not proof the historical hang is repaired.
+  - source: Remote workspace custodian retained-capacity report and NFS evidence handoff
+    kind: maintained_release_already_has_supported_quota
+    disposition: Current 0.10/0.11 bounded AGENTBUS_FEDERATION_CUSTODY_ROWS supersedes the older constant patch; P16 diagnostics will disclose pressure, while safe federation archival remains unqualified.
+    evidence: Existing configured-capacity/startup/lowering controls; remote patch is not adopted as delivered source. NFS inventory pending owner-fenced receipt.
+  - source: Follow-up remote custodian capacity saturation and review-export accessibility report
+    kind: supported_capacity_limit_and_planned_observability_export_guidance
+    disposition: Existing finite startup configuration remains supported; P16-P3-02 owns early per-table warnings and P16-P5-01 owns preservation/export guidance.
+    acceptance: Inspect exact deployed version, configured limit and table counts before classification; preserve history, retry UUIDs and checkpoints. Approved NFS exchange retains immutable byte mapping without widening live/private permissions.
+  - source: participant invalid direct all / informational all sends
+    kind: reproduced_interface_mismatch_and_recovery_confusion
+    disposition: P15-P2-01 local preflight plus honest retained non-admission guidance.
+    limit: A historical unknown receipt is not retroactively proven unaccepted without its original server evidence.
+  - source: installed skill drift
+    kind: local_installation_drift
+    disposition: P15-P4-01 inventory/preserve/qualified refresh with custodian; packaged source is already current.
+  - source: cursor-first header request in issue108
+    kind: additive_presentation
+    disposition: P16-P3-01
+    limit: Only known channel-local public cursor; origin/location label on shared provider projection, no destination-cursor invention.
+  - source: configured-command diagnostics request
+    kind: additive_private_operator_view
+    disposition: P16-P3-02
+    acceptance: Primary command/registered aliases, safe grouped read-only views, bounded recent-incident buttons, allowlist and destination checks; no UUID typing requirement.
+  - source: participant report of historical recovery_required task selected before current scheduling messages
+    kind: retained_nonterminal_presentation_and_possible_fairness_gap
+    disposition: P15-P3-01 characterize; P16-P1-01 continuity/usability assessment without suppressing custody or controls.
+    limit: Source prioritizes oldest unresolved direct work. recovery_required is not terminal; presentation does not revive the old task. No invented receipt or cursor reset; bounded scoped read/check-in remains available.
+racecar:
+  - suggestion: Credential-free project resume record with exact source, dirty paths, next client-update deadline, hold owners and receipt coordinates.
+    disposition: P16-P1-01 extend existing local recovery state; do not copy credentials or restore grants.
+  - suggestion: Current custodian/handoff discovery with host/service epoch, freshness, explicit pending/unknown and receipt pointer.
+    disposition: P16-P2-01 optional current-channel context from existing stores; labels are observations, not authority.
+  - suggestion: Preflight destination/audience before custody allocation.
+    disposition: P15-P2-01; preserve stages for already uncertain requests.
+  - suggestion: Separate host-fence reconciliation, capacity readiness and per-job admission.
+    disposition: P16-P5-01 runbook and context fields; scheduler/custodian remain actual admission owners.
+  - suggestion: Inventory reusable exact-lock archives/images independently from ready markers.
+    disposition: P16-P5-01 cache-evidence guidance only; no AgentBus-owned image/cache manager.
+  - suggestion: Apply output limits after atomic claim; bounded launcher must survive log failure, signals, EOF/reap ambiguity and uncertain cleanup.
+    disposition: P16-P5-01 reviewed evidence checklist and owner-produced template reference; existing host launcher owner must qualify its implementation.
+  - suggestion: Hard-NFS transfer preserves original fence descriptor and durability ordering until independently authenticated closure.
+    disposition: P16-P5-01 external-custodian prerequisite/runbook; no invented NFS qualification or AgentBus remote execution.
+  - suggestion: Credential-free export mapping, immutable context manifest and portable evidence summary with access requirements.
+    disposition: P16-P1-01/P16-P5-01 recovery record and documentation; no credential replication or new registry.
+  - suggestion: Expose federation table occupancy and finite limits before capacity rejection.
+    disposition: P16-P3-02 reuses existing count queries and warning convention in private operator views; no new periodic probe or automatic quota change.
+  - suggestion: Approved review exports need fresh public-readable copies and original manifest/byte mapping.
+    disposition: P16-P5-01 requires credential-free approved members, fresh inodes rather than hard links, unchanged live/private permissions and explicit packaging/digest differences. File readability grants no execution or NFS durability authority.
+security_issue76:
+  F3_F4_F5: Accepted trusted-workspace boundary; hostile same-user isolation and repository ownership require external OS/identity owners. Not represented as repaired application bugs.
+  F8: Independent evaluator/trust authority remains BCF/assurance-owner scope; no application-minted certification.
+  F6_F9: Revalidate current bounded quotas, ACK-safe retention and cursor migration; stronger independent-principal/global abuse guarantees remain explicit external scope.
+  F11: Existing session rotation remains supported; protected shared bearer/operator rotation across isolated principals needs separately provisioned custody. Do not manufacture/reuse credentials.
+  F12: Independently witnessed tamper-evident audit needs an external witness; no in-database hash-chain substitute or new broker.
+  F14_F15: Verify pinned released producer provenance/remediation and record result; installer-owned code must not be hand-repaired. Upgrade only for demonstrated need through canonical machinery.
+issue75:
+  actionable: Latest issue requirements, zero-model documented-owner discovery, exact runtime/backend generation inventory, provenance/uncertainty guards and deterministic tests.
+  research_priority: Assess documented external native-mailbox exposure first; native queue baseline and AHP remain separate qualification paths.
+  prohibited: Private endpoint takeover, competing app-server, speculative resume, steering, writer-lock theft, new model turn, automatic semantic ACK or production wake claim.
+  live_prerequisites: Separate explicit disposable chat/owner authorization, exact supported entry point, bounded window, stop conditions and independent observation. No current live canary inferred.
+  disposition: Remain open for unproved actual-owner atomic/provenance admission; offline work may complete independently.
+completion:
+  rule: Every input has acceptance evidence or explicit unresolved/external-owner disposition; only canonical computed states establish closure.
+  release: Each declared release requires protected PR/exact-main/archive/isolated install and custodian handoff; no live deployment inferred from source changes.
+  residuals: Never claim all bugs absent, a historical unknown cause fixed, hostile isolation, indefinite retention, or production owner interoperability from deterministic success.
+
+current_observations:
+  publication_response: One expressly authorized isolated post confirmed fallback newline folding with valid Slack success/channel/timestamp; new candidate retains a single-line fallback before approval and preserves exact response verification and legacy duplicate payloads. Original failures stay unclassified and uncertain; final live delivered verification remains unqualified.
+  preflight: Direct/informational all and incompatible-selector controls passed in the causal first slice and consolidated 103-case repair validation; final subject applicability remains canonical.
+  hang_review: Static source review found no await nested under a lock except A2A admission; its production callback currently takes the synchronous durable branch with no suspension/provider call. This is not a reproduced hang cause.
+  owner_static:
+    inspected_cli: 0.169.0-alpha.11.1
+    method: Version and documented top-level queue/app-server help only; zero model calls, no owner attachment or live operation.
+    queue: Documented queue success and resume outcome are independent; failed resume may warn while command succeeds.
+    mailbox: No supported mailbox command in inspected top-level help; this is not proof every owner interface lacks one.
+    admission: No inspected help establishes atomic non-steering admission or actual current owner/account/generation. Notification-only remains required.
+    source_evidence: Owner-registered private static inventory with argv, exit codes and SHA256; no credentials or conversation content.
+  hang_capture: docs/recovery.md distinguishes responsive read-only diagnostics from custodian-owned bounded out-of-band observations; no arbitrary signal/environment dump or invented stack capture.
+  remote_capacity_report: An owner-produced credential-free snapshot records the finite table limit reached, then a larger supported bound with retained rows and original-UUID retries. Runtime commit/tree are distinct from the published release identity. This is owner evidence, not an independently inspected remote database or archival qualification.
+  review_export_access: Referenced original/review manifest digests and all 70 declared byte mappings agree. Actual bytes and distinct inodes were checked only for the two reported access-failure members; both were readable. No entire-bundle execution, NFS durability or source permission change is inferred.
+  execution: Consolidated 103 controls, lint, private-permission non-root runtime and canonical reconciliation/governance passed on985e958; canonical reconciliation projected active PR progress and new test manifests. Original failures remain retained. Full prospective/phase/release proof is pending.

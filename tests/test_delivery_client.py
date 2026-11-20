@@ -445,3 +445,23 @@ def test_transport_capacity_diagnostic_is_fixed_and_path_scoped(monkeypatch,path
     assert (failed.value.recovery_code=='federation_custody_capacity') is expected
     assert ('custody row limit' in str(failed.value)) is expected
     assert 'private-' not in str(failed.value)
+
+
+@pytest.mark.parametrize("selectors", [
+    ["--to", "all"],
+    ["--recipient", "all", "--informational"],
+    ["--to", "agentbus:other", "--broadcast"],
+    ["--broadcast", "--informational"],
+    [],
+])
+def test_invalid_audience_fails_before_profile_network_or_request_staging(monkeypatch, selectors):
+    from src import agentbus_delivery_client as delivery
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("Invalid audience must fail before profile lookup, UUID allocation or API access")
+
+    monkeypatch.setattr(delivery, "uuid4", forbidden)
+    monkeypatch.setattr(delivery, "deliver_payload", forbidden)
+    ns = parse_args(["send", "--identity", "agentbus:flower", *selectors, "hello"])
+    with pytest.raises(ClientError, match="broadcast|RECIPIENT"):
+        delivery.send_command(ns, {}, forbidden, forbidden, forbidden)

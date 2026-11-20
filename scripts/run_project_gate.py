@@ -176,6 +176,37 @@ def _runtime_smoke_image_tag(namespace: str) -> str:
     return f"agentbus:bcf-runtime-smoke-{namespace_digest}"
 
 
+def _runtime_container_probe(image: str, name: str, script: str) -> None:
+    """Read retained logs after actual exit; attached output can lose failures."""
+    require_success(run([
+        "docker", "create", "--name", name, "--entrypoint", "/app/.venv/bin/python", image, "-c", script,
+    ], capture=True))
+    terminal = False
+    try:
+        require_success(run(["docker", "start", name], capture=True))
+        waited = run(["docker", "wait", name], capture=True)
+        require_success(waited)
+        code = waited.stdout.strip()
+        if not code.isdecimal() or not 0 <= int(code) <= 255:
+            raise RuntimeError("Container exit status could not be confirmed")
+        inspected = run(["docker", "inspect", "--format", "{{json .State}}", name], capture=True)
+        require_success(inspected)
+        state = json.loads(inspected.stdout)
+        if (state.get("Running") is not False or state.get("Status") != "exited"
+                or type(state.get("ExitCode")) is not int or state["ExitCode"] != int(code)):
+            raise RuntimeError("Container terminal state could not be confirmed")
+        logs = run(["docker", "logs", name], capture=True)
+        require_success(logs)
+        terminal = True  # Both actual exit and retained diagnostic retrieval succeeded.
+        require_success(subprocess.CompletedProcess(
+            ["runtime-container", name], int(code), stdout=logs.stdout, stderr=logs.stderr,
+        ))
+    finally:
+        # Uncertain state or unavailable diagnostics remain retained for the owner.
+        if terminal:
+            require_success(run(["docker", "rm", name], capture=True))
+
+
 def runtime_smoke() -> None:
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
     namespace = os.environ.get("BCF_EXECUTION_STATE_NAMESPACE", "")
@@ -185,17 +216,30 @@ def runtime_smoke() -> None:
         raise SystemExit(str(exc)) from None
     with tempfile.TemporaryDirectory(prefix="agentbus-runtime-") as directory:
         iid = Path(directory) / "image-id"
-        require_success(run(["docker", "build", "--iidfile", str(iid), "-t", image_tag, "."]))
+        # Exercise a restrictive source checkout without modifying the subject.
+        # The image's non-root runtime must not depend on public host file modes.
+        context = Path(directory) / "context"
+        context.mkdir(mode=0o700)
+        for name in ("Dockerfile", "pyproject.toml", "uv.lock", "agentbus_service.py"):
+            shutil.copyfile(ROOT / name, context / name)
+        shutil.copytree(ROOT / "src", context / "src", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        for path in context.rglob("*"):
+            path.chmod(0o700 if path.is_dir() else 0o600)
+        require_success(run(["docker", "build", "--iidfile", str(iid), "-t", image_tag, str(context)]))
         image = iid.read_text(encoding="utf-8").strip()
         try:
-            require_success(run([
-                "docker", "run", "--rm", "--entrypoint", "/app/.venv/bin/python", image,
-                "-c", (
-                    "import os,sys,agentbus_service; "
-                    "sys.exit('runtime-user-mismatch') if os.getuid()!=10001 else None; "
-                    "assert agentbus_service.create_app"
+            # Build oracle markers in the child: echoed argv alone must not prove rejection.
+            _runtime_container_probe(
+                image, image_tag.replace(":", "-"), (
+                    "import os,sys,tomllib,pathlib,agentbus_service; "
+                    "sys.exit('runtime-'+'user-mismatch') if os.getuid()!=10001 else None; "
+                    "assert agentbus_service.create_app; "
+                    "assert all(not os.access(path,os.W_OK) for path in "
+                    "('/app/agentbus_service.py','/app/src','/app/src/agentbus_service.py','/app/pyproject.toml')), "
+                    "'runtime-'+'code-writable'; "
+                    "assert tomllib.loads(pathlib.Path('/app/pyproject.toml').read_text())['project']['version']"
                 ),
-            ]))
+            )
         finally:
             run(["docker", "image", "rm", "--force", image_tag, image], capture=True)
     print("runtime-smoke-ok")

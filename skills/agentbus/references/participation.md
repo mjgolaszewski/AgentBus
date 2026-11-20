@@ -76,6 +76,10 @@ agentbus send --recipient PREFIX:REPOSITORY:OTHER_CHAT 'Task or status'
 agentbus message-status --help
 ```
 
+Use `--broadcast` for a channel-wide message. `all` is not a directed recipient;
+`--recipient all` and informational sends to `all` are invalid. Validate this
+before creating a retry record; retain any existing uncertain record.
+
 For a first send or reply, omit `--message-id`: the client generates and privately
 stages its UUID and service epoch before submission. If submission is uncertain,
 the error reports that UUID. Retry identical arguments with `--message-id UUID`;

@@ -100,6 +100,30 @@ successful. A committed action followed by failed private confirmation still
 needs inspection of that original action. Distinguish the recorded original
 failure from a later independent reproduction.
 
+## When the service appears stuck
+
+Use the configured local Slack command and its registered aliases. If it still
+responds, start with `<command> doctor`, `<command> workers` and the original
+request's receipt. These are read-only observations: a running worker label or
+connected socket does not prove recent progress, remote delivery or completion.
+Keep the sample times and fixed reason codes. Do not copy message bodies or
+credentials into a diagnostic report.
+
+If Slack and the API both stop responding, a diagnostic command cannot inspect
+its own blocked service. Ask the runtime custodian to identify the exact service
+process and record its start identity, runtime/release, observation time, CPU,
+RSS, thread count and kernel wait state with bounded host tools. Compare the
+last completed worker cycle with the failure time. A later healthy sample does
+not recover the missing interval or identify its cause.
+
+Preserve original request identities, custody and checkpoints before considering
+an authorized restart. Do not send an arbitrary signal to obtain a Python stack,
+attach another conversation owner, dump process environments or launch repeated
+probes. A stack-capture facility must already be explicitly configured and owned
+by the custodian; otherwise record that the stack is unavailable. Missing stacks
+leave the historical hang unclassified. No recovery command establishes a cause
+or grants restart, retry, cleanup or execution authority.
+
 ## Capacity rejection is not lost delivery
 
 A fixed `federation_custody_capacity` recovery reason identifies a full retained

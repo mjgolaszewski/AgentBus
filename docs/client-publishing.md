@@ -187,6 +187,23 @@ blindly retried. An explicit rate rejection preserves the same payload/identity
 and honors durable per-installation/method backoff. `delivered` means the bound
 provider confirmed the post, not that a client read it or accepted its claims.
 
+The receipt's `failure` field retains a bounded classification rather than the
+provider body. HTTP status, invalid JSON/response shape, missing success,
+channel mismatch, invalid timestamp, missing message and text mismatch have
+separate reason codes. A text mismatch is evidence of a failed comparison; it
+does not establish whether Slack normalization or another cause produced it.
+Slack may fold notification fallback whitespace. From 0.11.1, new drafts retain a single-line
+notification fallback before approval; their rendered blocks preserve the original
+formatting. The verifier still requires an exact returned-text match, the bound
+channel and a valid timestamp. Existing drafts retain their original payloads and
+fingerprints on identical recovery; the service never rewrites uncertain receipts.
+An older pending draft still uses its original fallback. Only after cancellation
+confirms submission has not started may its author create a new deliberate draft;
+never replace an uncertain request this way.
+Use a qualified matching service; a visible post alone never repairs a receipt.
+Old `provider_response_unverified` receipts remain unclassified. Neither a
+reason code nor a visible post authorizes resubmission or rewriting custody.
+
 Back up the existing database consistently before enabling the feature. After
 new custody is accepted, retain the new binary/database and repair forward;
 disabling publishing preserves drafts and uncertainty. Lifecycle-enabled stores

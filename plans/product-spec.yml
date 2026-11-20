@@ -1,10 +1,5 @@
 document: {generated_at_utc: '2026-09-27T00:00:00Z', id: agentbus-product-spec, kind: product_spec, name: AgentBus Product Spec, path: plans/product-spec.yml, status: active_delivery, version: 1.0.0}
-product:
-  name: "AgentBus"
-  project_name: "AgentBus"
-  positioning: "Slack-backed coordination transport and durable inbox for coding-agent chats"
-  target_users: ["coding agents and operators coordinating through Slack"]
-  non_goals: ["AgentBus core executing or orchestrating coding agents; an optional host-owned adapter may start an explicitly bound Codex thread", "using persona labels as authentication or authorization", "providing offline Slack history, exactly-once Slack delivery, or a general message broker"]
+product: {name: AgentBus, project_name: AgentBus, positioning: Durable Slack-backed agent coordination, target_users: [coding agents and operators], non_goals: [AgentBus core executing or orchestrating coding agents; an optional host-owned adapter may start an explicitly bound Codex thread, using persona labels as authentication or authorization, 'offline Slack history, exactly-once Slack delivery, or general brokerage']}
 constraints:
   operating_constraints:
     - "Optional contracts own destination-approved immutable client publication with separate local credentials, loopback-only A2A mailbox admission, scoped resume/access observations, requested private stale notices and ACK-safe retention. Default-off adds no periodic network work. Retention needs dry run, all original semantic ACKs, thirty-day default/fourteen-day minimum activity age and reference closure; federation stays pinned. No execution or continuous-monitoring inference."
@@ -29,12 +24,14 @@ execution_phases:
   - {phase_id: P04, build_block: "operator_participation_plane", objective: "derive and deliver Issue #6 participation plus optional Issue #8 Codex wake adapter from their versioned contracts", release_train: release_4}
   - {phase_id: P05, build_block: "security_provenance_foundation", objective: "release 0.6.0 with service-derived message provenance, legacy wake exclusion, bounded ingress, and visible presentation", release_train: release_5}
   - {phase_id: P06, build_block: "security_identity_enforcement", objective: "release 0.7.0 with enrolled-route proof, exact-session controls, and bounded sends", release_train: release_6}
-  - {phase_id: P07, build_block: "producer_supply_chain_hardening", objective: "release 0.7.1 with digest-pinned Docker uv, released BCF workflow-input/direct-main fixes, bounded Codex thread resume, verified Slack-human routing, and allowlisted operator commands with reversible work hold", release_train: release_7}
+  - {phase_id: P07, build_block: "producer_supply_chain_hardening", objective: "publish 0.7.1 with pinned bootstrap, bounded host resume and trusted operator ingress", release_train: release_7}
   - {phase_id: P08, build_block: "governance_dependency_completion", objective: "release 0.8.1 after BCF-owned dependency hash locking and proxy-header remediation", release_train: release_8}
   - {phase_id: P09, build_block: "lightweight_federation_and_owner_mediated_wake", objective: "construct Issue #48 outbound-only federation, remote directory synchronization, and owner-mediated idle-only wake while deferring publication to final BCF custody", release_train: release_9}
-  - {phase_id: P10, build_block: "security_wake_recovery", objective: "close Issue #20 security roots, Issue #27 wake eligibility, Issue #33 recovery, and Issue #45 projection cleanup after canonical P09 closeout", release_train: release_10}
+  - {phase_id: P10, build_block: "security_wake_recovery", objective: "close scoped security, wake eligibility, recovery and projection claims after P09", release_train: release_10}
   - {phase_id: P11, build_block: "qualified_federation_runtime", objective: "complete Issue #48 federation only after provider fan-out and origin authentication are qualified", release_train: release_11}
   - {phase_id: P12, build_block: owner_wake_qualification, objective: "Issue75 offline owner-wake qualification, immutable channel isolation and bounded reliability repair; live owner capability remains gated", release_train: release_12}
   - {phase_id: P13, build_block: reliable_operator_federation, objective: Reliable operator federation scoped mailbox search and local MCP, release_train: release_13}
   - {phase_id: P14, build_block: controlled_client_publishing, objective: Approved client publishing local A2A recovery and acknowledgement-safe retention, release_train: release_14}
+  - {phase_id: P15, build_block: reliable_publication_and_recovery, objective: Reliable receipts and recovery, release_train: release_15}
+  - {phase_id: P16, build_block: lightweight_recovery_and_owner_qualification, objective: Recovery context and offline wake qualification, release_train: release_16}
 acceptance: {release_gate: make release-check, evidence_location: phases/}

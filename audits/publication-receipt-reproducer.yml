@@ -1,0 +1,140 @@
+document:
+  kind: bounded_recovery_reproducer
+  path: audits/publication-receipt-reproducer.yml
+  status: root_observed_candidate_not_qualified
+subject: 7e12d33182861728a0bcef7261aeba7be2c3cc0e
+authorization: Operator expressly authorized exactly one labelled diagnostic post; existing destination policy,
+  isolated custody
+observations:
+- Exactly one post; verified workspace/bot, HTTP200/ok, exact channel and valid timestamp
+- Fallback text differed only by newline folded into space; retained as uncertain/provider_text_mismatch
+- No raw response retained; only safe shape/equality/length/hash observations
+- Original uncertain records untouched; no post retry
+- First local precondition stopped before provider calls; check-in restored own compliant participation
+- Initial echo-exception candidate superseded before full proof; replacement retains single-line fallback at NEW
+  admission, leaves exact comparison unchanged and preserves verified legacy payloads/fingerprints. Final live receipt
+  remains unqualified.
+runtime_reproducer:
+  first_failure: Non-root import PermissionError in native runtime-smoke under restrictive source checkout modes
+  candidate: Root-owned application inputs receive explicit readable modes; runtime UID cannot write source or version
+    metadata. Standard producer uses private-mode source context and rejects writable application code.
+  root_user_rejection: unchanged and still required
+  supersession: Earlier UID10001-owned source alternative passed read/import controls but was superseded before
+    release because it unnecessarily allowed runtime writes. Earlier success is not read-only-code proof.
+evidence:
+  provider-observations.json:
+    bytes: 738
+    sha256: fd872113df6bcc5c2df81bdd6c460b5be966c560249fe6991c4dd4d4c06ae467
+  receipt-summary.json:
+    bytes: 286
+    sha256: 03692ab0cd9cf995734c0634a951930ca07c8a542e4b45d62a25c212c929f8ae
+  execution-v2/results/result.json:
+    bytes: 393
+    sha256: 86e92dc258869dcaf218f728020a74d3c954af1fc28325502226186f4e145a21
+  repair-validation/controls.xml:
+    bytes: 105387
+    sha256: c6962259987cd5a4fdc1ccbc69c5eb88d8e54e5bfa5fd0b592cfc3e40ed5c1fc
+  repair-validation/commands.json:
+    bytes: 2007
+    sha256: da040c9c11ace1d6eef71edb6f80f655feca57dbfa90dfab9aee38aa9708cd67
+  repair-validation/result.json:
+    bytes: 392
+    sha256: e53c763b27ac927297f26ea3db3b19041dc93e17caaf1e6d41f4e32cd28055fe
+  repair-validation/runtime.stdout:
+    bytes: 17
+    sha256: a34fdec02c97fc4cb6f872093841a0216b72c750b91b5b5e7872087354185be2
+  repair-validation/governance.stdout:
+    bytes: 139
+    sha256: 88c064856be19a0dfcd38934d9f38efc85df41a141406db4083f811e790f179f
+  replacement-validation/controls.xml:
+    bytes: 104830
+    sha256: 591931eee9254f4a5c1d93626ce7415f4239f03bdaeb9995e69b95c65476a99c
+  replacement-validation/commands.json:
+    bytes: 1644
+    sha256: 8a0cbe9c08a34734c8463b1a1f8da7d2055190341a918db5511eb59c49fb8986
+  replacement-validation/result.json:
+    bytes: 393
+    sha256: 1126fabaf86cc3a0278733cf2566ab530665ae9e1d3bc385213b8794fc7f9106
+  replacement-validation/governance.stdout:
+    bytes: 737
+    sha256: f53704e8fcb9e8c52eaf8667edc14f0d7128a34d6b2eb502b1f576e636b69821
+  canonical-progress/native.stdout:
+    bytes: 13144
+    sha256: f04315ccaab09b65c440761b930312413608a696d6b4e6113ea9d227636b223a
+  canonical-progress/native.stderr:
+    bytes: 1981
+    sha256: 7d409e93d93c9d38ec9feae2bbca15559ca70e5eca5fc4c1a728c71eb6a87a70
+  canonical-progress/terminal.json:
+    bytes: 367
+    sha256: b2e55ef6e4c68a3d1071cab0df61fdb58940d72e33b81e41a98fdfa3aac69be3
+  release-preparation/commands.json:
+    bytes: 718
+    sha256: 6b7f8d8c1905d6164b2d997cd767fdc9021b6297c491f3c4462c0f8ff4b35dbb
+  release-preparation/governance.stdout:
+    bytes: 139
+    sha256: 88c064856be19a0dfcd38934d9f38efc85df41a141406db4083f811e790f179f
+  release-preparation/skill-receipt.json:
+    bytes: 1199
+    sha256: dfc67e88096b773b4a682cab710f49fb55369ad514d7e75593fb67ef6e55053f
+  release-preparation/result.json:
+    bytes: 392
+    sha256: f307eb72c6dd8d5596405e455cc0403c087185f48eecef0e00e28aa81c4ccab1
+  read-only-package/commands.json:
+    bytes: 1416
+    sha256: 9922d5faadeadbb2c07f3527b542fa4b132bb0f3b885b48e83be0139cd472247
+  read-only-package/runtime.stdout:
+    bytes: 17
+    sha256: a34fdec02c97fc4cb6f872093841a0216b72c750b91b5b5e7872087354185be2
+  read-only-package/runtime.stderr:
+    bytes: 4483
+    sha256: 5a9f8034f11ee913a48a999d627a3e5083893ef73967b2bfde78902e75d4843b
+  read-only-package/governance.stdout:
+    bytes: 139
+    sha256: 88c064856be19a0dfcd38934d9f38efc85df41a141406db4083f811e790f179f
+  read-only-package/result.json:
+    bytes: 393
+    sha256: 8a0c05023a724cb3da9477b94053b0cc5b2db77a552d721860c90f50ffcface8
+validation:
+  subject: 985e958d2a7732e604a071db2bab5fa13d7144c4
+  controls_passed: 103
+  lint: passed
+  private_mode_nonroot_runtime: passed
+  canonical_reconcile_and_governance: passed
+  sdk_manifest_controls_added_per_suite: 10
+  final_release_proof: pending
+  applicability: Prior985e958 candidate only; replacement admission renderer and legacy-retry controls require qualification
+replacement_validation:
+  subject: 6ba66734d7f4ee69b4ace0bebbb71bb77d792e7b
+  controls_passed: 100
+  lint: passed
+  canonical_reconcile: converged
+  governance_first_failure: Authored phase-log note colon parsed as mapping; quote repaired, canonical revalidation
+    pending
+  runtime: Unchanged private-mode producer previously passed; final applicability remains canonical
+canonical_progress:
+  subject: cc87bd2802ee70c032f3b3488f324b361482baa3
+  base: a72c7c03a20a4167760a83f746eb90766ca5b66d
+  tree: fc6c9455f19e4f2d66e906de0076dd5f9aae14c5
+  status: prospectively_admissible_provider_proof_required
+  required_producers: 19
+  provider_authority_substituted: false
+  release_qualified: false
+  elapsed_seconds: 749.134540123001
+  peak_tree_rss_bytes: 405737472
+release_preparation:
+  subject: 196076c85eade05d3e01a1795b05010b0fe3a390
+  version: 0.11.1
+  lock_change: virtual project version only; no dependency change
+  canonical_reconcile_and_governance: passed
+  user_skill: Qualified cc87 source bytes installed in the existing discovered user scope; all3 originals preserved
+    with exact manifest, no service change
+  publication: not published; provider authentication and final live receipt remain pending
+read_only_package_validation:
+  subject: 267ee5a3cf7547b5fa468bffb609366d99893bfd
+  lint: passed
+  runtime_positive: Private source remains readable, advertised version is readable, runtime UID10001 cannot write
+    application code/version metadata
+  canonical_reconcile_and_governance: passed
+  registered_negative_controls: Root user and writable application code must be rejected in final canonical graph;
+    not yet claimed executed on this changed package
+  release_qualified: false

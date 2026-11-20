@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1] - 2026-11-20
+
+- Retain a single-line client-update notification fallback before approval while preserving formatted blocks and exact provider verification. Preserve original drafts and fingerprints on recovery.
+- Classify publication uncertainty without exposing client content or retrying unknown submissions.
+- Reject incompatible send audiences before profile lookup, staging or service calls.
+- Keep non-root container imports and version reads working with private source permissions while application code remains root-owned and read-only; refresh recovery guidance and packaged skill references.
+
 ## [0.11.0] - 2026-11-10
 
 - Retain authenticated two-location receipt and ancestry evidence, isolated installation and adapter controls, and a bounded resource comparison without inferring recipient execution or enabling optional features.
@@ -108,6 +115,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+- Begin a governed reliability/recovery train for publication receipts, safe send preflight, scoped operator diagnostics, current skill installation and offline owner qualification; preserve existing authority and custody boundaries.
 
 - Add MCP/local A2A setup and a feature configuration map, client Slack installation manifest and direct-author guidance; refresh skill and editorial/usability/visual dispositions while preserving artwork, diagrams and tables.
 

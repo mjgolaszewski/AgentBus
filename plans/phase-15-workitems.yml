@@ -1,0 +1,79 @@
+document:
+  kind: execution_phase_workitem_ledger
+  name: Phase 15 Workitems
+  id: agentbus-phase-15-workitems
+  version: 1.0.0
+  generated_at_utc: '2026-11-19T00:00:00Z'
+  status: completed
+  path: plans/phase-15-workitems.yml
+  phase_id: P15
+workitems:
+- id: P15-P0-01
+  priority: P0
+  status: DONE
+  summary: Inventory baseline, issue reports and exact owner/dispositions
+  acceptance:
+  - All open issues and addressed bus reports have explicit repair, regression, accepted-limit or external-owner
+    disposition
+  - P14/HF01 exact-main proof and source continuity are retained; no historical source silently adopted
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P15-P1-01
+  priority: P1
+  status: DONE
+  summary: Correct publication response validation and retain safe diagnostics
+  acceptance:
+  - Classify each HTTP/JSON/channel/timestamp/content failure without raw client text or secrets
+  - Legitimate bound Slack success produces delivered with provider reference; malformed/foreign/ambiguous responses
+    remain uncertain
+  - Original uncertain requests are preserved and never blindly replayed; rate limits/restart/lost responses have
+    adverse controls
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P15-P2-01
+  priority: P2
+  status: DONE
+  summary: Validate audience before staging and clarify rejected request recovery
+  acceptance:
+  - Direct all and informational all fail locally before UUID/stage/custody/API side effects with correct broadcast
+    guidance
+  - Changed retry identity/payload stays rejected; unknown/retired/non-admitted observations remain distinct
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P15-P3-01
+  priority: P3
+  status: DONE
+  summary: Capture bounded private service diagnostics and characterize hang risks
+  acceptance:
+  - No invented cause for historical hang; capture process/event-loop/worker observations through existing owners
+    without reset or extra daemon
+  - Diagnostic failure and blocked persistence do not authorize restart/retry or expose tokens/client messages
+  - Reproduce and repair demonstrated deadlock/blocking defects; unresolved incident remains explicitly unclassified
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P15-P4-01
+  priority: P4
+  status: DONE
+  summary: Refresh installed skill safely and reconcile audited guidance
+  acceptance:
+  - Packaged skill uses current capability/onboarding/receipt rules and preserves exact-session boundaries
+  - Installed copy drift is measured and unique local changes preserved before qualified refresh
+  - Editorial/visual/usability inventories apply to final changed guidance; artwork/tone/BCF section preserved
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P15-P5-01
+  priority: P5
+  status: DONE
+  summary: Qualify and publish bounded patch repair
+  acceptance:
+  - Canonical graph protected PR/exact-main archive and isolated installation proofs authenticate final subject
+  - One consolidated review covers actual results; no manual merge or generated BCF repairs
+  - Custodian controls upgrade and approved canary; source/evidence retirement and scheduling handback are explicit
+  acceptance_evidence:
+  - test
+  - contract-test

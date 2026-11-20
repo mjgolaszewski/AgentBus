@@ -621,3 +621,136 @@ def test_many_long_publications_have_bounded_list_and_full_exact_review(publicat
     full = publication_card(row, "C111")
     assert len(full) <= 50
     assert full[1:-1] == row["payload_blocks"]
+
+
+@pytest.mark.parametrize("case,reason", [
+    ("http", "provider_http_unverified"),
+    ("shape", "provider_response_shape_invalid"),
+    ("json", "provider_json_invalid"),
+    ("ok", "provider_success_unverified"),
+    ("channel", "provider_channel_mismatch"),
+    ("timestamp", "provider_timestamp_invalid"),
+    ("message", "provider_message_invalid"),
+    ("text", "provider_text_mismatch"),
+])
+def test_publication_uncertainty_retains_safe_first_validation_reason(publication, case, reason):
+    import asyncio
+    import json
+
+    import httpx
+
+    from src.agentbus_publication_runtime_service import PublicationWorker
+
+    _, custody, principal, _ = publication
+    draft = custody.admit(principal, str(uuid4()), "updates", "Private client text never belongs in diagnostics")
+    custody.approve(draft["publication_id"], "U123", draft["digest"])
+    posts = []
+
+    def respond(request):
+        if request.url.path.endswith("auth.test"):
+            return httpx.Response(200, json={"ok": True, "team_id": "T123", "bot_id": "B123"})
+        posts.append(request)
+        if case == "json":
+            return httpx.Response(200, text="Private invalid provider body")
+        payload = json.loads(request.content)
+        data = {"ok": True, "channel": "C999", "ts": "100.1", "message": {"text": payload["text"]}}
+        if case == "shape":
+            data = []
+        elif case == "ok":
+            data["ok"] = "true"
+        elif case == "channel":
+            data["channel"] = "COTHER"
+        elif case == "timestamp":
+            data["ts"] = "invalid"
+        elif case == "message":
+            data["message"] = []
+        elif case == "text":
+            data["message"]["text"] = "Private provider content must never enter diagnostics"
+        return httpx.Response(503 if case == "http" else 200, json=data)
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            worker = PublicationWorker(custody, client)
+            await worker.submit_once()
+            await worker.submit_once()
+            before = custody.status(principal, draft["request_id"])
+            assert await worker.submit_once() == 0
+            assert custody.status(principal, draft["request_id"]) == before
+
+    asyncio.run(run())
+    receipt = custody.status(principal, draft["request_id"])
+    assert receipt["state"] == "uncertain" and receipt["failure"] == reason
+    assert receipt["provider_ref"] is None and len(posts) == 1
+    assert "Private" not in receipt["failure"] and "xoxb" not in receipt["failure"]
+    reopened = PublicationStore(custody.owner, custody.policy)
+    assert reopened.status(principal, draft["request_id"])["failure"] == reason
+
+
+@pytest.mark.parametrize("text", ["A short update", "First line\nSecond line", "Keep  body spaces\tand tabs", "<@U999> & *bold*\nNext line"])
+def test_publication_retains_single_line_fallback_before_approval(publication, text):
+    import asyncio
+    import json
+
+    import httpx
+
+    from src.agentbus_presentation_service import section_blocks
+    from src.agentbus_publication_runtime_service import PublicationWorker
+
+    _, custody, principal, _ = publication
+    draft = custody.admit(principal, str(uuid4()), "updates", text)
+    row = custody._row(draft["publication_id"])
+    payload = json.loads(row["payload"])
+    assert payload["text"] == " ".join(payload["text"].split())
+    assert payload["blocks"] == section_blocks("*Project update*\n" + text)
+    custody.approve(draft["publication_id"], "U123", draft["digest"])
+    posts = []
+
+    def respond(request):
+        if request.url.path.endswith("auth.test"):
+            return httpx.Response(200, json={"ok": True, "team_id": "T123", "bot_id": "B123"})
+        body = json.loads(request.content)
+        posts.append(body)
+        # Reproduce provider fallback folding; no invented extra echo fields.
+        return httpx.Response(200, json={"ok": True, "channel": "C999", "ts": "100.1",
+                                        "message": {"text": " ".join(body["text"].split())}})
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            worker = PublicationWorker(custody, client)
+            await worker.submit_once()
+            await worker.submit_once()
+            assert await worker.submit_once() == 0
+
+    asyncio.run(run())
+    assert custody.status(principal, draft["request_id"])["state"] == "delivered"
+    assert posts == [payload]
+    assert custody.admit(principal, draft["request_id"], "updates", text)["state"] == "delivered"
+
+
+@pytest.mark.parametrize("state", ["awaiting_approval", "uncertain", "delivered"])
+def test_publication_legacy_fallback_retry_preserves_payload_and_fingerprint(publication, state):
+    import hashlib
+    import json
+
+    owner, custody, principal, _ = publication
+    text = "Legacy  body\nkeeps original whitespace"
+    draft = custody.admit(principal, str(uuid4()), "updates", text)
+    row = dict(custody._row(draft["publication_id"]))
+    payload = json.loads(row["payload"])
+    payload["text"] = "*Project update*\n" + text
+    # A historical fixture binds the original multiline payload, not the new renderer.
+    spec = [row["chat_id"], row["session_id"], row["channel"], row["inbox_id"], row["destination"],
+            row["text"], row["policy_revision"], json.loads(row["destination_spec"]), payload,
+            row["request_id"], row["route"]]
+    digest = hashlib.sha256(json.dumps(spec, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    owner._db.execute("UPDATE publication_requests SET payload=?,digest=?,state=? WHERE publication_id=?",
+                      (json.dumps(payload, sort_keys=True), digest, state, row["publication_id"]))
+    owner._db.commit()
+    before = dict(custody._row(row["publication_id"]))
+    reopened = PublicationStore(owner, custody.policy)
+    receipt = reopened.admit(principal, row["request_id"], "updates", text)
+    assert receipt["digest"] == digest and receipt["state"] == state
+    assert dict(reopened._row(row["publication_id"])) == before
+    with pytest.raises(ValueError, match="conflicts"):
+        reopened.admit(principal, row["request_id"], "updates", text + " edited")
+    assert owner._db.execute("SELECT count(*) FROM publication_requests").fetchone()[0] == 1

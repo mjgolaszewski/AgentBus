@@ -1,10 +1,10 @@
 document:
   kind: client_publication_contract
-  version: 1.0.0
+  version: 1.0.2
   status: active
   path: contracts/publication/v1/publication.contract.yml
 scope:
-  availability: opt-in 0.11 capability; no authority on older services
+  availability: opt-in 0.11 capability; canonical notification fallback requires 0.11.1; no authority on older services
   owner: service publication custody and bound provider adapters
   storage: existing SQLite database
   execution: existing delivery worker; no extra Socket Mode connection
@@ -32,6 +32,9 @@ interfaces:
   status_cli: agentbus update-status --identity ROUTE [--message-id UUID]
   cancel_cli: agentbus update-cancel --identity ROUTE --message-id UUID
   receipts: authors inspect their own records; private operator buttons require destination-specific authorization
+  diagnostics: Persist the first bounded validation reason in the existing failure field; no client text tokens or raw responses. Historical unclassified failures stay unclassified.
+  fallback_verification: New drafts retain single-line notification fallback before approval; rendered blocks preserve original formatting. Exact returned-text validation remains required. Identical retries reuse verified original payload and fingerprint without rewriting custody.
+  uncertain_reasons: [provider_http_unverified, provider_json_invalid, provider_response_shape_invalid, provider_success_unverified, provider_channel_mismatch, provider_timestamp_invalid, provider_message_invalid, provider_text_mismatch, provider_outcome_unknown]
 bounds:
   destinations: 16
   installations: 16

@@ -191,16 +191,18 @@ class PublicationStore:
             binding = {"installation": dest.installation, "team_id": installation.team_id,
                        "bot_id": installation.bot_id, "channel": dest.channel, "label": dest.label}
             original_render = "*" + dest.label + "*\n" + text
-            rendered = slack_escape(original_render)
+            rendered = " ".join(slack_escape(original_render).split())
             payload = {"channel": dest.channel, "text": rendered, "blocks": section_blocks(original_render),
                        "client_msg_id": publication_id, "unfurl_links": False, "unfurl_media": False, "parse": "none"}
-            spec = [principal.chat_id, principal.session_id, principal.channel, principal.inbox_id,
-                    destination, text, self.policy.revision(destination), binding, payload, request_id, principal.route]
-            digest = hashlib.sha256(json.dumps(spec, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
             old = self.owner._db.execute("SELECT * FROM publication_requests WHERE chat_id=? AND channel=? AND inbox_id=? AND request_id=?",
                 (principal.chat_id, principal.channel, principal.inbox_id, request_id)).fetchone()
             if old is not None and old["session_id"] != principal.session_id:
                 raise PermissionError(DENIAL)
+            if old is not None:
+                _, payload = self._retained_payload(old)
+            spec = [principal.chat_id, principal.session_id, principal.channel, principal.inbox_id,
+                    destination, text, self.policy.revision(destination), binding, payload, request_id, principal.route]
+            digest = hashlib.sha256(json.dumps(spec, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
             if old is not None:
                 if old["request_id"] != request_id or old["digest"] != digest:
                     raise ValueError("Publication request conflicts with retained identity")

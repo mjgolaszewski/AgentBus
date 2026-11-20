@@ -1,0 +1,120 @@
+document:
+  kind: execution_phase_log
+  name: Phase 15 Log
+  id: agentbus-phase-15-log
+  version: 1.0.0
+  generated_at_utc: '2026-11-19T00:00:00Z'
+  status: completed
+  path: phases/phase-15-log.yml
+phase:
+  id: P15
+  build_block: reliable_publication_and_recovery
+summary:
+  outcome: completed
+  highlights:
+  - Publication/admission repairs, classified diagnostics, all 86 production-module review dispositions and qualified
+    skill continuity are implemented; all 19 canonical local producers passed on 44ccda5.
+  - This authored closeout candidate means implementation complete with provider checks pending. Computed P15
+    closure, protected PR/exact-main and release custody remain unclaimed until canonical authentication.
+workitems:
+- id: P15-P0-01
+  status: DONE
+  summary: Inventory baseline, issue reports and exact owner/dispositions
+- id: P15-P1-01
+  status: DONE
+  summary: Correct publication response validation and retain safe diagnostics
+- id: P15-P2-01
+  status: DONE
+  summary: Validate audience before staging and clarify rejected request recovery
+- id: P15-P3-01
+  status: DONE
+  summary: Capture bounded private service diagnostics and characterize hang risks
+- id: P15-P4-01
+  status: DONE
+  summary: Refresh installed skill safely and reconcile audited guidance
+- id: P15-P5-01
+  status: DONE
+  summary: Qualify and publish bounded patch repair
+execution_evidence:
+  planned_commands:
+  - make governance-validate
+  - make test
+  - make contract-test
+  - make release-check
+  executed_commands:
+  - git diff --check
+  - python -m pytest -q tests/test_delivery_client.py tests/test_publications.py -k new_regression_controls (immutable released baseline plus new controls; 13 intended failures)
+  - python -m pytest -q tests/test_delivery_client.py tests/test_publications.py tests/test_slack_commands.py (167 passed on 4dd1c8ff)
+  - bcf validate --repo-root . --format json --compact (first semantic failure retained; corrected plan wiring passed on aef07cb)
+  - python scripts/run_project_gate.py lint (passed on aef07cb)
+  - bcf ci prospective-train --repo-root . --remote origin --python verified_project_python --format json (first SDK diagnostic retained; stale closure scope refused unfinished P15)
+  - bcf reconcile --repo-root . --python verified_project_python --apply (canonical projection converged in two rounds; governance passed)
+  notes:
+  - "On d242842, canonical SDK reconciliation projected closure-mode protected-main graph/workflow inputs and governance validation passed. Generated files remained installer-owned. Natural exit 0, ECHILD, handles and original fence closed in 44.695s at 224624640-byte peak RSS. No provider action, service change or post; next operation is authenticated canonical submit, which derives required final proof."
+  - "Closeout preparation uses the existing completed taxonomy: implementation done, checks pending or partial. Authored DONE/completed is a candidate claim, not computed verified/closed or published release. The existing production-client canary waiver remains in force; an additional live receipt post is optional and still separately unauthorized. Earlier notes requiring that extra post are superseded. GitHub CLI authentication was supplied by the operator; canonical provider submission remains the required next action."
+  - "Final canonical local prospective on44ccda5/tree8506e7a6 passed all19 required producers, including both actual root/writable-code rejection causes, Python3.14, security, architecture and release smoke. Local bundle716116a878bb40be61b54dd4298fcc85c55ce4f4e98f515db76cd48809293940 is non-authoritative/not persisted; ephemeral state retired. Native0/ECHILD/handles/original fence observed released in767.615s at396779520-byte peak RSS. Provider authentication, protected PR/exact-main, final custody and separately authorized live receipt remain pending; no post, deployment or release claim."
+  - "Onf94023a, standard lint, all9 focused runtime namespace/recovery/failure controls, canonical reconcile/apply and governance passed. SDK-owned normal and Python3.14 manifests include all four new recovery cases. No Docker/provider/service/post calls in this preparation; native0/ECHILD/handles/fence released in45.997s at218157056-byte peak RSS. Final runtime mutations and consolidated canonical proof remain required."
+  - "On352e0f9, explicit capture alone did not recover negative-control diagnostics; second canonical failure bd32568e retained, natural1/ECHILD/handles/fence closed in99.804s. A separately scheduled6.479s Docker diagnostic confirmed root exit1 with empty attached output but exact runtime-user-mismatch in retained json-file logs; print-control streams matched, attach flags true and TTY false. Both containers exited and were removed. CI probe now waits for matching inspected terminal state, reads retained logs, then removes only known exited fixtures; unknown/running custody is retained. No host-wide Docker defect, service change or qualified release is inferred. New recovery controls and canonical proof pending."
+  - "Final local prospective on5cca08a passed fixed-point/preflight and valid runtime, then failed both mutated-container cause oracles. First failure bundle498dee1b retained; child stdout/stderr must be captured explicitly and re-emitted by require_success so split child-only markers reach canonical evidence. Existing failure-propagation control now checks emitted stderr too; no weakening of root/writable rejection or SDK change. Native1/ECHILD/handles/fence released in86.132s at226484224-byte peak RSS. Requalification required."
+  - "Current production review reconciled all86 modules to0ed90d6:20 full current reads,28 changed-span inspections inheriting exact prior audited bytes,38 unchanged hashes retained. Every production file has current line coverage, digest and disposition; no additional confirmed defect emerged. This is source review, not final canonical release proof."
+  - phase scaffolding was generated by scaffold_governance_artifacts.py
+  - Installed skill inventory found differing SKILL.md and participation reference with unchanged UI metadata; preserve before qualified refresh.
+  - Custodian confirmed current original fence; Ironwatch reported natural terminal and yielded. The later custodian scheduling handoff and adopted finite reservation were coordinated before execution.
+  - On 4dd1c8ff, all 13 new controls failed causally against immutable a72c7c03 source; 167 repaired-slice and Slack controls passed. This qualifies the stated slice only, not the unresolved publication incident or release.
+  - The canonical graph still carried the prior completed-phase closure proposition; the SDK correctly rejected unfinished P15. One canonical reconciliation projected active PR progress without marking workitems complete or changing SDK bytes.
+  - One separately operator-authorized isolated post reproduced HTTP200/ok with exact channel and timestamp, but fallback newline folded to a space; original and diagnostic uncertain custody retained without retry. Safe hashes and comparisons retained privately; no raw response or client text published.
+  - "Initial echo-exception candidate was superseded before full proof: new drafts retain single-line notification fallback before approval while blocks preserve formatting; exact response comparison stays intact. Verified retained payloads preserve old duplicate fingerprints/states, including uncertainty. New adversarial and legacy recovery controls await final proof; no further live post is authorized."
+  - Native progress proof first failed runtime-smoke with non-root import PermissionError under restrictive checkout modes. Initial candidate assigned copied application sources to UID10001; final review superseded this with root-owned readable modes so runtime code stays non-writable. Private-mode import and both root/writable-code rejection controls remain required.
+  - On267ee5a, standard lint, private-source container import/version/non-writable-code checks, canonical reconciliation and governance all passed. Root-user and writable-mode negative controls remain registered final-graph requirements, not inferred from the positive check. Natural0/ECHILD/handles/fence released in55.365s at224681984-byte peak RSS; no Slack post or deployment.
+  - Package validation stopped at source-check because the FastAPI advertised version still named0.11.0 after the project/lock bump. Its authored literal now matches0.11.1. Runtime proof never started in that attempt; first error retained. Runtime failure markers now form in the child so an exception echoing argv cannot alone satisfy either rejection oracle.
+  - Final packaging review rejected the earlier runtime-owned source alternative because read access does not require write ownership. Root-owned application inputs now receive explicit readable modes, and the existing runtime producer rejects writable code. Added an authored writable-mode mutation with unchanged root-user control; selected canonical runtime proof is required before final custody. No publication code or transaction scope changed.
+  - On196076c, canonical0.11.1 reconciliation/governance passed and the user-scoped installed skill was refreshed from exact qualifiedcc87 bytes after verified preservation of all three original files. Two differing originals remain private reference bytes, not delivered repository source. Natural0/ECHILD/handles/fence released in43.441s at228683776-byte peak RSS; no service change.
+  - Authored component DONE means implementation/control work complete, not protected closure or release. P15-P5 remains in progress pending final live receipt, authenticated provider proof and custody; P16 stays planned. Operator API authentication remains required through the approved local route.
+  - Offline0.11.1 lock update changed only the virtual project version; reconciliation converged. Governance found the project-authored version-drift negative-control search still named0.11.0; search now follows0.11.1, with mutation/oracle unchanged. Skill refresh was not reached; original installation remains intact. First diagnostic retained, canonical revalidation required.
+  - Full canonical prospective oncc87bd2 passed19 required producers, including runtime/root rejection, release smoke, Python3.14, behavioral, security and architecture. Local progress only; protected PR/exact-main/phase closure/release custody and final live receipt remain required. Native0/ECHILD/handles/fence released in749.135s at405737472-byte peak process-tree RSS.
+  - Native-v5 first lint failure came from private-output umask leaking into SDK worktree launcher modes. Native-v6 explicitly used subprocess umask022 with private parent logs077; SDK and source policy unchanged, original diagnostic retained. Runtime producer independently tests private source modes.
+  - On6ba6673, all100 final admission/legacy-recovery controls and lint passed; SDK projected the seven new cases. Final schema check correctly found an unquoted colon in this authored log, now quoted; no SDK defect or behavioral rerun is inferred. Natural1/ECHILD/handles/fence closed in54.675s.
+  - On985e958, all103 consolidated publication/delivery/runtime-namespace controls, lint, private-mode runtime, canonical reconciliation and governance passed; SDK added all ten fallback controls to both contract/Python3.14 manifests. Natural0, ECHILD, handles/fence closed in65.314s at224927744-byte peak process-tree RSS; no service mutation or post.
+  - SDK-owned projection included all 13 new negative controls in both contract-test and Python3.14 manifests. No generated source/workflow/manifest was hand-edited.
+  - First governance failure was missing literal phase deliverables in workitem summary/acceptance; plan deliverables now derive their authored names from corresponding workitem summaries. No SDK or schema change.
+  - Custodian adopted the granted resource window; natural exit, ECHILD, handles retired and physical fence closed in 29.53 seconds at 127913984-byte sampled process-tree RSS. No provider post, service change or automatic termination.
+  - 'Pre-edit scope: existing publication custody/provider infrastructure and client admission owners; P15 changes
+    no host wake authority or external guarantees. Relevant publication/delivery/service regression tests precede
+    implementation; BCF-owned generated files forbidden.'
+closeout_requirements:
+  claims:
+    workitems_closed:
+      required_evidence:
+      - governance-validate
+    required_suites_green:
+      required_evidence:
+      - lint
+      - typecheck
+      - test
+      - contract-test
+    architecture_gates_green:
+      required_evidence:
+      - architecture-test
+    health_checks_green:
+      required_evidence:
+      - runtime-smoke
+    security_review_complete:
+      required_evidence:
+      - governance-validate
+    findings_resolved:
+      required_evidence:
+      - security-vulnerability-scan
+  reconciliation:
+    required_evidence:
+    - governance-validate
+    - governance-exposure-scan
+  finding_registry: governance/findings.yml
+known_constraints:
+- Legacy pending drafts retain their original fallback and may still produce uncertain receipts; only confirmed pre-submission cancellation permits a new deliberate draft. No uncertain request is replayed or rewritten.
+- Custodian schedules shared resources; Recovery project priority is respected; preserve services/storage/credentials/wake preferences;
+  consuming work requires original fence.
+- Certified BCF2.3.4 remains the baseline; generated BCF files installer-owned; no SDK upgrade presumed.
+- Trusted non-hostile workspace remains the boundary. Live owner admission and stronger external security/audit
+  guarantees require independent prerequisites.
+next_work:
+- Submit the clean closeout candidate through canonical BCF; verify actual protected PR/exact-main closure and release custody, then coordinate the custodian upgrade. Activate P16 only after computed P15 closure.

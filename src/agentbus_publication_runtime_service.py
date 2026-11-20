@@ -71,7 +71,6 @@ class PublicationWorker:
         if row is None:
             return 0
         payload = json.loads(row["payload"])
-        text = payload["text"]
         try:
             response = await bounded_response(self.client, token, "chat.postMessage", payload, max_bytes=262144,
                                               timeout_seconds=max(0.001, min(15, deadline - time.monotonic())))
@@ -80,16 +79,33 @@ class PublicationWorker:
                 self.custody.defer_ready(request_id, failure="provider_rate_limited", seconds=seconds,
                                          provider=(installation, "chat.postMessage"))
                 return 1
-            data = response.json()
-            if not response.is_success or not isinstance(data, dict):
-                self.custody.settle(request_id, "uncertain", failure="provider_response_unverified",
+            try:
+                data = response.json()
+            except (ValueError, RecursionError):
+                self.custody.settle(request_id, "uncertain", failure="provider_json_invalid",
                                      pause_provider=(installation, "chat.postMessage"))
+                return 1
+            # Preserve the first failed check without retaining content or provider errors.
+            reason = None
+            if not response.is_success:
+                reason = "provider_http_unverified"
+            elif not isinstance(data, dict):
+                reason = "provider_response_shape_invalid"
             elif data.get("ok") is False:
                 self.custody.settle(request_id, "failed", failure="provider_rejected")
-            elif (data.get("ok") is not True or data.get("channel") != destination.channel
-                    or not isinstance(data.get("ts"), str) or not re.fullmatch(r"[0-9]{1,20}\.[0-9]{1,20}", data["ts"])
-                    or not isinstance(data.get("message"), dict) or data["message"].get("text") != text):
-                self.custody.settle(request_id, "uncertain", failure="provider_response_unverified",
+                return 1
+            elif data.get("ok") is not True:
+                reason = "provider_success_unverified"
+            elif data.get("channel") != destination.channel:
+                reason = "provider_channel_mismatch"
+            elif not isinstance(data.get("ts"), str) or not re.fullmatch(r"[0-9]{1,20}\.[0-9]{1,20}", data["ts"]):
+                reason = "provider_timestamp_invalid"
+            elif not isinstance(data.get("message"), dict):
+                reason = "provider_message_invalid"
+            elif data["message"].get("text") != payload["text"]:
+                reason = "provider_text_mismatch"
+            if reason is not None:
+                self.custody.settle(request_id, "uncertain", failure=reason,
                                      pause_provider=(installation, "chat.postMessage"))
             else:
                 self.custody.settle(request_id, "delivered", provider_ref=data["ts"])
