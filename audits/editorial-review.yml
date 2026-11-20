@@ -37,9 +37,9 @@ summary:
   documents: 51
   state: fresh_full_scope_read_and_final_changes_reconciled
   dispositions:
-    reviewed: 26
+    reviewed: 27
     added: 1
-    edited: 24
+    edited: 23
     combined: 0
     removed: 0
   remaining: Behavioral, canonical protected PR/exact-main, archive/install and skill qualification remain separately
@@ -665,12 +665,12 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 31
-  line_count: 31
-  sha256: c3329c5c3a24c61115f6f5c59524f0c07fb72a79016207e4631ed658bd99baa4
-  disposition: edited
-  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
-    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+    - 26
+  line_count: 26
+  sha256: 6776a3d816f485e7437d45ed0eb8b1a9dff56c60846f76c127ad033fbc7acf65
+  disposition: reviewed
+  review_basis: Original hash-pinned historical bytes freshly reread in full; retained unchanged. Applicability
+    and current contract/security links live in audits/README.md so historical reviewer provenance remains exact.
 - document: docs/OPERATIONS.md
   review_status: application_sections_line_reviewed
   reviewed_lines:

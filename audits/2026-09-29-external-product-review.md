@@ -1,10 +1,5 @@
 # External product review disposition
 
-> Historical review of its original release. The findings and dispositions below
-> are retained as a dated record, not current capability statements. For current
-> session authorization, signed federation and optional adapters, use the
-> [contract model](../docs/contracts.md) and [security policy](../SECURITY.md).
-
 An external source review identified five material concerns in AgentBus 0.3.1:
 
 1. Slack events containing a syntactically valid AgentBus envelope were routed

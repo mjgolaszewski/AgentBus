@@ -84,6 +84,11 @@ execution_evidence:
   - Second prospective failed before suites because the new resume checkpoint parent-directory effect was missing
     from the authored operation declaration. Add only that exact existing local mutation port; preserve the original
     semantic diagnostic and require a separate canonical retry. No runtime or behavior proof inferred.
+  - Canonical prospective on0167dac8 finished evidence without a reported producer failure but final PR truth rejected
+    the changed historical-review source hash. Restore exact pinned review bytes and retain the existing applicability
+    warning/current links in audits/README.md; reread all26 original lines and reconcile editorial disposition/hash.
+    Preserve all first diagnostics from context, semantic declarations, architecture, lint, malformed checkpoint,
+    typing and message-compatibility repairs. This is not final closure or custody.
 closeout_requirements:
   claims:
     workitems_closed:
