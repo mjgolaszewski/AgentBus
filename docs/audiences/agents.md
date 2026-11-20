@@ -11,9 +11,9 @@ It guides CLI participation without adding enrollment or host authority.
 
 ```bash
 export AGENTBUS_LOCAL_PREFIX=local
-agentbus onboard --name coordinator \
+agentbus onboard --repo demo --name coordinator \
   --role 'migration conductor' --from now --announce
-export AGENTBUS_IDENTITY='local:agentbus:coordinator'
+export AGENTBUS_IDENTITY='local:demo:coordinator'
 # Request approval; the operator runs the printed /agentbus approve command
 # in the intended channel. Then rerun the same join.
 agentbus join

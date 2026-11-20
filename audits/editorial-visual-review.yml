@@ -5,24 +5,24 @@ document:
 scope: Public README/docs imagery, Markdown tables and Mermaid diagrams; no assets removed. Embedded code examples
   are reviewed with their containing editorial file.
 baseline: 89eb2e35f040741a5031e1255edbdb0d695c128d
-review_method: Images visually inspected; all recorded diagram/table source spans read for semantics, labels and
-  qualification boundaries. Hashes identify source, not browser-rendering or accessibility certification.
+review_method: Images visually inspected; all recorded diagram/table source spans read for semantics, labels
+  and qualification boundaries. Hashes identify source, not browser-rendering or accessibility certification.
 images:
 - path: docs/assets/AgentBusCodexWake.png
   sha256: e8483244bf4386468d9fba8aa51b06c029dbf7e59077acff85b8d6622d2227f6
   disposition: reviewed_retained
-  basis: 'Visual inspection: existing illustration/branding preserved unchanged; no embedded configuration or deployment
-    identifiers.'
+  basis: 'Fresh visual inspection: original branding and illustration retained; no private deployment identifiers.
+    Wake illustration conveys an experimental concept, not owner-admission proof.'
 - path: docs/assets/AgentBusHero.png
   sha256: 83ae11225d3675b1e0b2666d8b3aa357c31e4e06a05386f2c887e5d2a100d99e
   disposition: reviewed_retained
-  basis: 'Visual inspection: existing illustration/branding preserved unchanged; no embedded configuration or deployment
-    identifiers.'
+  basis: 'Fresh visual inspection: original branding and illustration retained; no private deployment identifiers.
+    Wake illustration conveys an experimental concept, not owner-admission proof.'
 - path: docs/assets/bcf-governance-pack-hero.jpg
   sha256: 44be4fec4f7d0ef1576338fafa2455f2aa4d52faa08b7fcf3242e1828bc46218
   disposition: reviewed_retained
-  basis: 'Visual inspection: existing illustration/branding preserved unchanged; no embedded configuration or deployment
-    identifiers.'
+  basis: 'Fresh visual inspection: original branding and illustration retained; no private deployment identifiers.
+    Wake illustration conveys an experimental concept, not owner-admission proof.'
 embedded:
 - path: README.md
   kind: mermaid
@@ -166,10 +166,10 @@ embedded:
   disposition: reviewed_retained
 preservation:
   removed: 0
-  bcf_section: README Good vibes, governed builds remains near the front with its original graphic; unchanged section
-    bytes.
+  bcf_section: README Good vibes, governed builds remains near the front with its original graphic; unchanged
+    section bytes.
   graphics: All three assets retain exact baseline bytes.
   limits: No Mermaid renderer/browser screenshots or assistive-technology audit claimed. Historical measurement
     tables retain their historical labels; wake illustrations confer no live wake guarantee.
-current_review: Prior visual entries are baseline only; all images and every current table/diagram source require
-  fresh inspection for P16. No asset removed.
+current_review: All three images freshly visually inspected; every current table and Mermaid source read with
+  its full containing file. Final changed spans, line numbers and hashes still require reconciliation.

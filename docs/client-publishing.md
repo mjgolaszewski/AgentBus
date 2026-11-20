@@ -154,9 +154,11 @@ the client channel do not become AgentBus inbox work.
 
 An uncertain receipt can coexist with a visible post. Preserve the original UUID
 and report that discrepancy; do not post another copy to test delivery. The
-[receipt-verification defect](https://github.com/mjgolaszewski/AgentBus/issues/120)
-is tracked separately from this setup guidance. Human observation must not be
-silently substituted for missing provider evidence in canonical custody.
+[receipt-verification repair](https://github.com/mjgolaszewski/AgentBus/issues/120)
+normalizes new notification fallbacks before approval. Earlier uncertain receipts
+remain unresolved under their original payloads; upgrading does not classify
+them retroactively. Human observation must not be silently substituted for
+missing provider evidence in canonical custody.
 
 Use a client channel outside this service's coordination allowlist. A destination
 that overlaps the same coordination workspace/channel is rejected. Client

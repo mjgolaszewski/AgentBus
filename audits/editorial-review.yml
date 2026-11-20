@@ -3,51 +3,45 @@ document:
   path: audits/editorial-review.yml
   status: editorial_review_in_progress
 request:
-  scope: Current public product guidance, application contracts, packaged skill and historical authored prose; explicit
-    per-document line review and disposition.
+  scope: Current public product guidance, application contracts, packaged skill and historical authored prose;
+    explicit per-document line review and disposition.
   excluded:
   - BCF-owned governance machinery, generated projections, schemas, workflows, instruction pointers and phase/evidence
     records
   - Changelog prose
   - Executable source, test fixtures, dependency locks and opaque provider evidence
   - This inventory and structured audit result data are excluded from self-hashing
-  history_policy: Historical audit inventories remain reachable at the pinned baseline; current guidance is capability-oriented.
-    No historical proof is relabelled as current qualification.
-  completion_rule: Line review is an editorial claim only; canonical protected PR/exact-main/archive/install and
-    approved acceptance remain independently required.
+  - 'Installer-owned observability logging/telemetry templates: inspected to identify their reference-only
+    role, retained unchanged; not implemented logging guarantees'
+  history_policy: Historical audit inventories remain reachable at the pinned baseline; current guidance is
+    capability-oriented. No historical proof is relabelled as current qualification.
+  completion_rule: Line review is an editorial claim only; canonical protected PR/exact-main/archive/install
+    and approved acceptance remain independently required.
 baseline_review:
   source: 89eb2e35f040741a5031e1255edbdb0d695c128d
   inventory: audits/editorial-review.yml
   sha256: 6e25f4b8b777b0d140300842273ec5a8c61873bc3c3520854332b6019a3c4628
 experimental_claims:
-  candidate: 0.11.0 was published with exact-subject custody; this documentation hotfix requires its own canonical
-    proof. Prior release authority is not relabelled.
+  candidate: P16 / 0.12 construction remains local and unqualified. Existing released 0.11.1 custody applies
+    only to its own subject.
   AHP_native_queue: Live interoperability and atomic idle-only admission remain unqualified.
-  publication: Explicit optional named-destination policy only; production-client canary waived by operator in favor
-    of approved two-location substitution, with isolated provider controls; broader client deployments not inferred.
-  A2A: Opt-in loopback-only 1.0 mailbox subset; completion means admission. Public deployment, streaming and push
-    unsupported.
-  retention: Off by default, dry-run-first, real target semantic ACK and custody/reference pins; no automatic federation
-    retirement.
+  publication: Explicit optional named-destination policy only; production-client canary waived by operator
+    in favor of approved two-location substitution, with isolated provider controls; broader client deployments
+    not inferred.
+  A2A: Opt-in loopback-only 1.0 mailbox subset; completion means admission. Public deployment, streaming and
+    push unsupported.
+  retention: Off by default, dry-run-first, real target semantic ACK and custody/reference pins; no automatic
+    federation retirement.
   monitoring: Bounded actual-access observations and explicitly requested private notices; no continuous-monitoring
     or execution guarantee.
 summary:
-  documents: 49
-  dispositions:
-    retained: 39
-    updates: 8
-    new: 2
-    merged: 0
-    removed: 0
-  merged_or_removed: No current product document needed merging or removal; superseded participation v1 remains
-    explicitly historical because v2 inherits its non-conflicting controls.
-  private_details: Current public guidance contains generic example identifiers only; historical subjects retain
-    public commit/evidence references without local deployment inventories.
-  remaining: Release and hotfix proof is established independently by canonical CI/custody on its exact subject;
-    no authored inventory status establishes runtime qualification.
+  documents: 51
+  state: all_current_scope_files_read_final_reconciliation_pending
+  remaining: Finish candidate implementation, reconcile all affected guidance, re-read final changed files
+    and authenticate release proof separately.
 visual_inventory: audits/editorial-visual-review.yml
-review_continuity: Unchanged files inherit their baseline line review with byte/hash verification; changed documents
-  and the new seat were reviewed in full. The pinned baseline inventory retains original 0.11 dispositions.
+review_continuity: Every recorded current file was read in full during this sweep. Prior entries are historical
+  context only; unchanged hashes do not substitute for fresh reading.
 usability_inventory: audits/editorial-usability-review.yml
 prior_documents:
 - document: .env.example
@@ -59,8 +53,8 @@ prior_documents:
   sha256: 0645cc21ca7d83f600486a5d30ef9b07a26b542531b3302729cf104085c2a6f4
   baseline_sha256: 0645cc21ca7d83f600486a5d30ef9b07a26b542531b3302729cf104085c2a6f4
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: LICENSE
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -70,8 +64,8 @@ prior_documents:
   sha256: 4b5bd93700515293f29d5306cd65526f71b89dfa8cf72ed4a0bdf4ca4a4a68d8
   baseline_sha256: 4b5bd93700515293f29d5306cd65526f71b89dfa8cf72ed4a0bdf4ca4a4a68d8
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: README.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -92,8 +86,8 @@ prior_documents:
   sha256: f82232c553aa7f8ce5af8a64861c64f57d6dabedfc6f05abf6d460c25b554689
   baseline_sha256: f82232c553aa7f8ce5af8a64861c64f57d6dabedfc6f05abf6d460c25b554689
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: CONTRIBUTING.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -103,8 +97,8 @@ prior_documents:
   sha256: 655c8b006fe35d4742d5db91714eb882532df94d09e02d65566c7a6a32f95369
   baseline_sha256: 655c8b006fe35d4742d5db91714eb882532df94d09e02d65566c7a6a32f95369
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: SECURITY.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -114,8 +108,8 @@ prior_documents:
   sha256: e7f012607adf9b109f11c3d092cc7bad883f76408bb4f1f5caddc347223fdbc2
   baseline_sha256: e7f012607adf9b109f11c3d092cc7bad883f76408bb4f1f5caddc347223fdbc2
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: audits/README.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -136,9 +130,9 @@ prior_documents:
   sha256: 6776a3d816f485e7437d45ed0eb8b1a9dff56c60846f76c127ad033fbc7acf65
   baseline_sha256: 6776a3d816f485e7437d45ed0eb8b1a9dff56c60846f76c127ad033fbc7acf65
   disposition: retained
-  review_basis: 'Every current line reviewed, with changed spans rechecked: pinned historical review bytes preserved
-    outside applicability notices; local A2A follows pinned proto/ADR object shapes and discloses strict profile
-    and finite index. Editorial review does not establish release qualification.'
+  review_basis: 'Every current line reviewed, with changed spans rechecked: pinned historical review bytes
+    preserved outside applicability notices; local A2A follows pinned proto/ADR object shapes and discloses
+    strict profile and finite index. Editorial review does not establish release qualification.'
 - document: docs/OPERATIONS.md
   review_status: application_sections_line_reviewed
   reviewed_lines:
@@ -148,8 +142,8 @@ prior_documents:
   sha256: 6c6e5e7482e4e2028f7880a00ae08cc345c453ea3294955b6c992bf6b861ce0f
   baseline_sha256: 6c6e5e7482e4e2028f7880a00ae08cc345c453ea3294955b6c992bf6b861ce0f
   disposition: retained
-  review_basis: Application channel/recovery/diagnostic section reviewed; BCF-owned release/helper/resource machinery
-    excluded.
+  review_basis: Application channel/recovery/diagnostic section reviewed; BCF-owned release/helper/resource
+    machinery excluded.
 - document: docs/README.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -170,8 +164,8 @@ prior_documents:
   sha256: 3a9060633da64b0a963bd9bb9c0456bfe73f7e0e1291b738834c25a667809664
   baseline_sha256: 3a9060633da64b0a963bd9bb9c0456bfe73f7e0e1291b738834c25a667809664
   disposition: retained
-  review_basis: Historical record retained with explicit applicability; superseded authorization is overridden by
-    the current versioned contract.
+  review_basis: Historical record retained with explicit applicability; superseded authorization is overridden
+    by the current versioned contract.
 - document: docs/architecture.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -181,8 +175,8 @@ prior_documents:
   sha256: 4cac0aaac4bd69d9c1a5b8f55219bae4c78e9253bba86d31bae5c23e75cf88cb
   baseline_sha256: 4cac0aaac4bd69d9c1a5b8f55219bae4c78e9253bba86d31bae5c23e75cf88cb
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/audiences/adapter-users.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -192,8 +186,8 @@ prior_documents:
   sha256: 566e4be06b1819e098d381ee1162a1d28c4c4a4d135b073c3b71ea4ce1eadb6b
   baseline_sha256: 566e4be06b1819e098d381ee1162a1d28c4c4a4d135b073c3b71ea4ce1eadb6b
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/audiences/agents.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -203,8 +197,8 @@ prior_documents:
   sha256: fd45f5a2f26f9e8a5e409dce614eb6233b5e79ade4dd577d8dce733b9039d38c
   baseline_sha256: fd45f5a2f26f9e8a5e409dce614eb6233b5e79ade4dd577d8dce733b9039d38c
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/audiences/experimenters.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -214,8 +208,8 @@ prior_documents:
   sha256: b7d47959342edee8556ab0401b0d845c88bc6c3e321db086c4a294598598cfbd
   baseline_sha256: b7d47959342edee8556ab0401b0d845c88bc6c3e321db086c4a294598598cfbd
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/audiences/hippiebots.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -225,8 +219,8 @@ prior_documents:
   sha256: 5249bab938f9d1a01fa948f3ed5607b6ba79e33935da7329be524b91e1195c24
   baseline_sha256: 5249bab938f9d1a01fa948f3ed5607b6ba79e33935da7329be524b91e1195c24
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/audiences/humans.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -236,8 +230,8 @@ prior_documents:
   sha256: b19f81eec39010100a471f13b8ea7ca0abdf591bb76dffae610c4f736a8a42f3
   baseline_sha256: b19f81eec39010100a471f13b8ea7ca0abdf591bb76dffae610c4f736a8a42f3
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/audiences/maintainers.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -247,8 +241,8 @@ prior_documents:
   sha256: 785c8c12a9f2a5a91b070dd968b20875fd85b24cfd33babd562ba00a0913f015
   baseline_sha256: 785c8c12a9f2a5a91b070dd968b20875fd85b24cfd33babd562ba00a0913f015
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/audiences/operators.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -258,8 +252,8 @@ prior_documents:
   sha256: 915beb26c573a37f95066f010e6d1700ccce37d57d23075a3d4e129eba66e5c2
   baseline_sha256: 915beb26c573a37f95066f010e6d1700ccce37d57d23075a3d4e129eba66e5c2
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/audiences/security-reviewers.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -269,8 +263,8 @@ prior_documents:
   sha256: 241f0de1a6ea2ca120044e4e1aa9bd9c965adb597c835d0a66020bd17b6319e3
   baseline_sha256: 241f0de1a6ea2ca120044e4e1aa9bd9c965adb597c835d0a66020bd17b6319e3
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/channel-migration.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -280,8 +274,8 @@ prior_documents:
   sha256: c928e36f2c9a518d77c9f4637e8cb00c8062986b6af691cdd8ee86266f3c155e
   baseline_sha256: c928e36f2c9a518d77c9f4637e8cb00c8062986b6af691cdd8ee86266f3c155e
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/client-publishing.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -291,8 +285,8 @@ prior_documents:
   sha256: ac8de7a1b534fb9edfcd631207e6dcb1eebc4b289ea970302280503b07f42339
   baseline_sha256: c7aca5d3a6260167493b0621ee35ec0d18cbbcd34886fe1987dda7162c62816f
   disposition: updates
-  review_basis: Full current document reviewed line by line for audience preflight, bounded receipt reasons, scope
-    and honest recovery; matching release proof remains required.
+  review_basis: Full current document reviewed line by line for audience preflight, bounded receipt reasons,
+    scope and honest recovery; matching release proof remains required.
 - document: docs/codex-skill.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -302,8 +296,8 @@ prior_documents:
   sha256: 1ae97adf87f8bd9d99cc5c99cfe063a9075664d3f32931e3d49db546544b00a1
   baseline_sha256: 1ae97adf87f8bd9d99cc5c99cfe063a9075664d3f32931e3d49db546544b00a1
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/contracts.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -313,8 +307,8 @@ prior_documents:
   sha256: 567c1bc556a5fa22dce9adc6b9a450490049d0bb1ac6c62bbfe91896496efeb9
   baseline_sha256: 567c1bc556a5fa22dce9adc6b9a450490049d0bb1ac6c62bbfe91896496efeb9
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/federation.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -324,8 +318,8 @@ prior_documents:
   sha256: 7b95c78a01f7aee059c8f8bd0612e79caf8b520f241a4e55bda06991bcf7de3d
   baseline_sha256: 7b95c78a01f7aee059c8f8bd0612e79caf8b520f241a4e55bda06991bcf7de3d
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/governance-model.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -335,8 +329,8 @@ prior_documents:
   sha256: 1e5f60fce0342269b6953dce27cd63d38bc782d1a2bd802d7fd85f1f7be8f400
   baseline_sha256: 1e5f60fce0342269b6953dce27cd63d38bc782d1a2bd802d7fd85f1f7be8f400
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/http-api.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -346,8 +340,8 @@ prior_documents:
   sha256: 83cc033b1eda58cfd66732c2b78e542b8604c487ad83cb05064f2097fb98ecb2
   baseline_sha256: 83cc033b1eda58cfd66732c2b78e542b8604c487ad83cb05064f2097fb98ecb2
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/local-adapters.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -368,8 +362,8 @@ prior_documents:
   sha256: 7d3fb4a4421478d05ddf5a92fff0f53edd1c864a2c52b9f62dbf993b6d747e22
   baseline_sha256: 7d3fb4a4421478d05ddf5a92fff0f53edd1c864a2c52b9f62dbf993b6d747e22
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/operator-federation.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -412,8 +406,8 @@ prior_documents:
   sha256: 10ad5d86752a231bc8e38898bf133284c3d9309fc2db30458ed5a51041a6734d
   baseline_sha256: e0a8b2df362ed7fc2f5c6408040369d89175443b1416443233f7b560bd17db3d
   disposition: updates
-  review_basis: Full current document reviewed line by line for audience preflight, bounded receipt reasons, scope
-    and honest recovery; matching release proof remains required.
+  review_basis: Full current document reviewed line by line for audience preflight, bounded receipt reasons,
+    scope and honest recovery; matching release proof remains required.
 - document: skills/agentbus/agents/openai.yaml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -423,8 +417,8 @@ prior_documents:
   sha256: 38348111fa4b23ffff099cca3fed276cf7fdd910fcfd2c144b5afd876b39ba8f
   baseline_sha256: 38348111fa4b23ffff099cca3fed276cf7fdd910fcfd2c144b5afd876b39ba8f
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: contracts/channels/v1/channel-isolation.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -434,8 +428,8 @@ prior_documents:
   sha256: 4327bdecdfa070191b16728231890ecd12436b15f5429c2232e943f8bf730001
   baseline_sha256: 4327bdecdfa070191b16728231890ecd12436b15f5429c2232e943f8bf730001
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: contracts/codex-wake/v1/codex-wake.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -445,8 +439,8 @@ prior_documents:
   sha256: cc2971b307d671a9dcfa3a5931f163a3b3b2b53f74f7c549938fbc619fc69c03
   baseline_sha256: cc2971b307d671a9dcfa3a5931f163a3b3b2b53f74f7c549938fbc619fc69c03
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: contracts/federation/v1/federation.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -456,8 +450,8 @@ prior_documents:
   sha256: 081c3b28ca09a4d22bec655f21b436a929c96db46956fa3660aad15a1e86244a
   baseline_sha256: 081c3b28ca09a4d22bec655f21b436a929c96db46956fa3660aad15a1e86244a
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: contracts/federation/v1/operator.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -467,8 +461,8 @@ prior_documents:
   sha256: 5d527427afa06ec900b8c1160a5b3a953dd12c89398e12849f8a59c4e7e0180f
   baseline_sha256: 5d527427afa06ec900b8c1160a5b3a953dd12c89398e12849f8a59c4e7e0180f
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: contracts/local-adapters/v1/a2a.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -478,9 +472,9 @@ prior_documents:
   sha256: 8d1104f4f3a9ae83edebd2f9ff878af8dcd60b9cde91ee4a9c47bdceb83b7882
   baseline_sha256: 8d1104f4f3a9ae83edebd2f9ff878af8dcd60b9cde91ee4a9c47bdceb83b7882
   disposition: retained
-  review_basis: 'Every current line reviewed, with changed spans rechecked: pinned historical review bytes preserved
-    outside applicability notices; local A2A follows pinned proto/ADR object shapes and discloses strict profile
-    and finite index. Editorial review does not establish release qualification.'
+  review_basis: 'Every current line reviewed, with changed spans rechecked: pinned historical review bytes
+    preserved outside applicability notices; local A2A follows pinned proto/ADR object shapes and discloses
+    strict profile and finite index. Editorial review does not establish release qualification.'
 - document: contracts/mailbox/v1/mailbox.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -490,8 +484,8 @@ prior_documents:
   sha256: b9fcd3c7903d87b8fe2fc3b115ff6b16d34f6dd82c58174b99cb9fdb6352746f
   baseline_sha256: b9fcd3c7903d87b8fe2fc3b115ff6b16d34f6dd82c58174b99cb9fdb6352746f
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: contracts/mailbox/v1/mcp.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -501,8 +495,8 @@ prior_documents:
   sha256: 1d48c21469f811e74f8e17372d9d5d2a68ce0ec49cef5ed399e087604096a5ff
   baseline_sha256: 1d48c21469f811e74f8e17372d9d5d2a68ce0ec49cef5ed399e087604096a5ff
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: contracts/messages/v1/message-lifecycle.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -523,8 +517,8 @@ prior_documents:
   sha256: d8789d9c7335475c8a12f5f41a7cbc0fe8e77a4a276b5a64f84467f0b895e90b
   baseline_sha256: d8789d9c7335475c8a12f5f41a7cbc0fe8e77a4a276b5a64f84467f0b895e90b
   disposition: retained
-  review_basis: Historical record retained with explicit applicability; superseded authorization is overridden by
-    the current versioned contract.
+  review_basis: Historical record retained with explicit applicability; superseded authorization is overridden
+    by the current versioned contract.
 - document: contracts/participation/v2/participation.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -534,8 +528,8 @@ prior_documents:
   sha256: 6a39b511d0425e536a519af2ec9b4db4013cbbf32c4333d52f49e844d302395f
   baseline_sha256: 6a39b511d0425e536a519af2ec9b4db4013cbbf32c4333d52f49e844d302395f
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: contracts/participation/v2/recovery-observation.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -545,8 +539,8 @@ prior_documents:
   sha256: 400e78573e93f7d45ca50c4a342cf3d13ec9f3b7f60c67353c9e02b44ad8ec6e
   baseline_sha256: 400e78573e93f7d45ca50c4a342cf3d13ec9f3b7f60c67353c9e02b44ad8ec6e
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: contracts/publication/v1/publication.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -567,8 +561,8 @@ prior_documents:
   sha256: d08d45f36481240771a434f0801398167518825c8219b02a4cd1e6ddb8c95940
   baseline_sha256: d08d45f36481240771a434f0801398167518825c8219b02a4cd1e6ddb8c95940
   disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and
+    public deployment privacy; hashes identify reviewed bytes, not release proof.
 - document: docs/audiences/mailbox-tool-users.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -589,72 +583,539 @@ prior_documents:
   sha256: f53cfbe889a6f4654f4d34ad13adfd1dcefd965698da6613c2e2fd03ac89fe24
   baseline_sha256: null
   disposition: new
-  review_basis: Minimal outbound-only Slack app manifest reviewed with client installation walkthrough; no secrets,
-    event subscriptions, slash commands, inbound handler or new socket.
-documents: []
+  review_basis: Minimal outbound-only Slack app manifest reviewed with client installation walkthrough; no
+    secrets, event subscriptions, slash commands, inbound handler or new socket.
+documents:
+- document: .env.example
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 73
+  line_count: 73
+  sha256: 0645cc21ca7d83f600486a5d30ef9b07a26b542531b3302729cf104085c2a6f4
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: LICENSE
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 21
+  line_count: 21
+  sha256: 4b5bd93700515293f29d5306cd65526f71b89dfa8cf72ed4a0bdf4ca4a4a68d8
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: README.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 232
+  line_count: 232
+  sha256: b63c759710ce26dc647d73f131fe26f1da4a90d44fc1b397d3b4694f088faedc
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: CONTRACT.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 261
+  line_count: 261
+  sha256: f82232c553aa7f8ce5af8a64861c64f57d6dabedfc6f05abf6d460c25b554689
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: CONTRIBUTING.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 26
+  line_count: 26
+  sha256: 655c8b006fe35d4742d5db91714eb882532df94d09e02d65566c7a6a32f95369
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: SECURITY.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 117
+  line_count: 117
+  sha256: e7f012607adf9b109f11c3d092cc7bad883f76408bb4f1f5caddc347223fdbc2
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: audits/README.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 18
+  line_count: 18
+  sha256: 84127d9dedf25034cd7b658eec9b5980ee2267c410d5287cca55df45c0e8f1f5
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: audits/2026-09-29-external-product-review.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 31
+  line_count: 31
+  sha256: c3329c5c3a24c61115f6f5c59524f0c07fb72a79016207e4631ed658bd99baa4
+  disposition: edited
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/OPERATIONS.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 341
+  line_count: 341
+  sha256: 6c6e5e7482e4e2028f7880a00ae08cc345c453ea3294955b6c992bf6b861ce0f
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/README.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 98
+  line_count: 98
+  sha256: 3f2eae71ec87697d84f154cd98f0b52b7eeca05737a724d0c451580d9106bad3
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/adoption-measurements.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 152
+  line_count: 152
+  sha256: 3a9060633da64b0a963bd9bb9c0456bfe73f7e0e1291b738834c25a667809664
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/architecture.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 199
+  line_count: 199
+  sha256: 4cac0aaac4bd69d9c1a5b8f55219bae4c78e9253bba86d31bae5c23e75cf88cb
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/audiences/adapter-users.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 187
+  line_count: 187
+  sha256: 566e4be06b1819e098d381ee1162a1d28c4c4a4d135b073c3b71ea4ce1eadb6b
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/audiences/agents.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 181
+  line_count: 181
+  sha256: 4dd856390ddaaabff95cee56e1b3d439fea80a3121fbef87bae510af3da32ac0
+  disposition: edited
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/audiences/experimenters.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 118
+  line_count: 118
+  sha256: b7d47959342edee8556ab0401b0d845c88bc6c3e321db086c4a294598598cfbd
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/audiences/hippiebots.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 86
+  line_count: 86
+  sha256: 00dec5823dc8be15908a9609fe752f34851ea66d6c256e2e8915d7082aabaab4
+  disposition: edited
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/audiences/humans.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 96
+  line_count: 96
+  sha256: e17df7346845582268176951f4ba932533ee7cf9511fb0374ac8ad8aaf3e109d
+  disposition: edited
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/audiences/maintainers.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 40
+  line_count: 40
+  sha256: 785c8c12a9f2a5a91b070dd968b20875fd85b24cfd33babd562ba00a0913f015
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/audiences/operators.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 363
+  line_count: 363
+  sha256: 915beb26c573a37f95066f010e6d1700ccce37d57d23075a3d4e129eba66e5c2
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/audiences/security-reviewers.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 81
+  line_count: 81
+  sha256: 241f0de1a6ea2ca120044e4e1aa9bd9c965adb597c835d0a66020bd17b6319e3
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/channel-migration.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 89
+  line_count: 89
+  sha256: c928e36f2c9a518d77c9f4637e8cb00c8062986b6af691cdd8ee86266f3c155e
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/client-publishing.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 218
+  line_count: 218
+  sha256: 55327e061a033637cf4be4e4ee908e4020d49edb7251ff8a12360c78575999ff
+  disposition: edited
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/codex-skill.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 37
+  line_count: 37
+  sha256: 1ae97adf87f8bd9d99cc5c99cfe063a9075664d3f32931e3d49db546544b00a1
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/contracts.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 165
+  line_count: 165
+  sha256: 11e151ab0a284928fe7a6411d46927b8a3b6063898880ee6b69a97daa90540db
+  disposition: edited
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/federation.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 420
+  line_count: 420
+  sha256: 7b95c78a01f7aee059c8f8bd0612e79caf8b520f241a4e55bda06991bcf7de3d
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/governance-model.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 64
+  line_count: 64
+  sha256: 1e5f60fce0342269b6953dce27cd63d38bc782d1a2bd802d7fd85f1f7be8f400
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/http-api.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 86
+  line_count: 86
+  sha256: 83cc033b1eda58cfd66732c2b78e542b8604c487ad83cb05064f2097fb98ecb2
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/local-adapters.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 113
+  line_count: 113
+  sha256: 7710900646c383dce478b87ab4487af42a71492350dc0ae2367392d15b39468f
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/message-lifecycle.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 246
+  line_count: 246
+  sha256: 7d3fb4a4421478d05ddf5a92fff0f53edd1c864a2c52b9f62dbf993b6d747e22
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/operator-federation.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 152
+  line_count: 152
+  sha256: 891adc15adfef495508bdaaa33dee05f1b8c6c8fc9ba47b830209e3745ae047b
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/recovery.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 198
+  line_count: 198
+  sha256: 2d8e87a5ada699599cc67bb67d473609cf8ce9fb9a59b9cea24b2ef5bf62ffb4
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: skills/agentbus/SKILL.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 126
+  line_count: 126
+  sha256: 7fe60f206b6725b55298a27894dd2f7fd63952fbcf83ab5be706fb4f805412fb
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: skills/agentbus/references/participation.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 226
+  line_count: 226
+  sha256: 10ad5d86752a231bc8e38898bf133284c3d9309fc2db30458ed5a51041a6734d
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: skills/agentbus/agents/openai.yaml
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 4
+  line_count: 4
+  sha256: 38348111fa4b23ffff099cca3fed276cf7fdd910fcfd2c144b5afd876b39ba8f
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: contracts/channels/v1/channel-isolation.contract.yml
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 72
+  line_count: 72
+  sha256: 4327bdecdfa070191b16728231890ecd12436b15f5429c2232e943f8bf730001
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: contracts/codex-wake/v1/codex-wake.contract.yml
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 141
+  line_count: 141
+  sha256: cc2971b307d671a9dcfa3a5931f163a3b3b2b53f74f7c549938fbc619fc69c03
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: contracts/federation/v1/federation.contract.yml
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 208
+  line_count: 208
+  sha256: 081c3b28ca09a4d22bec655f21b436a929c96db46956fa3660aad15a1e86244a
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: contracts/federation/v1/operator.contract.yml
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 22
+  line_count: 22
+  sha256: 5d527427afa06ec900b8c1160a5b3a953dd12c89398e12849f8a59c4e7e0180f
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: contracts/local-adapters/v1/a2a.contract.yml
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 33
+  line_count: 33
+  sha256: 8d1104f4f3a9ae83edebd2f9ff878af8dcd60b9cde91ee4a9c47bdceb83b7882
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: contracts/mailbox/v1/mailbox.contract.yml
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 16
+  line_count: 16
+  sha256: b9fcd3c7903d87b8fe2fc3b115ff6b16d34f6dd82c58174b99cb9fdb6352746f
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: contracts/mailbox/v1/mcp.contract.yml
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 9
+  line_count: 9
+  sha256: 1d48c21469f811e74f8e17372d9d5d2a68ce0ec49cef5ed399e087604096a5ff
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: contracts/messages/v1/message-lifecycle.contract.yml
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 124
+  line_count: 124
+  sha256: 3911d6e6bcdcf7748fcc59733ce7687945957a639c71fb57370bebb01a3c56ce
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: contracts/participation/v1/participation.contract.yml
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 357
+  line_count: 357
+  sha256: d8789d9c7335475c8a12f5f41a7cbc0fe8e77a4a276b5a64f84467f0b895e90b
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: contracts/participation/v2/participation.contract.yml
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 293
+  line_count: 293
+  sha256: 6a39b511d0425e536a519af2ec9b4db4013cbbf32c4333d52f49e844d302395f
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: contracts/participation/v2/recovery-observation.contract.yml
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 65
+  line_count: 65
+  sha256: dfca5a5c42a8f7039be0874c1b2d617c09bd36f02e2992d478e187a61eb0e4d2
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: contracts/publication/v1/publication.contract.yml
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 56
+  line_count: 56
+  sha256: 46022bbbc4b097a23ba3406e83eff741d561a80428a60bcd88fef11f19b95c2a
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: contracts/retention/v1/automatic-retention.contract.yml
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 35
+  line_count: 35
+  sha256: d08d45f36481240771a434f0801398167518825c8219b02a4cd1e6ddb8c95940
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/audiences/mailbox-tool-users.md
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 200
+  line_count: 200
+  sha256: eee417f2426c467a296750386fe01e5a989883a0389814bb3898798d922a3899
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: docs/examples/client-slack-manifest.json
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 17
+  line_count: 17
+  sha256: f53cfbe889a6f4654f4d34ad13adfd1dcefd965698da6613c2e2fd03ac89fe24
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: contracts/participation/v2/operator-identity.contract.yml
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 51
+  line_count: 51
+  sha256: 7d37f84aa1ab95eb1529a39ef55fc5b4142b7c0257998e17b334a61795a3d799
+  disposition: added
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
+- document: slack-app-manifest.json
+  review_status: full_document_line_reviewed_pending_final_reconciliation
+  reviewed_lines:
+  - - 1
+    - 44
+  line_count: 44
+  sha256: dd5a01522beedb64aedecd426a030614e3b46738399a2102afaafe5b73d47bab
+  disposition: reviewed
+  review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
+    and final changed bytes still require implementation reconciliation; this is not release proof.
 current_review:
-  scope: Complete fresh line-by-line sweep explicitly reaffirmed for P16; baseline entries are not current review
-    evidence.
+  scope: Complete fresh line-by-line sweep explicitly reaffirmed for P16; baseline entries are not current
+    review evidence.
   required_dispositions:
   - reviewed
   - added
   - edited
   - combined
   - removed
-  pending_baseline_documents:
-  - .env.example
-  - LICENSE
-  - README.md
-  - CONTRACT.md
-  - CONTRIBUTING.md
-  - SECURITY.md
-  - audits/README.md
-  - audits/2026-09-29-external-product-review.md
-  - docs/OPERATIONS.md
-  - docs/README.md
-  - docs/adoption-measurements.md
-  - docs/architecture.md
-  - docs/audiences/adapter-users.md
-  - docs/audiences/agents.md
-  - docs/audiences/experimenters.md
-  - docs/audiences/hippiebots.md
-  - docs/audiences/humans.md
-  - docs/audiences/maintainers.md
-  - docs/audiences/operators.md
-  - docs/audiences/security-reviewers.md
-  - docs/channel-migration.md
-  - docs/client-publishing.md
-  - docs/codex-skill.md
-  - docs/contracts.md
-  - docs/federation.md
-  - docs/governance-model.md
-  - docs/http-api.md
-  - docs/local-adapters.md
-  - docs/message-lifecycle.md
-  - docs/operator-federation.md
-  - docs/recovery.md
-  - skills/agentbus/SKILL.md
-  - skills/agentbus/references/participation.md
-  - skills/agentbus/agents/openai.yaml
-  - contracts/channels/v1/channel-isolation.contract.yml
-  - contracts/codex-wake/v1/codex-wake.contract.yml
-  - contracts/federation/v1/federation.contract.yml
-  - contracts/federation/v1/operator.contract.yml
-  - contracts/local-adapters/v1/a2a.contract.yml
-  - contracts/mailbox/v1/mailbox.contract.yml
-  - contracts/mailbox/v1/mcp.contract.yml
-  - contracts/messages/v1/message-lifecycle.contract.yml
-  - contracts/participation/v1/participation.contract.yml
-  - contracts/participation/v2/participation.contract.yml
-  - contracts/participation/v2/recovery-observation.contract.yml
-  - contracts/publication/v1/publication.contract.yml
-  - contracts/retention/v1/automatic-retention.contract.yml
-  - docs/audiences/mailbox-tool-users.md
-  - docs/examples/client-slack-manifest.json
-  additional_pending:
-  - contracts/participation/v2/operator-identity.contract.yml
+  pending_baseline_documents: []
+  additional_pending: []
   preserve:
   - all graphics and tone
   - README BCF section and placement
-  qualification: No editorial or release completion claim until every final-subject document and visual is actually
-    reviewed.
+  qualification: No editorial or release completion claim until every final-subject document and visual is
+    actually reviewed.
+  pending_final_reconciliation:
+  - identity management UI and retention limits
+  - recovery context and custodian contact
+  - cursor-first headers and capacity diagnostics
+  - owner qualification research
+  - final skill and configuration walkthrough
+  - final-subject hashes and canonical custody
