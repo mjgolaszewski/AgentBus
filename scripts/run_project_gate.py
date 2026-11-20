@@ -176,6 +176,37 @@ def _runtime_smoke_image_tag(namespace: str) -> str:
     return f"agentbus:bcf-runtime-smoke-{namespace_digest}"
 
 
+def _runtime_container_probe(image: str, name: str, script: str) -> None:
+    """Read retained logs after actual exit; attached output can lose failures."""
+    require_success(run([
+        "docker", "create", "--name", name, "--entrypoint", "/app/.venv/bin/python", image, "-c", script,
+    ], capture=True))
+    terminal = False
+    try:
+        require_success(run(["docker", "start", name], capture=True))
+        waited = run(["docker", "wait", name], capture=True)
+        require_success(waited)
+        code = waited.stdout.strip()
+        if not code.isdecimal() or not 0 <= int(code) <= 255:
+            raise RuntimeError("Container exit status could not be confirmed")
+        inspected = run(["docker", "inspect", "--format", "{{json .State}}", name], capture=True)
+        require_success(inspected)
+        state = json.loads(inspected.stdout)
+        if (state.get("Running") is not False or state.get("Status") != "exited"
+                or type(state.get("ExitCode")) is not int or state["ExitCode"] != int(code)):
+            raise RuntimeError("Container terminal state could not be confirmed")
+        terminal = True
+        logs = run(["docker", "logs", name], capture=True)
+        require_success(logs)
+        require_success(subprocess.CompletedProcess(
+            ["runtime-container", name], int(code), stdout=logs.stdout, stderr=logs.stderr,
+        ))
+    finally:
+        # An uncertain or still-running container is retained for its owner.
+        if terminal:
+            require_success(run(["docker", "rm", name], capture=True))
+
+
 def runtime_smoke() -> None:
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
     namespace = os.environ.get("BCF_EXECUTION_STATE_NAMESPACE", "")
@@ -198,9 +229,8 @@ def runtime_smoke() -> None:
         image = iid.read_text(encoding="utf-8").strip()
         try:
             # Build oracle markers in the child: echoed argv alone must not prove rejection.
-            require_success(run([
-                "docker", "run", "--rm", "--entrypoint", "/app/.venv/bin/python", image,
-                "-c", (
+            _runtime_container_probe(
+                image, image_tag.replace(":", "-"), (
                     "import os,sys,tomllib,pathlib,agentbus_service; "
                     "sys.exit('runtime-'+'user-mismatch') if os.getuid()!=10001 else None; "
                     "assert agentbus_service.create_app; "
@@ -209,7 +239,7 @@ def runtime_smoke() -> None:
                     "'runtime-'+'code-writable'; "
                     "assert tomllib.loads(pathlib.Path('/app/pyproject.toml').read_text())['project']['version']"
                 ),
-            ], capture=True))
+            )
         finally:
             run(["docker", "image", "rm", "--force", image_tag, image], capture=True)
     print("runtime-smoke-ok")
