@@ -96,6 +96,7 @@ def test_profile_inventory_ignores_projections_and_preserves_legacy_profiles(res
 
 def test_profile_inventory_skips_symlinks_and_non_regular_files(resume, tmp_path):
     import os
+
     from src.agentbus_profile_client import profile_inventory
     profile, _, _, values, _ = resume
     target = tmp_path / 'retained-evidence.json'
@@ -234,10 +235,11 @@ def test_resume_rejects_nonregular_or_deep_checkpoint_without_hanging(resume, tm
 
 
 def test_operator_contact_hint_is_scoped_expiring_and_never_resource_admission(tmp_path):
-    from dataclasses import replace
     import json
-    from src.agentbus_recovery_contact_service import decode_contacts,contact_snapshot
-    from src.agentbus_service import MessageStore,SendMessage
+    from dataclasses import replace
+
+    from src.agentbus_recovery_contact_service import contact_snapshot, decode_contacts
+    from src.agentbus_service import MessageStore, SendMessage
     from src.agentbus_settings_service import Settings
     store=MessageStore(tmp_path/'contact.sqlite3')
     store.channels.configure(('C111','C222'))
@@ -278,6 +280,7 @@ def test_operator_contact_hint_is_scoped_expiring_and_never_resource_admission(t
 ])
 def test_recovery_contact_configuration_rejects_foreign_unbounded_or_credential_fields(change):
     import json
+
     from src.agentbus_recovery_contact_service import decode_contacts
     row={'channel':'C111','route':'local:demo:keeper','observed_at':100,'expires_at':200,
          'receipt_position':None,'service_epoch':None,'host_epoch':None}

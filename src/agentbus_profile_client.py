@@ -99,6 +99,7 @@ def profile_inventory(values, bound):
     import re
     import stat
     from uuid import UUID
+
     from src.agentbus_client import consumer_state_dir
 
     directory = consumer_state_dir(values)

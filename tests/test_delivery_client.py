@@ -468,8 +468,10 @@ def test_invalid_audience_fails_before_profile_network_or_request_staging(monkey
 
 
 def test_same_scope_rename_retry_uses_original_staged_sender_epoch_and_fingerprint(tmp_path):
+    import hashlib
+    import json
     from copy import deepcopy
-    import hashlib,json
+
     from src.agentbus_delivery_client import send_command
     values={'_AGENTBUS_DELIVERY_VERSION':'2','AGENTBUS_STATE_DIR':str(tmp_path),'AGENTBUS_URL':'http://localhost:8766'}
     profile={'identity':'local:demo:old','repo':'demo','inbox_id':'inbox','channel':'C111','chat_id':'chat',
@@ -501,15 +503,20 @@ def test_same_scope_rename_retry_uses_original_staged_sender_epoch_and_fingerpri
 
 
 def test_request_stage_special_file_is_rejected_without_blocking_or_replacing_it(tmp_path):
-    import hashlib,json,os
+    import hashlib
+    import json
+    import os
+
     from src.agentbus_lifecycle_client import request_stage
     from src.agentbus_scope_client import scope
     values={'AGENTBUS_STATE_DIR':str(tmp_path),'AGENTBUS_URL':'http://localhost:8766'}
     profile={'identity':'local:demo:a','repo':'demo','service_url':values['AGENTBUS_URL'],'inbox_id':'inbox',
              'channel':'C111','chat_id':'chat','participation':{'session_id':'session'}}
-    directory=tmp_path/'send-requests';directory.mkdir(mode=0o700)
+    directory=tmp_path/'send-requests'
+    directory.mkdir(mode=0o700)
     name=hashlib.sha256(json.dumps([scope(profile),'retained-key'],sort_keys=True).encode()).hexdigest()+'.json'
-    fifo=directory/name;os.mkfifo(fifo,0o600)
+    fifo=directory/name
+    os.mkfifo(fifo,0o600)
     descriptor=os.open(fifo,os.O_RDWR|os.O_NONBLOCK)
     try:
         with pytest.raises(ClientError,match='not private|invalid'):

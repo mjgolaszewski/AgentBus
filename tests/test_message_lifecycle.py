@@ -1676,6 +1676,7 @@ def test_identity_history_only_selects_original_author_and_requires_real_ack(lif
 
 def test_identity_history_unknown_reference_after_preview_rolls_back_revocation(lifecycle,monkeypatch):
     from types import SimpleNamespace
+
     from src.agentbus_identity_management_service import IdentityManagement
     store,p=lifecycle
     m=message(store,p['sender'],p['recipient'])
@@ -1699,6 +1700,7 @@ def test_identity_history_unknown_reference_after_preview_rolls_back_revocation(
 
 def test_identity_archive_and_revocation_rollback_together_on_purge_failure(lifecycle,monkeypatch):
     from types import SimpleNamespace
+
     from src.agentbus_identity_management_service import IdentityManagement
     store,p=lifecycle
     m=message(store,p['sender'],p['recipient'])

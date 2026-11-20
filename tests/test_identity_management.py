@@ -6,7 +6,11 @@ from uuid import uuid4
 import pytest
 
 from src.agentbus_identity_intent_service import (
-    decode_identity_intent, encode_identity_intent, intent_digest, intent_mapping, require_fresh_intent,
+    decode_identity_intent,
+    encode_identity_intent,
+    intent_digest,
+    intent_mapping,
+    require_fresh_intent,
 )
 
 
@@ -166,6 +170,7 @@ def test_identity_history_unavailable_never_becomes_unconditional_delete(managed
 
 def test_private_identity_buttons_bind_actor_channel_and_exact_confirmation(managed):
     import json
+
     from src.agentbus_slack_command_service import execute_command
     from src.agentbus_slack_ui_commands_service import execute_interaction
     store,settings,_,ids=managed
@@ -192,6 +197,7 @@ def test_private_identity_buttons_bind_actor_channel_and_exact_confirmation(mana
 
 def test_operator_rename_confirmation_binds_full_route_across_configuration_restart(managed):
     from dataclasses import replace
+
     from src.agentbus_identity_management_service import IdentityManagement
     store,settings,owner,ids=managed
     preview=owner.preview('UOP','C111',ids['first'][0],'rename',name='exact-name')
@@ -205,6 +211,7 @@ def test_operator_rename_confirmation_binds_full_route_across_configuration_rest
 
 def test_recipient_retirement_preserves_exact_accepted_replay_but_blocks_new_admission(managed):
     from fastapi import HTTPException
+
     from src.agentbus_channel_api_service import require_target
     from src.agentbus_local_delivery_service import fingerprint
     from src.agentbus_service import SendMessage

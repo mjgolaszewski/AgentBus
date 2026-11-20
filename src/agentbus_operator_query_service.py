@@ -77,7 +77,7 @@ def doctor_checks(snapshot, *, command="/agentbus"):
         limit = federation_capacity['per_table_limit']
         full = [table for table,count in federation_capacity['rows'].items() if count*5 >= limit*4]
         checks.append(('Federation custody capacity', 'WARN' if full else 'OK',
-            ('At or above 80%: '+', '.join(full)+'. ') if full else 'Within the configured retained-row bound. '
+            (('At or above 80%: '+', '.join(full)+'. ') if full else 'Within the configured retained-row bound. ')
             + 'Inspect private health counts and ask the custodian to review capacity; never delete unresolved custody.'))
     storage = snapshot.get('lifecycle_storage')
     if storage:

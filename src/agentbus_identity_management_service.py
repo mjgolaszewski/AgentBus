@@ -9,7 +9,11 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from src.agentbus_identity_intent_service import (
-    DENIAL, decode_identity_intent, encode_identity_intent, intent_digest, require_fresh_intent,
+    DENIAL,
+    decode_identity_intent,
+    encode_identity_intent,
+    intent_digest,
+    require_fresh_intent,
 )
 from src.agentbus_transaction_service import atomic
 

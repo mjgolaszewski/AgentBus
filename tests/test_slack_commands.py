@@ -997,8 +997,8 @@ def test_cursor_header_uses_public_channel_position_and_preserves_locator_and_wi
 
 
 def test_federation_capacity_warning_is_private_read_only_and_precedes_exhaustion(enrolled):
-    from src.agentbus_operator_query_service import doctor_checks
     from src.agentbus_operator_presentation_service import health_text
+    from src.agentbus_operator_query_service import doctor_checks
     from src.agentbus_status_api_service import service_dashboard
     settings,store,_,_=enrolled
     before=store._db.total_changes

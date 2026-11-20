@@ -94,6 +94,7 @@ def load_recovery_context(path, profile, values):
 def write_resume_checkpoint(path, snapshot, baseline):
     """Compare-and-swap under a short local lock, never held across API calls."""
     import fcntl
+
     from src.agentbus_client import atomic_json
     path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     descriptor = os.open(path.with_suffix('.lock'), os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
