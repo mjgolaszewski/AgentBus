@@ -19,13 +19,13 @@ phase:
   - MEMORY.yml
 delivery_contract:
   tightly_scoped_deliverables:
-  - Credential-free source and report-deadline continuity through existing local recovery state
-  - Scoped custodian handoff freshness and receipt pointers without admission authority
-  - Private read-only diagnostics using the configured local Slack command and aliases, with authorized detail buttons
-  - Cursor-first location-labelled Slack headers preserving canonical wire content
-  - Owner-produced diagnostic and NFS/cache recovery runbook artifacts for Racecar suggestions
-  - Current installed-owner static capability inventory and deterministic Issue75 provenance/admission exclusions
-  - Canonical proof compatibility editorial skill installation and bounded resource qualification
+  - Contract Racecar recovery suggestions and security residual owners
+  - Extend local resume continuity and source/update-deadline observations
+  - Expose scoped custodian handoff freshness as non-authorizing context
+  - Render local cursor first without modifying signed wire custody
+  - Private configured-command diagnostics with recent receipt incident buttons
+  - Advance current offline owner and provenance qualification
+  - Deliver bounded recovery runbooks and release proof
   parallelizable_workstreams:
   - id: P16-WS1
     name: recovery_and_qualification

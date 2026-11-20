@@ -8,7 +8,7 @@ baseline:
   computed_closure: P14 and P14-HF01 closed by exact-main run 42975499023 attempt 1
   bcf: Released 2.3.4 is the entry authority; no implicit successor adoption or generated-file repair.
 execution:
-  scheduler: Recovery; overall priority retained
+  scheduler: Workspace custodian owns the coordinated shared queue; Recovery project priority is respected
   storage_and_service_owner: workspace custodian
   workflow: One designated executor, one applicable automated pipeline, consolidated review on actual results; canonical proof reuse, no bookkeeping reruns.
   preservation: Existing source/history, credentials, service state, databases, environment pins and wake preference remain protected.
@@ -129,4 +129,4 @@ current_observations:
     admission: No inspected help establishes atomic non-steering admission or actual current owner/account/generation. Notification-only remains required.
     source_evidence: Owner-registered private static inventory with argv, exit codes and SHA256; no credentials or conversation content.
   hang_capture: docs/recovery.md distinguishes responsive read-only diagnostics from custodian-owned bounded out-of-band observations; no arbitrary signal/environment dump or invented stack capture.
-  execution: Recovery admission pending; custodian confirms current original fence and no active cleanup. No build or test started.
+  execution: First finite validation completed with causal controls and retained governance failure; original fence released and no active allocation remains. Release qualification is pending.

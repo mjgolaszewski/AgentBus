@@ -19,12 +19,12 @@ phase:
   - MEMORY.yml
 delivery_contract:
   tightly_scoped_deliverables:
-  - Issue and report inventory with exact source continuity and security residual dispositions
-  - Publication response classification and correct authenticated delivery receipts without blind retry
-  - Send audience validation before staging and honest non-admission recovery
-  - Bounded private hang diagnostics and regression characterization without invented root cause
-  - Current packaged and installed skill continuity plus audited documentation
-  - Canonical protected PR exact-main archive and isolated-install patch qualification
+  - Inventory baseline, issue reports and exact owner/dispositions
+  - Correct publication response validation and retain safe diagnostics
+  - Validate audience before staging and clarify rejected request recovery
+  - Capture bounded private service diagnostics and characterize hang risks
+  - Refresh installed skill safely and reconcile audited guidance
+  - Qualify and publish bounded patch repair
   parallelizable_workstreams:
   - id: P15-WS1
     name: reliability

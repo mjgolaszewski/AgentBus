@@ -1,0 +1,64 @@
+document:
+  kind: bounded_slice_execution
+  path: audits/reliability-first-slice.yml
+  status: component_controls_passed_governance_repair_pending
+subject:
+  commit: 4dd1c8ff8eaf6f97d0cfe8c45ccf44d83cbd0a38
+  tree: c5f4018142a271230bc4ea60a433e0d310e682d0
+  baseline: a72c7c03a20a4167760a83f746eb90766ca5b66d
+controls:
+  causal_baseline:
+    tests: 13
+    failures: 13
+    errors: 0
+    skips: 0
+  repaired_slice:
+    tests: 167
+    failures: 0
+    errors: 0
+    skips: 0
+  coverage:
+  - audience preflight before profile/API/staging
+  - bounded first publication validation reason and retained uncertainty
+  - existing publication and configured Slack command controls
+governance:
+  schema: passed
+  semantic: first failure retained
+  reason: Phase deliverable names absent from workitem summaries/acceptance
+  disposition: Align authored plan deliverable names with corresponding workitem summaries; canonical revalidation
+    required
+custody:
+  natural_exit: true
+  kernel_echild: true
+  handles_closed: true
+  physical_fence_closed: true
+  automatic_termination: false
+  elapsed_seconds: 29.532976118
+  sampled_peak_tree_rss_bytes: 127913984
+non_claims:
+- release certification
+- publication incident root cause
+- historical hang root cause
+- live provider post
+- owner interoperability
+evidence:
+  location: Owner-registered private execution inventory; these hashes bind portable original outputs
+  files:
+    baseline-controls.xml:
+      bytes: 11316
+      sha256: fab73836f7903f89e954a736d2fb251904c1c6b75030a26fb5af605897b17d39
+    repaired-slice.xml:
+      bytes: 113594
+      sha256: f74bd6a2242af34102cd37d67626eb96aeb506df7d3345b6cf31bd901a171ef3
+    governance.stdout:
+      bytes: 833
+      sha256: 45ae70a10a6564f65d2a0566074f342931d98825d10632967d6fa5baa52adc6e
+    pipeline.json:
+      bytes: 2348
+      sha256: 1347f8cb6bc4027e407f0039bd1eefa74c3177ad6138ea21888c65146b490b60
+    result.json:
+      bytes: 392
+      sha256: 7360222a4b57b67ad3768a832bd45699a2a59d0544371f85417eb8ba25d5f14a
+    baseline-manifest.json:
+      bytes: 24701
+      sha256: f301625c543150dc5f344157309de6668e044996204cf6903be02ab7cf66a8d0

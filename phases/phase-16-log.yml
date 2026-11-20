@@ -75,7 +75,7 @@ closeout_requirements:
     - governance-exposure-scan
   finding_registry: governance/findings.yml
 known_constraints:
-- Recovery owns scheduling and overall priority; custodian preserves services/storage/credentials/wake preferences;
+- Custodian schedules shared resources; Recovery project priority is respected; preserve services/storage/credentials/wake preferences;
   consuming work requires original fence.
 - Certified BCF2.3.4 remains the baseline; generated BCF files installer-owned; no SDK upgrade presumed.
 - Trusted non-hostile workspace remains the boundary. Live owner admission and stronger external security/audit
