@@ -44,6 +44,18 @@ evidence:
   repair-validation/governance.stdout:
     bytes: 139
     sha256: 88c064856be19a0dfcd38934d9f38efc85df41a141406db4083f811e790f179f
+  replacement-validation/controls.xml:
+    bytes: 104830
+    sha256: 591931eee9254f4a5c1d93626ce7415f4239f03bdaeb9995e69b95c65476a99c
+  replacement-validation/commands.json:
+    bytes: 1644
+    sha256: 8a0cbe9c08a34734c8463b1a1f8da7d2055190341a918db5511eb59c49fb8986
+  replacement-validation/result.json:
+    bytes: 393
+    sha256: 1126fabaf86cc3a0278733cf2566ab530665ae9e1d3bc385213b8794fc7f9106
+  replacement-validation/governance.stdout:
+    bytes: 737
+    sha256: f53704e8fcb9e8c52eaf8667edc14f0d7128a34d6b2eb502b1f576e636b69821
 validation:
   subject: 985e958d2a7732e604a071db2bab5fa13d7144c4
   controls_passed: 103
@@ -53,3 +65,11 @@ validation:
   sdk_manifest_controls_added_per_suite: 10
   final_release_proof: pending
   applicability: Prior985e958 candidate only; replacement admission renderer and legacy-retry controls require qualification
+replacement_validation:
+  subject: 6ba66734d7f4ee69b4ace0bebbb71bb77d792e7b
+  controls_passed: 100
+  lint: passed
+  canonical_reconcile: converged
+  governance_first_failure: Authored phase-log note colon parsed as mapping; quote repaired, canonical revalidation
+    pending
+  runtime: Unchanged private-mode producer previously passed; final applicability remains canonical
