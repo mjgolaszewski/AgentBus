@@ -103,7 +103,7 @@ def profile_inventory(values, bound):
     from src.agentbus_client import consumer_state_dir
 
     directory = consumer_state_dir(values)
-    profiles = []
+    profiles: list[dict[str, object]] = []
     if not directory.is_dir():
         return profiles
     for path in sorted(directory.glob('*.json')):

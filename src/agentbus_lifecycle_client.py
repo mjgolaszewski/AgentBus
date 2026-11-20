@@ -74,11 +74,12 @@ def request_stage(values, profile, key, payload, epoch, *, existing=False, purpo
                 from src.agentbus_client import NAME_RE, REPO_RE
                 sender = original.get('sender')
                 pieces = sender.split(':') if isinstance(sender, str) and len(sender) <= 80 else []
-                parts = pieces if len(pieces) == 3 else [None, *pieces] if len(pieces) == 2 else None
-                valid = (parts is not None and parts[1] not in {'slack', 'all'} and re.fullmatch(REPO_RE, parts[1])
-                         and re.fullmatch(NAME_RE, parts[2]) and (parts[0] is None or
-                         parts[0] not in {'slack', 'all'} and re.fullmatch(r'[a-z][a-z0-9-]{0,31}', parts[0])))
-                if (payload.get('sender') != profile.get('identity') or not valid or parts[1] != profile.get('repo')
+                if (len(pieces) not in {2, 3} or pieces[-2] in {'slack', 'all'}
+                        or not re.fullmatch(REPO_RE, pieces[-2]) or not re.fullmatch(NAME_RE, pieces[-1])
+                        or len(pieces) == 3 and (pieces[0] in {'slack', 'all'}
+                        or not re.fullmatch(r'[a-z][a-z0-9-]{0,31}', pieces[0]))):
+                    raise ValueError()
+                if (payload.get('sender') != profile.get('identity') or pieces[-2] != profile.get('repo')
                         or {key:value for key,value in original.items() if key!='sender'} !=
                            {key:value for key,value in payload.items() if key!='sender'}):
                     raise ValueError()
