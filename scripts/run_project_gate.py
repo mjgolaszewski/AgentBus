@@ -209,7 +209,7 @@ def runtime_smoke() -> None:
                     "'runtime-'+'code-writable'; "
                     "assert tomllib.loads(pathlib.Path('/app/pyproject.toml').read_text())['project']['version']"
                 ),
-            ]))
+            ], capture=True))
         finally:
             run(["docker", "image", "rm", "--force", image_tag, image], capture=True)
     print("runtime-smoke-ok")
