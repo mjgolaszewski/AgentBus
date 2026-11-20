@@ -22,8 +22,7 @@ baseline_review:
   inventory: audits/editorial-review.yml
   sha256: 6e25f4b8b777b0d140300842273ec5a8c61873bc3c3520854332b6019a3c4628
 experimental_claims:
-  candidate: P16 / 0.12 construction remains local and unqualified. Existing released 0.11.1 custody applies only
-    to its own subject.
+  candidate: P16 source has protected progress certification; final phase closure and release custody remain separately required. Existing released 0.11.1 custody applies only to its own subject.
   AHP_native_queue: Live interoperability and atomic idle-only admission remain unqualified.
   publication: Explicit optional named-destination policy only; production-client canary waived by operator in favor
     of approved two-location substitution, with isolated provider controls; broader client deployments not inferred.

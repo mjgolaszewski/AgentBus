@@ -19,7 +19,7 @@ active_phase:
   memory: MEMORY.yml
   spec: plans/product-spec.yml
   build_plan: plans/build-plan.yml
-  lifecycle_status: active
+  lifecycle_status: completed
   owner: "agentbus:coordinator"
   validation_commands: [make governance-validate, make architecture-test, make lint, make typecheck, make test, make release-check]
 hotfix_lane:
@@ -97,7 +97,7 @@ release_trains:
   release_13: {target_version: 0.10.0, status: completed, focus: [reliable_operator_federation]}
   release_14: {target_version: 0.11.0, status: completed, focus: [controlled_client_publishing]}
   release_15: {target_version: 0.11.1, status: completed, focus: [reliable_publication_and_recovery]}
-  release_16: {target_version: 0.12.0, status: active, focus: [lightweight_recovery_and_owner_qualification]}
+  release_16: {target_version: 0.12.0, status: completed, focus: [lightweight_recovery_and_owner_qualification]}
 release_readiness:
   computed_by: bcf truth
   requirements_source: governance/evidence-policy.yml

@@ -131,9 +131,9 @@ intake:
 - source: Remote workspace custodian retained-capacity report and NFS evidence handoff
   kind: maintained_release_already_has_supported_quota
   disposition: Current 0.10/0.11 bounded AGENTBUS_FEDERATION_CUSTODY_ROWS supersedes the older constant patch; P16
-    diagnostics will disclose pressure, while safe federation archival remains unqualified.
+    diagnostics disclose pressure, while safe federation archival remains unqualified.
   evidence: Existing configured-capacity/startup/lowering controls; remote patch is not adopted as delivered source.
-    NFS inventory pending owner-fenced receipt.
+    Owner-fenced manifest and two reported access failures verified as documented below; NFS durability remains unqualified.
 - source: Follow-up remote custodian capacity saturation and review-export accessibility report
   kind: supported_capacity_limit_and_planned_observability_export_guidance
   disposition: Existing finite startup configuration remains supported; P16-P3-02 owns early per-table warnings
@@ -169,10 +169,10 @@ intake:
   disposition: P16-P1-01 reproduces and excludes non-profile JSON; supported own-profile rename and exact-session
     STOP preserve history/aliases/stages. No hard-delete or forced offline ACK.
   limit: CLI roster excludes stopped by default; Slack roster intentionally retains stopped entries. Source explains
-    matching checkpoint/null entries; behavioral reproduction remains pending.
+    matching checkpoint/null entries; registered behavioral controls reproduce and exclude non-profile JSON.
 - source: Operator P16 identity-management request
   kind: authorized_construction_extension_not_live_deletion
-  disposition: P16-P3-03 models private scoped selection/rename/retire/revoke/history cleanup before implementation
+  disposition: P16-P3-03 delivers private scoped selection/rename/retire/revoke/history cleanup with registered adverse controls
   acceptance: Explicit preview/confirmation, no forced semantic ACK, immutable membership, tombstones and retention/custody
     pins; no arbitrary filesystem or remote identity control.
 racecar:
