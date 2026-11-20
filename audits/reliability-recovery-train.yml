@@ -63,6 +63,10 @@ intake:
     kind: unclassified_incident
     disposition: P15-P3-01 diagnosis/characterization; P16-P3-02 safe operator diagnostics.
     limit: No original stack or demonstrated common cause; adding diagnostics is not proof the historical hang is repaired.
+  - source: Cedar retained federation capacity report at bus44914 and NFS handoff44926
+    kind: maintained_release_already_has_supported_quota
+    disposition: Current 0.10/0.11 bounded AGENTBUS_FEDERATION_CUSTODY_ROWS supersedes the older constant patch; P16 diagnostics will disclose pressure, while safe federation archival remains unqualified.
+    evidence: Existing configured-capacity/startup/lowering controls; remote patch is not adopted as delivered source. NFS inventory pending owner-fenced receipt.
   - source: participant invalid direct all / informational all sends
     kind: reproduced_interface_mismatch_and_recovery_confusion
     disposition: P15-P2-01 local preflight plus honest retained non-admission guidance.
@@ -118,8 +122,8 @@ completion:
   residuals: Never claim all bugs absent, a historical unknown cause fixed, hostile isolation, indefinite retention, or production owner interoperability from deterministic success.
 
 current_observations:
-  publication_response: Existing failure field now records bounded per-check reasons in prepared source; no provider capture or old-cause determination, no classification from a guessed normalization rule.
-  preflight: Prepared direct/informational all and incompatible-selector negative controls; no test execution claimed.
+  publication_response: One expressly authorized isolated post confirmed fallback newline folding with valid Slack success/channel/timestamp; candidate admits that variation only with exact publication ID and blocks. Original failures stay unclassified and uncertain; final live delivered verification remains unqualified.
+  preflight: Direct/informational all and incompatible-selector controls passed in the causal first slice and consolidated 103-case repair validation; final subject applicability remains canonical.
   hang_review: Static source review found no await nested under a lock except A2A admission; its production callback currently takes the synchronous durable branch with no suspension/provider call. This is not a reproduced hang cause.
   owner_static:
     inspected_cli: 0.169.0-alpha.11.1
@@ -129,4 +133,4 @@ current_observations:
     admission: No inspected help establishes atomic non-steering admission or actual current owner/account/generation. Notification-only remains required.
     source_evidence: Owner-registered private static inventory with argv, exit codes and SHA256; no credentials or conversation content.
   hang_capture: docs/recovery.md distinguishes responsive read-only diagnostics from custodian-owned bounded out-of-band observations; no arbitrary signal/environment dump or invented stack capture.
-  execution: Causal controls and corrected governance/lint passed; canonical reconciliation projected active PR progress and new test manifests. Original failures remain retained. Full prospective/phase/release proof is pending.
+  execution: Consolidated 103 controls, lint, private-permission non-root runtime and canonical reconciliation/governance passed on985e958; canonical reconciliation projected active PR progress and new test manifests. Original failures remain retained. Full prospective/phase/release proof is pending.

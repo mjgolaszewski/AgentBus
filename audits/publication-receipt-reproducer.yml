@@ -28,3 +28,26 @@ evidence:
   execution-v2/results/result.json:
     bytes: 393
     sha256: 86e92dc258869dcaf218f728020a74d3c954af1fc28325502226186f4e145a21
+  repair-validation/controls.xml:
+    bytes: 105387
+    sha256: c6962259987cd5a4fdc1ccbc69c5eb88d8e54e5bfa5fd0b592cfc3e40ed5c1fc
+  repair-validation/commands.json:
+    bytes: 2007
+    sha256: da040c9c11ace1d6eef71edb6f80f655feca57dbfa90dfab9aee38aa9708cd67
+  repair-validation/result.json:
+    bytes: 392
+    sha256: e53c763b27ac927297f26ea3db3b19041dc93e17caaf1e6d41f4e32cd28055fe
+  repair-validation/runtime.stdout:
+    bytes: 17
+    sha256: a34fdec02c97fc4cb6f872093841a0216b72c750b91b5b5e7872087354185be2
+  repair-validation/governance.stdout:
+    bytes: 139
+    sha256: 88c064856be19a0dfcd38934d9f38efc85df41a141406db4083f811e790f179f
+validation:
+  subject: 985e958d2a7732e604a071db2bab5fa13d7144c4
+  controls_passed: 103
+  lint: passed
+  private_mode_nonroot_runtime: passed
+  canonical_reconcile_and_governance: passed
+  sdk_manifest_controls_added_per_suite: 10
+  final_release_proof: pending
