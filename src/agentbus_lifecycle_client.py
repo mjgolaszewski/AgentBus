@@ -71,9 +71,14 @@ def request_stage(values, profile, key, payload, epoch, *, existing=False, purpo
         if preserve_sender and purpose == 'message' and existing and isinstance(retained,dict):
             original = retained.get('payload')
             if isinstance(original,dict) and original.get('sender') != payload.get('sender'):
-                from src.agentbus_message_assurance_service import route_parts
-                parts = route_parts(original.get('sender')) if isinstance(original.get('sender'),str) else None
-                if (payload.get('sender') != profile.get('identity') or parts is None or parts[1] != profile.get('repo')
+                from src.agentbus_client import NAME_RE, REPO_RE
+                sender = original.get('sender')
+                pieces = sender.split(':') if isinstance(sender, str) and len(sender) <= 80 else []
+                parts = pieces if len(pieces) == 3 else [None, *pieces] if len(pieces) == 2 else None
+                valid = (parts is not None and parts[1] not in {'slack', 'all'} and re.fullmatch(REPO_RE, parts[1])
+                         and re.fullmatch(NAME_RE, parts[2]) and (parts[0] is None or
+                         parts[0] not in {'slack', 'all'} and re.fullmatch(r'[a-z][a-z0-9-]{0,31}', parts[0])))
+                if (payload.get('sender') != profile.get('identity') or not valid or parts[1] != profile.get('repo')
                         or {key:value for key,value in original.items() if key!='sender'} !=
                            {key:value for key,value in payload.items() if key!='sender'}):
                     raise ValueError()
