@@ -587,13 +587,13 @@ prior_documents:
     secrets, event subscriptions, slash commands, inbound handler or new socket.
 documents:
 - document: .env.example
-  review_status: full_document_line_reviewed_pending_final_reconciliation
+  review_status: changed_since_full_read_final_reread_required
   reviewed_lines:
   - - 1
-    - 73
-  line_count: 73
-  sha256: 0645cc21ca7d83f600486a5d30ef9b07a26b542531b3302729cf104085c2a6f4
-  disposition: reviewed
+    - 75
+  line_count: 75
+  sha256: b22fe1f86488d0fabad5fdd16b73379d01097c6603b4a39927a4abcea9eafc42
+  disposition: edited
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: LICENSE
@@ -607,23 +607,23 @@ documents:
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: README.md
-  review_status: full_document_line_reviewed_pending_final_reconciliation
+  review_status: changed_since_full_read_final_reread_required
   reviewed_lines:
   - - 1
     - 232
   line_count: 232
-  sha256: b63c759710ce26dc647d73f131fe26f1da4a90d44fc1b397d3b4694f088faedc
-  disposition: reviewed
+  sha256: 60c1a43795c655a63774a2ba4ac0e64f811fe27921a948e40df1c4e0a22dc388
+  disposition: edited
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: CONTRACT.md
-  review_status: full_document_line_reviewed_pending_final_reconciliation
+  review_status: changed_since_full_read_final_reread_required
   reviewed_lines:
   - - 1
-    - 261
-  line_count: 261
-  sha256: f82232c553aa7f8ce5af8a64861c64f57d6dabedfc6f05abf6d460c25b554689
-  disposition: reviewed
+    - 273
+  line_count: 273
+  sha256: a100ceff8b5384ab17d82435ea21fc786f6677429a4a2ffbba7515264e938c3e
+  disposition: edited
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: CONTRIBUTING.md
@@ -667,13 +667,13 @@ documents:
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: docs/OPERATIONS.md
-  review_status: full_document_line_reviewed_pending_final_reconciliation
+  review_status: changed_since_full_read_final_reread_required
   reviewed_lines:
   - - 1
-    - 341
-  line_count: 341
-  sha256: 6c6e5e7482e4e2028f7880a00ae08cc345c453ea3294955b6c992bf6b861ce0f
-  disposition: reviewed
+    - 342
+  line_count: 342
+  sha256: 4a27b719fa739cae3eaca6dc622e1dff7bac5bc66f41f74241990da118d3b1db
+  disposition: edited
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: docs/README.md
@@ -697,13 +697,13 @@ documents:
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: docs/architecture.md
-  review_status: full_document_line_reviewed_pending_final_reconciliation
+  review_status: changed_since_full_read_final_reread_required
   reviewed_lines:
   - - 1
-    - 199
-  line_count: 199
-  sha256: 4cac0aaac4bd69d9c1a5b8f55219bae4c78e9253bba86d31bae5c23e75cf88cb
-  disposition: reviewed
+    - 210
+  line_count: 210
+  sha256: c298dc220a00128c6494466a425888828902ac9c3e50b35283e271496b8620cb
+  disposition: edited
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: docs/audiences/adapter-users.md
@@ -727,13 +727,13 @@ documents:
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: docs/audiences/experimenters.md
-  review_status: full_document_line_reviewed_pending_final_reconciliation
+  review_status: changed_since_full_read_final_reread_required
   reviewed_lines:
   - - 1
-    - 118
-  line_count: 118
-  sha256: b7d47959342edee8556ab0401b0d845c88bc6c3e321db086c4a294598598cfbd
-  disposition: reviewed
+    - 135
+  line_count: 135
+  sha256: 43e5d9fb67e03e55ea58f64277e92d838af57220258610c2bea8f486be05e57d
+  disposition: edited
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: docs/audiences/hippiebots.md
@@ -767,13 +767,13 @@ documents:
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: docs/audiences/operators.md
-  review_status: full_document_line_reviewed_pending_final_reconciliation
+  review_status: changed_since_full_read_final_reread_required
   reviewed_lines:
   - - 1
-    - 363
-  line_count: 363
-  sha256: 915beb26c573a37f95066f010e6d1700ccce37d57d23075a3d4e129eba66e5c2
-  disposition: reviewed
+    - 415
+  line_count: 415
+  sha256: 5b5ba1b1140a552d4c8f058b874668249ce8a4e6dd6736c327c87195ae1db23a
+  disposition: edited
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: docs/audiences/security-reviewers.md
@@ -877,43 +877,43 @@ documents:
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: docs/operator-federation.md
-  review_status: full_document_line_reviewed_pending_final_reconciliation
+  review_status: changed_since_full_read_final_reread_required
   reviewed_lines:
   - - 1
     - 152
   line_count: 152
-  sha256: 891adc15adfef495508bdaaa33dee05f1b8c6c8fc9ba47b830209e3745ae047b
-  disposition: reviewed
+  sha256: 8e45e9a61f990e790edbfc9b85c9e59de68f76b8e3a5a97d817745015f550c2a
+  disposition: edited
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: docs/recovery.md
-  review_status: full_document_line_reviewed_pending_final_reconciliation
+  review_status: changed_since_full_read_final_reread_required
   reviewed_lines:
   - - 1
-    - 198
-  line_count: 198
-  sha256: 2d8e87a5ada699599cc67bb67d473609cf8ce9fb9a59b9cea24b2ef5bf62ffb4
-  disposition: reviewed
+    - 286
+  line_count: 286
+  sha256: b5b31324154bae5656767ea4a0371ab45e1ff4e91a96b64082fc5dc5efc0d8f0
+  disposition: edited
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: skills/agentbus/SKILL.md
   review_status: full_document_line_reviewed_pending_final_reconciliation
   reviewed_lines:
   - - 1
-    - 126
-  line_count: 126
-  sha256: 7fe60f206b6725b55298a27894dd2f7fd63952fbcf83ab5be706fb4f805412fb
-  disposition: reviewed
+    - 135
+  line_count: 135
+  sha256: 6be6bf33e32a520f16ccfa66e4ae8ec04ff42b2b69fb15654683796fb1dfa9a2
+  disposition: edited
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: skills/agentbus/references/participation.md
   review_status: full_document_line_reviewed_pending_final_reconciliation
   reviewed_lines:
   - - 1
-    - 226
-  line_count: 226
-  sha256: 10ad5d86752a231bc8e38898bf133284c3d9309fc2db30458ed5a51041a6734d
-  disposition: reviewed
+    - 245
+  line_count: 245
+  sha256: c6448090ff99ae091a0db45c98dbfbe6af65cb382b63aac6c1a9034047023aec
+  disposition: edited
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: skills/agentbus/agents/openai.yaml
@@ -1017,23 +1017,23 @@ documents:
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: contracts/participation/v2/participation.contract.yml
-  review_status: full_document_line_reviewed_pending_final_reconciliation
+  review_status: changed_since_full_read_final_reread_required
   reviewed_lines:
   - - 1
-    - 293
-  line_count: 293
-  sha256: 6a39b511d0425e536a519af2ec9b4db4013cbbf32c4333d52f49e844d302395f
-  disposition: reviewed
+    - 315
+  line_count: 315
+  sha256: 8ea9b6b7e42c1abdc1f539d1015123243775c2423ed83f6689c212776b0d866d
+  disposition: edited
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: contracts/participation/v2/recovery-observation.contract.yml
-  review_status: full_document_line_reviewed_pending_final_reconciliation
+  review_status: changed_since_full_read_final_reread_required
   reviewed_lines:
   - - 1
-    - 65
-  line_count: 65
-  sha256: dfca5a5c42a8f7039be0874c1b2d617c09bd36f02e2992d478e187a61eb0e4d2
-  disposition: reviewed
+    - 83
+  line_count: 83
+  sha256: 7acc4e37b7f66b3ffb35cc43dafe0d9be29356f7a392326e1dcc645a6a314462
+  disposition: edited
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: contracts/publication/v1/publication.contract.yml
@@ -1077,23 +1077,23 @@ documents:
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: contracts/participation/v2/operator-identity.contract.yml
-  review_status: full_document_line_reviewed_pending_final_reconciliation
+  review_status: changed_since_full_read_final_reread_required
   reviewed_lines:
   - - 1
-    - 51
-  line_count: 51
-  sha256: 7d37f84aa1ab95eb1529a39ef55fc5b4142b7c0257998e17b334a61795a3d799
-  disposition: added
+    - 63
+  line_count: 63
+  sha256: c41ccce4451b83f75b2e5b685721ae4d6609f34237d60926cbc102eb6b0959ca
+  disposition: edited
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: slack-app-manifest.json
-  review_status: full_document_line_reviewed_pending_final_reconciliation
+  review_status: changed_since_full_read_final_reread_required
   reviewed_lines:
   - - 1
     - 44
   line_count: 44
-  sha256: dd5a01522beedb64aedecd426a030614e3b46738399a2102afaafe5b73d47bab
-  disposition: reviewed
+  sha256: a6725f395f7bb15fc47d4e21ddb0495c13b87e257e0b9256689de69bd10aee06
+  disposition: edited
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 current_review:
@@ -1119,3 +1119,5 @@ current_review:
   - owner qualification research
   - final skill and configuration walkthrough
   - final-subject hashes and canonical custody
+  - Re-read every changed document listed changed_since_full_read_final_reread_required after final code/tests;
+    do not infer completion from refreshed hashes

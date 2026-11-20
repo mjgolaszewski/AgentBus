@@ -50,6 +50,23 @@ Recognized legacy bindings can recover missing scope only from an exact authenti
 profile with matching retained identities. Conflicting or unknown bindings stay
 fail-closed even when workspace wake is enabled; recovery never qualifies their owner.
 
+## Distinguish native mailbox from a wake endpoint
+
+The next offline investigation follows owner-side native mailbox admission.
+The merged [admission change](https://github.com/openai/codex/pull/62537)
+separates native-child mailbox injection from root history injection. Its root
+regression verifies persisted input without a model request. The merged
+[queue-only drain change](https://github.com/openai/codex/pull/62639) separately
+distinguishes deferred mail from human steering.
+
+These are upstream source observations, not installed-version or interoperability
+qualification. They do not establish a supported external root/UI-thread
+reject-if-busy endpoint or durable retry contract. Native queue and AHP remain
+separate candidates; neither can borrow the other's evidence. Retain exact
+backend/incarnation/generation, unknown-write and permission-revalidation controls.
+The [research record](../../audits/owner-wake-qualification.yml) states observed
+sources and unresolved prerequisites. No production owner adapter is introduced.
+
 ## Work offline first
 
 Use disposable trees, fake provider transports and isolated database copies.

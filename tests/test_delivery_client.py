@@ -465,3 +465,55 @@ def test_invalid_audience_fails_before_profile_network_or_request_staging(monkey
     ns = parse_args(["send", "--identity", "agentbus:flower", *selectors, "hello"])
     with pytest.raises(ClientError, match="broadcast|RECIPIENT"):
         delivery.send_command(ns, {}, forbidden, forbidden, forbidden)
+
+
+def test_same_scope_rename_retry_uses_original_staged_sender_epoch_and_fingerprint(tmp_path):
+    from copy import deepcopy
+    import hashlib,json
+    from src.agentbus_delivery_client import send_command
+    values={'_AGENTBUS_DELIVERY_VERSION':'2','AGENTBUS_STATE_DIR':str(tmp_path),'AGENTBUS_URL':'http://localhost:8766'}
+    profile={'identity':'local:demo:old','repo':'demo','inbox_id':'inbox','channel':'C111','chat_id':'chat',
+             'service_url':values['AGENTBUS_URL'],'participation':{'session_id':'session','session_secret':'private'}}
+    info={'features':['message-lifecycle-v1'],'lifecycle':{'version':1,'request_epoch':'a'*64}}
+    calls=[]
+    def post(_values,path,payload,**kwargs):
+        calls.append((deepcopy(payload),deepcopy(kwargs)))
+        raise ClientError('lost response')
+    first=parse_args(['send','--identity',profile['identity'],'--to','local:demo:other','same work'])
+    with pytest.raises(ClientError):
+        send_command(first,values,lambda *_:(profile,info),lambda x:x,post)
+    stage=next((tmp_path/'send-requests').glob('*.json'))
+    original=stage.read_bytes()
+    key=calls[0][1]['delivery_key']
+    profile['identity']='local:demo:renamed'
+    info['lifecycle']['request_epoch']='b'*64
+    retry=parse_args(['send','--identity',profile['identity'],'--to','local:demo:other','--message-id',key,'same work'])
+    with pytest.raises(ClientError):
+        send_command(retry,values,lambda *_:(profile,info),lambda x:x,post)
+    assert calls[1]==calls[0] and calls[1][0]['sender']=='local:demo:old'
+    assert stage.read_bytes()==original
+    retained=json.loads(original)
+    assert retained['fingerprint']==hashlib.sha256(json.dumps(retained['payload'],sort_keys=True,separators=(',',':'),ensure_ascii=True).encode()).hexdigest()
+    retry.text='changed work'
+    with pytest.raises(ClientError,match='evidence retained'):
+        send_command(retry,values,lambda *_:(profile,info),lambda x:x,post)
+    assert len(calls)==2 and stage.read_bytes()==original
+
+
+def test_request_stage_special_file_is_rejected_without_blocking_or_replacing_it(tmp_path):
+    import hashlib,json,os
+    from src.agentbus_lifecycle_client import request_stage
+    from src.agentbus_scope_client import scope
+    values={'AGENTBUS_STATE_DIR':str(tmp_path),'AGENTBUS_URL':'http://localhost:8766'}
+    profile={'identity':'local:demo:a','repo':'demo','service_url':values['AGENTBUS_URL'],'inbox_id':'inbox',
+             'channel':'C111','chat_id':'chat','participation':{'session_id':'session'}}
+    directory=tmp_path/'send-requests';directory.mkdir(mode=0o700)
+    name=hashlib.sha256(json.dumps([scope(profile),'retained-key'],sort_keys=True).encode()).hexdigest()+'.json'
+    fifo=directory/name;os.mkfifo(fifo,0o600)
+    descriptor=os.open(fifo,os.O_RDWR|os.O_NONBLOCK)
+    try:
+        with pytest.raises(ClientError,match='not private|invalid'):
+            request_stage(values,profile,'retained-key',{},'a'*64,existing=True)
+        assert fifo.exists()
+    finally:
+        os.close(descriptor)

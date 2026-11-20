@@ -617,8 +617,8 @@ class SlackPoster:
         if self.store is not None:
             from src.agentbus_channel_api_service import provider_message
             message = provider_message(self.store, self.channel, message)
-        from src.agentbus_presentation_service import message_blocks
-        blocks = message_blocks(message, locator=LOCATOR_PREFIX+message_id if message_id is not None else None)
+        from src.agentbus_presentation_service import posting_blocks
+        blocks = posting_blocks(message, self.store, self.channel, message_id, self.settings.local_prefix)
         payload = {"channel": self.channel, "text": encode_envelope(message), "blocks": blocks,
                    "parse": "none", "mrkdwn": False, "unfurl_links": False, "unfurl_media": False}
         if message.thread_ts:

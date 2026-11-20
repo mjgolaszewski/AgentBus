@@ -6,6 +6,7 @@ import json
 import os
 import re
 import secrets
+import stat
 from pathlib import Path
 from urllib.parse import urlencode
 from uuid import NAMESPACE_URL, UUID, uuid5
@@ -14,7 +15,7 @@ from src.agentbus_scope_client import scope, scoped_api
 from src.agentbus_transport_client import ClientError
 
 
-def request_stage(values, profile, key, payload, epoch, *, existing=False, purpose="message"):
+def request_stage(values, profile, key, payload, epoch, *, existing=False, purpose="message", preserve_sender=False):
     if purpose not in {'message', 'publication'}:
         raise ClientError('Unknown request staging purpose')
     binding = scope(profile)
@@ -59,21 +60,33 @@ def request_stage(values, profile, key, payload, epoch, *, existing=False, purpo
         finally:
             temporary.unlink(missing_ok=True)
     try:
-        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
         with os.fdopen(descriptor, 'rb') as source:
-            if os.fstat(source.fileno()).st_mode & 0o077:
+            if not stat.S_ISREG(os.fstat(source.fileno()).st_mode) or os.fstat(source.fileno()).st_mode & 0o077:
                 raise ClientError('Request stage is not private; evidence retained')
             raw = source.read(65537)
         if len(raw) > 65536:
             raise ValueError()
         retained = json.loads(raw)
+        if preserve_sender and purpose == 'message' and existing and isinstance(retained,dict):
+            original = retained.get('payload')
+            if isinstance(original,dict) and original.get('sender') != payload.get('sender'):
+                from src.agentbus_message_assurance_service import route_parts
+                parts = route_parts(original.get('sender')) if isinstance(original.get('sender'),str) else None
+                if (payload.get('sender') != profile.get('identity') or parts is None or parts[1] != profile.get('repo')
+                        or {key:value for key,value in original.items() if key!='sender'} !=
+                           {key:value for key,value in payload.items() if key!='sender'}):
+                    raise ValueError()
+                # Preserve original bytes and fingerprint. The authenticated server still proves alias ownership.
+                authored = json.dumps(original,sort_keys=True,separators=(',',':'),ensure_ascii=True)
+                expected['payload'],expected['fingerprint'] = original,hashlib.sha256(authored.encode()).hexdigest()
         if any(retained.get(field) != value for field, value in expected.items()):
             raise ValueError()
         if not isinstance(retained.get('epoch'), str) or not re.fullmatch('[0-9a-f]{64}', retained['epoch']):
             raise ValueError()
     except (OSError, ValueError, TypeError, AttributeError):
         raise ClientError('Request stage is invalid or differs from this request; evidence retained') from None
-    return retained['epoch']
+    return (retained['epoch'],retained['payload']) if preserve_sender else retained['epoch']
 
 
 def receipt_identity(profile, cursor):

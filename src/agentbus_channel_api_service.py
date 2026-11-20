@@ -66,6 +66,8 @@ def api_info(request:Request,response:Response):
         'high_water_cursor':request.app.state.store.channels.high_water(principal.channel),
         'features':['profiles','stateless-cursors','explicit-routing','parent-replies','session-required',
                     'mailbox-search-v1','channel-isolation-v1','channel-local-cursors-v1','authored-request-outcome-v1','mandatory-announcements-v1','slack-enrollment-approval-v1']}
+    from src.agentbus_recovery_contact_service import contact_snapshot
+    result['recovery_contact']=contact_snapshot(request.app.state.settings,store,principal.channel)
     publications = getattr(request.app.state, "publications", None)
     if publications is not None:
         result["features"].append("client-publication-v1")

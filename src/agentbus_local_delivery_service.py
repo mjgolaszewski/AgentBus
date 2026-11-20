@@ -118,7 +118,7 @@ class LocalDeliveryStore:
             return {**result, 'warnings': warnings}
 
     def accept(self, channel: str, key: str, request_hash: str, message: SendMessage,
-               principal: str, *, bridge=None, epoch=None, session_token=None) -> Message:
+               principal: str, *, bridge=None, epoch=None, session_token=None, target_check=None) -> Message:
         store = self.owner
         request_hash = fingerprint({'principal': principal, 'request': request_hash})
         if len(message.model_dump_json().encode()) > MAX_LOCAL_PAYLOAD_BYTES:
@@ -146,6 +146,8 @@ class LocalDeliveryStore:
                 if existing is None:
                     raise ValueError('accepted local custody lost its message')
                 return existing
+            if target_check is not None:
+                target_check()  # New destination authority, under the same writer; retained exact replay is not new work.
             store.lifecycle.validate_request(channel, key, epoch)
             parent = message.reply_to_cursor
             if parent is None and message.thread_ts is not None:

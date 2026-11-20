@@ -191,6 +191,25 @@ Do not delete stages, reset cursors or flush authoritative state to make a queue
 look healthy. Newly retired UUID receipts remain scoped; older missing evidence
 stays unknown.
 
+## Bounded recovery context and identity changes
+
+A matching qualified 0.12 client accepts `resume --identity ROUTE --context-file
+PRIVATE_JSON`. Use the exact service/inbox/channel/chat/session scope from your
+own resume output. The optional note is local consumer-reported metadata, not a
+source backup, restored lease or permission to publish/retry. Input and checkpoint
+are each bounded to 16 KiB; see the release's recovery guide for the strict schema.
+Do not include credentials or message bodies. Without a new file, existing context
+is retained. A concurrent checkpoint change or backwards clock preserves state;
+inspect the conflict rather than removing the checkpoint.
+
+The operator's private identity manager is separate from agent participation.
+Retirement explicitly revokes bus message access without your STOP ACK, host
+termination or completion of pending work. Exact receipt recovery remains separate.
+Rename keeps chat/session/channel/inbox and reserves old aliases. Reconcile the
+same local profile through existing rename recovery; preserve uncertain staged
+UUIDs, epochs and original sender payloads. No additional channel or authority
+follows from an operator action.
+
 ## Tool clients
 
 MCP launches `agentbus mcp --identity ROUTE` as a local stdio subprocess under

@@ -63,3 +63,21 @@ handoff_context:
   limits: bounded latest read-only observation; no new registry or periodic provider probe
   disclosure: authorship, observation time, expiry, service/host epoch unknowns and receipt pointers are context,
     never job admission
+  configuration: 'AGENTBUS_RECOVERY_CONTACTS: version1 JSON, maximum16 unique configured channels and16384 bytes;
+    all keys required'
+  decoder: src/agentbus_recovery_contact_service.py::decode_contacts
+  immutable_type: src/agentbus_recovery_contact_service.py::RecoveryContact
+  projection: authenticated own-channel info/self-presence; unavailable or retired contacts never become destinations
+  fields:
+  - channel
+  - route
+  - observed_at
+  - expires_at
+  - receipt_position
+  - service_epoch
+  - host_epoch
+  freshness: optional-valued report/expiry pair, maximum seven-day interval; unknown/future/expired/unavailable
+    distinct
+  receipt_role: existing public position reference only; no message interpretation or authority
+  epoch_role: explicit unverified_or_unknown; no owner or resource restoration
+  evidence: tests/test_recovery_client.py

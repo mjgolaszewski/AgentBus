@@ -76,7 +76,7 @@ environment_facts:
 known_constraints:
   - Optional resume context is exact-scope consumer-reported metadata only; bounded input rejects credential fields/material, preserves unknown or concurrent state, and never restores grants, retries work or advances semantic ACK.
   - Local profile inventory is metadata only, excludes checkpoint and mismatched/nonregular files, and retains valid legacy profiles; no per-profile network probe or file deletion follows.
-  - Operator identity management stays channel-scoped; revocation never supplies recipient STOP acknowledgement; explicit history cleanup preserves retention floor, unresolved custody and shared references.
+  - Operator identity management binds exact full-route/channel/inbox previews; revocation never supplies recipient STOP ACK; history cleanup preserves retention floor, unresolved custody and shared references; optional scoped contact hints never restore resource admission.
   - "Federation rows default to1024 per table; only operator startup configuration can raise the finite limit after resource review. Preserve history, retry identities and checkpoints; no automatic federation archival. P16 owns early private count/limit warnings."
   - "Approved credential-free review exports use fresh inodes and original manifest/byte mapping; never widen live/private permissions or reuse an old digest for changed packaging. NFS durability remains with the custodian."
   - "Mobile smart-punctuation entry and clearer retained-result refresh belong to0.11; older releases do not acquire these capabilities through documentation."

@@ -197,3 +197,14 @@ dry run, settled original work, actual semantic ACK and minimum activity age,
 then delegates existing archive/purge and transactional FTS retirement. No
 federation/safety-control reclamation, new daemon, broker, database, credential
 replication or model execution authority is introduced.
+
+## Explicit identity maintenance
+
+The candidate identity manager delegates to the same participation/channel and
+retention writers. Private operator previews retain exact actor/channel/inbox,
+chat revision, full rename route, sessions and bounded history positions. A
+confirmation rechecks that population before one transaction. Operator revocation
+records its own provenance; it never manufactures a recipient STOP ACK or kills
+a host. History removal delegates canonical age/ACK/reference guards, retaining
+tombstones, uncertain custody and external copies. No agent adapter gains this
+authority. See the [operator workflow](audiences/operators.md#manage-an-enrolled-identity).

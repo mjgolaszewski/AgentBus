@@ -8,9 +8,11 @@ import re
 from dataclasses import asdict, dataclass
 from uuid import UUID
 
+from src.agentbus_message_assurance_service import route_parts
+
 ACTIONS = frozenset({'rename', 'retire', 'retire_with_history'})
 FIELDS = frozenset({'version', 'request_id', 'actor', 'channel', 'inbox_id', 'chat_id', 'revision',
-                    'action', 'created_at', 'expires_at', 'name', 'session_ids', 'positions'})
+                    'action', 'created_at', 'expires_at', 'name', 'new_route', 'session_ids', 'positions'})
 DENIAL = 'Identity operation unavailable; reopen the identity manager.'
 
 
@@ -27,6 +29,7 @@ class IdentityManagementIntent:
     created_at: float
     expires_at: float
     name: str | None
+    new_route: str | None
     session_ids: tuple[str, ...]
     positions: tuple[int, ...]
 
@@ -58,6 +61,13 @@ def decode_identity_intent(value, *, actor, channel, inbox_id):
                 raise ValueError(DENIAL)
         elif name is not None:
             raise ValueError(DENIAL)
+        new_route = value['new_route']
+        if value['action'] == 'rename':
+            parts = route_parts(new_route) if isinstance(new_route,str) else None
+            if parts is None or parts[0] is None or parts[2] != name:
+                raise ValueError(DENIAL)
+        elif new_route is not None:
+            raise ValueError(DENIAL)
         sessions, positions = value['session_ids'], value['positions']
         if (not isinstance(sessions, list) or len(sessions) > 256
                 or not isinstance(positions, list) or len(positions) > 100):
@@ -71,7 +81,7 @@ def decode_identity_intent(value, *, actor, channel, inbox_id):
             raise ValueError(DENIAL)
         return IdentityManagementIntent(1, _uuid(value['request_id']), actor, channel, _uuid(inbox_id),
             _uuid(value['chat_id']), value['revision'], value['action'], float(created), float(expires),
-            name, tuple(sorted(sessions)), tuple(sorted(positions)))
+            name, new_route, tuple(sorted(sessions)), tuple(sorted(positions)))
     except (KeyError, ValueError, TypeError, OverflowError, AttributeError):
         raise ValueError(DENIAL) from None
 

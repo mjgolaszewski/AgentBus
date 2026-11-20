@@ -38,6 +38,7 @@ class Settings:
     a2a_enabled: bool = False
     bind_host: str = "127.0.0.1"
     bind_port: int = 8766
+    recovery_contacts: tuple = ()
 
     @property
     def channels(self) -> tuple[str, ...]:
@@ -51,6 +52,11 @@ class Settings:
         return isinstance(command, str) and command in self.slack_commands
 
     def __post_init__(self):
+        from src.agentbus_recovery_contact_service import RecoveryContact
+        if (not isinstance(self.recovery_contacts,tuple) or len(self.recovery_contacts)>16
+                or any(not isinstance(row,RecoveryContact) or row.channel not in self.channels for row in self.recovery_contacts)
+                or len({row.channel for row in self.recovery_contacts})!=len(self.recovery_contacts)):
+            raise ValueError('Invalid recovery-contact population')
         AutomaticRetentionPolicy(self.automatic_retention_days, self.automatic_retention_apply)
         if (type(self.automatic_retention) is not bool
                 or self.automatic_retention_apply and not self.automatic_retention):
@@ -148,7 +154,9 @@ class Settings:
         raw_port = os.environ.get("AGENTBUS_PORT", "8766")
         if not re.fullmatch(r"[0-9]{1,5}", raw_port):
             raise ValueError("AGENTBUS_PORT must be an integer in1..65535")
-        return cls(automatic_retention=retention == "1", automatic_retention_apply=retention_apply == "1",
+        from src.agentbus_recovery_contact_service import decode_contacts
+        contacts=decode_contacts(os.environ.get('AGENTBUS_RECOVERY_CONTACTS'),channels)
+        return cls(recovery_contacts=contacts,automatic_retention=retention == "1", automatic_retention_apply=retention_apply == "1",
                    automatic_retention_days=int(retention_days), stale_monitor_config=Path(monitor_config).expanduser() if monitor_config else None, a2a_enabled=a2a == "1", bind_host=os.environ.get("AGENTBUS_HOST", "127.0.0.1"),
                    bind_port=int(raw_port), api_token=values["api_token"], slack_bot_token=values["slack_bot_token"],
                    slack_app_token=values["slack_app_token"],

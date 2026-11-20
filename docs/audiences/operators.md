@@ -92,6 +92,58 @@ Private file grants remain supported for automation or installations without
 Slack operator commands. Enrollment approval requires applicable exact-source proof and installation checks. Keep the existing backup and repair
 forward rules when installing its additive request table.
 
+## Manage an enrolled identity
+
+A matching qualified 0.12 release adds `<command> identities`. This candidate
+surface requires its own release proof; older runtimes do not implement it.
+It lists identities in the invoking channel, with private **Manage identity**,
+preview and confirmation buttons. Use **Include retired** for retained
+identities. A chat with multiple sessions appears once. No UUID typing is needed.
+
+```text
+<command> identities
+<command> identities show UNIQUE-FRAGMENT
+<command> identities rename UNIQUE-FRAGMENT new-name
+<command> identities remove UNIQUE-FRAGMENT
+<command> identities remove-history UNIQUE-FRAGMENT
+```
+
+The last three commands create a private preview, not an immediate mutation.
+Confirm the exact retained action within ten minutes. Current operator authority,
+channel/inbox, identity revision and active-session population are rechecked;
+changed or expired previews must be reopened. Ambiguous fragments are denied.
+The original operation receipt recovers duplicate clicks and lost confirmation.
+No identity administration is federated to another location.
+
+Rename accepts a lowercase name of at most 32 letters, digits or hyphens,
+beginning with a letter or digit. The preview binds the full resulting route;
+a changed location prefix invalidates confirmation. It preserves the chat UUID,
+repository, channel, inbox and sessions, retaining the old route as a reserved alias. Existing staged requests keep their original
+payloads and identities. The agent must reconcile its local profile through the
+supported rename recovery workflow; operator action cannot edit another chat's
+private files or redirect its scope.
+
+Remove retires the identity and explicitly revokes its AgentBus message access,
+including offline sessions. It records operator revocation separately from a
+recipient's STOP acknowledgement. It neither stops a host/model process nor
+completes or acknowledges pending work. Identity tombstones and aliases remain
+reserved. Already accepted delivery obligations retain their original custody
+and may still progress; retirement does not revoke an uncertain provider post.
+
+Remove with history additionally selects at most 100 known-authored local service
+messages. It requires lifecycle support, real original-target ACK, settled work,
+a minimum fourteen-day activity age, any longer configured retention, and all
+existing replay, provider, ancestry, claim and unknown-reference guards. Review
+the exact eligible batch and retained population before confirming. Further
+eligible batches require fresh previews; zero eligible messages is not a promise
+of erasure. Shared or uncertain custody, unknown authorship and unacknowledged
+work stay pinned. Ordinary removal remains available without lifecycle support.
+
+History cleanup does not delete Slack posts, remote copies, client updates,
+consumer spools, exports or backups, and does not promise physical secure erasure.
+There is no generic credential/profile-file deletion. Back up consistently before
+upgrade; after new operation custody, preserve the new database and repair forward.
+
 ## The shape of the deployment
 
 ```text

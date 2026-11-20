@@ -13,8 +13,10 @@ from src.agentbus_identity_intent_service import (
 def preview(**changes):
     value = {'version': 1, 'request_id': str(uuid4()), 'actor': 'slack:UOP', 'channel': 'C111',
              'inbox_id': 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'chat_id': str(uuid4()), 'revision': 7, 'action': 'retire', 'created_at': 100.0,
-             'expires_at': 500.0, 'name': None, 'session_ids': [str(uuid4())], 'positions': []}
+             'expires_at': 500.0, 'name': None, 'new_route': None, 'session_ids': [str(uuid4())], 'positions': []}
     value.update(changes)
+    if value['action']=='rename' and 'new_route' not in changes and isinstance(value['name'],str):
+        value['new_route']='local:demo:'+value['name']
     return value
 
 
@@ -186,3 +188,42 @@ def test_private_identity_buttons_bind_actor_channel_and_exact_confirmation(mana
     result=execute_interaction(payload(confirm),settings,store,None)
     assert result.outcome=='committed' and result.receipt==raw['target']
     assert execute_interaction(payload(confirm),settings,store,None)==result
+
+
+def test_operator_rename_confirmation_binds_full_route_across_configuration_restart(managed):
+    from dataclasses import replace
+    from src.agentbus_identity_management_service import IdentityManagement
+    store,settings,owner,ids=managed
+    preview=owner.preview('UOP','C111',ids['first'][0],'rename',name='exact-name')
+    assert preview['intent']['new_route']=='local:demo:exact-name'
+    changed=IdentityManagement(store,replace(settings,local_prefix='different'),clock=lambda:101)
+    with pytest.raises(ValueError,match='configuration changed'):
+        changed.perform('UOP','C111',preview['intent']['request_id'],preview['digest'])
+    assert store.channels.principal(ids['first'][2]).route=='local:demo:first'
+    assert owner.receipt('UOP','C111',preview['intent']['request_id'])['state']=='preview'
+
+
+def test_recipient_retirement_preserves_exact_accepted_replay_but_blocks_new_admission(managed):
+    from fastapi import HTTPException
+    from src.agentbus_channel_api_service import require_target
+    from src.agentbus_local_delivery_service import fingerprint
+    from src.agentbus_service import SendMessage
+    store,_,owner,ids=managed
+    sender=store.channels.principal(ids['first'][2])
+    body=SendMessage(sender=sender.route,recipient='local:demo:second',text='Original accepted work',audience='direct')
+    body._sender_assurance='session'
+    key=str(uuid4())
+    check=lambda: require_target(store,'C111',body)
+    accepted=store.local_delivery.accept('C111',key,fingerprint(body.model_dump()),body,'session:'+sender.session_id,
+                                         session_token=ids['first'][2],target_check=check)
+    preview=owner.preview('UOP','C111',ids['second'][0],'retire')
+    owner.perform('UOP','C111',preview['intent']['request_id'],preview['digest'])
+    replay=store.local_delivery.accept('C111',key,fingerprint(body.model_dump()),body,'session:'+sender.session_id,
+                                      session_token=ids['first'][2],target_check=check)
+    assert replay.cursor==accepted.cursor
+    before=store._db.execute('SELECT count(*) FROM local_delivery_obligations').fetchone()[0]
+    with pytest.raises(HTTPException) as denied:
+        store.local_delivery.accept('C111',str(uuid4()),fingerprint(body.model_dump()),body,'session:'+sender.session_id,
+                                     session_token=ids['first'][2],target_check=check)
+    assert denied.value.status_code==403
+    assert store._db.execute('SELECT count(*) FROM local_delivery_obligations').fetchone()[0]==before

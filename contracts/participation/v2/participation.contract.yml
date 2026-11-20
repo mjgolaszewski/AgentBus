@@ -1,14 +1,16 @@
 document:
   kind: participation_authorization_contract
-  version: 2.0.15
+  version: 2.0.16
   status: active
   path: contracts/participation/v2/participation.contract.yml
 extends: contracts/participation/v1/participation.contract.yml
 changes:
-- Optional bounded operator-configured Slack command aliases are checked at both ingress gates; original invocation and text remain unchanged
+- Optional bounded operator-configured Slack command aliases are checked at both ingress gates; original invocation
+  and text remain unchanged
 - Durable client acceptance receipts expose the original request UUID without implying provider delivery or execution
 - Authorized lifecycle-disabled outcome lookup retains HTTP404 compatibility with an explicit machine-readable reason
-- Private local health labels configured location and federation-prefix conflicts without guessing from roster or hostname
+- Private local health labels configured location and federation-prefix conflicts without guessing from roster or
+  hostname
 - Operator-granted immutable channel membership replaces unjoined message authority
 - All agent data-plane operations require session proof and inbox binding
 - Existing exact-session controls policy ACK rotation and STOP semantics persist
@@ -50,7 +52,17 @@ model:
   enrollment_approval_request:
     owner: agentbus_enrollment_approval_service
     stable_key: request_UUID_plus_exact_staged_secret_digest
-    fields: [request_id, repo, route, display_name, profile_chat_UUID, secret_digest, expires_at, approved_channel, approved_actor, consumed_session]
+    fields:
+    - request_id
+    - repo
+    - route
+    - display_name
+    - profile_chat_UUID
+    - secret_digest
+    - expires_at
+    - approved_channel
+    - approved_actor
+    - consumed_session
     authority: pending_request_has_none; Slack_allowlisted_human_binds_channel; canonical_grant_owner_finalizes_once
     recovery: same_request_subject_and_secret_return_original_session; no_credential_in_Slack
   public_position:
@@ -77,8 +89,8 @@ inheritance:
     INV-023: historical_legacy_rows_retained_but_no_new_unjoined_API_sends
     INV-027: exact_session_and_inbox_required_for_all_agent_reads_and_writes
     INV-030: per_session_send_limit_and_existing_allocation_bounds_preserved_without_unjoined_tier
-    INV-031: allowlisted_verified_human_replies_require_one_current_local_agent_in_durable_proved_ancestry;
-      human_rooted_slash_send_threads_allowed; unknown_mixed_stopped_foreign_or_unproved_threads_notification_only
+    INV-031: allowlisted_verified_human_replies_require_one_current_local_agent_in_durable_proved_ancestry; human_rooted_slash_send_threads_allowed;
+      unknown_mixed_stopped_foreign_or_unproved_threads_notification_only
     INV-032: explicit_destination_within_membership_or_existing_approved_federation_channel
     INV-036: allowlisted_human_commands_resolve_channel_first_exact_session_UUID_unique_UUID_suffix_or_unique_current_identity_fragment;
       ambiguity_denies_without_effect
@@ -121,9 +133,12 @@ slack_interaction:
     contents: version_runtime_socket_channels_custody_local_federation_and_process_local_delivery_task_cycle_progress_with_optional_distinct_lifecycle_policy_storage_and_pinned_history
     exclusions: credentials_private_paths_key_material_exception_text_remote_health_or_wake_guarantees; external_poll_and_wake_workers_not_observed
     bounds: at_most_64_channel_details_in_privileged_read_model;_Slack_renders_8_with_explicit_truncation
-    worker_observations: bounded_process_local_task_and_delivery_federation_cycle_attempt_completion_backoff_failure; terminal_task_atomically_retires_active_cycles_without_completion; fixed_error_codes_only; restart_resets; completed_cycle_is_not_delivery_or_execution
+    worker_observations: bounded_process_local_task_and_delivery_federation_cycle_attempt_completion_backoff_failure;
+      terminal_task_atomically_retires_active_cycles_without_completion; fixed_error_codes_only; restart_resets;
+      completed_cycle_is_not_delivery_or_execution
     inspection_commands: workers_and_doctor_are_private_operator_wide_reads; pending_optional_ID_and_explain_positive_public_cursor_are_invoking_channel_only
-    query_limits: pending_at_most_20_rows_per_recipient_control_transport_group; optional_ID_filters_identity_work_and_exact_session_controls_and_omits_transport; explain_returns_retained_metadata_without_bodies_or_pickup_tokens
+    query_limits: pending_at_most_20_rows_per_recipient_control_transport_group; optional_ID_filters_identity_work_and_exact_session_controls_and_omits_transport;
+      explain_returns_retained_metadata_without_bodies_or_pickup_tokens
     query_effects: no_provider_probe_process_scan_new_daemon_settlement_retry_ACK_cache_flush_or_automatic_repair
     unavailable_cursor: same_non_disclosing_result_for_unknown_foreign_or_retired_public_position
   presentation:
@@ -138,7 +153,8 @@ slack_interaction:
     - durable_echo_locator_preserved
     health_readability: spaced_named_sections; textual_states_without_repeated_colored_dots; numeric_values_use_theme_controlled_inline_code
     plain_text_fallback: retained_for_command_responses_and_accessibility
-
+  identity_management: private configured identities workflow; immutable full-route preview; operator revocation
+    is not target STOP ACK; guarded bounded history cleanup grants no external erasure
 mandatory_announcements:
   commands: /agentbus broadcast TEXT; /agentbus poll QUESTION
   authority: existing_Slack_operator_allowlist; invoking_channel_only
@@ -157,9 +173,10 @@ mandatory_announcements:
   limits: text_1_to_1000_characters; answer_1_to_2000_characters
   status: private_channel_scoped_complete_target_snapshot; four_targets_per_page; named_answers_and_pending_receipts
   discovery: results_without_ID_lists_up_to_40_recent_channel_local_polls; exact_control_UUID_lookup_retained
-  navigation: private_results_previous_next_refresh_buttons; block_local_action_IDs_unique; page_suffix_must_match_locator; legacy_unsuffixed_buttons_retained; payload_locators_grant_no_authority
-  exclusions: no_forced_model_turn; no_proof_of_comprehension; offline_sessions_remain_pending_unless_declared_optional_lifecycle_read_expiry_applies; plain_commands_have_no_remote_fanout; explicit_federation_uses_operator_federation_contract_v1
-
+  navigation: private_results_previous_next_refresh_buttons; block_local_action_IDs_unique; page_suffix_must_match_locator;
+    legacy_unsuffixed_buttons_retained; payload_locators_grant_no_authority
+  exclusions: no_forced_model_turn; no_proof_of_comprehension; offline_sessions_remain_pending_unless_declared_optional_lifecycle_read_expiry_applies;
+    plain_commands_have_no_remote_fanout; explicit_federation_uses_operator_federation_contract_v1
 slack_enrollment_approval:
   status: retained_implemented_contract; release_qualification_requires_exact_subject_proof_and_applicable_live_validation
   agent_command: join_without_grant_file_stages_private_secret_and_random_request_UUID
@@ -176,20 +193,19 @@ slack_enrollment_approval:
   replay: exact_secret_returns_original_session; altered_subject_or_secret_or_channel_denied
   limits: request_lifetime_600_seconds; at_most_8192_retained_requests; 30_new_requests_per_minute_aggregate; expired_unconsumed_requests_pruned
   receipts: canonical_session_channel_inbox_and_policy_revision; explicit_policy_ACK_required
-  expiry_recovery: HTTP_403_with_X-AgentBus-Recovery-Code_enrollment_request_expired_only_after_exact_retained_subject_and_secret_match; unknown_or_mismatched_requests_remain_generic
+  expiry_recovery: HTTP_403_with_X-AgentBus-Recovery-Code_enrollment_request_expired_only_after_exact_retained_subject_and_secret_match;
+    unknown_or_mismatched_requests_remain_generic
   expiry_retry: consumed_exact_request_recovers_original_session_before_expiry_check; no_automatic_new_request_or_secret_replacement
   client_error_safety: fixed_allowlisted_header_code_only_on_enrollment_403; never_echo_response_body_or_arbitrary_header_values
   compatibility: private_file_grants_remain_supported; old_servers_deny_unknown_approval_fields_without_fallback
   migration: additive_table_only; existing_identity_credentials_and_grants_unchanged; no_membership_transfer
   excluded: no_automatic_approval; no_grants_from_bearer_or_route_labels; no_operator_credential_in_agent_chat
-
 quiet_alias_presentation:
   owner: src/agentbus_poll_client.py
   authority: service_classified_actionable_direct_or_informational_in_verified_session_scope
   priority: same_as_current_route_even_when_recipient_is_reserved_old_alias
   excluded: broadcast_context_only_unrouted_unclaimed_and_foreign_projection
   boundaries: presentation_cleanup_never_advances_semantic_ACK_or_changes_session_inbox_channel
-
 foreground_observation:
   owner: src/agentbus_client.py
   producers: complete_foreground_poll_message_and_nonhistorical_inbox
@@ -198,7 +214,6 @@ foreground_observation:
   ordinary_profile_saves: preserve_ack_and_observed_high_water_only_within_same_chat_session_inbox_channel_service
   explicit_rebind: same_scope_cursor_reset_remains_deliberate_existing_command
   mismatched_or_stopped_session: retain_evidence_without_cursor_write
-
 client_profile_recovery:
   owner: src/agentbus_profile_client.py
   state: private_in_memory_read_snapshot; no_new_profile_wire_field_or_database_schema
@@ -210,7 +225,6 @@ client_profile_recovery:
   rotation_retry: retained_exact_grant_and_staged_new_secret_recover_original_receipt_without_revoked_old_secret_preflight
   rotation_STOP: receipt_recovery_never_clears_STOP_or_reactivates_session
   replacement: explicit_new_operator_grant_and_current_valid_session_required; no_automatic_staged_secret_replacement
-
 terminal_presentation_recovery:
   owner: src/agentbus_poll_client.py
   control_projection: foreground_and_worker_check_in_project_fresh_exact_session_controls_before_ordinary_cached_messages
@@ -219,7 +233,6 @@ terminal_presentation_recovery:
   inbox_scan: terminal_records_advance_private_scan_without_new_presentation
   preserved: unknown_mismatched_failed_queries_recovery_required_semantic_ACK_pickup_receipts_durable_history_and_wake_intents
   wake_prompt: nonhistorical_inbox_observation_before_deliberate_semantic_ACK; explicit_after_remains_stateless
-
 introduction_recovery:
   owner: src/agentbus_enrollment_client.py
   custody: existing_delivery_payload_owner_shared_with_ordinary_send; no_new_message_authority
@@ -229,13 +242,11 @@ introduction_recovery:
   concurrent_first_submit: profile_snapshot_conflict_stops_losing_UUID_before_POST
   text: literal_profile_introduction; dash_never_reads_stdin
   acknowledgement: introduction_acceptance_never_acknowledges_its_recipients_or_advances_semantic_cursor
-
 stop_presentation_precedence:
   owner: client_participation_and_wake_projection
   priority: exact_stop_end_turn_before_ordinary_poll_broadcast_or_other_cached_controls
   wake: STOP_reference_is_shown_first_within_safety_bucket; complete_required_control_set_is_preserved
   effect: projection_order_only; no_control_ACK_receipt_host_or_participation_authority_change
-
 rename_profile_handoff:
   owner: src/agentbus_rename_client.py
   serialization: directory_lock_then_sorted_source_and_target_profile_locks
@@ -245,7 +256,6 @@ rename_profile_handoff:
   cursors: same_scope_nonnegative_integer_maxima_only; no_new_semantic_acknowledgement
   durability: fsync_new_profile_and_parent_directory_before_source_unlink
   interface: existing_rename_command_and_service_receipt_only; no_new_identity_or_channel_authority
-
 slack_command_configuration:
   owner: src/agentbus_settings_service.py
   setting: AGENTBUS_SLACK_COMMAND
@@ -257,11 +267,25 @@ slack_command_configuration:
   rejection: unsupported_name_is_private_and_has_no_command_custody_or_effects
   presentation: authored_examples_use_configured_name; human_and_agent_content_is_not_rewritten
   prerequisite: matching_command_registered_in_existing_Slack_app; no_runtime_provider_configuration_mutation
-
 fresh_install_polling:
   owner: participation_policy_and_HTTP_service_bootstrap
-  idle_minutes: [1, 2, 4, 8, 12, 16, 24, 32]
-  default_values: {initial_interval_seconds: 60, backoff_factor: 2, max_interval_seconds: 1920, control_check_max_seconds: 60, jitter_fraction: 0, overdue_grace_seconds: 120, presentation_budget_bytes: null}
+  idle_minutes:
+  - 1
+  - 2
+  - 4
+  - 8
+  - 12
+  - 16
+  - 24
+  - 32
+  default_values:
+    initial_interval_seconds: 60
+    backoff_factor: 2
+    max_interval_seconds: 1920
+    control_check_max_seconds: 60
+    jitter_fraction: 0
+    overdue_grace_seconds: 120
+    presentation_budget_bytes: null
   initialization: once_only_on_HTTP_startup_when_policy_history_and_enrolled_identities_are_both_empty
   preservation: existing_policies_revisions_sessions_and_ACK_authority_unchanged; no_implicit_repair_of_populated_policy_less_state
   resets: new_semantic_work_returns_idle_interval_to_initial; repeated_empty_reads_do_not_reset
@@ -269,25 +293,23 @@ fresh_install_polling:
   token_efficiency: existing_worker_or_blocking_wait; no_model_turns_or_console_narration_for_unchanged_empty_polls
   reporting: new_work_controls_material_state_changes_and_actionable_failures_only
   enforcement_limit: CLI_worker_output_is_deterministic; agents_remain_responsible_for_their_own_narration_and_token_use
-
 foreground_poll_recovery:
   owner: client_participation_projection
   admission: fresh_exact_session_control_check_before_cached_event_selection; failure_preserves_cache_without_presentation
   precedence: pending_STOP_and_controls_before_old_message_notices_even_when_worker_has_not_checked_in
   nonterminal: refresh_authenticated_recipient_state_and_elapsed_flags_without_retiring_or_acknowledging_work
   preserved: unknown_or_foreign_outcomes_original_payload_receipts_semantic_ACK_and_host_authority
-
 authored_request_query:
   capability: authored-request-outcome-v1
   path: GET /v1/requests/{request_id}/outcome
-  authority: exact_active_session_and_bound_inbox_before_UUID_lookup; retained_session_sender_same_chat_only
+  authority: exact_session_and_bound_inbox_before_UUID_lookup; stopped_or_operator_revoked_exact_sessions_retain_own_receipt_recovery_only
   absence: unknown_for_foreign_or_unretained_history; scope-bound_retirement_receipts_distinguish_known_retired_requests_without_resend_authority
   transport: retained_exact_federation_frame_hash_and_message_UUID; destination_custody_is_not_execution_or_semantic_ACK
   compatibility: additive_query; existing_message_status_cursor_and_protocol_2_unchanged
-
 optional_extensions:
   publication: contracts/publication/v1/publication.contract.yml
   local_a2a: contracts/local-adapters/v1/a2a.contract.yml
   recovery_observations: contracts/participation/v2/recovery-observation.contract.yml
   automatic_retention: contracts/retention/v1/automatic-retention.contract.yml
   access_observation: successful_exact-session_requests_may_emit_bounded_non-authoritative_access_telemetry; no_custody_ACK_or_business_query_mutation
+  operator_identity_management: contracts/participation/v2/operator-identity.contract.yml

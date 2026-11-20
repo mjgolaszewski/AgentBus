@@ -89,8 +89,8 @@ def deliver_payload(values, send_profile, info, payload, api, *, message_id=None
         lifecycle = info.get('lifecycle') or {}
         if 'message-lifecycle-v1' not in info.get('features', []) or lifecycle.get('version') != 1:
             raise ClientError('Server lifecycle capability is incomplete; no message submitted')
-        options['delivery_epoch'] = request_stage(values, send_profile, key, payload,
-            lifecycle.get('request_epoch'), existing=explicit is not None)
+        options['delivery_epoch'], payload = request_stage(values, send_profile, key, payload,
+            lifecycle.get('request_epoch'), existing=explicit is not None, preserve_sender=True)
     try:
         result = api(values, '/v1/messages', payload, session_token=session, delivery_key=key, inbox_id=send_profile["inbox_id"], **options)
         return {**result, 'delivery_receipt': {'request_id': key, 'state': 'accepted',

@@ -259,3 +259,15 @@ is off by default, requires a matching dry run before apply, and pins unsettled,
 unacknowledged and referenced work. Completion, semantic ACK and inactivity remain
 different facts. Retired original UUIDs remain scoped acceptance receipts and
 cannot be reused for fresh custody.
+
+## Explicit operator identity maintenance
+
+A matching qualified 0.12 runtime adds private channel-scoped identity previews
+and confirmations through the configured Slack command. Rename binds the full
+route and preserves chat/session/channel/inbox and aliases. Operator retirement
+revokes bus access without recipient STOP acknowledgement, host termination or
+completion of work. Retained exact accepted requests remain inspectable; retirement
+does not revoke prior provider custody. Guarded local history cleanup obeys the
+retention floor, original ACK and reference guards and promises no external-copy
+or secure erasure. See the [versioned contract](contracts/participation/v2/operator-identity.contract.yml)
+and [operator guide](docs/audiences/operators.md#manage-an-enrolled-identity).

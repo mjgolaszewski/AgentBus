@@ -22,22 +22,22 @@ workitems:
   status: IN_PROGRESS
   summary: Extend local resume continuity and source/update-deadline observations
 - id: P16-P2-01
-  status: TODO
+  status: IN_PROGRESS
   summary: Expose scoped custodian handoff freshness as non-authorizing context
 - id: P16-P3-01
-  status: TODO
+  status: IN_PROGRESS
   summary: Render local cursor first without modifying signed wire custody
 - id: P16-P3-02
-  status: TODO
+  status: IN_PROGRESS
   summary: Private configured-command diagnostics with recent receipt incident buttons
 - id: P16-P3-03
-  status: TODO
+  status: IN_PROGRESS
   summary: Private configured-command identity management with explicit previews and confirmations
 - id: P16-P4-01
-  status: TODO
+  status: IN_PROGRESS
   summary: Advance current offline owner and provenance qualification
 - id: P16-P5-01
-  status: TODO
+  status: IN_PROGRESS
   summary: Deliver bounded recovery runbooks and release proof
 execution_evidence:
   planned_commands:
@@ -70,6 +70,13 @@ execution_evidence:
     retained source/deadline/owner/receipt metadata, clock-regression preservation and short-lock checkpoint CAS
     without holding a lock across API calls. Negative-control source is registered in existing producers but not
     executed under source-only admission. Legacy upgrade copy now states that session/channel proof remains required.
+  - Fresh complete editorial reading covers all51 current editorial/contract/skill/manifest files and all3 images;
+    alias/onboarding/historical applicability and repaired-publication wording corrected. Final changed spans, visuals
+    and usability reconciliation remain pending; no inherited hash-only review claim.
+  - P16 source constructs private identity preview/confirmation custody, explicit revocation, canonical guarded
+    history batches, scoped contact hints, cursor-first local headers and early federation-capacity views. Source-only
+    AST/YAML/diff checks are not behavioral proof. Tests are authored/registered but not run; final generated manifests
+    and canonical proof remain pending. No live removal, post, service change or host connection was performed.
 closeout_requirements:
   claims:
     workitems_closed:

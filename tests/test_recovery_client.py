@@ -231,3 +231,55 @@ def test_resume_rejects_nonregular_or_deep_checkpoint_without_hanging(resume, tm
     finally:
         if descriptor is not None:
             os.close(descriptor)
+
+
+def test_operator_contact_hint_is_scoped_expiring_and_never_resource_admission(tmp_path):
+    from dataclasses import replace
+    import json
+    from src.agentbus_recovery_contact_service import decode_contacts,contact_snapshot
+    from src.agentbus_service import MessageStore,SendMessage
+    from src.agentbus_settings_service import Settings
+    store=MessageStore(tmp_path/'contact.sqlite3')
+    store.channels.configure(('C111','C222'))
+    store.participation.initialize_default_policy()
+    args=dict(channel='C111',repo='demo',route='local:demo:keeper',actor='operator')
+    grant=store.channels.issue_grant(**args)
+    store.channels.enroll(grant,repo='demo',route=args['route'],display_name='Keeper',session_secret='s'*40)
+    store.append('C111','100.1',SendMessage(sender='human',text='Private accepted context'))
+    row={'channel':'C111','route':args['route'],'observed_at':100,'expires_at':200,
+         'receipt_position':1,'service_epoch':None,'host_epoch':None}
+    contacts=decode_contacts(json.dumps({'version':1,'contacts':[row]}),('C111','C222'))
+    settings=Settings(api_token='test',slack_bot_token='test',slack_app_token='test',slack_channel='',
+                      slack_channels=('C111','C222'),db_path=tmp_path/'contact.sqlite3',recovery_contacts=contacts)
+    before=store._db.total_changes
+    try:
+        snapshot=contact_snapshot(settings,store,'C111',instant=150)
+        assert snapshot['state']=='unexpired_report' and snapshot['resource_admission'] is False
+        assert snapshot['authorship']=='operator_configuration' and snapshot['epoch_validation']=='unverified_or_unknown'
+        assert snapshot['receipt']=={'position':1,'state':'retained_reference'}
+        assert 'Private accepted context' not in str(snapshot)
+        assert contact_snapshot(settings,store,'C222',instant=150)=={'configured':False,'state':'unknown','resource_admission':False}
+        assert contact_snapshot(settings,store,'C111',instant=200)['state']=='expired_report'
+        assert contact_snapshot(settings,store,'C111',instant=50)['state']=='future_report'
+        unknown=replace(settings,recovery_contacts=decode_contacts(json.dumps({'version':1,'contacts':[
+            {**row,'observed_at':None,'expires_at':None}]}),settings.channels))
+        assert contact_snapshot(unknown,store,'C111',instant=150)['state']=='unknown_freshness'
+        store.channels.enabled=frozenset({'C222'})
+        assert contact_snapshot(settings,store,'C111',instant=150)['contact'] is None
+        assert store._db.total_changes==before
+    finally:
+        store.close()
+
+
+@pytest.mark.parametrize('change', [
+    {'channel':'CFOREIGN'}, {'route':'slack:user'}, {'observed_at':True}, {'expires_at':100},
+    {'expires_at':100+8*86400}, {'receipt_position':True}, {'receipt_position':0},
+    {'service_epoch':'invented'}, {'host_epoch':'not-a-uuid'}, {'token':'forbidden'},
+])
+def test_recovery_contact_configuration_rejects_foreign_unbounded_or_credential_fields(change):
+    import json
+    from src.agentbus_recovery_contact_service import decode_contacts
+    row={'channel':'C111','route':'local:demo:keeper','observed_at':100,'expires_at':200,
+         'receipt_position':None,'service_epoch':None,'host_epoch':None}
+    with pytest.raises(ValueError,match='Invalid bounded'):
+        decode_contacts(json.dumps({'version':1,'contacts':[{**row,**change}]}),('C111',))

@@ -277,6 +277,9 @@ def api_session_self_presence(
     try:
         store = request.app.state.store
         result = store.participation.self_presence(session_id, session_token or "")
+        from src.agentbus_recovery_contact_service import contact_snapshot
+        result['recovery_contact']=contact_snapshot(request.app.state.settings,store,
+                                                   request.scope['agentbus_access_scope']['channel'])
         observations = getattr(store, "observations", None)
         if observations is not None:
             result["observations"] = observations.snapshot_scope(request.scope["agentbus_access_scope"])

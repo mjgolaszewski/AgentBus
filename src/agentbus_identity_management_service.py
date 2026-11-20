@@ -169,6 +169,11 @@ class IdentityManagement:
                 row = self._row(channel, chat_id)
                 if action == 'rename' and row['retired_at'] is not None:
                     raise ValueError(DENIAL)
+                new_route = None
+                if action == 'rename':
+                    if not self.settings.local_prefix or not isinstance(name,str):
+                        raise ValueError('Configure the local prefix and exact new name before preview')
+                    new_route = self.settings.local_prefix+':'+row['repo']+':'+name
                 instant = self._instant()
                 history = self.store.retention.identity_history(channel, chat_id)
                 positions = history['positions'] if action == 'retire_with_history' else []
@@ -176,7 +181,7 @@ class IdentityManagement:
                     raise ValueError('History eligibility is unavailable; retire without deleting history')
                 value = {'version':1,'request_id':str(uuid4()),'actor':label,'channel':channel,'inbox_id':inbox,
                          'chat_id':chat_id,'revision':row['identity_revision'],'action':action,'created_at':instant,
-                         'expires_at':instant+600,'name':name,'session_ids':self._sessions(chat_id),'positions':positions}
+                         'expires_at':instant+600,'name':name,'new_route':new_route,'session_ids':self._sessions(chat_id),'positions':positions}
                 intent = decode_identity_intent(value, actor=label, channel=channel, inbox_id=inbox)
                 raw = encode_identity_intent(intent)
                 if len(raw.encode()) > 32768:
@@ -255,6 +260,8 @@ class IdentityManagement:
                     if not prefix:
                         raise ValueError('Configure the local location prefix before operator rename')
                     route = prefix+':'+row['repo']+':'+intent.name
+                    if route != intent.new_route:
+                        raise ValueError('Rename configuration changed after preview; reopen the identity manager')
                     _,_,route = rename_identity(self.participation,intent.chat_id,route,actor=label)
                 else:
                     if not was_retired:
@@ -274,7 +281,8 @@ class IdentityManagement:
                           'channel':channel,'inbox_id':inbox,'route':route,'retired':intent.action!='rename',
                           'already_retired':was_retired,'sessions_revoked':len(intent.session_ids) if intent.action!='rename' else 0,
                           'history':{'removed':removed,'retained':remaining['retained'],'scope':'eligible local service history only'},
-                          'semantic_acknowledgement':'not_inferred','host_execution':'not_requested'}
+                          'semantic_acknowledgement':'not_inferred','host_execution':'not_requested',
+                          'uncertain_custody':'retained_not_reclassified'}
                 raw = json.dumps(result,sort_keys=True,separators=(',',':'))
                 self.db.execute("UPDATE identity_management_operations SET state='committed',result_json=?,"
                                 'result_sha256=?,completed_at=? WHERE request_id=?',

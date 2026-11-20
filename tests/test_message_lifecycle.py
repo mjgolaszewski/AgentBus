@@ -1648,3 +1648,73 @@ def test_extension_custody_marks_internal_rollback_guard_without_wire_change(lif
         assert reopened._db.execute("SELECT value FROM metadata WHERE key='message_lifecycle_version'").fetchone()[0] == '2'
     finally:
         reopened.close()
+
+
+def test_identity_history_only_selects_original_author_and_requires_real_ack(lifecycle):
+    store,p=lifecycle
+    first=message(store,p['sender'],p['recipient'])
+    other=message(store,p['recipient'],p['sender'])
+    receipt=str(uuid4())
+    store.lifecycle.pickup(p['recipient'],first.cursor,receipt,101)
+    store.lifecycle.finish(p['recipient'],first.cursor,receipt,102)
+    old=14*86400+104
+    assert store.retention.identity_history('C111',p['sender'].chat_id,instant=old)['positions']==[]
+    store.lifecycle.handle_batch(p['recipient'],[(first.cursor,receipt)])
+    # A late semantic ACK starts a fresh activity window.
+    assert store.retention.identity_history('C111',p['sender'].chat_id,instant=old+14*86400-1)['positions']==[]
+    preview=store.retention.identity_history('C111',p['sender'].chat_id,instant=old+14*86400)
+    position=store.channels.public_cursor('C111',first.cursor)
+    assert preview['positions']==[position]
+    assert store.retention.identity_history('C222',p['sender'].chat_id,instant=old+14*86400)['positions']==[]
+    result=store.retention.remove_identity_history('C111',p['sender'].chat_id,positions=[position],
+        actor='slack:UOP',request_key='identity-closed',instant=old+14*86400)
+    assert result['removed']==1 and store.message('C111',first.cursor) is None
+    assert store.message('C111',other.cursor) is not None
+    assert store.retention.has_retired_positions('C111',0,position)
+    assert store.retention.identity_history('C111',p['sender'].chat_id,instant=old+14*86400)['retained']==0
+
+
+def test_identity_history_unknown_reference_after_preview_rolls_back_revocation(lifecycle,monkeypatch):
+    from types import SimpleNamespace
+    from src.agentbus_identity_management_service import IdentityManagement
+    store,p=lifecycle
+    m=message(store,p['sender'],p['recipient'])
+    receipt=str(uuid4())
+    store.lifecycle.pickup(p['recipient'],m.cursor,receipt,101)
+    store.lifecycle.finish(p['recipient'],m.cursor,receipt,102)
+    store.lifecycle.handle_batch(p['recipient'],[(m.cursor,receipt)])
+    settings=SimpleNamespace(slack_operator_user_ids=frozenset({'UOP'}),channels=('C111','C222'),local_prefix='home')
+    owner=IdentityManagement(store,settings,clock=lambda:14*86400+104)
+    preview=owner.preview('UOP','C111',p['sender'].chat_id,'retire_with_history')
+    assert len(preview['intent']['positions'])==1
+    with store._lock,store._db:
+        store._db.execute('CREATE TABLE future_guard(id INTEGER PRIMARY KEY,cursor INTEGER REFERENCES messages(cursor))')
+        store._db.execute('INSERT INTO future_guard VALUES(1,?)',(m.cursor,))
+    with pytest.raises(ValueError,match='eligibility changed'):
+        owner.perform('UOP','C111',preview['intent']['request_id'],preview['digest'])
+    assert store.message('C111',m.cursor) is not None
+    assert store.participation.session_state(p['sender'].session_id)['state']=='active'
+    assert owner.receipt('UOP','C111',preview['intent']['request_id'])['state']=='preview'
+
+
+def test_identity_archive_and_revocation_rollback_together_on_purge_failure(lifecycle,monkeypatch):
+    from types import SimpleNamespace
+    from src.agentbus_identity_management_service import IdentityManagement
+    store,p=lifecycle
+    m=message(store,p['sender'],p['recipient'])
+    receipt=str(uuid4())
+    store.lifecycle.pickup(p['recipient'],m.cursor,receipt,101)
+    store.lifecycle.finish(p['recipient'],m.cursor,receipt,102)
+    store.lifecycle.handle_batch(p['recipient'],[(m.cursor,receipt)])
+    settings=SimpleNamespace(slack_operator_user_ids=frozenset({'UOP'}),channels=('C111','C222'),local_prefix='home')
+    owner=IdentityManagement(store,settings,clock=lambda:14*86400+104)
+    preview=owner.preview('UOP','C111',p['sender'].chat_id,'retire_with_history')
+    def failed(*args,**kwargs):
+        raise LifecycleRejected(503,'Injected exact purge failure')
+    monkeypatch.setattr(store.retention,'purge',failed)
+    with pytest.raises(LifecycleRejected,match='Injected'):
+        owner.perform('UOP','C111',preview['intent']['request_id'],preview['digest'])
+    assert store.message('C111',m.cursor).text==m.text
+    assert store._db.execute('SELECT count(*) FROM lifecycle_archive WHERE cursor=?',(m.cursor,)).fetchone()[0]==0
+    assert store.participation.session_state(p['sender'].session_id)['state']=='active'
+    assert owner.receipt('UOP','C111',preview['intent']['request_id'])['state']=='preview'

@@ -22,7 +22,8 @@ interface:
   - rename
   - retire
   - retire_with_history
-  confirmation: immutable actor/channel/inbox/chat/revision/session snapshot and exact bounded history population
+  confirmation: immutable actor/channel/inbox/chat/revision/full rename route/session snapshot and exact bounded
+    history population
 limits:
   preview_seconds: 600
   sessions_per_intent: 256
@@ -44,6 +45,8 @@ laws:
   responses inspect the original receipt.
 - Agent sessions, MCP and A2A gain no operator authority; management does not add a listener, broker, registry,
   daemon or credential replication.
+- A configured prefix change invalidates a retained rename preview; prior accepted exact request replay remains
+  custody recovery, not new delivery authority.
 evidence:
 - tests/test_identity_management.py
 - test

@@ -61,13 +61,13 @@ def identity_preview(owner, actor, channel, chat_id, action, *, name=None):
             +'\nSessions in retained snapshot `'+str(len(intent['session_ids']))+'`'
             +'\nExact history batch `'+str(len(intent['positions']))+'`; retained authored messages `'+str(history['retained'])+'`')
     if name is not None:
-        text += '\nNew name: '+_safe(name)+'; repository, identity and channel stay unchanged.'
+        text += '\nNew name: '+_safe(intent['new_route'])+'; repository, identity and channel stay unchanged.'
     text += ('\n\nThis preview expires in ten minutes. Current authorization and exact population are rechecked. '
              'No recipient ACK, host termination, Slack/remote/backup deletion or safe provider retry is inferred.\n'
              +_safe(history['pins']))
     return _reply(text,[action_button('Confirm exact action',OperatorAction('identity_confirm',channel,
                      intent['request_id'],digest=data['digest'])),
-                       action_button('Cancel / back',OperatorAction('identity_detail',channel,chat_id))],receipt=intent['request_id'])
+                       action_button('Cancel / back',OperatorAction('identity_detail',channel,chat_id))],outcome='preview',receipt=intent['request_id'])
 
 
 def identity_result(owner, actor, channel, request_id):

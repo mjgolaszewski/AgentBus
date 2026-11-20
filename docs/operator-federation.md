@@ -125,7 +125,7 @@ retry and provider budgets remain authoritative.
 
 Transport custody has a separate per-table retained-row bound: default 1024,
 operator-configurable at service startup with `AGENTBUS_FEDERATION_CUSTODY_ROWS`
-from 1 to 65536. Health reports the limit and tables at capacity. A full table
+from 1 to 65536. Health reports each table count and its limit, warning at 80% before capacity closes admission. A full table
 rejects new allocation; exact replay and existing custody remain available.
 After reviewing complete storage/resource requirements, a custodian may raise
 the bound without deleting history. Lowering it never evicts rows. This does

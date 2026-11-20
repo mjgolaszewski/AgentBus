@@ -105,6 +105,13 @@ def health_text(snapshot):
     custody_capacity = federation.get('custody_capacity')
     capacity_note = (f"; per-table row limit `{custody_capacity['per_table_limit']}`; at-limit tables "
                      f"`{', '.join(custody_capacity['at_limit']) or 'none'}`" if custody_capacity else '')
+    if custody_capacity:
+        capacity_note += '\n' + '\n'.join(f"{table}: `{count}/{custody_capacity['per_table_limit']}`"
+                                               for table,count in sorted(custody_capacity['rows'].items()))
+        warnings = [table for table,count in custody_capacity['rows'].items()
+                    if count*5 >= custody_capacity['per_table_limit']*4]
+        if warnings:
+            capacity_note += '\nWARNING — federation capacity at or above 80%: '+', '.join(warnings)
     sections.extend([f"*Federation*\nLocal bridge: `{state}`; channel `{federation['channel'] or 'none'}`\n"
         f"Pinned origins: {', '.join(federation['origins']) or 'none'}\nCheckpoints `{federation['checkpoints']}`; "
         f"retained obligations `{sum(federation['custody'].values())}`{capacity_note}\nRemote health: not observed",

@@ -258,8 +258,9 @@ before opening a populated single-channel database. Keep one process/database/ap
 configure one channel or an allowlist of at most 16. Grants bind each identity
 permanently to one channel. Update clients before access; bearer-only history
 and unjoined messaging have no fallback. Disabled channels retain custody.
-Only the separate HTTP operator capability can inspect global roster/size.
-Slack operator commands resolve sessions exclusively in the invoking channel.
+Global HTTP roster/size requires the separate operator capability. Allowlisted
+Slack operators have explicit private global health/storage views; session
+targets still resolve exclusively in the invoking channel.
 
 Live two-channel qualification needs an authorized bounded window after final
 offline proof. AHP/native-queue interoperability and atomic idle-only wake remain
