@@ -81,7 +81,7 @@ def rename_identity(participation, chat_id, new_route, *, session_id=None, actor
             raise ValueError('New route collides with an existing or reserved address')
         count = db.execute('SELECT count(*) FROM routing_aliases WHERE chat_id=?', (chat_id,)).fetchone()[0]
         if alias is None and count >= MAX_ALIASES_PER_CHAT:
-            raise ValueError('Alias capacity exhausted; existing addresses remain reserved')
+            raise ValueError('alias capacity exhausted; existing addresses remain reserved')
         if alias is not None:
             db.execute('DELETE FROM routing_aliases WHERE route=?', (new_route,))
         changed = _now()
