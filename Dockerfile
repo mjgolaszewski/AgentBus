@@ -6,11 +6,14 @@ RUN python -c 'from pathlib import Path; import hashlib, ssl; name="mozilla/emSi
     && update-ca-certificates --fresh \
     && python -c 'import hashlib, ssl; bad="86a1ecba089c4a8d3bbe2734c612ba341d813e043cf9e8a862cd5c57a36bbe6b"; assert all(hashlib.sha256(cert).hexdigest()!=bad for cert in ssl.create_default_context().get_ca_certs(binary_form=True)); print("container trust: compromised emSign root absent")'
 WORKDIR /app
-COPY --chown=10001:10001 pyproject.toml uv.lock ./
+COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
-COPY --chown=10001:10001 agentbus_service.py ./
-COPY --chown=10001:10001 src/ ./src/
-RUN useradd --uid 10001 --create-home agentbus \
+COPY agentbus_service.py ./
+COPY src/ ./src/
+# Public application inputs stay root-owned, readable and immutable to the runtime.
+RUN chmod 0644 /app/pyproject.toml /app/uv.lock /app/agentbus_service.py \
+    && chmod -R u=rwX,go=rX /app/src \
+    && useradd --uid 10001 --create-home agentbus \
     && mkdir /data && chown agentbus:agentbus /data
 USER agentbus
 ENV AGENTBUS_DB_PATH=/data/messages.sqlite3

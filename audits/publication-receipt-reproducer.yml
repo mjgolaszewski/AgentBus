@@ -16,9 +16,11 @@ observations:
   remains unqualified.
 runtime_reproducer:
   first_failure: Non-root import PermissionError in native runtime-smoke under restrictive source checkout modes
-  candidate: Copy application source owned by runtime UID10001; standard runtime producer always builds private-mode
-    source copy
+  candidate: Root-owned application inputs receive explicit readable modes; runtime UID cannot write source or version
+    metadata. Standard producer uses private-mode source context and rejects writable application code.
   root_user_rejection: unchanged and still required
+  supersession: Earlier UID10001-owned source alternative passed read/import controls but was superseded before
+    release because it unnecessarily allowed runtime writes. Earlier success is not read-only-code proof.
 evidence:
   provider-observations.json:
     bytes: 738

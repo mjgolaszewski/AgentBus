@@ -203,6 +203,9 @@ def runtime_smoke() -> None:
                     "import os,sys,tomllib,pathlib,agentbus_service; "
                     "sys.exit('runtime-user-mismatch') if os.getuid()!=10001 else None; "
                     "assert agentbus_service.create_app; "
+                    "assert all(not os.access(path,os.W_OK) for path in "
+                    "('/app/agentbus_service.py','/app/src','/app/src/agentbus_service.py','/app/pyproject.toml')), "
+                    "'runtime-code-writable'; "
                     "assert tomllib.loads(pathlib.Path('/app/pyproject.toml').read_text())['project']['version']"
                 ),
             ]))

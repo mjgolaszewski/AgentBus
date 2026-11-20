@@ -645,6 +645,7 @@ gates:
     evidence: {kind: gate}
     negative_controls:
     - {id: root-container-is-rejected, mutation: {path: *id003, search: USER agentbus, replace: USER root}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: runtime-user-mismatch}}
+    - {id: writable-container-code-is-rejected, mutation: {path: *id003, search: RUN chmod 0644, replace: RUN chmod 0666}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: runtime-code-writable}}
   security-dependency-audit:
     invocation: {argv: [python3, *id037, *id029], cwd: ., env: {}, required_env: []}
     evidence: {kind: gate}

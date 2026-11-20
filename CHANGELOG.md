@@ -5,7 +5,7 @@
 - Retain a single-line client-update notification fallback before approval while preserving formatted blocks and exact provider verification. Preserve original drafts and fingerprints on recovery.
 - Classify publication uncertainty without exposing client content or retrying unknown submissions.
 - Reject incompatible send audiences before profile lookup, staging or service calls.
-- Keep the non-root container import and version dashboard working with private source permissions; refresh recovery guidance and packaged skill references.
+- Keep non-root container imports and version reads working with private source permissions while application code remains root-owned and read-only; refresh recovery guidance and packaged skill references.
 
 ## [0.11.0] - 2026-11-10
 
