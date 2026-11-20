@@ -4,13 +4,13 @@ document:
   id: agentbus-phase-16-workitems
   version: 1.0.0
   generated_at_utc: '2026-11-19T00:00:00Z'
-  status: planned
+  status: active
   path: plans/phase-16-workitems.yml
   phase_id: P16
 workitems:
 - id: P16-P0-01
   priority: P0
-  status: TODO
+  status: IN_PROGRESS
   summary: Contract Racecar recovery suggestions and security residual owners
   acceptance:
   - Every Racecar suggestion maps to a canonical existing store/owner or explicit external-owner disposition
@@ -27,6 +27,8 @@ workitems:
   - Credential-free record binds exact source commit/branch/tree, dirty source locations, report deadline, held
     owners and receipt cursors
   - Unknown/mismatched state retained; no resurrection of old credentials grants or checkpoints
+  - Local agents listing includes actual scoped identity profiles only, never checkpoints or redirect projections;
+    preserve valid legacy profiles and all custody during owner-directed migration or retirement.
   acceptance_evidence:
   - test
   - contract-test
@@ -66,6 +68,28 @@ workitems:
   - Existing private health and diagnostics show each federation custody table count and finite configured limit,
     with the existing 80-percent warning convention before admission closes; no new worker or provider probe
   - Fully hung service is disclosed as requiring custodian out-of-band capture; no repair/retry/reset actions implied
+  acceptance_evidence:
+  - test
+  - contract-test
+- id: P16-P3-03
+  priority: P3
+  status: TODO
+  summary: Private configured-command identity management with explicit previews and confirmations
+  acceptance:
+  - Configured command identities provides channel-scoped private selection/buttons and exact unambiguous targets;
+    no UUID typing requirement or remote filesystem authority.
+  - Rename preserves immutable chat/channel/inbox, authorized namespace, aliases and pending request identities;
+    no cross-channel or remote-origin mutation.
+  - Remove/retire and operator revocation preserve history and tombstones; operator revocation is distinct from
+    semantic STOP acknowledgement and never fabricates recipient completion or ACK.
+  - Remove with history previews eligible and pinned populations; explicit confirmation respects retention floor,
+    original target acknowledgements, shared ancestry and all unresolved message/federation/publication custody.
+  - History cleanup covers eligible local AgentBus content only; it does not delete Slack posts, remote copies or
+    client updates or promise physical secure erasure. Duplicate buttons, changed policy/scope/target, restart,
+    concurrent rename/revocation and partial cleanup fail safely; final receipts accurately report retired, removed,
+    pinned and uncertain outcomes.
+  - No live removal or history purge is authorized by adding this construction feature; default roster hides retired
+    entries with an explicit retained-history view.
   acceptance_evidence:
   - test
   - contract-test

@@ -33,5 +33,5 @@ execution_phases:
   - {phase_id: P13, build_block: reliable_operator_federation, objective: Reliable operator federation scoped mailbox search and local MCP, release_train: release_13}
   - {phase_id: P14, build_block: controlled_client_publishing, objective: Approved client publishing local A2A recovery and acknowledgement-safe retention, release_train: release_14}
   - {phase_id: P15, build_block: reliable_publication_and_recovery, objective: Reliable receipts and recovery, release_train: release_15}
-  - {phase_id: P16, build_block: lightweight_recovery_and_owner_qualification, objective: Recovery context and offline wake qualification, release_train: release_16}
+  - {phase_id: P16, build_block: lightweight_recovery_and_owner_qualification, objective: Identity management recovery context and offline wake qualification, release_train: release_16}
 acceptance: {release_gate: make release-check, evidence_location: phases/}

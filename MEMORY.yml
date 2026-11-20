@@ -70,10 +70,11 @@ environment_facts:
     build_plan: plans/build-plan.yml
     active_phase_ledger: plans/phase-ledger.yml
     phase_history: plans/phase-history.yml
-    active_phase_plan: plans/phase-15-plan.yml
-    active_workitem_ledger: plans/phase-15-workitems.yml
-    active_phase_log: phases/phase-15-log.yml
+    active_phase_plan: plans/phase-16-plan.yml
+    active_workitem_ledger: plans/phase-16-workitems.yml
+    active_phase_log: phases/phase-16-log.yml
 known_constraints:
+  - Operator identity management stays channel-scoped; revocation never supplies recipient STOP acknowledgement; explicit history cleanup preserves retention floor, unresolved custody and shared references.
   - "Federation rows default to1024 per table; only operator startup configuration can raise the finite limit after resource review. Preserve history, retry identities and checkpoints; no automatic federation archival. P16 owns early private count/limit warnings."
   - "Approved credential-free review exports use fresh inodes and original manifest/byte mapping; never widen live/private permissions or reuse an old digest for changed packaging. NFS durability remains with the custodian."
   - "Mobile smart-punctuation entry and clearer retained-result refresh belong to0.11; older releases do not acquire these capabilities through documentation."
@@ -84,7 +85,7 @@ known_constraints:
   - Existing unresolved or legacy-unknown custody remains pinned; offline migration, backup and repair-forward rules govern incompatible cutovers; public Slack channels provide no confidentiality or indefinite availability guarantee
   - Reported full-service hangs remain unclassified; the snapshot and carrier-classification repairs do not establish their cause or a remote-health guarantee
   - Every final subject requires canonical protected PR exact-main archive and isolated-installation proof; deployment and live canaries remain separate custodian actions with concrete prerequisites
-  - "P14/HF01 computed closed on a72c7c03; P15 authored completed with provider proof pending; P16 planned. Authored completion never substitutes for computed closure/custody; inherited records remain intact"
+  - "P15 computed closed on protected c0d81f1b and immutable 0.11.1 is published; P16 active from that exact release subject. Authored completion never substitutes for computed closure/custody; inherited records remain intact"
   - Complete editorial review retains exact line coverage hashes and dispositions, excludes BCF machinery and changelog, and preserves historical proof; current capability text links Experimenters guidance
   - Historical inputs may be cold-archived only with verified content manifests restoration instructions and durable references; live environments Git objects credentials databases and service volumes remain protected
   - "Automatic retention stays opt-in with dry-run before apply, fourteen-day minimum and thirty-day default; unresolved or unacknowledged custody remains pinned. Production-client live canary was waived for authenticated two-location substitution plus isolated publication and adapter controls"

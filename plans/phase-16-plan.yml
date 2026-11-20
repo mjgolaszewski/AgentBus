@@ -4,7 +4,7 @@ document:
   id: agentbus-phase-16-plan
   version: 1.0.0
   generated_at_utc: '2026-11-19T00:00:00Z'
-  status: planned
+  status: active
   path: plans/phase-16-plan.yml
 phase:
   id: P16
@@ -26,6 +26,7 @@ delivery_contract:
   - Private configured-command diagnostics with recent receipt incident buttons
   - Advance current offline owner and provenance qualification
   - Deliver bounded recovery runbooks and release proof
+  - Private configured-command identity management with explicit previews and confirmations
   parallelizable_workstreams:
   - id: P16-WS1
     name: recovery_and_qualification
