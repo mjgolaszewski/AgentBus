@@ -4,7 +4,7 @@ document:
   status: active
   path: contracts/publication/v1/publication.contract.yml
 scope:
-  availability: opt-in 0.11 capability; no authority on older services
+  availability: opt-in 0.11 capability; canonical notification fallback requires 0.11.1; no authority on older services
   owner: service publication custody and bound provider adapters
   storage: existing SQLite database
   execution: existing delivery worker; no extra Socket Mode connection

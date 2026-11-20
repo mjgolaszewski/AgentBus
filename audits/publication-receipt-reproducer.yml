@@ -56,6 +56,15 @@ evidence:
   replacement-validation/governance.stdout:
     bytes: 737
     sha256: f53704e8fcb9e8c52eaf8667edc14f0d7128a34d6b2eb502b1f576e636b69821
+  canonical-progress/native.stdout:
+    bytes: 13144
+    sha256: f04315ccaab09b65c440761b930312413608a696d6b4e6113ea9d227636b223a
+  canonical-progress/native.stderr:
+    bytes: 1981
+    sha256: 7d409e93d93c9d38ec9feae2bbca15559ca70e5eca5fc4c1a728c71eb6a87a70
+  canonical-progress/terminal.json:
+    bytes: 367
+    sha256: b2e55ef6e4c68a3d1071cab0df61fdb58940d72e33b81e41a98fdfa3aac69be3
 validation:
   subject: 985e958d2a7732e604a071db2bab5fa13d7144c4
   controls_passed: 103
@@ -73,3 +82,13 @@ replacement_validation:
   governance_first_failure: Authored phase-log note colon parsed as mapping; quote repaired, canonical revalidation
     pending
   runtime: Unchanged private-mode producer previously passed; final applicability remains canonical
+canonical_progress:
+  subject: cc87bd2802ee70c032f3b3488f324b361482baa3
+  base: a72c7c03a20a4167760a83f746eb90766ca5b66d
+  tree: fc6c9455f19e4f2d66e906de0076dd5f9aae14c5
+  status: prospectively_admissible_provider_proof_required
+  required_producers: 19
+  provider_authority_substituted: false
+  release_qualified: false
+  elapsed_seconds: 749.134540123001
+  peak_tree_rss_bytes: 405737472
