@@ -6,7 +6,7 @@ RUN python -c 'from pathlib import Path; import hashlib, ssl; name="mozilla/emSi
     && update-ca-certificates --fresh \
     && python -c 'import hashlib, ssl; bad="86a1ecba089c4a8d3bbe2734c612ba341d813e043cf9e8a862cd5c57a36bbe6b"; assert all(hashlib.sha256(cert).hexdigest()!=bad for cert in ssl.create_default_context().get_ca_certs(binary_form=True)); print("container trust: compromised emSign root absent")'
 WORKDIR /app
-COPY pyproject.toml uv.lock ./
+COPY --chown=10001:10001 pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 COPY --chown=10001:10001 agentbus_service.py ./
 COPY --chown=10001:10001 src/ ./src/

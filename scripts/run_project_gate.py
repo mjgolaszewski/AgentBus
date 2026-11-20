@@ -200,9 +200,10 @@ def runtime_smoke() -> None:
             require_success(run([
                 "docker", "run", "--rm", "--entrypoint", "/app/.venv/bin/python", image,
                 "-c", (
-                    "import os,sys,agentbus_service; "
+                    "import os,sys,tomllib,pathlib,agentbus_service; "
                     "sys.exit('runtime-user-mismatch') if os.getuid()!=10001 else None; "
-                    "assert agentbus_service.create_app"
+                    "assert agentbus_service.create_app; "
+                    "assert tomllib.loads(pathlib.Path('/app/pyproject.toml').read_text())['project']['version']"
                 ),
             ]))
         finally:
