@@ -107,6 +107,17 @@ component_evidence:
   expected_guard_removal_failures: 3
   native_exit: 0
   elapsed_seconds: 42.906
+- subject_commit: 44ccda5d30f59b8f1fc291748c9be43e3eab1301
+  subject_tree: 8506e7a6ad7da0e7994a3fdb8994b527ce18a827
+  kind: canonical_local_prospective
+  producers_passed: 19
+  runtime_negative_controls: [root-container-is-rejected, writable-container-code-is-rejected]
+  source_review_modules: 86
+  native_exit: 0
+  elapsed_seconds: 767.615
+  local_evidence_bundle_sha256: 716116a878bb40be61b54dd4298fcc85c55ce4f4e98f515db76cd48809293940
+  authority: local_non_authoritative
+  status: prospectively_admissible_provider_proof_required
 qualification_limits:
   authored_request_query: affected_native_component_passed_final_canonical_proof_pending
   current_polling_source_changes: affected_native_component_passed_final_canonical_proof_pending
