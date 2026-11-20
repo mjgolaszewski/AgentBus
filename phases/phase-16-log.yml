@@ -81,6 +81,9 @@ execution_evidence:
     combinations/removals;3 image assets retained, all table/diagram/example spans recorded. First canonical prospective
     failed before suites on authored context budgets. Registry re-encoded with equivalent YAML data and spec wording
     shortened without raising limits; first traceback preserved. No behavioral or final custody proof is inferred.
+  - Second prospective failed before suites because the new resume checkpoint parent-directory effect was missing
+    from the authored operation declaration. Add only that exact existing local mutation port; preserve the original
+    semantic diagnostic and require a separate canonical retry. No runtime or behavior proof inferred.
 closeout_requirements:
   claims:
     workitems_closed:
