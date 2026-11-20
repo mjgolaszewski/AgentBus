@@ -141,7 +141,7 @@ slack_interaction:
       explain_returns_retained_metadata_without_bodies_or_pickup_tokens
     query_effects: no_provider_probe_process_scan_new_daemon_settlement_retry_ACK_cache_flush_or_automatic_repair
     unavailable_cursor: same_non_disclosing_result_for_unknown_foreign_or_retired_public_position
-    identity_operations: private bounded preview/committed receipt states, configured capacity and80-percent warning;
+    identity_operations: private bounded preview/committed receipt states, configured capacity and 80-percent warning;
       no automatic committed-receipt deletion
     receipt_navigation: doctor reuses existing private publication-page buttons; destination/channel/actor authorization
       is rechecked by the publication owner

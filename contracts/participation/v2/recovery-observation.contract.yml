@@ -58,7 +58,7 @@ continuity:
     receipt_references: 32
   evidence_role: consumer_reported_context_only; raw input digest identifies bytes, not independent source/authority
     proof
-  availability: matching qualified0.12 client
+  availability: matching qualified 0.12 client
   primitive_owner: src/agentbus_recovery_client.py::validate_recovery_context
   schema:
     version: 1
@@ -72,13 +72,13 @@ continuity:
     - receipts
     scope: exact service_url/inbox_id/channel/chat_id/session_id
     time: finite nonnegative Unix seconds or explicit null
-    source: null or exact commit/tree/branch/dirty_paths; commit/tree both null or lowercase40hex; branch null or1..128
-      printable characters; paths at most128 unique1..512 printable references
-    held_owner: exact owner/receipt_cursor/request_id; bounded1..80 printable route-like label, nullable positive63-bit
+    source: null or exact commit/tree/branch/dirty_paths; commit/tree both null or lowercase 40-character hexadecimal; branch null or 1..128
+      printable characters; paths at most 128 unique 1..512 printable references
+    held_owner: exact owner/receipt_cursor/request_id; bounded 1..80 printable route-like label, nullable positive 63-bit
       public cursor and canonical UUID
-    receipt: exact kind/cursor/request_id; kind message/publication/control/resource; positive63-bit scoped cursor
+    receipt: exact kind/cursor/request_id; kind message/publication/control/resource; positive 63-bit scoped cursor
       or canonical UUID required
-    custody: private regular checkpoint,16KiB input and final encoded record; SHA256 identifies original input bytes
+    custody: private regular checkpoint, 16 KiB input and final encoded record; SHA256 identifies original input bytes
       only
 handoff_context:
   source: optional operator-configured current-channel contact and existing accepted messages
@@ -103,5 +103,5 @@ handoff_context:
   receipt_role: existing public position reference only; no message interpretation or authority
   epoch_role: explicit unverified_or_unknown; no owner or resource restoration
   evidence: tests/test_recovery_client.py
-  availability: matching qualified0.12 service; absent setting produces unknown context without extra SQL/provider
+  availability: matching qualified 0.12 service; absent setting produces unknown context without extra SQL/provider
     probes
