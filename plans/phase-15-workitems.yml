@@ -10,7 +10,7 @@ document:
 workitems:
 - id: P15-P0-01
   priority: P0
-  status: IN_PROGRESS
+  status: DONE
   summary: Inventory baseline, issue reports and exact owner/dispositions
   acceptance:
   - All open issues and addressed bus reports have explicit repair, regression, accepted-limit or external-owner
@@ -21,7 +21,7 @@ workitems:
   - contract-test
 - id: P15-P1-01
   priority: P1
-  status: IN_PROGRESS
+  status: DONE
   summary: Correct publication response validation and retain safe diagnostics
   acceptance:
   - Classify each HTTP/JSON/channel/timestamp/content failure without raw client text or secrets
@@ -34,7 +34,7 @@ workitems:
   - contract-test
 - id: P15-P2-01
   priority: P2
-  status: IN_PROGRESS
+  status: DONE
   summary: Validate audience before staging and clarify rejected request recovery
   acceptance:
   - Direct all and informational all fail locally before UUID/stage/custody/API side effects with correct broadcast
@@ -45,7 +45,7 @@ workitems:
   - contract-test
 - id: P15-P3-01
   priority: P3
-  status: IN_PROGRESS
+  status: DONE
   summary: Capture bounded private service diagnostics and characterize hang risks
   acceptance:
   - No invented cause for historical hang; capture process/event-loop/worker observations through existing owners
@@ -57,7 +57,7 @@ workitems:
   - contract-test
 - id: P15-P4-01
   priority: P4
-  status: IN_PROGRESS
+  status: DONE
   summary: Refresh installed skill safely and reconcile audited guidance
   acceptance:
   - Packaged skill uses current capability/onboarding/receipt rules and preserves exact-session boundaries
@@ -68,7 +68,7 @@ workitems:
   - contract-test
 - id: P15-P5-01
   priority: P5
-  status: TODO
+  status: IN_PROGRESS
   summary: Qualify and publish bounded patch repair
   acceptance:
   - Canonical graph protected PR/exact-main archive and isolated installation proofs authenticate final subject

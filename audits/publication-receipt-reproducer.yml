@@ -65,6 +65,18 @@ evidence:
   canonical-progress/terminal.json:
     bytes: 367
     sha256: b2e55ef6e4c68a3d1071cab0df61fdb58940d72e33b81e41a98fdfa3aac69be3
+  release-preparation/commands.json:
+    bytes: 718
+    sha256: 6b7f8d8c1905d6164b2d997cd767fdc9021b6297c491f3c4462c0f8ff4b35dbb
+  release-preparation/governance.stdout:
+    bytes: 139
+    sha256: 88c064856be19a0dfcd38934d9f38efc85df41a141406db4083f811e790f179f
+  release-preparation/skill-receipt.json:
+    bytes: 1199
+    sha256: dfc67e88096b773b4a682cab710f49fb55369ad514d7e75593fb67ef6e55053f
+  release-preparation/result.json:
+    bytes: 392
+    sha256: f307eb72c6dd8d5596405e455cc0403c087185f48eecef0e00e28aa81c4ccab1
 validation:
   subject: 985e958d2a7732e604a071db2bab5fa13d7144c4
   controls_passed: 103
@@ -92,3 +104,11 @@ canonical_progress:
   release_qualified: false
   elapsed_seconds: 749.134540123001
   peak_tree_rss_bytes: 405737472
+release_preparation:
+  subject: 196076c85eade05d3e01a1795b05010b0fe3a390
+  version: 0.11.1
+  lock_change: virtual project version only; no dependency change
+  canonical_reconcile_and_governance: passed
+  user_skill: Qualified cc87 source bytes installed in the existing discovered user scope; all3 originals preserved
+    with exact manifest, no service change
+  publication: not published; provider authentication and final live receipt remain pending
