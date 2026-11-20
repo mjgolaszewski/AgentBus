@@ -63,7 +63,7 @@ intake:
     kind: unclassified_incident
     disposition: P15-P3-01 diagnosis/characterization; P16-P3-02 safe operator diagnostics.
     limit: No original stack or demonstrated common cause; adding diagnostics is not proof the historical hang is repaired.
-  - source: Cedar retained federation capacity report at bus44914 and NFS handoff44926
+  - source: Remote workspace custodian retained-capacity report and NFS evidence handoff
     kind: maintained_release_already_has_supported_quota
     disposition: Current 0.10/0.11 bounded AGENTBUS_FEDERATION_CUSTODY_ROWS supersedes the older constant patch; P16 diagnostics will disclose pressure, while safe federation archival remains unqualified.
     evidence: Existing configured-capacity/startup/lowering controls; remote patch is not adopted as delivered source. NFS inventory pending owner-fenced receipt.
