@@ -105,8 +105,14 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
             snapshot = dashboard() if dashboard is not None else service_dashboard(settings, store)
             if action == 'workers':
                 return workers_text(snapshot)
-            return '*Doctor — read-only checks*\n\n' + '\n\n'.join(
+            text = '*Doctor — read-only checks*\n\n' + '\n\n'.join(
                 f'*{name}: {state}*\n{guidance}' for name, state, guidance in doctor_checks(snapshot, command=command))
+            if getattr(store,'publications',None) is not None:
+                from src.agentbus_presentation_service import section_blocks
+                from src.agentbus_slack_ui_service import OperatorAction, OperatorReply, action_button
+                return OperatorReply(text,[*section_blocks(text),{'type':'actions','elements':[
+                    action_button('Inspect authorized updates',OperatorAction('publication_page',channel))]}],outcome='observed')
+            return text
         if action == 'explain':
             if len(parts) != 2 or not re.fullmatch(r'[1-9][0-9]{0,17}', parts[1]):
                 return f'Use `{command} explain CURSOR` with a positive channel-local cursor.'

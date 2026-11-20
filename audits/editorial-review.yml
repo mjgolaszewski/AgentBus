@@ -817,7 +817,7 @@ documents:
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: docs/contracts.md
-  review_status: full_document_line_reviewed_pending_final_reconciliation
+  review_status: changed_since_full_read_final_reread_required
   reviewed_lines:
   - - 1
     - 165
@@ -867,7 +867,7 @@ documents:
   review_basis: Fresh entire-file reading, including code examples, tables and diagram source. Candidate interfaces
     and final changed bytes still require implementation reconciliation; this is not release proof.
 - document: docs/message-lifecycle.md
-  review_status: full_document_line_reviewed_pending_final_reconciliation
+  review_status: changed_since_full_read_final_reread_required
   reviewed_lines:
   - - 1
     - 246

@@ -1011,3 +1011,20 @@ def test_federation_capacity_warning_is_private_read_only_and_precedes_exhaustio
     snapshot['federation']['custody_capacity']['rows']['bridge_obligations']=7
     assert ('Federation custody capacity','OK') in [(name,state) for name,state,_ in doctor_checks(snapshot)]
     assert store._db.total_changes==before
+
+
+def test_doctor_receipt_button_reuses_destination_authorization_and_has_no_post(enrolled):
+    from src.agentbus_slack_ui_service import parse_action
+    settings,store,_,web=enrolled
+    before=store._db.total_changes
+    from src.agentbus_status_api_service import service_dashboard
+    snapshot=service_dashboard(settings,store)
+    store.publications=object()  # Only adapter presence is observed; no destination methods are invoked.
+    snapshot['optional_adapters']={'client_publication':True,'publication_states':{'uncertain':1},
+        'local_a2a':False,'private_notice_states':{},'requested_stale_monitors':0}
+    result=execute_command({'command':'/agentbus','channel_id':settings.slack_channel,'user_id':'U123','text':'doctor'},
+                           settings,store,web,dashboard=lambda:snapshot)
+    action=parse_action(next(block['elements'][0] for block in result.blocks if block['type']=='actions'))
+    assert action.kind=='publication_page' and action.channel==settings.slack_channel and not action.target
+    assert 'Publication receipts: WARN' in result and 'original receipt' in result
+    assert not web.posts and store._db.total_changes==before

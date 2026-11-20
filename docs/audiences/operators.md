@@ -269,7 +269,9 @@ Private inspection commands group current observations without granting repair a
 - `/agentbus workers` shows the existing service task and cycle observations;
   it does not scan processes, invoke providers or inspect another host.
 - `/agentbus doctor` evaluates the local read model and suggests relevant
-  inspection commands. `UNKNOWN` is not a successful check. It repairs nothing.
+  inspection commands. `UNKNOWN` is not a successful check. When publishing is
+  configured, its private receipt button opens the existing destination-authorized
+  updates view; it grants no new destination access or retry authority. It repairs nothing.
 - `/agentbus pending [ID]` lists at most 20 rows per group for the invoking
   channel: open recipient outcomes, controls/shared reads and transport custody.
   With an identity selector, work is identity-scoped, controls are exact-session,

@@ -79,6 +79,13 @@ def doctor_checks(snapshot, *, command="/agentbus"):
         checks.append(('Federation custody capacity', 'WARN' if full else 'OK',
             (('At or above 80%: '+', '.join(full)+'. ') if full else 'Within the configured retained-row bound. ')
             + 'Inspect private health counts and ask the custodian to review capacity; never delete unresolved custody.'))
+    adapters=snapshot.get('optional_adapters') or {}
+    publication=adapters.get('publication_states') or {}
+    if adapters.get('client_publication'):
+        incident=sum(publication.get(state,0) for state in ('uncertain','failed'))
+        checks.append(('Publication receipts','WARN' if incident else 'OK',
+                       f'`{incident}` uncertain/failed observations; inspect {command} updates and the original receipt. '
+                       'A visible post does not authorize a replacement draft or blind retry.'))
     storage = snapshot.get('lifecycle_storage')
     if storage:
         checks.append(('Storage headroom', 'WARN' if storage['accounted_bytes']*5 >= storage['limit_bytes']*4 else 'OK',

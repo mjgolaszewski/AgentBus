@@ -245,10 +245,10 @@ p16_addendum:
     a supported external root/UI-thread atomic reject-if-busy endpoint, durable external idempotency or permission
     to start another app-server.
   static_inventory:
-    extension_package_versions_present:
-    - 26.1111.21308
-    - 26.1117.31558
-    PATH_selected_package_version: 26.1111.21308
+    scope: Exact credential-free local inventory retained privately; no local deployment paths or package inventory
+      published here.
+    finding: Multiple installed extension packages and a PATH-selected older package do not identify the actual
+      owning host.
     actual_owning_host_version: unverified
     bundled_CLI_version: not_executed_during_source_only_admission
     release_containment_of_reviewed_commits: not_established
