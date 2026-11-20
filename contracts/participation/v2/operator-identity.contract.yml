@@ -22,7 +22,7 @@ interface:
   - rename
   - retire
   - retire_with_history
-  confirmation: immutable actor/channel/chat/revision/session snapshot and exact bounded history population
+  confirmation: immutable actor/channel/inbox/chat/revision/session snapshot and exact bounded history population
 limits:
   preview_seconds: 600
   sessions_per_intent: 256
@@ -49,3 +49,12 @@ evidence:
 - test
 - contract-test
 - python314-compatibility
+migration:
+  owner: ParticipationStore startup through initialize_identity_management
+  changes:
+  - add retirement and identity revision fields
+  - add explicit session revocation provenance
+  - bounded operation preview/result custody
+  - authority-transition revision triggers
+  preserve: all existing membership/session/alias/history/ACK rows; no live migration is executed by source authoring
+  rollback: offline verified backup before new accepted custody; repair forward thereafter

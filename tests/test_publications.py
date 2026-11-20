@@ -585,7 +585,7 @@ def test_handoff_session_cannot_repost_prior_chat_publication_uuid(publication):
     replacement = str(uuid4())
     # An independently enrolled session has valid active authority, but this
     # original UUID remains reserved to the original session of the stable chat.
-    owner._db.execute("INSERT INTO participation_sessions SELECT ?,chat_id,?,state,effective_policy_revision,delivered_policy_revision,acknowledged_policy_revision,joined_at,last_client_contact_at,last_semantic_ack_at,stopped_at,current_backoff_seconds,work_paused FROM participation_sessions WHERE session_id=?",
+    owner._db.execute("INSERT INTO participation_sessions(session_id,chat_id,secret_sha256,state,effective_policy_revision,delivered_policy_revision,acknowledged_policy_revision,joined_at,last_client_contact_at,last_semantic_ack_at,stopped_at,current_backoff_seconds,work_paused) SELECT ?,chat_id,?,state,effective_policy_revision,delivered_policy_revision,acknowledged_policy_revision,joined_at,last_client_contact_at,last_semantic_ack_at,stopped_at,current_backoff_seconds,work_paused FROM participation_sessions WHERE session_id=?",
                       (replacement, "f" * 64, principal.session_id))
     owner._db.commit()
     new = replace(principal, session_id=replacement)

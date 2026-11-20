@@ -158,12 +158,12 @@ class ChannelStore:
             from src.agentbus_participation_store_service import StoppedMessageSession
             if not secret or len(secret)>512:
                 raise PermissionError('Matching session authority required')
-            row = self.owner._db.execute('''SELECT s.*,c.current_route FROM participation_sessions s
+            row = self.owner._db.execute('''SELECT s.*,c.current_route,c.retired_at FROM participation_sessions s
                 JOIN chat_identities c ON c.chat_id=s.chat_id WHERE s.secret_sha256=?''',
                 (hashlib.sha256(secret.encode()).hexdigest(),)).fetchone()
             if row is None:
                 raise PermissionError('Matching session authority required')
-            if row['state']=='stopped' and not receipt_recovery:
+            if (row['state']=='stopped' or row['retired_at'] is not None) and not receipt_recovery:
                 raise StoppedMessageSession('Session is stopped')
             if not receipt_recovery and row['state'] not in ({'joining','active','overdue','stopping'} if allow_joining else {'active','overdue','stopping'}):
                 raise PermissionError('Matching session authority required')
@@ -178,7 +178,8 @@ class ChannelStore:
         with self.owner._lock:
             row = self.owner._db.execute('''SELECT c.chat_id FROM chat_identities c WHERE current_route=?
                 UNION SELECT chat_id FROM routing_aliases WHERE route=?''', (route,route)).fetchone()
-            return row is not None and self.channel_for_chat(row[0]) == channel
+            return (row is not None and self.channel_for_chat(row[0]) == channel
+                    and self.owner._db.execute('SELECT 1 FROM chat_identities WHERE chat_id=? AND retired_at IS NULL', (row[0],)).fetchone() is not None)
 
     def issue_grant(self, **kwargs):
         from src.agentbus_channel_grants_service import issue_grant

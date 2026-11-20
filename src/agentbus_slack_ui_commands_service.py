@@ -96,6 +96,9 @@ def execute_interaction(payload: dict, settings, store, web_client) -> str:
         action = parse_action(actions[0])
         if action.channel != channel:
             raise ValueError('This button belongs to another channel. Open the local command again.')
+        if action.kind.startswith('identity_'):
+            from src.agentbus_identity_ui_service import identity_interaction
+            return identity_interaction(action,settings,store,uid,channel)
         if action.kind in {'publication_page', 'publication_results', 'publication_approve'}:
             from src.agentbus_publication_ui_service import publication_interaction
             owner = getattr(store, 'publications', None)

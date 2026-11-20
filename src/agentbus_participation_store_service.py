@@ -140,6 +140,9 @@ class ParticipationStore:
                 )
             """)
 
+        from src.agentbus_identity_management_service import initialize_identity_management
+        initialize_identity_management(self)
+
     def initialize_default_policy(self) -> bool:
         """Bootstrap only an empty participation store; preserve operator history."""
         with self._lock, atomic(self._db):
@@ -414,7 +417,7 @@ class ParticipationStore:
             policy_revision = self.effective_policy(repo, chat_id).revision
             try:
                 self._db.execute(
-                    "INSERT INTO chat_identities VALUES (?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO chat_identities(chat_id,repo,current_route,display_name,created_at,updated_at) VALUES (?, ?, ?, ?, ?, ?)",
                     (chat_id, repo, route, display_name, created, created),
                 )
             except sqlite3.IntegrityError:
@@ -570,6 +573,8 @@ class ParticipationStore:
             "effective_policy_revision": policy.revision,
             "acknowledged_policy_revision": row["acknowledged_policy_revision"],
             "polling_required": row["state"] != "stopped",
+            "operator_revoked": row["operator_revoked_at"] is not None,
+            "operator_revoked_at": row["operator_revoked_at"],
             "work_paused": bool(row["work_paused"]),
             "outstanding_controls": [dict(item) for item in outstanding],
             "current_backoff_seconds": row["current_backoff_seconds"],
@@ -589,49 +594,13 @@ class ParticipationStore:
             return self.presence(session_id)
 
     def rename(self, session_id: str, session_secret: str, new_route: str) -> tuple[str, str, str]:
-        """Move the route atomically; the former address remains reserved."""
+        """Exact-session authorization delegates to the canonical route transition."""
+        from src.agentbus_identity_management_service import rename_identity
         with self._lock, atomic(self._db):
             session = self._authorized_session(session_id, session_secret)
             if session["state"] == "stopped":
                 raise ValueError("stopped session cannot rename")
-            chat = self._db.execute(
-                "SELECT repo, current_route FROM chat_identities WHERE chat_id = ?",
-                (session["chat_id"],),
-            ).fetchone()
-            if chat is None:
-                raise RuntimeError("session identity is missing")
-            parts = route_parts(new_route)
-            if parts is None or parts[1] != chat["repo"]:
-                raise ValueError("new route must keep the same repository")
-            old_route = chat["current_route"]
-            if new_route == old_route:
-                return session["chat_id"], old_route, new_route
-            current = self._db.execute(
-                "SELECT chat_id FROM chat_identities WHERE current_route = ?", (new_route,)
-            ).fetchone()
-            alias = self._db.execute(
-                "SELECT chat_id FROM routing_aliases WHERE route = ?", (new_route,)
-            ).fetchone()
-            if current is not None or (alias is not None and alias["chat_id"] != session["chat_id"]):
-                raise ValueError("new route collides with an existing or reserved address")
-            alias_count = self._db.execute(
-                "SELECT count(*) FROM routing_aliases WHERE chat_id = ?", (session["chat_id"],),
-            ).fetchone()[0]
-            if alias is None and alias_count >= MAX_ALIASES_PER_CHAT:
-                raise ValueError("alias capacity exhausted; existing addresses remain reserved")
-            if alias is not None:
-                self._db.execute("DELETE FROM routing_aliases WHERE route = ?", (new_route,))
-            changed = _now()
-            self._db.execute(
-                "INSERT OR IGNORE INTO routing_aliases(route, chat_id, reserved_at) VALUES (?, ?, ?)",
-                (old_route, session["chat_id"], changed),
-            )
-            self._db.execute(
-                "UPDATE chat_identities SET current_route = ?, updated_at = ? WHERE chat_id = ?",
-                (new_route, changed, session["chat_id"]),
-            )
-            self._audit("rename", f"{old_route} -> {new_route}", session["chat_id"], session_id, "", changed)
-            return session["chat_id"], old_route, new_route
+            return rename_identity(self, session['chat_id'], new_route, session_id=session_id)
 
     def routes_for(self, route: str) -> tuple[str, ...]:
         """Resolve current or former route to all addresses of one stable chat."""

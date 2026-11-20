@@ -62,7 +62,7 @@ class SlackReceiver:
                 warning = 'AgentBus request accepted; private confirmation failed. Inspect results and the channel before retrying.'
             elif outcome == 'rejected':
                 warning = 'AgentBus command rejected before admission; private confirmation failed. Review command access and scope.'
-            elif result is not None and (action in {'help','roster','status','metrics','workers','doctor','pending','explain','results','enrollments'} or str(payload.get('text', '')).strip() == 'health'):
+            elif result is not None and (action in {'help','roster','status','metrics','workers','doctor','pending','explain','results','enrollments','identities'} or str(payload.get('text', '')).strip() == 'health'):
                 warning = 'AgentBus read-only command completed; private confirmation failed. Inspect service diagnostics.'
             else:
                 warning = 'AgentBus command outcome is uncertain. Inspect status and the channel before retrying.'

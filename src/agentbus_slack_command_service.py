@@ -19,6 +19,7 @@ HELP = "\n".join([
     "*Message*\n`/agentbus send ID MESSAGE`\n`/agentbus wake ID MESSAGE` — request attention; host admission is separate",
     "*Ask everyone in this channel*\n`/agentbus broadcast TEXT` — read acknowledgement required\n"
     "`/agentbus poll QUESTION` — answer required\n`/agentbus results` — choose a poll; named answers and page buttons",
+    "*Identity management*\n`/agentbus identities` — private rename/removal previews and receipts\n"
     "*Control*\n`/agentbus checkpoint ID`\n`/agentbus pause ID` · `/agentbus resume ID`\n"
     "`/agentbus retire ID CONFIRM` — irreversible stop",
     "*Targets:* ID is a unique current identity fragment, last 6–12 hex characters, or full session UUID. "
@@ -174,6 +175,9 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
         from src.agentbus_status_api_service import service_dashboard
         snapshot = dashboard() if dashboard is not None else service_dashboard(settings, store)
         return health_text({**snapshot, "invoked_command": command})
+    if action == 'identities':
+        from src.agentbus_identity_ui_service import identity_command
+        return identity_command(parts,settings,store,user,channel,command)
     if action == 'updates':
         from src.agentbus_publication_ui_service import publication_review
         owner = getattr(store, 'publications', None)

@@ -124,7 +124,7 @@ def require_target(store,channel,message,bridge=None):
     from src.agentbus_message_assurance_service import route_parts
     parts=route_parts(message.recipient)
     if bridge is not None and bridge.channel==channel and parts and any(
-            binding.route_prefix==parts[0] for binding in bridge.bindings.values()):
+            binding.route_prefix==parts[0] and binding.route_prefix!=bridge.identity.route_prefix for binding in bridge.bindings.values()):
         return
     raise HTTPException(403,'Destination unavailable in this scope')
 

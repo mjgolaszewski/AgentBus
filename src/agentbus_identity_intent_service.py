@@ -9,7 +9,7 @@ from dataclasses import asdict, dataclass
 from uuid import UUID
 
 ACTIONS = frozenset({'rename', 'retire', 'retire_with_history'})
-FIELDS = frozenset({'version', 'request_id', 'actor', 'channel', 'chat_id', 'revision',
+FIELDS = frozenset({'version', 'request_id', 'actor', 'channel', 'inbox_id', 'chat_id', 'revision',
                     'action', 'created_at', 'expires_at', 'name', 'session_ids', 'positions'})
 DENIAL = 'Identity operation unavailable; reopen the identity manager.'
 
@@ -20,6 +20,7 @@ class IdentityManagementIntent:
     request_id: str
     actor: str
     channel: str
+    inbox_id: str
     chat_id: str
     revision: int
     action: str
@@ -36,13 +37,13 @@ def _uuid(value):
     return value
 
 
-def decode_identity_intent(value, *, actor, channel):
+def decode_identity_intent(value, *, actor, channel, inbox_id):
     """Bind immutable preview data to the caller's already verified context."""
     try:
         if (not isinstance(value, dict) or len(value) != len(FIELDS) or set(value) != FIELDS
                 or type(value['version']) is not int or value['version'] != 1
                 or not isinstance(actor, str) or not 1 <= len(actor) <= 128
-                or value['actor'] != actor or value['channel'] != channel
+                or value['actor'] != actor or value['channel'] != channel or value['inbox_id'] != inbox_id
                 or not isinstance(channel, str) or not re.fullmatch(r'[CG][A-Z0-9]{1,79}', channel)
                 or type(value['revision']) is not int or not 0 <= value['revision'] < 2**63
                 or not isinstance(value['action'], str) or value['action'] not in ACTIONS):
@@ -68,7 +69,7 @@ def decode_identity_intent(value, *, actor, channel):
                 or len(set(positions)) != len(positions)
                 or (positions and value['action'] != 'retire_with_history')):
             raise ValueError(DENIAL)
-        return IdentityManagementIntent(1, _uuid(value['request_id']), actor, channel,
+        return IdentityManagementIntent(1, _uuid(value['request_id']), actor, channel, _uuid(inbox_id),
             _uuid(value['chat_id']), value['revision'], value['action'], float(created), float(expires),
             name, tuple(sorted(sessions)), tuple(sorted(positions)))
     except (KeyError, ValueError, TypeError, OverflowError, AttributeError):
