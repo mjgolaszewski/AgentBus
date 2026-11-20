@@ -686,28 +686,22 @@ def test_publication_uncertainty_retains_safe_first_validation_reason(publicatio
     assert reopened.status(principal, draft["request_id"])["failure"] == reason
 
 
-@pytest.mark.parametrize("change,expected_state", [
-    ("provider_block_id", "delivered"),
-    ("missing_blocks", "uncertain"),
-    ("missing_request_id", "uncertain"),
-    ("wrong_request_id", "uncertain"),
-    ("changed_block_text", "uncertain"),
-    ("exact_fallback_changed_block", "uncertain"),
-    ("changed_verbatim", "uncertain"),
-    ("extra_block", "uncertain"),
-    ("extra_rendering_field", "uncertain"),
-    ("collapsed_body_spaces", "uncertain"),
-])
-def test_publication_folded_fallback_requires_exact_blocks_and_request(publication, change, expected_state):
+@pytest.mark.parametrize("text", ["A short update", "First line\nSecond line", "Keep  body spaces\tand tabs", "<@U999> & *bold*\nNext line"])
+def test_publication_retains_single_line_fallback_before_approval(publication, text):
     import asyncio
     import json
 
     import httpx
 
+    from src.agentbus_presentation_service import section_blocks
     from src.agentbus_publication_runtime_service import PublicationWorker
 
     _, custody, principal, _ = publication
-    draft = custody.admit(principal, str(uuid4()), "updates", "Keep  two spaces\nand a line break")
+    draft = custody.admit(principal, str(uuid4()), "updates", text)
+    row = custody._row(draft["publication_id"])
+    payload = json.loads(row["payload"])
+    assert payload["text"] == " ".join(payload["text"].split())
+    assert payload["blocks"] == section_blocks("*Project update*\n" + text)
     custody.approve(draft["publication_id"], "U123", draft["digest"])
     posts = []
 
@@ -716,29 +710,9 @@ def test_publication_folded_fallback_requires_exact_blocks_and_request(publicati
             return httpx.Response(200, json={"ok": True, "team_id": "T123", "bot_id": "B123"})
         body = json.loads(request.content)
         posts.append(body)
-        message = {"text": body["text"].replace("\n", " "),
-                   "blocks": body["blocks"], "client_msg_id": body["client_msg_id"]}
-        message["blocks"][0]["block_id"] = "provider-assigned"
-        if change == "missing_blocks":
-            del message["blocks"]
-        elif change == "missing_request_id":
-            del message["client_msg_id"]
-        elif change == "wrong_request_id":
-            message["client_msg_id"] = str(uuid4())
-        elif change == "changed_block_text":
-            message["blocks"][0]["text"]["text"] += " changed"
-        elif change == "exact_fallback_changed_block":
-            message["text"] = body["text"]
-            message["blocks"][0]["text"]["text"] += " changed"
-        elif change == "changed_verbatim":
-            message["blocks"][0]["text"]["verbatim"] = False
-        elif change == "extra_block":
-            message["blocks"].append({"type": "divider"})
-        elif change == "extra_rendering_field":
-            message["blocks"][0]["fields"] = [{"type": "plain_text", "text": "changed"}]
-        elif change == "collapsed_body_spaces":
-            message["text"] = " ".join(body["text"].split())
-        return httpx.Response(200, json={"ok": True, "channel": "C999", "ts": "100.1", "message": message})
+        # Reproduce provider fallback folding; no invented extra echo fields.
+        return httpx.Response(200, json={"ok": True, "channel": "C999", "ts": "100.1",
+                                        "message": {"text": " ".join(body["text"].split())}})
 
     async def run():
         async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
@@ -748,7 +722,35 @@ def test_publication_folded_fallback_requires_exact_blocks_and_request(publicati
             assert await worker.submit_once() == 0
 
     asyncio.run(run())
-    receipt = custody.status(principal, draft["request_id"])
-    assert receipt["state"] == expected_state
-    assert len(posts) == 1
-    assert receipt["failure"] == ("provider_text_mismatch" if expected_state == "uncertain" else None)
+    assert custody.status(principal, draft["request_id"])["state"] == "delivered"
+    assert posts == [payload]
+    assert custody.admit(principal, draft["request_id"], "updates", text)["state"] == "delivered"
+
+
+@pytest.mark.parametrize("state", ["awaiting_approval", "uncertain", "delivered"])
+def test_publication_legacy_fallback_retry_preserves_payload_and_fingerprint(publication, state):
+    import hashlib
+    import json
+
+    owner, custody, principal, _ = publication
+    text = "Legacy  body\nkeeps original whitespace"
+    draft = custody.admit(principal, str(uuid4()), "updates", text)
+    row = dict(custody._row(draft["publication_id"]))
+    payload = json.loads(row["payload"])
+    payload["text"] = "*Project update*\n" + text
+    # A historical fixture binds the original multiline payload, not the new renderer.
+    spec = [row["chat_id"], row["session_id"], row["channel"], row["inbox_id"], row["destination"],
+            row["text"], row["policy_revision"], json.loads(row["destination_spec"]), payload,
+            row["request_id"], row["route"]]
+    digest = hashlib.sha256(json.dumps(spec, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    owner._db.execute("UPDATE publication_requests SET payload=?,digest=?,state=? WHERE publication_id=?",
+                      (json.dumps(payload, sort_keys=True), digest, state, row["publication_id"]))
+    owner._db.commit()
+    before = dict(custody._row(row["publication_id"]))
+    reopened = PublicationStore(owner, custody.policy)
+    receipt = reopened.admit(principal, row["request_id"], "updates", text)
+    assert receipt["digest"] == digest and receipt["state"] == state
+    assert dict(reopened._row(row["publication_id"])) == before
+    with pytest.raises(ValueError, match="conflicts"):
+        reopened.admit(principal, row["request_id"], "updates", text + " edited")
+    assert owner._db.execute("SELECT count(*) FROM publication_requests").fetchone()[0] == 1

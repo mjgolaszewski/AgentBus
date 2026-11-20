@@ -192,11 +192,12 @@ provider body. HTTP status, invalid JSON/response shape, missing success,
 channel mismatch, invalid timestamp, missing message and text mismatch have
 separate reason codes. A text mismatch is evidence of a failed comparison; it
 does not establish whether Slack normalization or another cause produced it.
-Slack may fold notification fallback newlines into spaces. The candidate verifier
-accepts that specific change only with the original publication ID and exact
-retained rendered blocks (ignoring provider-assigned block IDs). It does not
-collapse arbitrary whitespace or accept changed block content. Missing evidence
-still leaves the receipt uncertain; this repair requires its own release proof.
+Slack may fold notification fallback whitespace. New drafts retain a single-line
+notification fallback before approval; their rendered blocks preserve the original
+formatting. The verifier still requires an exact returned-text match, the bound
+channel and a valid timestamp. Existing drafts retain their original payloads and
+fingerprints on identical recovery; the service never rewrites uncertain receipts.
+This repair requires its own release proof and live receipt verification.
 Old `provider_response_unverified` receipts remain unclassified. Neither a
 reason code nor a visible post authorizes resubmission or rewriting custody.
 

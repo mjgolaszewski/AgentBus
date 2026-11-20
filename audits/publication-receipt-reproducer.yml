@@ -11,8 +11,9 @@ observations:
 - No raw response retained; only safe shape/equality/length/hash observations
 - Original uncertain records untouched; no post retry
 - First local precondition stopped before provider calls; check-in restored own compliant participation
-- Candidate requires original publication ID and exact retained blocks for newline-folded fallback; actual diagnostic
-  did not retain block echoes, so final live receipt verification remains unqualified
+- Initial echo-exception candidate superseded before full proof; replacement retains single-line fallback at NEW
+  admission, leaves exact comparison unchanged and preserves verified legacy payloads/fingerprints. Final live receipt
+  remains unqualified.
 runtime_reproducer:
   first_failure: Non-root import PermissionError in native runtime-smoke under restrictive source checkout modes
   candidate: Copy application source owned by runtime UID10001; standard runtime producer always builds private-mode
@@ -51,3 +52,4 @@ validation:
   canonical_reconcile_and_governance: passed
   sdk_manifest_controls_added_per_suite: 10
   final_release_proof: pending
+  applicability: Prior985e958 candidate only; replacement admission renderer and legacy-retry controls require qualification
