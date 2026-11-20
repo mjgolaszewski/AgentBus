@@ -636,7 +636,9 @@ def test_many_long_publications_have_bounded_list_and_full_exact_review(publicat
 def test_publication_uncertainty_retains_safe_first_validation_reason(publication, case, reason):
     import asyncio
     import json
+
     import httpx
+
     from src.agentbus_publication_runtime_service import PublicationWorker
 
     _, custody, principal, _ = publication
