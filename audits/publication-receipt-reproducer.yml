@@ -79,6 +79,21 @@ evidence:
   release-preparation/result.json:
     bytes: 392
     sha256: f307eb72c6dd8d5596405e455cc0403c087185f48eecef0e00e28aa81c4ccab1
+  read-only-package/commands.json:
+    bytes: 1416
+    sha256: 9922d5faadeadbb2c07f3527b542fa4b132bb0f3b885b48e83be0139cd472247
+  read-only-package/runtime.stdout:
+    bytes: 17
+    sha256: a34fdec02c97fc4cb6f872093841a0216b72c750b91b5b5e7872087354185be2
+  read-only-package/runtime.stderr:
+    bytes: 4483
+    sha256: 5a9f8034f11ee913a48a999d627a3e5083893ef73967b2bfde78902e75d4843b
+  read-only-package/governance.stdout:
+    bytes: 139
+    sha256: 88c064856be19a0dfcd38934d9f38efc85df41a141406db4083f811e790f179f
+  read-only-package/result.json:
+    bytes: 393
+    sha256: 8a0c05023a724cb3da9477b94053b0cc5b2db77a552d721860c90f50ffcface8
 validation:
   subject: 985e958d2a7732e604a071db2bab5fa13d7144c4
   controls_passed: 103
@@ -114,3 +129,12 @@ release_preparation:
   user_skill: Qualified cc87 source bytes installed in the existing discovered user scope; all3 originals preserved
     with exact manifest, no service change
   publication: not published; provider authentication and final live receipt remain pending
+read_only_package_validation:
+  subject: 267ee5a3cf7547b5fa468bffb609366d99893bfd
+  lint: passed
+  runtime_positive: Private source remains readable, advertised version is readable, runtime UID10001 cannot write
+    application code/version metadata
+  canonical_reconcile_and_governance: passed
+  registered_negative_controls: Root user and writable application code must be rejected in final canonical graph;
+    not yet claimed executed on this changed package
+  release_qualified: false
