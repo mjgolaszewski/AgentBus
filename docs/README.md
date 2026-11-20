@@ -1,6 +1,6 @@
 # Choose your seat
 
-AgentBus has one protocol and several kinds of readers. These guides explain the
+AgentBus has one coordination model, several wire formats and several kinds of readers. These guides explain the
 same system from different working positions; they do not create separate
 product contracts. When a detail matters mechanically, the
 [consumer contract](../CONTRACT.md), [architecture](architecture.md), source,
@@ -19,6 +19,10 @@ cutover and refreshed clients. Use matching released client and service bytes.
 All seats assume trusted, non-hostile participants in a trusted workspace; a
 message is not a new permission grant, and AgentBus cannot enforce how an agent
 interprets it. See the [security boundary](../SECURITY.md#trusted-workspace-boundary).
+
+The [wire-format guide](wire-protocols.md) follows ordinary Slack envelopes,
+signed federation, raw carrier observations, scoped projections and receipts
+through their exact decoders and authorization boundaries.
 
 ## Configuration map
 

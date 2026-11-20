@@ -1,7 +1,7 @@
 document:
   kind: editorial_audit
   path: audits/editorial-review.yml
-  status: editorial_source_review_complete
+  status: final_protocol_addendum_review_pending
 request:
   scope: Current public product guidance, application contracts, packaged skill and historical authored prose; explicit
     per-document line review and disposition.
@@ -34,8 +34,8 @@ experimental_claims:
   monitoring: Bounded actual-access observations and explicitly requested private notices; no continuous-monitoring
     or execution guarantee.
 summary:
-  documents: 51
-  state: fresh_full_scope_read_and_final_changes_reconciled
+  documents: 52
+  state: final_protocol_addendum_review_pending
   dispositions:
     reviewed: 27
     added: 1
@@ -682,7 +682,7 @@ documents:
   review_basis: Full file read to identify boundaries; application guidance reviewed, BCF governance machinery excluded
     from editorial disposition.
 - document: docs/README.md
-  review_status: full_document_line_reviewed
+  review_status: final_changed_spans_reread_pending
   reviewed_lines:
   - - 1
     - 99
@@ -822,7 +822,7 @@ documents:
   review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
     tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
 - document: docs/contracts.md
-  review_status: full_document_line_reviewed
+  review_status: final_changed_spans_reread_pending
   reviewed_lines:
   - - 1
     - 170
@@ -832,7 +832,7 @@ documents:
   review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
     tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
 - document: docs/federation.md
-  review_status: full_document_line_reviewed
+  review_status: final_changed_spans_reread_pending
   reviewed_lines:
   - - 1
     - 420
@@ -892,7 +892,7 @@ documents:
   review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
     tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
 - document: docs/recovery.md
-  review_status: full_document_line_reviewed
+  review_status: final_changed_spans_reread_pending
   reviewed_lines:
   - - 1
     - 286
@@ -1101,6 +1101,16 @@ documents:
   disposition: edited
   review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
     tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/wire-protocols.md
+  review_status: fresh_full_draft_reviewed_final_source_reread_pending
+  reviewed_lines:
+  - - 1
+    - 213
+  line_count: 213
+  sha256: 096a4229f0ae845e68d4a3b450e3766def2af01bb4e004be5009faa85f01131c
+  disposition: added
+  review_basis: Fresh full draft read against exact normalizer/frame/bridge/ancestry/projection/receipt code; final
+    installed-source reread pending.
 current_review:
   scope: Complete fresh line-by-line sweep explicitly reaffirmed for P16; baseline entries are not current review
     evidence.

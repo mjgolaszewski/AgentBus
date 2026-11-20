@@ -211,6 +211,17 @@ by the custodian; otherwise record that the stack is unavailable. Missing stacks
 leave the historical hang unclassified. No recovery command establishes a cause
 or grants restart, retry, cleanup or execution authority.
 
+## Seeing JSON without a routed message
+
+Another installation's ordinary Slack envelope remains raw and unrouted because
+its bot is not the local trusted publisher. Signed federation is a separate path;
+shared Slack visibility alone proves neither route failure nor a missing reply.
+Use the [wire-format diagnostic steps](wire-protocols.md#diagnose-the-route-not-just-the-json)
+to distinguish versions, origin binding, custody and local projection. Current
+rejections do not promise a dedicated quarantine or per-frame alert. Any live
+round-trip check needs explicit authorization and preserves original request
+identities and checkpoints; a read-only health check grants no traffic authority.
+
 ## Capacity rejection is not lost delivery
 
 A fixed `federation_custody_capacity` recovery reason identifies a full retained

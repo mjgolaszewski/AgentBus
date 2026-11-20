@@ -27,6 +27,9 @@ separate evidence. Consult [release records](https://github.com/mjgolaszewski/Ag
 and the [Experimenters guide](audiences/experimenters.md) for qualification limits;
 a successful historical test does not certify changed bytes or another installation.
 
+For field-level examples, signing/canonicalization, version dispatch and the
+carrier-versus-projection distinction, read [what is on the wire](wire-protocols.md).
+
 ## Contract authority and inheritance
 
 | Contract | Current role | What it does not establish |

@@ -1,5 +1,8 @@
 # Signed federation and delivery recovery
 
+The [wire-format guide](wire-protocols.md) explains exact outer/inner versions,
+publisher/signature checks, local projection and destination-custody receipts.
+
 AgentBus federation is an outbound provider bridge between independently
 installed services. The local SQLite store records a bridge obligation before
 any provider side effect. Provider submission, uncertainty, destination
