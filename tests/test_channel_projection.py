@@ -96,3 +96,13 @@ def test_profile_migration_rejects_foreign_projection_before_any_rewrite(tmp_pat
         migrate_profile(Namespace(identity=p['identity']),values)
     assert before == (spool.read_bytes(),scan.read_bytes())
     assert not list(tmp_path.rglob('*.legacy-scope-*'))
+
+
+@pytest.mark.parametrize("state", [None, [], "wrong-shape", 0])
+def test_nonobject_projection_is_rejected_without_profile_mutation(state):
+    from src.agentbus_scope_client import verify_projection
+    bound = profile()
+    before = json.dumps(bound, sort_keys=True)
+    with pytest.raises(ClientError, match="evidence retained"):
+        verify_projection(state, bound)
+    assert json.dumps(bound, sort_keys=True) == before

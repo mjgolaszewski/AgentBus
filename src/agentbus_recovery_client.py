@@ -136,6 +136,8 @@ def cli_resume(ns, project, values):
                 raise ValueError()
             checkpoint_baseline = raw
             retained = json.loads(raw)
+            if not isinstance(retained, dict):
+                raise ValueError()
             verify_projection(retained, profile)
             previous = retained["observed_at"]
             if "recovery_context" in retained:
