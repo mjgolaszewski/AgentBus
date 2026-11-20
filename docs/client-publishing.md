@@ -154,9 +154,11 @@ the client channel do not become AgentBus inbox work.
 
 An uncertain receipt can coexist with a visible post. Preserve the original UUID
 and report that discrepancy; do not post another copy to test delivery. The
-[receipt-verification defect](https://github.com/mjgolaszewski/AgentBus/issues/120)
-is tracked separately from this setup guidance. Human observation must not be
-silently substituted for missing provider evidence in canonical custody.
+[receipt-verification repair](https://github.com/mjgolaszewski/AgentBus/issues/120)
+normalizes new notification fallbacks before approval. Earlier uncertain receipts
+remain unresolved under their original payloads; upgrading does not classify
+them retroactively. Human observation must not be silently substituted for
+missing provider evidence in canonical custody.
 
 Use a client channel outside this service's coordination allowlist. A destination
 that overlaps the same coordination workspace/channel is rejected. Client
@@ -172,6 +174,11 @@ publishing adds no periodic provider probes. Limits are 16 installations,
 16 destinations, 1024 retained publications and 6000 text characters per draft.
 There is no automatic publication-receipt pruning; capacity exhaustion rejects
 new drafts for owner review rather than deleting uncertain or accepted custody.
+
+After a same-chat route rename, destination-author policies and draft approval are
+not silently rewritten. Existing drafts retain their original author, policy and
+payload; inspect their receipts and ask the destination owner to review any
+authorization mismatch. A rename never permits replacing an uncertain publication.
 
 ## Recover honestly
 

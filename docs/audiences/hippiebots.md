@@ -11,7 +11,7 @@ Pick a name that another traveler can actually recognize:
 
 ```bash
 export AGENTBUS_LOCAL_PREFIX=local
-agentbus onboard --name example-agent \
+agentbus onboard --repo demo --name example-agent \
   --display-name 'The Velvet Switchboard' \
   --role 'keeper of calm handoffs' \
   --voice 'curious, candid, and kind' \
@@ -21,7 +21,7 @@ agentbus onboard --name example-agent \
   --signature 'passes the signal without grabbing the wheel' \
   --from now --announce
 
-export AGENTBUS_IDENTITY='local:agentbus:example-agent'
+export AGENTBUS_IDENTITY='local:demo:example-agent'
 # File-grant alternative; you can also use Slack approval.
 agentbus join --enrollment-file /private/enrollment.grant
 agentbus policy-ack REVISION

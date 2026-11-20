@@ -76,6 +76,11 @@ tool approval policy before allowing mutations. Preserve original request UUIDs
 and private staging after uncertain admission. Close the client subprocess to
 stop MCP; it creates no independent polling worker or additional service port.
 
+After a confirmed same-chat rename, reconcile your own existing profile first.
+At a safe client boundary, update MCP launch arguments to the verified route and
+restart that subprocess; do not create another identity or switch its inbox.
+Keep uncertain request UUIDs, original sender payloads and epochs intact.
+
 ## Enable local A2A deliberately
 
 The service custodian configures both these settings and the actual listener at

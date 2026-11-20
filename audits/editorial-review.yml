@@ -1,7 +1,7 @@
 document:
   kind: editorial_audit
   path: audits/editorial-review.yml
-  status: editorial_review_complete
+  status: editorial_source_review_complete
 request:
   scope: Current public product guidance, application contracts, packaged skill and historical authored prose; explicit
     per-document line review and disposition.
@@ -11,6 +11,8 @@ request:
   - Changelog prose
   - Executable source, test fixtures, dependency locks and opaque provider evidence
   - This inventory and structured audit result data are excluded from self-hashing
+  - 'Installer-owned observability logging/telemetry templates: inspected to identify their reference-only role,
+    retained unchanged; not implemented logging guarantees'
   history_policy: Historical audit inventories remain reachable at the pinned baseline; current guidance is capability-oriented.
     No historical proof is relabelled as current qualification.
   completion_rule: Line review is an editorial claim only; canonical protected PR/exact-main/archive/install and
@@ -20,8 +22,8 @@ baseline_review:
   inventory: audits/editorial-review.yml
   sha256: 6e25f4b8b777b0d140300842273ec5a8c61873bc3c3520854332b6019a3c4628
 experimental_claims:
-  candidate: 0.11.0 was published with exact-subject custody; this documentation hotfix requires its own canonical
-    proof. Prior release authority is not relabelled.
+  candidate: P16 / 0.12 construction remains local and unqualified. Existing released 0.11.1 custody applies only
+    to its own subject.
   AHP_native_queue: Live interoperability and atomic idle-only admission remain unqualified.
   publication: Explicit optional named-destination policy only; production-client canary waived by operator in favor
     of approved two-location substitution, with isolated provider controls; broader client deployments not inferred.
@@ -31,7 +33,22 @@ experimental_claims:
     retirement.
   monitoring: Bounded actual-access observations and explicitly requested private notices; no continuous-monitoring
     or execution guarantee.
-documents:
+summary:
+  documents: 52
+  state: fresh_full_scope_read_and_protocol_addendum_reconciled
+  dispositions:
+    reviewed: 26
+    added: 2
+    edited: 24
+    combined: 0
+    removed: 0
+  remaining: Behavioral, canonical protected PR/exact-main, archive/install and skill qualification remain separately
+    required; any material source/doc change reopens its affected review.
+visual_inventory: audits/editorial-visual-review.yml
+review_continuity: All current in-scope files received fresh full reading in this sweep; final changed spans were
+  reread after implementation reconciliation. Prior inventories remain historical, never a substitute for reading.
+usability_inventory: audits/editorial-usability-review.yml
+prior_documents:
 - document: .env.example
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -273,7 +290,8 @@ documents:
   sha256: ac8de7a1b534fb9edfcd631207e6dcb1eebc4b289ea970302280503b07f42339
   baseline_sha256: c7aca5d3a6260167493b0621ee35ec0d18cbbcd34886fe1987dda7162c62816f
   disposition: updates
-  review_basis: Full current document reviewed line by line for audience preflight, bounded receipt reasons, scope and honest recovery; matching release proof remains required.
+  review_basis: Full current document reviewed line by line for audience preflight, bounded receipt reasons, scope
+    and honest recovery; matching release proof remains required.
 - document: docs/codex-skill.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -371,7 +389,8 @@ documents:
   sha256: 2d8e87a5ada699599cc67bb67d473609cf8ce9fb9a59b9cea24b2ef5bf62ffb4
   baseline_sha256: 373df2ff2d66a2243c4fea7b314d0dfdccb7db58d3b27c4bcd22e185aa443935
   disposition: updates
-  review_basis: Full current document reviewed line by line for bounded diagnosis, audience admission, immutable custody and non-authorizing recovery; qualified release proof remains separate.
+  review_basis: Full current document reviewed line by line for bounded diagnosis, audience admission, immutable
+    custody and non-authorizing recovery; qualified release proof remains separate.
 - document: skills/agentbus/SKILL.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -392,7 +411,8 @@ documents:
   sha256: 10ad5d86752a231bc8e38898bf133284c3d9309fc2db30458ed5a51041a6734d
   baseline_sha256: e0a8b2df362ed7fc2f5c6408040369d89175443b1416443233f7b560bd17db3d
   disposition: updates
-  review_basis: Full current document reviewed line by line for audience preflight, bounded receipt reasons, scope and honest recovery; matching release proof remains required.
+  review_basis: Full current document reviewed line by line for audience preflight, bounded receipt reasons, scope
+    and honest recovery; matching release proof remains required.
 - document: skills/agentbus/agents/openai.yaml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -491,7 +511,8 @@ documents:
   sha256: 3911d6e6bcdcf7748fcc59733ce7687945957a639c71fb57370bebb01a3c56ce
   baseline_sha256: 3f993620f1c50e7e0b88765a83f93f12acf26641fa5e0a2a62c08c4526dfa4a3
   disposition: updates
-  review_basis: Full current document reviewed line by line for bounded diagnosis, audience admission, immutable custody and non-authorizing recovery; qualified release proof remains separate.
+  review_basis: Full current document reviewed line by line for bounded diagnosis, audience admission, immutable
+    custody and non-authorizing recovery; qualified release proof remains separate.
 - document: contracts/participation/v1/participation.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -534,7 +555,8 @@ documents:
   sha256: 46022bbbc4b097a23ba3406e83eff741d561a80428a60bcd88fef11f19b95c2a
   baseline_sha256: ae0fe3e29b9ce7798decd7d3b22ccc9ca8f15909baf7831eeb43cef363016526
   disposition: updates
-  review_basis: Full current document reviewed line by line for bounded diagnosis, audience admission, immutable custody and non-authorizing recovery; qualified release proof remains separate.
+  review_basis: Full current document reviewed line by line for bounded diagnosis, audience admission, immutable
+    custody and non-authorizing recovery; qualified release proof remains separate.
 - document: contracts/retention/v1/automatic-retention.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -568,21 +590,555 @@ documents:
   disposition: new
   review_basis: Minimal outbound-only Slack app manifest reviewed with client installation walkthrough; no secrets,
     event subscriptions, slash commands, inbound handler or new socket.
-summary:
-  documents: 49
-  dispositions:
-    retained: 39
-    updates: 8
-    new: 2
-    merged: 0
-    removed: 0
-  merged_or_removed: No current product document needed merging or removal; superseded participation v1 remains
-    explicitly historical because v2 inherits its non-conflicting controls.
-  private_details: Current public guidance contains generic example identifiers only; historical subjects retain
-    public commit/evidence references without local deployment inventories.
-  remaining: Release and hotfix proof is established independently by canonical CI/custody on its exact subject;
-    no authored inventory status establishes runtime qualification.
-visual_inventory: audits/editorial-visual-review.yml
-review_continuity: Unchanged files inherit their baseline line review with byte/hash verification; changed documents
-  and the new seat were reviewed in full. The pinned baseline inventory retains original 0.11 dispositions.
-usability_inventory: audits/editorial-usability-review.yml
+documents:
+- document: .env.example
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 75
+  line_count: 75
+  sha256: b22fe1f86488d0fabad5fdd16b73379d01097c6603b4a39927a4abcea9eafc42
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: LICENSE
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 21
+  line_count: 21
+  sha256: 4b5bd93700515293f29d5306cd65526f71b89dfa8cf72ed4a0bdf4ca4a4a68d8
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: README.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 232
+  line_count: 232
+  sha256: 60c1a43795c655a63774a2ba4ac0e64f811fe27921a948e40df1c4e0a22dc388
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: CONTRACT.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 273
+  line_count: 273
+  sha256: a100ceff8b5384ab17d82435ea21fc786f6677429a4a2ffbba7515264e938c3e
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: CONTRIBUTING.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 26
+  line_count: 26
+  sha256: 655c8b006fe35d4742d5db91714eb882532df94d09e02d65566c7a6a32f95369
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: SECURITY.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 117
+  line_count: 117
+  sha256: e7f012607adf9b109f11c3d092cc7bad883f76408bb4f1f5caddc347223fdbc2
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: audits/README.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 18
+  line_count: 18
+  sha256: 84127d9dedf25034cd7b658eec9b5980ee2267c410d5287cca55df45c0e8f1f5
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: audits/2026-09-29-external-product-review.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 26
+  line_count: 26
+  sha256: 6776a3d816f485e7437d45ed0eb8b1a9dff56c60846f76c127ad033fbc7acf65
+  disposition: reviewed
+  review_basis: Original hash-pinned historical bytes freshly reread in full; retained unchanged. Applicability
+    and current contract/security links live in audits/README.md so historical reviewer provenance remains exact.
+- document: docs/OPERATIONS.md
+  review_status: application_sections_line_reviewed
+  reviewed_lines:
+  - - 254
+    - 288
+  line_count: 342
+  sha256: 4a27b719fa739cae3eaca6dc622e1dff7bac5bc66f41f74241990da118d3b1db
+  disposition: edited
+  review_basis: Full file read to identify boundaries; application guidance reviewed, BCF governance machinery excluded
+    from editorial disposition.
+- document: docs/README.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 103
+  line_count: 103
+  sha256: 8e4c8435c93874114e73a37f736634ea31eed7f4cbc051973b7a6291c7c7efa1
+  disposition: edited
+  review_basis: Fresh full in-scope file reading in this sweep, followed by final changed-span reread; new wire
+    guide read in full as draft and committed source against exact decoders. Tables, examples and receive-path diagram
+    included; no live/provider qualification inferred.
+- document: docs/adoption-measurements.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 152
+  line_count: 152
+  sha256: 3a9060633da64b0a963bd9bb9c0456bfe73f7e0e1291b738834c25a667809664
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/architecture.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 211
+  line_count: 211
+  sha256: 3290e042ddd1c2dc3f5d36767b78a1d7bed67082d8efcb9ff1e35582b7094f8f
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/audiences/adapter-users.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 187
+  line_count: 187
+  sha256: 566e4be06b1819e098d381ee1162a1d28c4c4a4d135b073c3b71ea4ce1eadb6b
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/audiences/agents.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 187
+  line_count: 187
+  sha256: a30f73b2a0e349e4cfa6dc6cfb89d4893f4c3582bd50106b1826926de103adc2
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/audiences/experimenters.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 135
+  line_count: 135
+  sha256: 43e5d9fb67e03e55ea58f64277e92d838af57220258610c2bea8f486be05e57d
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/audiences/hippiebots.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 86
+  line_count: 86
+  sha256: 00dec5823dc8be15908a9609fe752f34851ea66d6c256e2e8915d7082aabaab4
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/audiences/humans.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 102
+  line_count: 102
+  sha256: 1148d08bae4f3c488da44221f179db51bd961eb4925fa8fe4ebf9c6455a3d64f
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/audiences/maintainers.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 40
+  line_count: 40
+  sha256: 785c8c12a9f2a5a91b070dd968b20875fd85b24cfd33babd562ba00a0913f015
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/audiences/operators.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 439
+  line_count: 439
+  sha256: 920d85a8d0e365ebf252704547dede2b19465b07dfbbb1838b3a8a083bac1790
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/audiences/security-reviewers.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 81
+  line_count: 81
+  sha256: 241f0de1a6ea2ca120044e4e1aa9bd9c965adb597c835d0a66020bd17b6319e3
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/channel-migration.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 89
+  line_count: 89
+  sha256: c928e36f2c9a518d77c9f4637e8cb00c8062986b6af691cdd8ee86266f3c155e
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/client-publishing.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 223
+  line_count: 223
+  sha256: c3a05216954a4b25d87828f56b62970dede2999f3bbd2731824fbec28d8f6576
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/codex-skill.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 37
+  line_count: 37
+  sha256: 1ae97adf87f8bd9d99cc5c99cfe063a9075664d3f32931e3d49db546544b00a1
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/contracts.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 173
+  line_count: 173
+  sha256: 845f1300e3708b905f0be00f62c4c968d8aaae635f5e6f277b669055414cfbc5
+  disposition: edited
+  review_basis: Fresh full in-scope file reading in this sweep, followed by final changed-span reread; new wire
+    guide read in full as draft and committed source against exact decoders. Tables, examples and receive-path diagram
+    included; no live/provider qualification inferred.
+- document: docs/federation.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 423
+  line_count: 423
+  sha256: 98df5d3d6066cd6d3407567f9c749ca7a0ce0895581b21773c62737553dda2d2
+  disposition: edited
+  review_basis: Fresh full in-scope file reading in this sweep, followed by final changed-span reread; new wire
+    guide read in full as draft and committed source against exact decoders. Tables, examples and receive-path diagram
+    included; no live/provider qualification inferred.
+- document: docs/governance-model.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 64
+  line_count: 64
+  sha256: 1e5f60fce0342269b6953dce27cd63d38bc782d1a2bd802d7fd85f1f7be8f400
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/http-api.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 101
+  line_count: 101
+  sha256: 3962778953eedfc191b1f8580efc155c861061981941b4d67dc6aaad5dc2c5f3
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/local-adapters.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 113
+  line_count: 113
+  sha256: 7710900646c383dce478b87ab4487af42a71492350dc0ae2367392d15b39468f
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/message-lifecycle.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 255
+  line_count: 255
+  sha256: 49d93813dee5711fa5e71aa8cb61b2439c2d46a8b87d82c5d7119bdd351ffad1
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/operator-federation.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 152
+  line_count: 152
+  sha256: 8e45e9a61f990e790edbfc9b85c9e59de68f76b8e3a5a97d817745015f550c2a
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/recovery.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 297
+  line_count: 297
+  sha256: 333e4886164f2223d10fea23ed5a7d16e27baeb9c58461c53b4f8c95bddd6638
+  disposition: edited
+  review_basis: Fresh full in-scope file reading in this sweep, followed by final changed-span reread; new wire
+    guide read in full as draft and committed source against exact decoders. Tables, examples and receive-path diagram
+    included; no live/provider qualification inferred.
+- document: skills/agentbus/SKILL.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 135
+  line_count: 135
+  sha256: 6be6bf33e32a520f16ccfa66e4ae8ec04ff42b2b69fb15654683796fb1dfa9a2
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: skills/agentbus/references/participation.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 250
+  line_count: 250
+  sha256: f90c603d22d0c1f89d5d68c66f5b816c8037603bf86bf59bceb0f9f642296410
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: skills/agentbus/agents/openai.yaml
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 4
+  line_count: 4
+  sha256: 38348111fa4b23ffff099cca3fed276cf7fdd910fcfd2c144b5afd876b39ba8f
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: contracts/channels/v1/channel-isolation.contract.yml
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 72
+  line_count: 72
+  sha256: 4327bdecdfa070191b16728231890ecd12436b15f5429c2232e943f8bf730001
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: contracts/codex-wake/v1/codex-wake.contract.yml
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 141
+  line_count: 141
+  sha256: cc2971b307d671a9dcfa3a5931f163a3b3b2b53f74f7c549938fbc619fc69c03
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: contracts/federation/v1/federation.contract.yml
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 208
+  line_count: 208
+  sha256: 081c3b28ca09a4d22bec655f21b436a929c96db46956fa3660aad15a1e86244a
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: contracts/federation/v1/operator.contract.yml
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 22
+  line_count: 22
+  sha256: 5d527427afa06ec900b8c1160a5b3a953dd12c89398e12849f8a59c4e7e0180f
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: contracts/local-adapters/v1/a2a.contract.yml
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 33
+  line_count: 33
+  sha256: 8d1104f4f3a9ae83edebd2f9ff878af8dcd60b9cde91ee4a9c47bdceb83b7882
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: contracts/mailbox/v1/mailbox.contract.yml
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 16
+  line_count: 16
+  sha256: b9fcd3c7903d87b8fe2fc3b115ff6b16d34f6dd82c58174b99cb9fdb6352746f
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: contracts/mailbox/v1/mcp.contract.yml
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 9
+  line_count: 9
+  sha256: 1d48c21469f811e74f8e17372d9d5d2a68ce0ec49cef5ed399e087604096a5ff
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: contracts/messages/v1/message-lifecycle.contract.yml
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 124
+  line_count: 124
+  sha256: 3911d6e6bcdcf7748fcc59733ce7687945957a639c71fb57370bebb01a3c56ce
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: contracts/participation/v1/participation.contract.yml
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 357
+  line_count: 357
+  sha256: d8789d9c7335475c8a12f5f41a7cbc0fe8e77a4a276b5a64f84467f0b895e90b
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: contracts/participation/v2/participation.contract.yml
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 322
+  line_count: 322
+  sha256: 2df0b03eebfaf3e88160c3e483b4864fa950a09831d024aefff58249d71adc05
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: contracts/participation/v2/recovery-observation.contract.yml
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 107
+  line_count: 107
+  sha256: b49955d4e321143944add440dc564b256782c25e2ddc5f99512d3a81d66490cc
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: contracts/publication/v1/publication.contract.yml
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 56
+  line_count: 56
+  sha256: 46022bbbc4b097a23ba3406e83eff741d561a80428a60bcd88fef11f19b95c2a
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: contracts/retention/v1/automatic-retention.contract.yml
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 35
+  line_count: 35
+  sha256: d08d45f36481240771a434f0801398167518825c8219b02a4cd1e6ddb8c95940
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/audiences/mailbox-tool-users.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 205
+  line_count: 205
+  sha256: 49aa9c4c2a0793f1e118fe276937bf3315abfa52c7a5b48710a3d73e73904980
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/examples/client-slack-manifest.json
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 17
+  line_count: 17
+  sha256: f53cfbe889a6f4654f4d34ad13adfd1dcefd965698da6613c2e2fd03ac89fe24
+  disposition: reviewed
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: contracts/participation/v2/operator-identity.contract.yml
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 70
+  line_count: 70
+  sha256: 9a1ac40c50bc23e6196ba4dc518eedbc30d3dee7a1e54a7fc0cc57ed187ef173
+  disposition: added
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: slack-app-manifest.json
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 44
+  line_count: 44
+  sha256: a6725f395f7bb15fc47d4e21ddb0495c13b87e257e0b9256689de69bd10aee06
+  disposition: edited
+  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
+    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+- document: docs/wire-protocols.md
+  review_status: full_document_line_reviewed
+  reviewed_lines:
+  - - 1
+    - 213
+  line_count: 213
+  sha256: 096a4229f0ae845e68d4a3b450e3766def2af01bb4e004be5009faa85f01131c
+  disposition: added
+  review_basis: Fresh full in-scope file reading in this sweep, followed by final changed-span reread; new wire
+    guide read in full as draft and committed source against exact decoders. Tables, examples and receive-path diagram
+    included; no live/provider qualification inferred.
+current_review:
+  scope: Complete fresh line-by-line sweep explicitly reaffirmed for P16; baseline entries are not current review
+    evidence.
+  required_dispositions:
+  - reviewed
+  - added
+  - edited
+  - combined
+  - removed
+  pending_baseline_documents: []
+  additional_pending: []
+  preserve:
+  - all graphics and tone
+  - README BCF section and placement
+  qualification: No editorial or release completion claim until every final-subject document and visual is actually
+    reviewed.
+  pending_final_reconciliation:
+  - identity management UI and retention limits
+  - recovery context and custodian contact
+  - cursor-first headers and capacity diagnostics
+  - owner qualification research
+  - final skill and configuration walkthrough
+  - final-subject hashes and canonical custody
+  - Re-read every changed document listed changed_since_full_read_final_reread_required after final code/tests;
+    do not infer completion from refreshed hashes
+candidate_review_baseline: c0d81f1bdf46904250244cda7f71a70e3dd6d9f7

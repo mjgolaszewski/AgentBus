@@ -105,6 +105,13 @@ def health_text(snapshot):
     custody_capacity = federation.get('custody_capacity')
     capacity_note = (f"; per-table row limit `{custody_capacity['per_table_limit']}`; at-limit tables "
                      f"`{', '.join(custody_capacity['at_limit']) or 'none'}`" if custody_capacity else '')
+    if custody_capacity:
+        capacity_note += '\n' + '\n'.join(f"{table}: `{count}/{custody_capacity['per_table_limit']}`"
+                                               for table,count in sorted(custody_capacity['rows'].items()))
+        warnings = [table for table,count in custody_capacity['rows'].items()
+                    if count*5 >= custody_capacity['per_table_limit']*4]
+        if warnings:
+            capacity_note += '\nWARNING — federation capacity at or above 80%: '+', '.join(warnings)
     sections.extend([f"*Federation*\nLocal bridge: `{state}`; channel `{federation['channel'] or 'none'}`\n"
         f"Pinned origins: {', '.join(federation['origins']) or 'none'}\nCheckpoints `{federation['checkpoints']}`; "
         f"retained obligations `{sum(federation['custody'].values())}`{capacity_note}\nRemote health: not observed",
@@ -115,6 +122,12 @@ def health_text(snapshot):
         publication = '; '.join(f"{key} `{value}`" for key, value in sorted(adapters['publication_states'].items())) or 'none'
         sections.append('*Optional adapters*\n' + f"Local A2A `{adapters['local_a2a']}`; explicit client publication `{adapters['client_publication']}`\n"
             f"Publication custody: {publication}\nPrivate notice observations: {notices}\nRequested private stale monitors `{adapters['requested_stale_monitors']}`; no host execution authority.")
+    if identities := snapshot.get('identity_management'):
+        states='; '.join(f'{name} `{count}`' for name,count in sorted(identities['states'].items())) or 'none'
+        sections.append('*Identity maintenance*\nRetained operation receipts '
+            +f"`{identities['retained']}/{identities['limit']}`; {states}"
+            +('\nWARNING — at or above 80%; committed receipts are not automatically deleted.' if identities['warning'] else '')
+            +'\nPreview is not applied; revocation is not a recipient ACK or host termination.')
     if automatic := snapshot.get('automatic_retention'):
         latest = automatic.get('latest') or {}
         sections.append('*Automatic retention*\n' + f"Enabled `{automatic['enabled']}`; apply `{automatic['apply']}`; "

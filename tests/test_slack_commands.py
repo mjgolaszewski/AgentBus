@@ -967,3 +967,64 @@ def test_ios_scope_dispatch_preserves_literal_text_and_existing_authorization(en
     assert command(settings, store, web, text) == "scoped request"
     assert captured == [("broadcast", None, "—location literal — punctuation")]
     assert not web.posts
+
+
+def test_cursor_header_uses_public_channel_position_and_preserves_locator_and_wire(tmp_path):
+    from src.agentbus_local_delivery_service import LOCATOR_PREFIX, _locator_key
+    from src.agentbus_presentation_service import posting_blocks
+    from src.agentbus_service import SendMessage, encode_envelope
+    store=MessageStore(tmp_path/'public-header.sqlite3')
+    store.channels.configure(('C111','C222'))
+    message=SendMessage(sender='local:demo:a',recipient='all',audience='broadcast',text='Exact wire text')
+    before=encode_envelope(message)
+    store.append('C222','100.1',message)
+    local=store.append('C111','100.1',message)
+    key='11111111-1111-4111-8111-111111111111'
+    store._db.execute('INSERT INTO local_delivery_obligations(channel,request_id,request_hash,local_cursor,state) VALUES(?,?,?,?,?)',
+                      ('C111',key,'a'*64,local.cursor,'pending'))
+    store._db.commit()
+    try:
+        blocks=posting_blocks(message,store,'C111',key,'local')
+        assert blocks[0]['elements'][0]['text'].startswith('`1` · local · 📤')
+        assert _locator_key(blocks)==key and blocks[0]['block_id']==LOCATOR_PREFIX+key
+        assert encode_envelope(message)==before
+        unknown=posting_blocks(message,store,'C111',None,'local')
+        assert unknown[0]['elements'][0]['text'].startswith('local · 📤')
+        with pytest.raises(ValueError,match='same-channel'):
+            posting_blocks(message,store,'C222',key,'local')
+    finally:
+        store.close()
+
+
+def test_federation_capacity_warning_is_private_read_only_and_precedes_exhaustion(enrolled):
+    from src.agentbus_operator_presentation_service import health_text
+    from src.agentbus_operator_query_service import doctor_checks
+    from src.agentbus_status_api_service import service_dashboard
+    settings,store,_,_=enrolled
+    before=store._db.total_changes
+    snapshot=service_dashboard(settings,store)
+    snapshot['federation']['custody_capacity']={'per_table_limit':10,'rows':{
+        'bridge_obligations':8,'federated_messages':0,'federation_origin_messages':1,'federation_inbox_projection':0},'at_limit':[]}
+    text=health_text(snapshot)
+    assert 'bridge_obligations: `8/10`' in text and 'federation capacity at or above 80%' in text
+    assert ('Federation custody capacity','WARN') in [(name,state) for name,state,_ in doctor_checks(snapshot)]
+    snapshot['federation']['custody_capacity']['rows']['bridge_obligations']=7
+    assert ('Federation custody capacity','OK') in [(name,state) for name,state,_ in doctor_checks(snapshot)]
+    assert store._db.total_changes==before
+
+
+def test_doctor_receipt_button_reuses_destination_authorization_and_has_no_post(enrolled):
+    from src.agentbus_slack_ui_service import parse_action
+    settings,store,_,web=enrolled
+    before=store._db.total_changes
+    from src.agentbus_status_api_service import service_dashboard
+    snapshot=service_dashboard(settings,store)
+    store.publications=object()  # Only adapter presence is observed; no destination methods are invoked.
+    snapshot['optional_adapters']={'client_publication':True,'publication_states':{'uncertain':1},
+        'local_a2a':False,'private_notice_states':{},'requested_stale_monitors':0}
+    result=execute_command({'command':'/agentbus','channel_id':settings.slack_channel,'user_id':'U123','text':'doctor'},
+                           settings,store,web,dashboard=lambda:snapshot)
+    action=parse_action(next(block['elements'][0] for block in result.blocks if block['type']=='actions'))
+    assert action.kind=='publication_page' and action.channel==settings.slack_channel and not action.target
+    assert 'Publication receipts: WARN' in result and 'original receipt' in result
+    assert not web.posts and store._db.total_changes==before

@@ -60,9 +60,11 @@ class SlackReceiver:
             outcome = getattr(result, 'outcome', 'unknown')
             if outcome in {'accepted', 'committed'}:
                 warning = 'AgentBus request accepted; private confirmation failed. Inspect results and the channel before retrying.'
+            elif outcome == 'preview':
+                warning = 'Identity action preview retained; private confirmation failed. Reopen the identity manager; no identity action was applied.'
             elif outcome == 'rejected':
                 warning = 'AgentBus command rejected before admission; private confirmation failed. Review command access and scope.'
-            elif result is not None and (action in {'help','roster','status','metrics','workers','doctor','pending','explain','results','enrollments'} or str(payload.get('text', '')).strip() == 'health'):
+            elif result is not None and (outcome == 'observed' or action in {'help','roster','status','metrics','workers','doctor','pending','explain','results','enrollments','identities'} or str(payload.get('text', '')).strip() == 'health'):
                 warning = 'AgentBus read-only command completed; private confirmation failed. Inspect service diagnostics.'
             else:
                 warning = 'AgentBus command outcome is uncertain. Inspect status and the channel before retrying.'
@@ -98,9 +100,14 @@ class SlackReceiver:
             LOGGER.error('Could not finish AgentBus operator button; inspect status before retrying')
             try:
                 outcome = getattr(result, 'outcome', 'unknown')
-                warning = ('Button action completed; private confirmation failed. Review publications, enrollments or results before retrying.'
-                           if outcome in {'accepted', 'committed'} else
-                           'Button outcome is uncertain. Review publications, enrollments or results before retrying.')
+                if outcome == 'preview':
+                    warning = 'Identity action preview retained; private confirmation failed. Reopen the identity manager; no identity action was applied.'
+                elif outcome == 'observed':
+                    warning = 'Button read completed; private confirmation failed. Reopen the relevant private view.'
+                elif outcome in {'accepted', 'committed'}:
+                    warning = 'Button action completed; private confirmation failed. Inspect its original receipt in identities, publications, enrollments or results before retrying.'
+                else:
+                    warning = 'Button outcome is uncertain. Inspect identities, publications, enrollments or results before retrying.'
                 self._post_reply(client, channel, user, warning)
             except Exception:
                 LOGGER.error('Could not report uncertain AgentBus operator button outcome')

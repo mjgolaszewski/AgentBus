@@ -45,6 +45,93 @@ a separate non-authorizing response observer. Liveness/status probes, rejected
 proof and unproved operator inspection do not invent agent activity. An actual
 access is still not evidence of continuous inbox monitoring or model execution.
 
+## Carry a bounded recovery note
+
+A matching qualified 0.12 client adds an optional local context file:
+
+```bash
+agentbus resume --identity ROUTE --context-file /absolute/private/path/recovery.json
+```
+
+Older clients do not provide this option. The note is
+consumer-reported metadata, not an independently verified source snapshot,
+restored resource lease, publishing deadline authorization or automatic retry.
+It stays in the private scoped resume checkpoint; it creates no server registry,
+new worker, source copy or client post. Without a new file, resume retains the
+existing note.
+
+Use the exact `scope` returned by your own prior resume, replacing these
+placeholders locally. Every shown field is required; use `null` for unknown
+observations rather than inventing them:
+
+```json
+{
+  "version": 1,
+  "scope": {
+    "service_url": "http://127.0.0.1:8766",
+    "inbox_id": "OWN_INBOX_UUID",
+    "channel": "OWN_CHANNEL_ID",
+    "chat_id": "OWN_CHAT_UUID",
+    "session_id": "OWN_SESSION_UUID"
+  },
+  "reported_at": null,
+  "source": {"commit": null, "tree": null, "branch": "feature/example", "dirty_paths": []},
+  "next_update_due_at": null,
+  "held_owners": [],
+  "receipts": []
+}
+```
+
+Timestamps are finite nonnegative Unix seconds. A known commit and tree must
+both be full lowercase 40-character hashes. `dirty_paths` holds at most 128
+printable path references, not file contents. Up to 16 held-owner entries use
+`owner`, optional-valued `receipt_cursor` and `request_id`; up to 32 receipts use
+`kind` (`message`, `publication`, `control` or `resource`), `cursor` and
+`request_id`, with at least one reference present. Include all keys and use
+`null` where a reference is unavailable. Cursors refer to their original scoped
+inbox, not another installation or private database ID.
+
+Input and final checkpoint are each bounded to 16 KiB. Use a private regular
+file; symlinks and special files are rejected. Keep credentials, private message
+bodies and unnecessary local details out of the note. Its input digest identifies
+the submitted bytes; it does not authenticate the reported Git or owner facts.
+The output labels an update deadline as unknown, upcoming or past due without
+sending an update or recovering a resource allocation.
+
+Resume reads current controls before ordinary inbox work. It commits the local
+checkpoint under a short compare-and-swap lock after API reads; a concurrent
+checkpoint change or backwards observation clock preserves the prior state and
+requires recovery. Inspect the conflict and retry the read deliberately. Never
+remove the checkpoint or change its scope merely to make resume succeed.
+
+## Optional custodian contact hints
+
+A qualified 0.12 service can expose one operator-configured contact per allowed
+channel through authenticated info and self-presence. Resume includes this
+context without an additional provider request. It is not a scheduler or registry.
+Configure the bounded JSON in the existing private service environment:
+
+```dotenv
+AGENTBUS_RECOVERY_CONTACTS='{"version":1,"contacts":[{"channel":"CWORK123","route":"local:demo:keeper","observed_at":null,"expires_at":null,"receipt_position":null,"service_epoch":null,"host_epoch":null}]}'
+```
+
+Replace the channel and route with an enrolled contact in that same channel.
+The JSON allows at most 16 distinct channel entries within 16 KiB and rejects
+unknown fields. Every shown key is required. A known report uses nonnegative
+Unix-second `observed_at` and a later `expires_at` at most seven days away;
+otherwise both are `null`. A receipt position is a positive channel-local public
+cursor. Service/host epochs are optional-valued canonical UUID references, never
+adopted credentials or proof that a host still owns a resource.
+
+Output labels operator-configuration authorship, unexpired/expired/future reports,
+unknown freshness, unavailable contacts, and retained versus missing receipt
+references. A retained reference proves only that the position exists, not its
+message interpretation or an admission decision. No message body, other-channel
+roster or credential is exposed. A disabled channel or retired/unknown contact
+cannot become an actionable destination through this hint. Epochs remain
+explicitly unverified or unknown. Use the actual scheduler's current grant;
+no hint restores a lease, starts work or authorizes another probe, wake or retry.
+
 ## Optional private stale notices
 
 Notices are disabled unless `AGENTBUS_STALE_MONITOR_CONFIG` identifies a private
@@ -124,12 +211,24 @@ by the custodian; otherwise record that the stack is unavailable. Missing stacks
 leave the historical hang unclassified. No recovery command establishes a cause
 or grants restart, retry, cleanup or execution authority.
 
+## Seeing JSON without a routed message
+
+Another installation's ordinary Slack envelope remains raw and unrouted because
+its bot is not the local trusted publisher. Signed federation is a separate path;
+shared Slack visibility alone proves neither route failure nor a missing reply.
+Use the [wire-format diagnostic steps](wire-protocols.md#diagnose-the-route-not-just-the-json)
+to distinguish versions, origin binding, custody and local projection. Current
+rejections do not promise a dedicated quarantine or per-frame alert. Any live
+round-trip check needs explicit authorization and preserves original request
+identities and checkpoints; a read-only health check grants no traffic authority.
+
 ## Capacity rejection is not lost delivery
 
 A fixed `federation_custody_capacity` recovery reason identifies a full retained
 transport-custody table. It is distinct from unavailable provider service, local
 custody limits, database-byte quotas and disk headroom. The operator health view
-reports the configured per-table limit and tables at capacity. Agents cannot
+reports each table count and configured limit, warning at 80% before new
+admission closes; doctor uses the same local snapshot without a provider probe. Agents cannot
 change this setting or remove rows.
 
 The custodian reviews current counts, retained obligations and complete resource

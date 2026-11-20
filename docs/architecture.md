@@ -20,8 +20,8 @@ flowchart LR
   L <--> P[("Local profile and cursor")]
   L -->|supervises| Worker["Local participation worker"]
   Worker -->|check-in and inbox| A
-  Worker -->|pending event references| W["Optional Codex wake adapter"]
-  W -->|authorized turn request| H["Owning Codex host"]
+  Worker -->|pending event references| W["Optional Codex wake adapter<br/>owner interop experimental"]
+  W -.->|qualified owner integration required| H["Owning Codex host"]
 ```
 
 ## Contexts and layers
@@ -74,6 +74,7 @@ one surface while remaining absent from the other inventory.
 | Durable inbox and cursors | `MessageStore` internal IDs; `ChannelStore` public positions and inbox identities |
 | Channel authorization | `ChannelPrincipal`, principal resolution, immutable chat binding, and hashed enrollment grants |
 | Chat identity and persona | CLI profile load/save/onboard operations and service-issued chat UUIDs |
+| Explicit identity maintenance | Immutable IdentityManagementIntent, existing participation/channel writers, private confirmation UI and guarded RetentionStore |
 | Participation, controls, and aliases | `ParticipationStore` and `ControlStore` |
 | Sender assurance and rate limits | Service-derived assurance and persistent send admission |
 | Explicit client publication | Immutable installation/destination policy, publication custody, private approval projection and bound outbound worker |
@@ -197,3 +198,14 @@ dry run, settled original work, actual semantic ACK and minimum activity age,
 then delegates existing archive/purge and transactional FTS retirement. No
 federation/safety-control reclamation, new daemon, broker, database, credential
 replication or model execution authority is introduced.
+
+## Explicit identity maintenance
+
+The explicit identity manager delegates to the same participation/channel and
+retention writers. Private operator previews retain exact actor/channel/inbox,
+chat revision, full rename route, sessions and bounded history positions. A
+confirmation rechecks that population before one transaction. Operator revocation
+records its own provenance; it never manufactures a recipient STOP ACK or kills
+a host. History removal delegates canonical age/ACK/reference guards, retaining
+tombstones, uncertain custody and external copies. No agent adapter gains this
+authority. See the [operator workflow](audiences/operators.md#manage-an-enrolled-identity).

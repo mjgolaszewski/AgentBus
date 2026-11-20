@@ -1,7 +1,7 @@
 document:
   kind: editorial_usability_audit
   path: audits/editorial-usability-review.yml
-  status: editorial_walkthrough_complete
+  status: editorial_source_walkthrough_complete
 scope: Current feature onboarding; prerequisites, configuration, first use, verification and recovery are separate
   acceptance questions.
 method: Guides read against shipped settings, parser, policy constructors and adapter code; this is an editorial
@@ -65,8 +65,8 @@ coverage:
     and existing coordination approvers; direct_authors optional.
   first_use: One deliberate update to the named destination; private exact-draft approval unless explicitly direct-authorized.
   verification: Original publication receipt and actual target post; ordinary bus chatter produces zero client posts.
-  recovery: Preserve uncertain original UUID; cancellation only before submission; receipt-verification issue120
-    remains open.
+  recovery: Preserve uncertain original UUID and payload; new fallback repair does not retroactively classify historical
+    receipts. Cancellation only before submission.
   limit: No client slash handler, incoming client tasks, automatic forwarding or credential replication.
 - capability: search
   guides:
@@ -141,6 +141,37 @@ coverage:
   verification: Doorbell illustration is not proof of atomic idle-only admission or execution.
   recovery: Retain uncertain attempts; never steal writer lock, infer ownership or acknowledge from host completion.
   limit: Live AHP/native-queue and atomic idle-only admission remain unqualified.
-result: All listed feature paths have documented ownership, setup, observations and recovery boundaries; changed
-  examples must pass offline validation and canonical proof before delivery. No live configuration was changed by
-  this review.
+- capability: explicit_identity_maintenance_and_recovery_context
+  guides:
+  - docs/audiences/operators.md
+  - docs/recovery.md
+  - docs/http-api.md
+  - contracts/participation/v2/operator-identity.contract.yml
+  prerequisites: Matching qualified 0.12 bytes; same-channel allowlisted operator or exact own session for client
+    context.
+  configuration: Existing channel/operator policy, optional bounded recovery contact JSON; no new listener or credential
+    replication.
+  first_use: Private identities preview/confirmation; own-profile rename reconciliation; resume context-file exact
+    schema.
+  verification: Retained revision/population/operation receipt, separate revocation, actual ACK and reference pins;
+    bounded consumer/epoch observations never authority.
+  recovery: Preserve original UUID/sender/epoch, tombstones and uncertain custody; private receipt navigation and
+    finite capacity warnings. No host stop or external erasure.
+- capability: low_level_wire_formats_and_recovery_diagnosis
+  guides:
+  - docs/wire-protocols.md
+  - docs/federation.md
+  - docs/recovery.md
+  prerequisites: Approved local session or verified operator observations; a separately authorized peer arrangement
+    for actual signed traffic.
+  configuration: Existing peer publisher/key-generation/channel/capability bindings; no new credential or trust
+    operation.
+  first_use: Identify ordinary envelope versus signed outer frame and inspect retained scoped receipts; examples
+    are invented and signature placeholders cannot be submitted.
+  verification: Separate canonical signature/origin authentication, destination custody, inbox projection and explicit
+    consumer ACK; current rejection/no-quarantine behavior disclosed.
+  recovery: Preserve raw carrier, original UUID, scoped positions and checkpoints; approved signed roundtrip is
+    separate live traffic, not a read-only probe.
+  limit: No automatic quarantine, per-frame Slack alert, timer, new wire version or owner-wake authority.
+result: Fresh corpus and configuration/first-use/recovery walkthrough completed against current source; qualification
+  is separate and pending.

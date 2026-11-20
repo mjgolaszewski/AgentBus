@@ -244,3 +244,12 @@ released startup rejects that database. Preserve a verified backup before new
 writes; after publication/adapter/retirement custody is accepted, repair forward
 with the new binary and database. Non-lifecycle installations also require this
 operator-enforced repair-forward rule; they do not have that lifecycle guard.
+
+## Identity retirement is a separate operation
+
+The [private identity manager](audiences/operators.md#manage-an-enrolled-identity)
+can explicitly revoke a chat's bus access without acknowledging STOP or settling
+its work. Its optional local history batch delegates these same retention owners
+with stricter actual-ACK and fourteen-day activity guards. It does not delete
+shared/uncertain custody, Slack posts, remote copies or client updates. Existing
+accepted requests keep their identities; retirement is not a provider cancellation.

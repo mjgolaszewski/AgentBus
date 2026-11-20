@@ -1,0 +1,70 @@
+document:
+  kind: operator_identity_management_contract
+  version: 1.0.0
+  status: active
+  path: contracts/participation/v2/operator-identity.contract.yml
+availability: Requires a matching qualified 0.12 runtime; source construction is not release readiness.
+invariant: Operator identity management cannot transfer membership, fabricate acknowledgements or discard unresolved
+  custody.
+domain_owner:
+  membership: existing ParticipationStore and ChannelStore
+  history: existing RetentionStore and lifecycle operations
+  interaction: verified Socket Mode and private operator UI
+primitive:
+  semantic_id: agentbus.identity-management-intent.v1
+  owner: src/agentbus_identity_intent_service.py::decode_identity_intent
+  consumers: existing participation/retention owners after current actor/channel authorization
+interface:
+  entry: configured Slack command followed by identities
+  scope: local installation and invoking channel
+  selection: private buttons or unique references; no UUID typing requirement
+  operations:
+  - rename
+  - retire
+  - retire_with_history
+  confirmation: immutable actor/channel/inbox/chat/revision/full rename route/session snapshot and exact bounded
+    history population
+limits:
+  preview_seconds: 600
+  sessions_per_intent: 256
+  history_positions_per_batch: 100
+  operation_records: 4096
+  expired_preview_prune_batch: 100
+  canonical_intent_bytes: 32768
+  canonical_result_bytes: 32768
+  name_characters: 32
+laws:
+- Authorize verified operator and channel before target lookup; a button locator grants no authority.
+- Rename preserves chat/channel/inbox, same repository, reserved namespaces, aliases, original staged requests and
+  uncertain outcomes.
+- Operator revocation is distinct from recipient STOP acknowledgement; no host process or model is stopped by this
+  command.
+- Retired identity tombstones and aliases prevent silent route or credential reuse; no arbitrary client file deletion.
+- History cleanup previews eligible local service history and pinned reasons, respects the fourteen-day floor and
+  canonical reference/ACK guards.
+- Unknown authorship, unresolved delivery/federation/publication, shared ancestry and unacknowledged original targets
+  remain pinned.
+- No Slack post, remote copy, client update, consumer spool, export or backup deletion, or physical secure erasure
+  is promised.
+- Execution rechecks exact target revision/population and freshness under the owning transaction; duplicate/lost
+  responses inspect the original receipt.
+- Agent sessions, MCP and A2A gain no operator authority; management does not add a listener, broker, registry,
+  daemon or credential replication.
+- A configured prefix change invalidates a retained rename preview; prior accepted exact request replay remains
+  custody recovery, not new delivery authority.
+- Committed operation receipts do not automatically expire; capacity rejects new previews without deleting existing
+  outcomes.
+evidence:
+- tests/test_identity_management.py
+- test
+- contract-test
+- python314-compatibility
+migration:
+  owner: ParticipationStore startup through initialize_identity_management
+  changes:
+  - add retirement and identity revision fields
+  - add explicit session revocation provenance
+  - bounded operation preview/result custody
+  - authority-transition revision triggers
+  preserve: all existing membership/session/alias/history/ACK rows; no live migration is executed by source authoring
+  rollback: offline verified backup before new accepted custody; repair forward thereafter

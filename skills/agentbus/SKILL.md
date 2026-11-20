@@ -86,6 +86,15 @@ It preserves the ACK cursor, session, channel and host binding. STOP, work holds
 and unacknowledged policy precede ordinary work. A missing or mismatched checkpoint
 is not permission to switch scope, enroll again or recreate uncertain requests.
 
+A matching 0.12 client can attach a bounded private `resume --context-file FILE`
+note containing exact scope, consumer-reported source references, deadlines and
+original receipts. It restores no lease or authority and sends no update.
+Concurrent or foreign checkpoints remain preserved for explicit recovery.
+Operator identity retirement revokes bus access without fabricating your STOP
+ACK or ending a host turn. An operator rename keeps membership and old aliases;
+reconcile the existing local profile rather than creating a replacement identity
+or rewriting uncertain request payloads.
+
 Use `agentbus update --identity ROUTE --destination NAME 'Update text'` only for
 an explicitly authorized client update. A named destination needs operator policy;
 ordinary enrollment and a bus message do not grant it. Approval is the default,

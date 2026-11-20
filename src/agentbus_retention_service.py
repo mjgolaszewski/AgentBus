@@ -137,7 +137,8 @@ class RetentionStore:
                 raise ValueError('Archived payload is not a message')
             return result
 
-    def _eligible(self, channel, current, *, purge=False, automatic_age_seconds=None):
+    def _eligible(self, channel, current, *, purge=False, automatic_age_seconds=None,
+                  author_chat_id=None, positions=None, include_live=False):
         # Legacy and federated custody stay pinned; no remote expiry is inferred.
         field = 'purge_after' if purge else 'archive_after'
         provider_guard = ''
@@ -160,6 +161,24 @@ class RetentionStore:
                 AND NOT EXISTS (SELECT 1 FROM local_delivery_observations observed
                     WHERE observed.channel=m.channel AND observed.local_cursor=m.cursor
                     AND agentbus_provider_ref_covered_v1(observed.provider_ref,?)=0)"""
+        scope_guard = ''
+        if author_chat_id is not None:
+            scope_guard += """AND m.sender_assurance='session' AND EXISTS (
+                SELECT 1 FROM chat_identities identity JOIN chat_channels membership USING(chat_id)
+                WHERE identity.chat_id=? AND membership.channel=m.channel AND
+                (identity.current_route=m.sender OR EXISTS (SELECT 1 FROM routing_aliases alias
+                 WHERE alias.chat_id=identity.chat_id AND alias.route=m.sender)))"""
+            parameters.append(author_chat_id)
+        if positions is not None:
+            if (not isinstance(positions, (list, tuple)) or len(positions) > 100
+                    or any(type(value) is not int or not 1 <= value <= 2**63-1 for value in positions)
+                    or len(set(positions)) != len(positions)):
+                raise LifecycleRejected(422, 'A bounded distinct public position population is required')
+            scope_guard += (' AND EXISTS (SELECT 1 FROM channel_positions selected WHERE '
+                'selected.channel=m.channel AND selected.message_id=m.cursor AND selected.position IN ('
+                + ','.join('?' for _ in positions) + '))') if positions else ' AND 0'
+            parameters.extend(positions)
+        payload_guard = '' if include_live else ("AND m.payload = 'null'" if purge else "AND m.payload != 'null'")
         rows = self.owner._db.execute(f'''SELECT m.* FROM messages m
             JOIN lifecycle_payloads p ON p.cursor=m.cursor
             WHERE m.channel=? AND p.legacy_unknown=0 AND p.{field}<=?
@@ -175,13 +194,15 @@ class RetentionStore:
             AND NOT EXISTS (SELECT 1 FROM messages child WHERE child.channel=m.channel
                 AND child.cursor!=m.cursor AND (child.thread_ts=m.slack_ts OR child.thread_ts IN
                     (SELECT provider_ref FROM local_delivery_observations o WHERE o.channel=m.channel AND o.local_cursor=m.cursor)))
-            AND m.payload {'=' if purge else '!='} 'null'
+            {payload_guard}
             {automatic_guard}
             {provider_guard}
+            {scope_guard}
             ORDER BY m.cursor LIMIT 100''', parameters).fetchall()
         return rows
 
-    def archive(self, channel, *, actor, request_key=None, apply=False, instant=None, automatic_age_seconds=None):
+    def archive(self, channel, *, actor, request_key=None, apply=False, instant=None, automatic_age_seconds=None,
+                author_chat_id=None, positions=None):
         lifecycle = self.owner.lifecycle
         if not lifecycle.enabled:
             raise LifecycleRejected(409, 'Message lifecycle is not enabled')
@@ -195,11 +216,12 @@ class RetentionStore:
             if apply:
                 prior = self.owner._db.execute('SELECT * FROM lifecycle_operations WHERE request_key=?', (request_key,)).fetchone()
                 if prior:
-                    if (prior['channel'], prior['actor'], prior['action']) != (channel, actor, 'archive'):
+                    if (prior['channel'], prior['actor'], prior['action']) != (channel, actor, self._operation_action('archive', author_chat_id, positions, automatic_age_seconds)):
                         raise LifecycleRejected(409, 'Operation identity already binds another command')
                     return json.loads(prior['result'])
             current = lifecycle.now(instant)
-            rows = self._eligible(channel, current, automatic_age_seconds=automatic_age_seconds)
+            rows = self._eligible(channel, current, automatic_age_seconds=automatic_age_seconds,
+                                  author_chat_id=author_chat_id, positions=positions)
             result = {'channel':channel, 'applied':apply, 'eligible':len(rows), 'batch_limit':100,
                       'storage_before':self.storage()}
             if apply:
@@ -215,10 +237,11 @@ class RetentionStore:
                     self.payload(channel, row['cursor'], 'null')  # Verify before publishing the transaction.
                 lifecycle.now(current, persist=True)
                 self.owner._db.execute('INSERT INTO lifecycle_operations VALUES (?,?,?,?,?,?)',
-                    (request_key, channel, actor, 'archive', current, json.dumps(result, sort_keys=True)))
+                    (request_key, channel, actor, self._operation_action('archive', author_chat_id, positions, automatic_age_seconds), current, json.dumps(result, sort_keys=True)))
             return result
 
-    def purge(self, channel, *, actor, request_key=None, apply=False, instant=None, automatic_age_seconds=None):
+    def purge(self, channel, *, actor, request_key=None, apply=False, instant=None, automatic_age_seconds=None,
+                author_chat_id=None, positions=None):
         """Retire verified closed payloads and their retry rows after reference closure."""
         lifecycle = self.owner.lifecycle
         if not lifecycle.enabled:
@@ -233,27 +256,13 @@ class RetentionStore:
             if apply:
                 prior = self.owner._db.execute('SELECT * FROM lifecycle_operations WHERE request_key=?', (request_key,)).fetchone()
                 if prior:
-                    if (prior['channel'], prior['actor'], prior['action']) != (channel, actor, 'purge'):
+                    if (prior['channel'], prior['actor'], prior['action']) != (channel, actor, self._operation_action('purge', author_chat_id, positions, automatic_age_seconds)):
                         raise LifecycleRejected(409, 'Operation identity already binds another command')
                     return json.loads(prior['result'])
             current = lifecycle.now(instant)
-            rows = self._eligible(channel, current, purge=True, automatic_age_seconds=automatic_age_seconds)
-            # Refuse future schema references instead of guessing their retirement policy.
-            owned = {'lifecycle_targets','lifecycle_payloads','lifecycle_archive','lifecycle_requests',
-                     'local_delivery_obligations','local_delivery_observations','channel_positions',
-                     'lifecycle_edges','lifecycle_activity'}
-            foreign = []
-            for table, in self.owner._db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall():
-                if table in owned:
-                    continue
-                quoted = '"' + table.replace('"', '""') + '"'
-                for fk in self.owner._db.execute(f'PRAGMA foreign_key_list({quoted})'):
-                    if fk['table'] == 'messages':
-                        column = '"' + fk['from'].replace('"', '""') + '"'
-                        foreign.append((quoted, column))
-            rows = [row for row in rows if not any(self.owner._db.execute(
-                f'SELECT 1 FROM {table} WHERE {column}=? LIMIT 1', (row['cursor'],)).fetchone()
-                for table, column in foreign)]
+            rows = self._eligible(channel, current, purge=True, automatic_age_seconds=automatic_age_seconds,
+                                  author_chat_id=author_chat_id, positions=positions)
+            rows = self._without_foreign_references(rows)
             result = {'channel':channel, 'applied':apply, 'eligible':len(rows), 'batch_limit':100}
             if apply:
                 for row in rows:
@@ -290,8 +299,70 @@ class RetentionStore:
                     self._retire_position(channel, position[0])
                 lifecycle.now(current, persist=True)
                 self.owner._db.execute('INSERT INTO lifecycle_operations VALUES (?,?,?,?,?,?)',
-                    (request_key, channel, actor, 'purge', current, json.dumps(result, sort_keys=True)))
+                    (request_key, channel, actor, self._operation_action('purge', author_chat_id, positions, automatic_age_seconds), current, json.dumps(result, sort_keys=True)))
             return result
+
+    def _without_foreign_references(self, rows):
+        # Refuse future schema references instead of guessing their retirement policy.
+        owned = {'lifecycle_targets','lifecycle_payloads','lifecycle_archive','lifecycle_requests',
+                 'local_delivery_obligations','local_delivery_observations','channel_positions',
+                 'lifecycle_edges','lifecycle_activity'}
+        foreign = []
+        for table, in self.owner._db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall():
+            if table in owned:
+                continue
+            quoted = '"' + table.replace('"', '""') + '"'
+            for fk in self.owner._db.execute(f'PRAGMA foreign_key_list({quoted})'):
+                if fk['table'] == 'messages':
+                    column = '"' + fk['from'].replace('"', '""') + '"'
+                    foreign.append((quoted, column))
+        return [row for row in rows if not any(self.owner._db.execute(
+            f'SELECT 1 FROM {table} WHERE {column}=? LIMIT 1', (row['cursor'],)).fetchone()
+            for table, column in foreign)]
+
+    @staticmethod
+    def _operation_action(action, chat_id, positions, age):
+        if chat_id is None and positions is None:
+            return action
+        raw = json.dumps([chat_id, positions, age], separators=(',', ':'), sort_keys=True)
+        return action + ':' + hashlib.sha256(raw.encode()).hexdigest()
+
+    def identity_history(self, channel, chat_id, *, positions=None, instant=None):
+        """Operator preview, using the same eligibility and unknown-reference guards."""
+        with self.owner._lock:
+            count = self.owner._db.execute("""SELECT count(*) FROM messages m
+                JOIN chat_identities identity ON identity.chat_id=?
+                JOIN chat_channels membership ON membership.chat_id=identity.chat_id AND membership.channel=m.channel
+                WHERE m.channel=? AND m.sender_assurance='session' AND
+                (m.sender=identity.current_route OR EXISTS (SELECT 1 FROM routing_aliases alias
+                    WHERE alias.chat_id=identity.chat_id AND alias.route=m.sender))""", (chat_id, channel)).fetchone()[0]
+            supported = self.owner.lifecycle.enabled
+            rows = self._without_foreign_references(self._eligible(channel, self.owner.lifecycle.now(instant),
+                purge=True, automatic_age_seconds=14*86400, author_chat_id=chat_id, positions=positions,
+                include_live=True)) if supported and positions != () else []
+            public = []
+            for row in rows:
+                position = self.owner._db.execute('SELECT position FROM channel_positions WHERE channel=? AND message_id=?',
+                                                  (channel, row['cursor'])).fetchone()
+                if position is not None:
+                    public.append(position[0])
+            return {'supported':supported,'retained':count,'positions':public,'eligible':len(public),'batch_limit':100,
+                    'pins':'Original target ACK, minimum fourteen-day activity age, longer policy, replay, ancestry, claims, provider coverage and unknown references remain authoritative; unknown authorship is not selected.'}
+
+    def remove_identity_history(self, channel, chat_id, *, positions, actor, request_key, instant=None):
+        """One outer owner transaction; archive then purge only the exact preview population."""
+        with self.owner._lock, atomic(self.owner._db):
+            current = self.owner.lifecycle.now(instant)
+            selected = self.identity_history(channel, chat_id, positions=positions, instant=current)
+            if selected['positions'] != list(positions):
+                raise LifecycleRejected(409, 'History eligibility changed; reopen the identity manager')
+            self.archive(channel, actor=actor, request_key=request_key+':archive', apply=True, instant=current,
+                         automatic_age_seconds=14*86400, author_chat_id=chat_id, positions=positions)
+            result = self.purge(channel, actor=actor, request_key=request_key+':purge', apply=True, instant=current,
+                                automatic_age_seconds=14*86400, author_chat_id=chat_id, positions=positions)
+            if result['eligible'] != len(positions):
+                raise LifecycleRejected(409, 'History population changed; preserve the preview for recovery')
+            return {'removed':result['eligible']}
 
     def accepts_ingress(self, channel, timestamp):
         if not self.owner.lifecycle.enabled:

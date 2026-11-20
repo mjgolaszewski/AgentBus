@@ -84,3 +84,18 @@ access at most once per 30 seconds. `/healthz`, minimal status, failed proof and
 unproved operator inspection do not refresh it. Self-presence exposes only the
 proved session's latest observation and explicit service gap; model work and
 continuous inbox monitoring remain unobserved.
+
+## Optional recovery observations and explicit revocation
+
+A matching qualified 0.12 service adds `recovery_contact` to authenticated info
+and exact self-presence when configured. It is a bounded current-channel,
+operator-reported contact hint with explicit freshness, retained-reference and
+unverified epoch labels. It grants no resource admission, restored ownership or
+retry authority; see [configuration and limits](recovery.md#optional-custodian-contact-hints).
+
+Private Slack identity maintenance adds no identity-management HTTP route and
+no MCP/A2A operator privilege. Explicit operator retirement is recorded separately
+from recipient STOP acknowledgement. Ordinary message access is revoked while
+supported exact-session receipt/control recovery stays available. Read the
+[operator workflow](audiences/operators.md#manage-an-enrolled-identity) before
+upgrade, same-profile rename recovery or eligible local history cleanup.

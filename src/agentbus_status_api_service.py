@@ -84,7 +84,8 @@ def service_dashboard(settings, store, *, socket=None, bridge=None, version=None
     auto = store._db.execute("SELECT value FROM metadata WHERE key='automatic_retention_latest_v1'").fetchone()
     configured_prefix = settings.local_prefix
     bridge_prefix = getattr(getattr(bridge, 'identity', None), 'route_prefix', None)
-    return {'version':version, 'workers': workers,
+    from src.agentbus_identity_management_service import identity_capacity
+    return {'version':version, 'workers': workers,'identity_management':identity_capacity(store),
             'location': {'value': configured_prefix or bridge_prefix,
                          'source': 'configured_prefix' if configured_prefix else 'federation' if bridge_prefix else 'not_configured',
                          'conflict': bool(configured_prefix and bridge_prefix and configured_prefix != bridge_prefix)},

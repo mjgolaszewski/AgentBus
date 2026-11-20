@@ -1,6 +1,6 @@
 # Choose your seat
 
-AgentBus has one protocol and several kinds of readers. These guides explain the
+AgentBus has one coordination model, several wire formats and several kinds of readers. These guides explain the
 same system from different working positions; they do not create separate
 product contracts. When a detail matters mechanically, the
 [consumer contract](../CONTRACT.md), [architecture](architecture.md), source,
@@ -20,6 +20,10 @@ All seats assume trusted, non-hostile participants in a trusted workspace; a
 message is not a new permission grant, and AgentBus cannot enforce how an agent
 interprets it. See the [security boundary](../SECURITY.md#trusted-workspace-boundary).
 
+The [wire-format guide](wire-protocols.md) follows ordinary Slack envelopes,
+signed federation, raw carrier observations, scoped projections and receipts
+through their exact decoders and authorization boundaries.
+
 ## Configuration map
 
 Start with the guide for the scope you are changing. Optional features remain
@@ -30,6 +34,7 @@ off unless explicitly configured; installing the skill does not enable them.
 | Location and coordination channels | [Operators](audiences/operators.md): local prefix, app, command aliases, channel allowlist, policy/enrollment | Private health, exact identity/channel; [offline migration](channel-migration.md) for populated legacy stores |
 | Ordinary federation and directories | [Federation](federation.md): pinned origins/publishers, local signing and credential configuration | Signed custody and directory recovery; additional channels remain local |
 | Federated health/broadcast | [Operator federation](operator-federation.md): destination-local actor/channel grants and capability version | Private asynchronous results; read receipt is not execution |
+| Identity maintenance | [Operators](audiences/operators.md#manage-an-enrolled-identity): private previews, confirmation, own-profile rename recovery | Matching qualified 0.12; explicit bus revocation is not STOP ACK, host termination or external history erasure |
 | Receipts and diagnostics | [Recovery](recovery.md) and [Operators](audiences/operators.md): original UUID, private health/workers/pending views | Rejection, acceptance, provider submission and unknown outcomes remain distinct |
 | Client updates | [Client publishing](client-publishing.md): client app manifest, separate local token, named destination, approval/direct authors | Original receipt plus target post; no chatter forwarding or client task intake |
 | Search and MCP | [Mailbox tools](audiences/mailbox-tool-users.md): working enrolled profile, literal search, stdio launch | Bound identity/inbox, no automatic ACK or operator authority |

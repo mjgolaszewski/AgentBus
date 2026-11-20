@@ -4,13 +4,13 @@ document:
   id: agentbus-phase-16-workitems
   version: 1.0.0
   generated_at_utc: '2026-11-19T00:00:00Z'
-  status: planned
+  status: active
   path: plans/phase-16-workitems.yml
   phase_id: P16
 workitems:
 - id: P16-P0-01
   priority: P0
-  status: TODO
+  status: IN_PROGRESS
   summary: Contract Racecar recovery suggestions and security residual owners
   acceptance:
   - Every Racecar suggestion maps to a canonical existing store/owner or explicit external-owner disposition
@@ -21,18 +21,20 @@ workitems:
   - contract-test
 - id: P16-P1-01
   priority: P1
-  status: TODO
+  status: IN_PROGRESS
   summary: Extend local resume continuity and source/update-deadline observations
   acceptance:
   - Credential-free record binds exact source commit/branch/tree, dirty source locations, report deadline, held
     owners and receipt cursors
   - Unknown/mismatched state retained; no resurrection of old credentials grants or checkpoints
+  - Local agents listing includes actual scoped identity profiles only, never checkpoints or redirect projections;
+    preserve valid legacy profiles and all custody during owner-directed migration or retirement.
   acceptance_evidence:
   - test
   - contract-test
 - id: P16-P2-01
   priority: P2
-  status: TODO
+  status: IN_PROGRESS
   summary: Expose scoped custodian handoff freshness as non-authorizing context
   acceptance:
   - Use existing accepted messages and operator configuration for optional current-channel contact/receipt hints;
@@ -45,7 +47,7 @@ workitems:
   - contract-test
 - id: P16-P3-01
   priority: P3
-  status: TODO
+  status: IN_PROGRESS
   summary: Render local cursor first without modifying signed wire custody
   acceptance:
   - Channel-local public cursor appears first with location label wherever known before posting
@@ -56,7 +58,7 @@ workitems:
   - contract-test
 - id: P16-P3-02
   priority: P3
-  status: TODO
+  status: IN_PROGRESS
   summary: Private configured-command diagnostics with recent receipt incident buttons
   acceptance:
   - Primary configured command and explicitly registered aliases route diagnostics through the same human allowlist/channel
@@ -69,9 +71,31 @@ workitems:
   acceptance_evidence:
   - test
   - contract-test
+- id: P16-P3-03
+  priority: P3
+  status: IN_PROGRESS
+  summary: Private configured-command identity management with explicit previews and confirmations
+  acceptance:
+  - Configured command identities provides channel-scoped private selection/buttons and exact unambiguous targets;
+    no UUID typing requirement or remote filesystem authority.
+  - Rename preserves immutable chat/channel/inbox, authorized namespace, aliases and pending request identities;
+    no cross-channel or remote-origin mutation.
+  - Remove/retire and operator revocation preserve history and tombstones; operator revocation is distinct from
+    semantic STOP acknowledgement and never fabricates recipient completion or ACK.
+  - Remove with history previews eligible and pinned populations; explicit confirmation respects retention floor,
+    original target acknowledgements, shared ancestry and all unresolved message/federation/publication custody.
+  - History cleanup covers eligible local AgentBus content only; it does not delete Slack posts, remote copies or
+    client updates or promise physical secure erasure. Duplicate buttons, changed policy/scope/target, restart,
+    concurrent rename/revocation and partial cleanup fail safely; final receipts accurately report retired, removed,
+    pinned and uncertain outcomes.
+  - No live removal or history purge is authorized by adding this construction feature; default roster hides retired
+    entries with an explicit retained-history view.
+  acceptance_evidence:
+  - test
+  - contract-test
 - id: P16-P4-01
   priority: P4
-  status: TODO
+  status: IN_PROGRESS
   summary: Advance current offline owner and provenance qualification
   acceptance:
   - Exact installed owner/static capability inventory covers documented native mailbox/queue/AHP paths with zero
@@ -85,7 +109,7 @@ workitems:
   - contract-test
 - id: P16-P5-01
   priority: P5
-  status: TODO
+  status: IN_PROGRESS
   summary: Deliver bounded recovery runbooks and release proof
   acceptance:
   - Reviewed launcher/NFS/cache/portable evidence guidance refers to canonical custodian/resource owners instead
@@ -97,6 +121,9 @@ workitems:
   - Canonical final-subject proof install/skill/compatibility checks and measured default-off overhead complete
   - External prerequisites stay blocked with resume conditions; no unsupported production wake or stronger hostile-agent
     guarantee
+  - Complete fresh line-by-line editorial review of every tracked editorial file, not changed files only, with exact
+    hash/line count and reviewed/added/edited/combined/removed disposition; include skill, examples and every visual/table/diagram,
+    excluding BCF machinery and changelog, preserving graphics/tone and README BCF placement.
   acceptance_evidence:
   - test
   - contract-test

@@ -36,14 +36,15 @@ async def send_message(request, message, session_token, response):
         message.reply_to_cursor = internal
     try:
         principal = validate_new_send(store, channel, message, session_token)
-        require_target(store, channel, message, bridge)
+        if version not in {'1', '2'}:
+            require_target(store, channel, message, bridge)
         if version in {'1', '2'}:
             if message._sender_assurance != 'session':
                 raise SessionAuthorityError('Durable acceptance requires a matching joined session')
             key = request_identity(request.headers.get('Idempotency-Key'))
             accepted = store.local_delivery.accept(channel, key, digest, message, principal,
                 bridge=bridge, epoch=request.headers.get('X-AgentBus-Request-Epoch') if version == '2' else None,
-                session_token=session_token)
+                session_token=session_token, target_check=lambda: require_target(store, channel, message, bridge))
             response.status_code = 202
             response.headers['X-AgentBus-Delivery-Version'] = version
             response.headers['Idempotency-Key'] = key

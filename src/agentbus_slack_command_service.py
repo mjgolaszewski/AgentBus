@@ -19,6 +19,7 @@ HELP = "\n".join([
     "*Message*\n`/agentbus send ID MESSAGE`\n`/agentbus wake ID MESSAGE` — request attention; host admission is separate",
     "*Ask everyone in this channel*\n`/agentbus broadcast TEXT` — read acknowledgement required\n"
     "`/agentbus poll QUESTION` — answer required\n`/agentbus results` — choose a poll; named answers and page buttons",
+    "*Identity management*\n`/agentbus identities` — private rename/removal previews and receipts\n"
     "*Control*\n`/agentbus checkpoint ID`\n`/agentbus pause ID` · `/agentbus resume ID`\n"
     "`/agentbus retire ID CONFIRM` — irreversible stop",
     "*Targets:* ID is a unique current identity fragment, last 6–12 hex characters, or full session UUID. "
@@ -104,8 +105,14 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
             snapshot = dashboard() if dashboard is not None else service_dashboard(settings, store)
             if action == 'workers':
                 return workers_text(snapshot)
-            return '*Doctor — read-only checks*\n\n' + '\n\n'.join(
+            text = '*Doctor — read-only checks*\n\n' + '\n\n'.join(
                 f'*{name}: {state}*\n{guidance}' for name, state, guidance in doctor_checks(snapshot, command=command))
+            if getattr(store,'publications',None) is not None:
+                from src.agentbus_presentation_service import section_blocks
+                from src.agentbus_slack_ui_service import OperatorAction, OperatorReply, action_button
+                return OperatorReply(text,[*section_blocks(text),{'type':'actions','elements':[
+                    action_button('Inspect authorized updates',OperatorAction('publication_page',channel))]}],outcome='observed')
+            return text
         if action == 'explain':
             if len(parts) != 2 or not re.fullmatch(r'[1-9][0-9]{0,17}', parts[1]):
                 return f'Use `{command} explain CURSOR` with a positive channel-local cursor.'
@@ -174,6 +181,9 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
         from src.agentbus_status_api_service import service_dashboard
         snapshot = dashboard() if dashboard is not None else service_dashboard(settings, store)
         return health_text({**snapshot, "invoked_command": command})
+    if action == 'identities':
+        from src.agentbus_identity_ui_service import identity_command
+        return identity_command(parts,settings,store,user,channel,command)
     if action == 'updates':
         from src.agentbus_publication_ui_service import publication_review
         owner = getattr(store, 'publications', None)

@@ -11,9 +11,9 @@ It guides CLI participation without adding enrollment or host authority.
 
 ```bash
 export AGENTBUS_LOCAL_PREFIX=local
-agentbus onboard --name coordinator \
+agentbus onboard --repo demo --name coordinator \
   --role 'migration conductor' --from now --announce
-export AGENTBUS_IDENTITY='local:agentbus:coordinator'
+export AGENTBUS_IDENTITY='local:demo:coordinator'
 # Request approval; the operator runs the printed /agentbus approve command
 # in the intended channel. Then rerun the same join.
 agentbus join
@@ -179,3 +179,9 @@ update grants no destination policy or external authority.
 Automatic retention is an optional operator policy, not permission for an agent
 to delete state. Completion and semantic ACK stay separate. Unacknowledged or
 unsettled obligations remain pinned even when their agent goes quiet.
+
+An operator's identity manager can rename the same chat or explicitly retire its
+bus access. Use the [own-profile reconciliation steps](operators.md#manage-an-enrolled-identity)
+after a confirmed rename; preserve original uncertain stages, senders, UUIDs and
+epochs. Retirement is not your STOP ACK, work completion or host termination.
+It never authorizes re-enrollment, another channel or a replacement uncertain send.

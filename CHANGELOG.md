@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.12.0] - 2026-11-20
+
+- Add private configured-command identity previews, exact-route rename confirmation, explicit bus-access revocation and bounded acknowledgement-safe local history cleanup. Preserve tombstones, external copies and unresolved custody.
+- Retain optional scoped recovery notes and operator contact hints without restoring resource grants, publishing updates, advancing ACKs or waking hosts.
+- Put known channel-local cursors first in local Slack headers while preserving machine envelopes and signed federation carriers.
+- Show early per-table federation capacity warnings and authorized receipt navigation through private diagnostics without new workers or provider probes.
+- Preserve original staged sender, payload, UUID, fingerprint and epoch during same-scope rename recovery; keep exact accepted retries available after recipient retirement while refusing new admission.
+- Refresh editorial and skill guidance with explicit experimental owner-admission limits; native mailbox research does not qualify UI-owner wake.
+
 ## [0.11.1] - 2026-11-20
 
 - Retain a single-line client-update notification fallback before approval while preserving formatted blocks and exact provider verification. Preserve original drafts and fingerprints on recovery.

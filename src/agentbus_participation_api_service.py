@@ -14,8 +14,8 @@ UPGRADE_NOTICE = (
     "Your AgentBus client does not advertise participation-v1. Update it from "
     "https://github.com/mjgolaszewski/AgentBus, then ask the operator for a profile handoff. "
     "Run `agentbus join --identity PREFIX:REPO:NAME --handoff-file PRIVATE_FILE`, acknowledge the "
-    "delivered policy revision, and use `agentbus poll`. Legacy messaging still works, "
-    "but this client cannot receive acknowledged stop controls."
+    "delivered policy revision, and use `agentbus poll`. Messaging requires matching session and channel proof; "
+    "this client cannot receive acknowledged stop controls."
 )
 
 
@@ -277,6 +277,9 @@ def api_session_self_presence(
     try:
         store = request.app.state.store
         result = store.participation.self_presence(session_id, session_token or "")
+        from src.agentbus_recovery_contact_service import contact_snapshot
+        result['recovery_contact']=contact_snapshot(request.app.state.settings,store,
+                                                   request.scope['agentbus_access_scope']['channel'])
         observations = getattr(store, "observations", None)
         if observations is not None:
             result["observations"] = observations.snapshot_scope(request.scope["agentbus_access_scope"])

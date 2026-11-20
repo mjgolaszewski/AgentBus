@@ -92,3 +92,36 @@ def save_profile(values, profile, *, reset_cursors=False):
         if isinstance(profile, Profile):
             profile.baseline = deepcopy(result)
             profile.source_path = path
+
+
+def profile_inventory(values, bound):
+    """Read actual scoped profile metadata, never disposable JSON projections."""
+    import re
+    import stat
+    from uuid import UUID
+
+    from src.agentbus_client import consumer_state_dir
+
+    directory = consumer_state_dir(values)
+    profiles: list[dict[str, object]] = []
+    if not directory.is_dir():
+        return profiles
+    for path in sorted(directory.glob('*.json')):
+        route = path.stem
+        if (not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}', route)
+                or route.count(':') not in {1, 2} or any(not part for part in route.split(':'))):
+            continue
+        try:
+            descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+            with os.fdopen(descriptor, 'rb') as source:
+                if not stat.S_ISREG(os.fstat(source.fileno()).st_mode):
+                    continue
+                data = json.load(source)
+            if (not isinstance(data, dict) or data.get('identity') != route
+                    or any(data.get(key) != bound.get(key) for key in ('service_url', 'inbox_id', 'channel'))
+                    or not isinstance(data.get('chat_id'), str) or str(UUID(data['chat_id'])) != data['chat_id']):
+                continue
+            profiles.append({key: data.get(key) for key in ('identity', 'display_name', 'repo', 'role', 'chat_id')})
+        except (OSError, ValueError, TypeError):
+            continue
+    return profiles

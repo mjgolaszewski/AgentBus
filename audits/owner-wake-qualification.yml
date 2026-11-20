@@ -39,8 +39,8 @@ local_inventory:
   endpoint_authentication: unverified_no_connection_attempted
   execution_policy: notification_only_for_unqualified_owners
   release_watch_is_installed_runtime: false
-  discovery_observation: Active process advertises server user-data directory; no local-endpoint directory found there; no credential read or
-    owner connection
+  discovery_observation: Active process advertises server user-data directory; no local-endpoint directory found
+    there; no credential read or owner connection
 authority_edges:
 - producer: service authenticated inbox
   consumer: existing candidate selector
@@ -81,11 +81,13 @@ proposed_admission_requirements:
   - connection generation
   - policy revision
   - stable durable attempt and event references
-  decision: owner checks eligibility and reserves idle turn in the same serialized operation; reject stale or busy without leaving a deferred
-    wake
+  decision: owner checks eligibility and reserves idle turn in the same serialized operation; reject stale or busy
+    without leaving a deferred wake
   queued_alternative: separate weaker capability; may run after an intervening turn; never advertise as atomic reject-if-busy
-  unknown_response: retain original attempt and batch; reconcile same owner identity; no blind resubmission or alternate transport
-  resume: revalidate current permissions and network policy without copying credentials or treating resume as ownership transfer
+  unknown_response: retain original attempt and batch; reconcile same owner identity; no blind resubmission or alternate
+    transport
+  resume: revalidate current permissions and network policy without copying credentials or treating resume as ownership
+    transfer
   idempotency: pending-message upsert is not proof of durable deduplication after consumption or owner restart
   mixed_pending_list: explicit queued kind; never steering; reject ambiguous unsupported protocol shapes
   acknowledgement: queue, admission, running and terminal observations cannot acknowledge AgentBus work
@@ -116,8 +118,8 @@ decision:
 upstream_addendum:
   release: https://github.com/openai/codex/releases/tag/rust-v0.163.0
   finalization_fix: https://github.com/openai/codex/pull/53452
-  scope: default steering, managed restart, cold-resume permissions and finishing-turn rejection require distinct tests; none establishes cross-client
-    ownership transfer
+  scope: default steering, managed restart, cold-resume permissions and finishing-turn rejection require distinct
+    tests; none establishes cross-client ownership transfer
 offline_protocol_evidence:
   scope: actual_upstream_pure_reducer_not_host_or_provider
   source_commit: 1ef0642965efaa7ef98caff287bca923fbc80ec6
@@ -127,8 +129,8 @@ offline_protocol_evidence:
   input_hashes: audits/owner-wake/ahp-reducer-pins.json
   probe: audits/owner-wake/ahp-reducer-probe.mjs
   command: node audits/owner-wake/ahp-reducer-probe.mjs SOURCE_ROOT audits/owner-wake/ahp-reducer-pins.json
-  source_acquisition: GitHub authenticated archive at exact pinned commit; extract into isolated SOURCE_ROOT; no npm install or live credentials
-    needed
+  source_acquisition: GitHub authenticated archive at exact pinned commit; extract into isolated SOURCE_ROOT; no
+    npm install or live credentials needed
   semantics:
   - same pending ID replaces in place while pending
   - explicit queued never creates steering entry
@@ -147,7 +149,8 @@ offline_protocol_evidence:
     expected_rejection: true
     diagnostic_sha256: d9ea0d7419804628c959abcabb1241d51e483251f3a25ce75ce07d662d45d1bb
   limitations:
-  - Node builtin experimental TypeScript transform runs pure upstream reducer; no upstream build or SDK transport qualification claimed
+  - Node builtin experimental TypeScript transform runs pure upstream reducer; no upstream build or SDK transport
+    qualification claimed
   - Fixture null-to-undefined normalization matches pinned upstream test harness
   - No host queue-drain, IPC authentication, permission restoration, writer custody or atomic admission proof
   - No installed owner was discovered; real protocol negotiation remains pending
@@ -157,46 +160,58 @@ offline_schema_evidence:
   source_commit: 1ef0642965efaa7ef98caff287bca923fbc80ec6
   sha256: dcd9e6e2b2fd1693e7f403a3cf48ec416a8c4921ff9d377cfa37fab08fe94809
   cases: 7
-  finding: queued and steering are both valid wire shapes; kind is required; unknown fields may pass schema validation but establish no conditional-admission
-    support
+  finding: queued and steering are both valid wire shapes; kind is required; unknown fields may pass schema validation
+    but establish no conditional-admission support
   host_acceptance_qualified: false
-  identity_boundary: Wire schema also accepts an empty ID and a non-user origin; client-only user origin, nonempty stable identity and exact owner
-    authorization require separate adapter/host checks; no host acceptance or protocol defect inferred
-
+  identity_boundary: Wire schema also accepts an empty ID and a non-user origin; client-only user origin, nonempty
+    stable identity and exact owner authorization require separate adapter/host checks; no host acceptance or protocol
+    defect inferred
 october_17_upstream_review:
   reviewed_at_utc: '2026-10-17'
   evidence_class: primary_upstream_metadata_and_independent_developer_reports
   external_thread_issue:
     url: https://github.com/openai/codex/issues/54683
     state_at_review: open
-    correction: The supplied watch attachment also called this issue closed as duplicate; current upstream metadata says open
-    report: Same-server multi-client turns and loaded-session queue delivery are independent reports, not supported interoperability guarantees
+    correction: The supplied watch attachment also called this issue closed as duplicate; current upstream metadata
+      says open
+    report: Same-server multi-client turns and loaded-session queue delivery are independent reports, not supported
+      interoperability guarantees
     loaded_queue_report: https://github.com/openai/codex/issues/54683#issuecomment-6231683263
     unloaded_path: Private Desktop app-tools through an authenticated MCP child; excluded from production qualification
   backend_selection:
     url: https://github.com/openai/codex/pull/54681
     merged_at_utc: '2026-10-16T19:13:56Z'
     merge_commit: 440312f11396a58b312dd31798ec3393810d8ff8
-    guarantee_scope: Process-local backend selection identity and rejection of cross-backend selection or inappropriate fallback
-    limitation: A process-local BackendId is not a durable identity across process restarts or an externally authenticated owner credential
+    guarantee_scope: Process-local backend selection identity and rejection of cross-backend selection or inappropriate
+      fallback
+    limitation: A process-local BackendId is not a durable identity across process restarts or an externally authenticated
+      owner credential
   storage_outcomes:
     url: https://github.com/openai/codex/pull/54664
     merged_at_utc: '2026-10-16T17:32:20Z'
     merge_commit: 96eb400d1231f0199e96f640c740096087cf3e9b
-    guarantee_scope: Internal thread storage distinguishes retryable failures from uncertain write outcomes; neither classification automatically retries
-    limitation: No supported idempotent wake submission API or transport-level retry authorization follows from these internal error types
+    guarantee_scope: Internal thread storage distinguishes retryable failures from uncertain write outcomes; neither
+      classification automatically retries
+    limitation: No supported idempotent wake submission API or transport-level retry authorization follows from
+      these internal error types
   release_inventory:
     stable_observed: rust-v0.163.0
     prerelease_observed: rust-v0.164.0-alpha.3
     merged_changes_stable_qualification: not_established
     installed_runtime_upgraded: false
   qualification_requirements:
-  - Reject the same thread UUID on a different backend before submission; thread identity alone never establishes owner identity
-  - Invalidate connection observations after reconnect or owner restart; reauthenticate backend, owner incarnation, binding and permissions
-  - Do not redirect an unavailable selected owner to another server or transport, including after an unknown submission outcome
-  - Only operation-owner evidence can establish a submission did not commit and is safe to retry; storage error names alone cannot authorize resend
-  - Preserve original durable attempt after unknown outcome; query the same authenticated owner without creating another turn
-  - Qualify native queue separately as a weaker deferred-turn candidate; do not equate queue acceptance with conditional idle-only admission
+  - Reject the same thread UUID on a different backend before submission; thread identity alone never establishes
+    owner identity
+  - Invalidate connection observations after reconnect or owner restart; reauthenticate backend, owner incarnation,
+    binding and permissions
+  - Do not redirect an unavailable selected owner to another server or transport, including after an unknown submission
+    outcome
+  - Only operation-owner evidence can establish a submission did not commit and is safe to retry; storage error
+    names alone cannot authorize resend
+  - Preserve original durable attempt after unknown outcome; query the same authenticated owner without creating
+    another turn
+  - Qualify native queue separately as a weaker deferred-turn candidate; do not equate queue acceptance with conditional
+    idle-only admission
   - Test busy-owner races and intervening user turns for unwanted steering and unwanted later turns independently
   next_offline_cases:
   - matching_thread_foreign_backend_rejected
@@ -204,4 +219,48 @@ october_17_upstream_review:
   - unavailable_owner_never_falls_back
   - unknown_submission_preserves_attempt_without_retry
   case_status: required_not_yet_executed_against_real_owner
-  decision: Continue offline AHP-first research with native queue as a separate fallback candidate; notification-only remains the runtime policy
+  decision: Continue offline AHP-first research with native queue as a separate fallback candidate; notification-only
+    remains the runtime policy
+p16_addendum:
+  observed_at_utc: '2026-11-20'
+  scope: Primary-source review and static installed-package inventory only; no owner attachment, model call, runtime/configuration
+    change or upstream code adoption.
+  primary_sources:
+  - url: https://github.com/openai/codex/pull/62537
+    merge_commit: 0b248182be6ff496c7b11401e3217c4c380848ca
+    reviewed_paths:
+    - codex-rs/app-server/src/request_processors/turn_processor.rs
+    - codex-rs/app-server/src/turn_admission.rs
+    - codex-rs/app-server/src/turn_admission_tests.rs
+    - codex-rs/app-server/tests/suite/v2/thread_inject_items.rs
+    finding: Ordinary automatic mailbox wake obtains an app-server admission permit through turn registration; native-child
+      injection has a constrained plain-text mailbox exception. Root injection retains its persisted history path;
+      the root regression explicitly disables wake and verifies no model request.
+  - url: https://github.com/openai/codex/pull/62639
+    merge_commit: 9224da4ce189c14d9423af2ac573f2ab3abb7969
+    review_scope: Merged PR metadata and authored change/test description; no claim of executing upstream tests.
+    finding: Queue-only mail waits at the next sampling boundary after a retained final answer; user steering is
+      a separate case.
+  inference: Owner-side mailbox admission merits the next offline investigation. These changes do not establish
+    a supported external root/UI-thread atomic reject-if-busy endpoint, durable external idempotency or permission
+    to start another app-server.
+  static_inventory:
+    scope: Exact credential-free local inventory retained privately; no local deployment paths or package inventory
+      published here.
+    finding: Multiple installed extension packages and a PATH-selected older package do not identify the actual
+      owning host.
+    actual_owning_host_version: unverified
+    bundled_CLI_version: not_executed_during_source_only_admission
+    release_containment_of_reviewed_commits: not_established
+    endpoint_authentication: unverified_no_connection_attempted
+  qualification_order:
+  - native owner mailbox contract and supported endpoint inventory
+  - native queue as a separate weaker deferred-admission candidate
+  - AHP as a separately versioned owner interoperability candidate
+  resume_conditions:
+  - identify an authorized disposable root/UI-owned thread and its actual backend/incarnation
+  - negotiate supported non-steering admission and restart/idempotency semantics
+  - retain busy/unknown/interrupted/permission-change and uncertain-write negative controls
+  - obtain separate bounded live qualification authorization
+  decision: Issue75 remains open; installed owners remain notification-only. No owner writer-lock, credential, host-mode
+    or wake-preference change.

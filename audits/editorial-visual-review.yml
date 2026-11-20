@@ -1,7 +1,7 @@
 document:
   kind: editorial_visual_audit
   path: audits/editorial-visual-review.yml
-  status: reviewed
+  status: editorial_source_review_complete
 scope: Public README/docs imagery, Markdown tables and Mermaid diagrams; no assets removed. Embedded code examples
   are reviewed with their containing editorial file.
 baseline: 89eb2e35f040741a5031e1255edbdb0d695c128d
@@ -11,18 +11,18 @@ images:
 - path: docs/assets/AgentBusCodexWake.png
   sha256: e8483244bf4386468d9fba8aa51b06c029dbf7e59077acff85b8d6622d2227f6
   disposition: reviewed_retained
-  basis: 'Visual inspection: existing illustration/branding preserved unchanged; no embedded configuration or deployment
-    identifiers.'
+  basis: 'Fresh visual inspection: original branding and illustration retained; no private deployment identifiers.
+    Wake illustration conveys an experimental concept, not owner-admission proof.'
 - path: docs/assets/AgentBusHero.png
   sha256: 83ae11225d3675b1e0b2666d8b3aa357c31e4e06a05386f2c887e5d2a100d99e
   disposition: reviewed_retained
-  basis: 'Visual inspection: existing illustration/branding preserved unchanged; no embedded configuration or deployment
-    identifiers.'
+  basis: 'Fresh visual inspection: original branding and illustration retained; no private deployment identifiers.
+    Wake illustration conveys an experimental concept, not owner-admission proof.'
 - path: docs/assets/bcf-governance-pack-hero.jpg
   sha256: 44be4fec4f7d0ef1576338fafa2455f2aa4d52faa08b7fcf3242e1828bc46218
   disposition: reviewed_retained
-  basis: 'Visual inspection: existing illustration/branding preserved unchanged; no embedded configuration or deployment
-    identifiers.'
+  basis: 'Fresh visual inspection: original branding and illustration retained; no private deployment identifiers.
+    Wake illustration conveys an experimental concept, not owner-admission proof.'
 embedded:
 - path: README.md
   kind: mermaid
@@ -30,140 +30,712 @@ embedded:
   - 20
   - 31
   sha256: dc8aa17f19a6d70d73851b46413c76da2d3daf63868dbc49fbe9901af6c417bb
-  disposition: reviewed_retained
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: README.md
+  kind: code_example
+  lines:
+  - 82
+  - 85
+  sha256: 681ae551e3155ed3d67a287c63d163110df4ab83013b83a1cbd7bbb6c37d80c9
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: README.md
+  kind: code_example
+  lines:
+  - 89
+  - 92
+  sha256: 2e574f7f25e17ee5858e84615efd33d3a80a9bd7f677cb76e96257c18aa07994
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: README.md
   kind: mermaid
   lines:
   - 163
   - 173
   sha256: 5f506ed321ed50fdf3f4954dcc4319d1ebbe42dddea8f243089bcbe418a7175f
-  disposition: reviewed_retained
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: README.md
+  kind: code_example
+  lines:
+  - 185
+  - 187
+  sha256: 4851ad3289016890a9b918998c8bed3a6a3ae15559a48e035d536a34be062f06
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: README.md
   kind: table
   lines:
   - 197
   - 206
   sha256: 1db8b1b0a9775659b1e0a060a7243b8ba7265b3bba955644375a1cd6df237fad
-  disposition: edited
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: README.md
+  kind: code_example
+  lines:
+  - 216
+  - 219
+  sha256: b10b1c31f4fe4766b5c79325d98fdca9cbed60754e58492ea54587589475b6bc
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: CONTRACT.md
+  kind: table
+  lines:
+  - 146
+  - 151
+  sha256: 6ec74695c0057600a4745cea75523b53a7842af769dc91ea81f983d41b14851b
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: CONTRIBUTING.md
+  kind: code_example
+  lines:
+  - 9
+  - 12
+  sha256: b10b1c31f4fe4766b5c79325d98fdca9cbed60754e58492ea54587589475b6bc
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: CONTRIBUTING.md
+  kind: code_example
+  lines:
+  - 20
+  - 22
+  sha256: 59e2f79fe75a23c4827fafc952562ab3bafad42b48eec11e131b08f671d1eb31
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: SECURITY.md
+  kind: table
+  lines:
+  - 64
+  - 73
+  sha256: d41301acd2efbe2f856e09b2a47530a99304debda685f067d287816e0c154865
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: docs/README.md
   kind: table
   lines:
-  - 28
-  - 40
-  sha256: 98ab776e735a6eb983685ebff69b9e6677605e1b7318b89a8b3281c430707860
-  disposition: edited
+  - 32
+  - 45
+  sha256: 995208b57f4495226e8b341f14875c19ed3a2d4728450f0b0d74bc7073a1581c
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: docs/adoption-measurements.md
   kind: table
   lines:
   - 21
   - 32
   sha256: 1cebaa2543d26ca7dbe2c523b606d413c580e5c1d4075b08f657036806675658
-  disposition: reviewed_retained
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: docs/adoption-measurements.md
   kind: table
   lines:
   - 44
   - 49
   sha256: 0c34debcd87ba41632269146733297aedfea7f790e8a201e8386ff35fd20bdf9
-  disposition: reviewed_retained
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: docs/adoption-measurements.md
   kind: table
   lines:
   - 73
   - 79
   sha256: bd461e802a07a1a661e8cb12290f481475abbe4bda5a36062896ce0e3debc559
-  disposition: reviewed_retained
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: docs/architecture.md
   kind: mermaid
   lines:
   - 10
   - 25
-  sha256: ffd10399ee48dadcbcd32918008962e2f828a480b31dc81a1b92d96a6f7a269d
-  disposition: reviewed_retained
+  sha256: ec714391a8aa6628fc35e48045ec5b5d020f4b2824ab106598289aa22d31ac98
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: docs/architecture.md
   kind: table
   lines:
   - 70
-  - 86
-  sha256: 4e890e48a08fcd219130fd5565512d570d13d0d4c0b60ae42d6d3410601670f2
-  disposition: reviewed_retained
+  - 87
+  sha256: b3cb63ecb1d0b3b9550d89837a1e3647278455c5fc143f0a760f0a871325dd9b
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: docs/audiences/adapter-users.md
   kind: table
   lines:
   - 26
   - 30
   sha256: bcfd6cd6c16fdce0d135e2708c6d0598b406e397f00ec958ac258542344fad7b
-  disposition: reviewed_retained
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/adapter-users.md
+  kind: code_example
+  lines:
+  - 38
+  - 41
+  sha256: ec268702df748fd7a2a471347ffab700fccf40b4481732b9aed34eb80c5f20d8
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/adapter-users.md
+  kind: code_example
+  lines:
+  - 69
+  - 72
+  sha256: 684f12cde02363822b65ec9fd1e4c8e491d636747b772a86ce2b696ee9ad938b
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: docs/audiences/adapter-users.md
   kind: table
   lines:
   - 122
   - 135
   sha256: 73c6ad0b614dadd4a606aa6ab376eb11ebd958393ab7c355baebf11c33675c34
-  disposition: reviewed_retained
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/agents.md
+  kind: code_example
+  lines:
+  - 12
+  - 23
+  sha256: 188b5326c201113f031f08209449eed8956f1135aef3c6d2705a1470aecc36c0
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/agents.md
+  kind: code_example
+  lines:
+  - 54
+  - 58
+  sha256: 97fe4ec63d4155f80bb1ec53fa85e96caa4194ed5b9de35206283723d3db973f
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: docs/audiences/experimenters.md
   kind: table
   lines:
   - 24
   - 42
   sha256: 0b1e51be14719123f60ef7f8ea3be55c1c747fb7551412cb32179559e416ae1c
-  disposition: reviewed_retained
-- path: docs/audiences/mailbox-tool-users.md
-  kind: table
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/hippiebots.md
+  kind: code_example
   lines:
   - 12
-  - 16
-  sha256: f6ad2836beaa3e9d78ef1ec8a871e6ab3c51fec2103bb581ed9e5eb3e047664b
-  disposition: added
-- path: docs/audiences/mailbox-tool-users.md
-  kind: table
+  - 28
+  sha256: eceef94814fedd173c3177cbaa5e37a46965c8293da41d0003d6c0f24e646dce
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/hippiebots.md
+  kind: code_example
   lines:
-  - 67
-  - 72
-  sha256: 04906507b34276b7892b8e50d520c6818357b503d22e6b46452f3c9db66af4e0
-  disposition: added
-- path: docs/audiences/mailbox-tool-users.md
-  kind: table
+  - 39
+  - 45
+  sha256: 791eadf63837aabda2b2dcb39f19ee339371f5e09dc216de496411f9a7ae016f
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/operators.md
+  kind: code_example
   lines:
-  - 188
-  - 196
-  sha256: 03fe5fd3bc87a40b1ba894fcf3b002b6ac7ceb332af448a124e44abeaa74e8cd
-  disposition: added
+  - 38
+  - 48
+  sha256: 3b4abb51ff60283910a49c390e79d3253fca8a5808d9ed14dd48c596714dcff2
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/operators.md
+  kind: code_example
+  lines:
+  - 50
+  - 54
+  sha256: e0ae4ddf71f89dd0d7e098b0a42410c538c741ec64dc76d2b2ea03341e33d218
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/operators.md
+  kind: text_illustration_or_example
+  lines:
+  - 103
+  - 109
+  sha256: 1b76023ce98893ed682765681abc4c392deebca26eaebc39ab8887710f6ccafa
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/operators.md
+  kind: code_example
+  lines:
+  - 128
+  - 132
+  sha256: ac04271b7fb7ea37e4353d3ddfeb8a6fe84044f7c39c4b7f0ea7f16c80b169e8
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/operators.md
+  kind: text_illustration_or_example
+  lines:
+  - 171
+  - 179
+  sha256: 71b9c8e360fe544f7df6c1cbfa03b28c1953b891ed64aae4fcd1cff58c43bd38
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/channel-migration.md
+  kind: code_example
+  lines:
+  - 34
+  - 40
+  sha256: f5fb5db4e6be06d13bb6d6acbc39c8ec29ea373c4482abf8ff431f7d764ddd26
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/client-publishing.md
+  kind: code_example
+  lines:
+  - 10
+  - 12
+  sha256: 069a223a36cbeeffd8bb1ee7ed78d707fb1b51e10c89b2d819a3e486be91f260
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/client-publishing.md
+  kind: text_illustration_or_example
+  lines:
+  - 26
+  - 28
+  sha256: c29005a45c83880104e35f3bd1033c0375e885f8a24794f4ec538effba0950e7
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/client-publishing.md
+  kind: code_example
+  lines:
+  - 94
+  - 109
+  sha256: d48e185f0b604ddd4e704b615810f3ddd7fd6b0d108b40cb528cccee37714b6c
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/client-publishing.md
+  kind: code_example
+  lines:
+  - 119
+  - 122
+  sha256: 8863326007ba8bb49f5a18ff5da422ab4f9300cd688af00dc9b35d76d0cbb6a9
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/client-publishing.md
+  kind: code_example
+  lines:
+  - 133
+  - 138
+  sha256: ab04c7d9cd0141bda9a1e623adf81c09cda37e5dbb0f3a33b7075339e4b78f62
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/codex-skill.md
+  kind: code_example
+  lines:
+  - 11
+  - 15
+  sha256: 0af02d0e6ebc8b99b7b3bbc1c97f4d96b1ee7ff2bfd2c6565bf191d33cebb39b
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: docs/contracts.md
   kind: table
   lines:
-  - 32
-  - 48
-  sha256: 748649b9bf8593a29b66bfd03966b322b4e0de0b159d0b17d54ff4a87073612b
-  disposition: reviewed_retained
+  - 35
+  - 52
+  sha256: 877b1e70ec9a021b18cebcff041439b7521dbaee59265cde6fb4f6c0a01e4886
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: docs/contracts.md
   kind: mermaid
   lines:
-  - 75
-  - 87
+  - 79
+  - 91
   sha256: 06db2bf82765ecae3c7db2d386d0df7dacda48eb647be5fa649714532938038c
-  disposition: reviewed_retained
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: docs/contracts.md
   kind: table
   lines:
-  - 104
-  - 122
-  sha256: 63ecc0831043a36b84d6bf8c21e57cb6579b5495ca51dd70eb2b1ffd8c944b28
-  disposition: reviewed_retained
+  - 108
+  - 127
+  sha256: f71fb7cfd77ffbdf2d7f75653a8d5eb62d68ea858c7bc8a305917dda55c80f07
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/federation.md
+  kind: code_example
+  lines:
+  - 162
+  - 165
+  sha256: 6673c1fa528e6f2ff13919b5f794e9ab0c444a753a9d7d51348254f01c7b1e1e
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: docs/http-api.md
   kind: table
   lines:
   - 9
   - 36
   sha256: c4460accbf42e6dc5be3ae9ab2033e4e052ce47afe2f52a5818f3e9b94f75464
-  disposition: reviewed_retained
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/http-api.md
+  kind: code_example
+  lines:
+  - 52
+  - 54
+  sha256: 3a7465cf1a08c09dbf80b348b71b7806d69186ef57d46fa1c242f834aa613c64
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/local-adapters.md
+  kind: code_example
+  lines:
+  - 13
+  - 15
+  sha256: e993b8619ad0c7b4c59550f27d37618953491fb81294e7da8ede48039d7a2342
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/local-adapters.md
+  kind: code_example
+  lines:
+  - 30
+  - 32
+  sha256: ab5104c9cc11c13755bafa693a0b31d927ab966903b34d9d612ebaecba1497ce
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/local-adapters.md
+  kind: code_example
+  lines:
+  - 73
+  - 82
+  sha256: c26509ae62f41c5cb0645a850cba89f95948851ff3bec3d98db549853d376344
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: docs/message-lifecycle.md
   kind: table
   lines:
   - 13
   - 20
   sha256: 1ae74be483fcaf71cdbf53817bb13510dc8bb2f3fbc14a35c9fd017f2d93cac7
-  disposition: reviewed_retained
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/message-lifecycle.md
+  kind: text_illustration_or_example
+  lines:
+  - 86
+  - 91
+  sha256: 9d96e4b40a3018581ec85cdd808c918abf8f6c9715f94feae63415124d7c980e
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/message-lifecycle.md
+  kind: code_example
+  lines:
+  - 172
+  - 176
+  sha256: 7eb7b4763f29387096c60630c0048a380bb8359bd24a6ff43a52caf385ee75c0
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/message-lifecycle.md
+  kind: text_illustration_or_example
+  lines:
+  - 199
+  - 203
+  sha256: d5f6d67ae852871116eb297f99c6e07b70f8c84cdcdb1c39561907c09810838c
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/operator-federation.md
+  kind: text_illustration_or_example
+  lines:
+  - 24
+  - 32
+  sha256: f843c270774dbbe7b16476b44e5d2ccaa78467745d4d6d3e22154b1640f1ea0c
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/operator-federation.md
+  kind: text_illustration_or_example
+  lines:
+  - 42
+  - 44
+  sha256: ad662cb64927893dc87f2383b6961ec02aab9b4f1574c671f2a5c5a8e6a4f0a1
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/operator-federation.md
+  kind: code_example
+  lines:
+  - 81
+  - 94
+  sha256: 8683b994798e6cee42f08e61c3d3e026763c15f705c9a7d432c2f63dc46c6889
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/recovery.md
+  kind: code_example
+  lines:
+  - 27
+  - 29
+  sha256: e563dfcda82e761f596e1d6561c71dbf80b286b63cef740591de8b76ba580fa6
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/recovery.md
+  kind: code_example
+  lines:
+  - 52
+  - 54
+  sha256: 4f07fe14b22082332f94bee4374a2ff141f881448091cadb9889b424541ff8b0
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/recovery.md
+  kind: code_example
+  lines:
+  - 67
+  - 83
+  sha256: 1c6d8e2c0a405f2731b867fff3a5532842f16bedaae208e37ff55ac098705160
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/recovery.md
+  kind: code_example
+  lines:
+  - 114
+  - 116
+  sha256: a49a3cc5499baafa1be651ba5bb29a4eb7e3b5e0e0f2b5f117fcef46cb41051d
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/recovery.md
+  kind: code_example
+  lines:
+  - 141
+  - 150
+  sha256: cad0b75d4c73c8b829c7c6ae9ddb8f09fa78f1b7a912da9b77862eddbd3384fe
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/recovery.md
+  kind: text_illustration_or_example
+  lines:
+  - 172
+  - 174
+  sha256: 5bde419bd114550dc7b16ec2c1cd39e587a88fdcf32dd9fddadb0359dd1c8e3a
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: skills/agentbus/references/participation.md
+  kind: code_example
+  lines:
+  - 11
+  - 13
+  sha256: 1ff6e1fc74fde9f6190d2fefe8ab1df28fd2b23be0c673de77fe9aaec4b605a3
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: skills/agentbus/references/participation.md
+  kind: code_example
+  lines:
+  - 17
+  - 20
+  sha256: fe40d40b6e241017d6b15cc759c0f9b00cec50525d1f616996b82a10c182ffcd
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: skills/agentbus/references/participation.md
+  kind: code_example
+  lines:
+  - 27
+  - 31
+  sha256: e2f808066218b43583d8123bfc9d170e46a7527becca15dbec17434bbeeffc9d
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: skills/agentbus/references/participation.md
+  kind: code_example
+  lines:
+  - 41
+  - 44
+  sha256: 7e355ba5e50ca780841aceefadf66ebcea3d313889ab10120d23c9bdec4e392e
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: skills/agentbus/references/participation.md
+  kind: code_example
+  lines:
+  - 50
+  - 53
+  sha256: 6d73dc6078eeaebb48bdea5a4dceb68635c7e30a738f977413be0b117c412828
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: skills/agentbus/references/participation.md
+  kind: code_example
+  lines:
+  - 61
+  - 65
+  sha256: c56dada9d86479053d581bd2a170d9bb5bae6d87886f6d2d7a0d4a443a1e5f52
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: skills/agentbus/references/participation.md
+  kind: code_example
+  lines:
+  - 74
+  - 77
+  sha256: c9921c46c6b3200ba1b0376f18ca8abb61f288585f89d588b3ce2be375669051
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: skills/agentbus/references/participation.md
+  kind: code_example
+  lines:
+  - 101
+  - 103
+  sha256: a2911c4f55a161f131c21c4dde08a10d54d8b06f17776eedd3f3c7eb0398c3a7
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: skills/agentbus/references/participation.md
+  kind: code_example
+  lines:
+  - 110
+  - 113
+  sha256: 1b652421b4a7601e6dfe0b7046c35caffa1591b2babfefedc9e50e9c3a21caec
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: skills/agentbus/references/participation.md
+  kind: code_example
+  lines:
+  - 157
+  - 161
+  sha256: 85d1da8e3750b2b5d06a0f36b34997b2c8e32224b0091028ebdca75fc769919c
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/mailbox-tool-users.md
+  kind: table
+  lines:
+  - 12
+  - 16
+  sha256: f6ad2836beaa3e9d78ef1ec8a871e6ab3c51fec2103bb581ed9e5eb3e047664b
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/mailbox-tool-users.md
+  kind: code_example
+  lines:
+  - 28
+  - 30
+  sha256: 14ea1eb655a2cd2090900f4f47859207b89229b49f71c02ff0eefacd522e4796
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/mailbox-tool-users.md
+  kind: code_example
+  lines:
+  - 41
+  - 54
+  sha256: 58841d01ad61d7d65eb3037cf94fa8f29d3549ba05c836e7019557d68e54e160
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/mailbox-tool-users.md
+  kind: table
+  lines:
+  - 67
+  - 72
+  sha256: 04906507b34276b7892b8e50d520c6818357b503d22e6b46452f3c9db66af4e0
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/mailbox-tool-users.md
+  kind: code_example
+  lines:
+  - 89
+  - 94
+  sha256: c30c6e8a0706e8005c9868c7282b12ec3977240de33f13872588c1af627e2d46
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/mailbox-tool-users.md
+  kind: text_illustration_or_example
+  lines:
+  - 108
+  - 115
+  sha256: eeb295d04f8ba859d5d2cbf178bd717f4a86ebb3981379893bde9d2ab19c5206
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/mailbox-tool-users.md
+  kind: code_example
+  lines:
+  - 119
+  - 121
+  sha256: 8dd066890a6dc253d0b0fa666779c0150524cdc85f53a2b3ce28f4de5461bc8e
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/mailbox-tool-users.md
+  kind: code_example
+  lines:
+  - 125
+  - 131
+  sha256: b88e6335894ab8ed1101e54a95818092885129cd2334a30aeece77305a22ada6
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/mailbox-tool-users.md
+  kind: code_example
+  lines:
+  - 141
+  - 145
+  sha256: 8e2b5adadaa61bdc19f14ffcac80b8971114da350bc60951bf1c85ec43056e90
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/mailbox-tool-users.md
+  kind: code_example
+  lines:
+  - 156
+  - 170
+  sha256: 3f8b05d333a9cf6cdef4d2d97e9f95d91dab30f31cd932b59d1883c560d39ba1
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/mailbox-tool-users.md
+  kind: code_example
+  lines:
+  - 176
+  - 178
+  sha256: 7d39178db457c192cac3b45a49954f4e2e19dc98cc8fc279d3cf1d21f20fc96c
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/audiences/mailbox-tool-users.md
+  kind: table
+  lines:
+  - 193
+  - 201
+  sha256: 03fe5fd3bc87a40b1ba894fcf3b002b6ac7ceb332af448a124e44abeaa74e8cd
+  disposition: reviewed
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/wire-protocols.md
+  kind: table
+  lines:
+  - 10
+  - 18
+  sha256: 7d900e8bcf87113b2068b1adebf889a45e419f19393f60268e0ace92fa518ba1
+  disposition: added
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/wire-protocols.md
+  kind: code_example
+  lines:
+  - 32
+  - 34
+  sha256: 765afab902f70afba87d4712fe4237b3b015b4bc17ef66f6f5efe0ddd71f5653
+  disposition: added
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/wire-protocols.md
+  kind: table
+  lines:
+  - 36
+  - 43
+  sha256: db2c866fc287f799fee766dde873b67a181f324d4581e53e55b378c25bdcbc61
+  disposition: added
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/wire-protocols.md
+  kind: code_example
+  lines:
+  - 75
+  - 77
+  sha256: 91a8f273edc4504ee31a3877d154f03ca1e5549d233fe57d135c81b65d24b4ee
+  disposition: added
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/wire-protocols.md
+  kind: code_example
+  lines:
+  - 101
+  - 103
+  sha256: 2d2f55137e9c2a5086c777f37c0ad61dd3f0f0eef66536225a17906d6651c9ae
+  disposition: added
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/wire-protocols.md
+  kind: mermaid
+  lines:
+  - 122
+  - 135
+  sha256: af9596e5c550a1e12c40344d509f2888f3f1d2585ec14619a471370a73fe712a
+  disposition: added
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/wire-protocols.md
+  kind: table
+  lines:
+  - 157
+  - 164
+  sha256: 4122c9e163b761f131bf06267fc6f24a1e524ef52bec50b43e233d4b59116d45
+  disposition: added
+  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 preservation:
   removed: 0
   bcf_section: README Good vibes, governed builds remains near the front with its original graphic; unchanged section
@@ -171,3 +743,6 @@ preservation:
   graphics: All three assets retain exact baseline bytes.
   limits: No Mermaid renderer/browser screenshots or assistive-technology audit claimed. Historical measurement
     tables retain their historical labels; wake illustrations confer no live wake guarantee.
+current_review: All three unchanged images freshly visually inspected; all current tables, diagrams and fenced examples
+  read with containing files, including new wire-format source examples and receive-path diagram; final spans/hashes
+  reconciled.

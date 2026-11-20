@@ -36,14 +36,20 @@ def section_blocks(value: str) -> list[dict[str, object]]:
 
 def message_fields_blocks(*, sender: str, recipient: str, text: str, kind: str = 'message',
                          audience: str | None = None, repo: str | None = None,
-                         locator: str | None = None) -> list[dict[str, object]]:
+                         locator: str | None = None, position: int | None = None,
+                         location: str | None = None) -> list[dict[str, object]]:
     """Bound escaped display scalars; this is no protocol decoder or authority."""
     if (any(not isinstance(value, str) or len(value) > 80 for value in (sender, recipient, kind))
             or not isinstance(text, str) or len(text) > 6000
             or (audience is not None and (not isinstance(audience, str) or len(audience) > 80))
             or (repo is not None and (not isinstance(repo, str) or len(repo) > 240))):
         raise ValueError('Message presentation exceeds bounded scalar shape')
+    if (position is not None and (type(position) is not int or not 1 <= position < 2**63)
+            or location is not None and (not isinstance(location,str) or not 1 <= len(location) <= 80)):
+        raise ValueError('Invalid scoped message presentation reference')
     label = f'📤 `{sender}` → 📥 `{recipient}` · {kind} · {audience}'
+    reference = (f'`{position}` · ' if position is not None else '') + (f'{location} · ' if location else '')
+    label = reference + label
     if repo:
         label += f' · {repo}'
     context: dict[str, object] = {'type': 'context', 'elements': [
@@ -56,6 +62,22 @@ def message_fields_blocks(*, sender: str, recipient: str, text: str, kind: str =
 def message_blocks(message, *, locator: str | None = None) -> list[dict[str, object]]:
     return message_fields_blocks(sender=message.sender, recipient=message.recipient, text=message.text,
                                 kind=message.kind, audience=message.audience, repo=message.repo, locator=locator)
+
+
+def posting_blocks(message, store, channel, message_id, location):
+    """Read only a retained same-channel public position; never expose internal IDs."""
+    from src.agentbus_local_delivery_service import LOCATOR_PREFIX
+    position = None
+    if store is not None and message_id is not None:
+        with store._lock:
+            row = store._db.execute('SELECT local_cursor FROM local_delivery_obligations WHERE channel=? AND request_id=?',
+                                    (channel,message_id)).fetchone()
+            if row is None:
+                raise ValueError('Posting requires its retained same-channel delivery identity')
+            position = store.channels.public_cursor(channel,row[0])
+    return message_fields_blocks(sender=message.sender,recipient=message.recipient,text=message.text,
+        kind=message.kind,audience=message.audience,repo=message.repo,
+        locator=LOCATOR_PREFIX+message_id if message_id is not None else None,position=position,location=location)
 
 
 def command_blocks(text: str) -> list[dict[str, object]]:

@@ -154,9 +154,9 @@ needs, then let the chat read its inbox and decide what to do.
 
 **The doorbell is still experimental.** The adapter’s durable scanning and
 recovery machinery exists; live Microsoft Agent Host/AHP and native Codex queue
-interoperability and atomic idle-only admission remain unqualified. AHP
-owner-mediated queued wake is the first qualification candidate, with native
-queue as a fallback candidate. These are upcoming interoperability paths, not
+interoperability and atomic idle-only admission remain unqualified. Native
+owner-mailbox admission is the next offline research candidate; native queue
+and AHP remain separate interoperability candidates. These are upcoming interoperability paths, not
 production guarantees. Unknown, unavailable, stale, or contradictory owners
 stay notification-only.
 

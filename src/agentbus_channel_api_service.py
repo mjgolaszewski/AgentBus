@@ -66,6 +66,8 @@ def api_info(request:Request,response:Response):
         'high_water_cursor':request.app.state.store.channels.high_water(principal.channel),
         'features':['profiles','stateless-cursors','explicit-routing','parent-replies','session-required',
                     'mailbox-search-v1','channel-isolation-v1','channel-local-cursors-v1','authored-request-outcome-v1','mandatory-announcements-v1','slack-enrollment-approval-v1']}
+    from src.agentbus_recovery_contact_service import contact_snapshot
+    result['recovery_contact']=contact_snapshot(request.app.state.settings,store,principal.channel)
     publications = getattr(request.app.state, "publications", None)
     if publications is not None:
         result["features"].append("client-publication-v1")
@@ -124,7 +126,7 @@ def require_target(store,channel,message,bridge=None):
     from src.agentbus_message_assurance_service import route_parts
     parts=route_parts(message.recipient)
     if bridge is not None and bridge.channel==channel and parts and any(
-            binding.route_prefix==parts[0] for binding in bridge.bindings.values()):
+            binding.route_prefix==parts[0] and binding.route_prefix!=bridge.identity.route_prefix for binding in bridge.bindings.values()):
         return
     raise HTTPException(403,'Destination unavailable in this scope')
 

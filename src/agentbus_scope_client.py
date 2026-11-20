@@ -14,7 +14,7 @@ def scope(profile):
 
 def verify_projection(state,profile):
     expected=scope(profile)
-    if any(state.get(key)!=value for key,value in expected.items()):
+    if not isinstance(state,dict) or any(state.get(key)!=value for key,value in expected.items()):
         raise ClientError('Projection scope differs from the channel inbox binding; evidence retained')
 
 

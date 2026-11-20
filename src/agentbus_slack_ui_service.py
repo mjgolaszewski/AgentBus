@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from src.agentbus_presentation_service import section_blocks
 
 UUID = re.compile(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}")
-ACTIONS = frozenset({'results', 'results_page', 'enrollments_page', 'approve', 'operator_results', 'publication_page', 'publication_results', 'publication_approve'})
+ACTIONS = frozenset({'identity_page', 'identity_retired_page', 'identity_detail', 'identity_retire', 'identity_history', 'identity_confirm', 'identity_receipt', 'results', 'results_page', 'enrollments_page', 'approve', 'operator_results', 'publication_page', 'publication_results', 'publication_approve'})
 ACTION_PREFIX = 'agentbus.operator.'
 
 
@@ -27,17 +27,17 @@ class OperatorAction:
         if (not isinstance(self.channel, str) or len(self.channel) > 80
                 or not re.fullmatch(r'[CG][A-Z0-9]+', self.channel)):
             raise ValueError('Invalid operator action channel')
-        needs_target = self.kind in {'results_page', 'approve', 'operator_results', 'publication_results', 'publication_approve'}
+        needs_target = self.kind in {'identity_detail', 'identity_retire', 'identity_history', 'identity_confirm', 'identity_receipt', 'results_page', 'approve', 'operator_results', 'publication_results', 'publication_approve'}
         if needs_target and not UUID.fullmatch(self.target):
             raise ValueError('Invalid operator action reference')
         if not needs_target and self.target:
             raise ValueError('Unexpected operator action reference')
-        if self.kind == 'publication_approve':
+        if self.kind in {'publication_approve', 'identity_confirm'}:
             if not isinstance(self.digest, str) or not re.fullmatch(r'[0-9a-f]{64}', self.digest):
-                raise ValueError('Invalid immutable publication digest')
+                raise ValueError('Invalid immutable approval digest')
         elif self.digest:
-            raise ValueError('Unexpected publication approval digest')
-        if self.kind in {'approve', 'publication_approve'} and self.page:
+            raise ValueError('Unexpected approval digest')
+        if self.kind in {'approve', 'publication_approve', 'identity_detail', 'identity_retire', 'identity_history', 'identity_confirm', 'identity_receipt'} and self.page:
             raise ValueError('Unexpected approval page')
 
 
@@ -69,7 +69,7 @@ def action_button(label: str, action: OperatorAction) -> dict[str, object]:
     if not isinstance(label, str) or not 1 <= len(label) <= 75:
         raise ValueError('Invalid operator button label')
     value = {'channel': action.channel, 'target': action.target, 'page': action.page}
-    if action.kind == 'publication_approve':
+    if action.kind in {'publication_approve', 'identity_confirm'}:
         value['digest'] = action.digest
     return {
         'type': 'button',
@@ -93,7 +93,7 @@ def parse_action(value: object) -> OperatorAction:
     except ValueError:
         raise ValueError('Invalid operator button value') from None
     kind, separator, position = action_id[len(ACTION_PREFIX):].partition(':')
-    keys = {'channel', 'target', 'page', 'digest'} if kind == 'publication_approve' else {'channel', 'target', 'page'}
+    keys = {'channel', 'target', 'page', 'digest'} if kind in {'publication_approve', 'identity_confirm'} else {'channel', 'target', 'page'}
     if (not isinstance(payload, dict) or set(payload) != keys or not isinstance(payload['target'], str)):
         raise ValueError('Invalid operator button value')
     action = OperatorAction(kind, payload['channel'], payload['target'], payload['page'], payload.get('digest', ''))

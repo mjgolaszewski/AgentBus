@@ -1,18 +1,23 @@
 document:
   kind: recovery_observation_contract
-  version: 1.0.0
+  version: 1.1.0
   status: active
   path: contracts/participation/v2/recovery-observation.contract.yml
 scope:
   availability: opt-in monitoring in 0.11; compact resume observations use existing private client state
   owners: participation observations, client resume projection and existing worker
 invariants:
-- Service health, enrollment, last actual authenticated API access and consumer-reported work observations remain distinct
-- A missing checkpoint or interrupted worker is an explicit unmonitored gap, never evidence of continuous polling or work
+- Service health, enrollment, last actual authenticated API access and consumer-reported work observations remain
+  distinct
+- A missing checkpoint or interrupted worker is an explicit unmonitored gap, never evidence of continuous polling
+  or work
 - Persist only bounded latest observations and interruption episode identity, not a new event journal
-- Resume reads current controls and inbox through the same principal; no cursor reset, auto-ACK, grant replay or re-enrollment follows from a gap
-- Stale notices require explicit monitoring configuration, target only configured allowlisted operators privately, and confer no wake or execution authority
-- One notice per session/interruption episode; only a fresh actual access establishes recovery and permits a later episode
+- Resume reads current controls and inbox through the same principal; no cursor reset, auto-ACK, grant replay or
+  re-enrollment follows from a gap
+- Stale notices require explicit monitoring configuration, target only configured allowlisted operators privately,
+  and confer no wake or execution authority
+- One notice per session/interruption episode; only a fresh actual access establishes recovery and permits a later
+  episode
 - Disabled notices add no periodic network calls, per-agent Slack probes, daemon or model turns
 policy:
   default_enabled: false
@@ -28,3 +33,75 @@ acceptance:
 - interrupted resume, unknown checkpoints and stale observations disclose gaps without inventing activity
 - stale notice deduplication survives worker restart and fails closed on unauthorized recipients
 - new actual access resets only the relevant episode; unrelated bus chatter and health probes do not fabricate monitoring
+continuity:
+  scope: exact existing service/inbox/channel/chat/session; opt-in bounded local recovery context
+  fields:
+  - source commit branch tree and dirty-source references
+  - next client-update deadline
+  - held-owner and original receipt references
+  provenance: Label consumer-reported context separately from observed Git/API facts; never claim a complete source
+    archive or continuous monitoring.
+  invariants:
+  - No credentials, restored grants, automatic source copying, channel switching, retry, host wake or semantic ACK.
+  - Malformed, foreign or contradictory checkpoints remain preserved; context cannot bypass current controls.
+  - Local profile inventory excludes disposable projections and mismatched/nonregular files without deleting legacy
+    profiles.
+  - Compare-and-swap a checkpoint under a short local lock after API reads; never overwrite concurrent context or
+    hold a lock across network access.
+  - A backwards observation clock preserves the existing checkpoint and reports recovery required; never invent
+    a negative monitoring interval.
+  interface: agentbus resume --identity ROUTE --context-file FILE
+  bounds:
+    checkpoint_bytes: 16384
+    dirty_paths: 128
+    held_owners: 16
+    receipt_references: 32
+  evidence_role: consumer_reported_context_only; raw input digest identifies bytes, not independent source/authority
+    proof
+  availability: matching qualified 0.12 client
+  primitive_owner: src/agentbus_recovery_client.py::validate_recovery_context
+  schema:
+    version: 1
+    exact_fields:
+    - version
+    - scope
+    - reported_at
+    - source
+    - next_update_due_at
+    - held_owners
+    - receipts
+    scope: exact service_url/inbox_id/channel/chat_id/session_id
+    time: finite nonnegative Unix seconds or explicit null
+    source: null or exact commit/tree/branch/dirty_paths; commit/tree both null or lowercase 40-character hexadecimal; branch null or 1..128
+      printable characters; paths at most 128 unique 1..512 printable references
+    held_owner: exact owner/receipt_cursor/request_id; bounded 1..80 printable route-like label, nullable positive 63-bit
+      public cursor and canonical UUID
+    receipt: exact kind/cursor/request_id; kind message/publication/control/resource; positive 63-bit scoped cursor
+      or canonical UUID required
+    custody: private regular checkpoint, 16 KiB input and final encoded record; SHA256 identifies original input bytes
+      only
+handoff_context:
+  source: optional operator-configured current-channel contact and existing accepted messages
+  limits: bounded latest read-only observation; no new registry or periodic provider probe
+  disclosure: authorship, observation time, expiry, service/host epoch unknowns and receipt pointers are context,
+    never job admission
+  configuration: 'AGENTBUS_RECOVERY_CONTACTS: version1 JSON, maximum16 unique configured channels and16384 bytes;
+    all keys required'
+  decoder: src/agentbus_recovery_contact_service.py::decode_contacts
+  immutable_type: src/agentbus_recovery_contact_service.py::RecoveryContact
+  projection: authenticated own-channel info/self-presence; unavailable or retired contacts never become destinations
+  fields:
+  - channel
+  - route
+  - observed_at
+  - expires_at
+  - receipt_position
+  - service_epoch
+  - host_epoch
+  freshness: optional-valued report/expiry pair, maximum seven-day interval; unknown/future/expired/unavailable
+    distinct
+  receipt_role: existing public position reference only; no message interpretation or authority
+  epoch_role: explicit unverified_or_unknown; no owner or resource restoration
+  evidence: tests/test_recovery_client.py
+  availability: matching qualified 0.12 service; absent setting produces unknown context without extra SQL/provider
+    probes
