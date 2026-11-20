@@ -11,6 +11,10 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = yaml.safe_load((ROOT / "architecture-boundaries.yml").read_text())["architecture"]
 MODULES = {
+    "src/agentbus_identity_intent_service.py": ("service", "service"),
+    "src/agentbus_identity_management_service.py": ("service", "service"),
+    "src/agentbus_identity_ui_service.py": ("service", "service"),
+    "src/agentbus_recovery_contact_service.py": ("service", "service"),
     "src/agentbus_a2a_api_service.py": ("service", "service"),
     "src/agentbus_a2a_service.py": ("service", "service"),
     "src/agentbus_automatic_retention_service.py": ("service", "service"),
