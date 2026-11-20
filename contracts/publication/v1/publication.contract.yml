@@ -1,6 +1,6 @@
 document:
   kind: client_publication_contract
-  version: 1.0.0
+  version: 1.0.1
   status: active
   path: contracts/publication/v1/publication.contract.yml
 scope:
@@ -32,6 +32,8 @@ interfaces:
   status_cli: agentbus update-status --identity ROUTE [--message-id UUID]
   cancel_cli: agentbus update-cancel --identity ROUTE --message-id UUID
   receipts: authors inspect their own records; private operator buttons require destination-specific authorization
+  diagnostics: Persist the first bounded validation reason in the existing failure field; no client text tokens or raw responses. Historical unclassified failures stay unclassified.
+  uncertain_reasons: [provider_http_unverified, provider_json_invalid, provider_response_shape_invalid, provider_success_unverified, provider_channel_mismatch, provider_timestamp_invalid, provider_message_invalid, provider_text_mismatch, provider_outcome_unknown]
 bounds:
   destinations: 16
   installations: 16

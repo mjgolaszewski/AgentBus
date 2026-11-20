@@ -268,13 +268,12 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 199
-  line_count: 199
-  sha256: c7aca5d3a6260167493b0621ee35ec0d18cbbcd34886fe1987dda7162c62816f
-  baseline_sha256: 594e4081d10862a846a2d7d324c236c351db28a23acc97ae2dbcf684cd40f3a0
+    - 207
+  line_count: 207
+  sha256: f876586102af1ab4d38f1a46031c981593d079a2c69d47cbd997c32ad42969f1
+  baseline_sha256: c7aca5d3a6260167493b0621ee35ec0d18cbbcd34886fe1987dda7162c62816f
   disposition: updates
-  review_basis: Changed document reviewed line by line for current capability, setup, scope, recovery and public
-    privacy; original release proof remains tied to its original subject.
+  review_basis: Full current document reviewed line by line for audience preflight, bounded receipt reasons, scope and honest recovery; matching release proof remains required.
 - document: docs/codex-skill.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -367,13 +366,12 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 174
-  line_count: 174
-  sha256: 373df2ff2d66a2243c4fea7b314d0dfdccb7db58d3b27c4bcd22e185aa443935
+    - 198
+  line_count: 198
+  sha256: 2d8e87a5ada699599cc67bb67d473609cf8ce9fb9a59b9cea24b2ef5bf62ffb4
   baseline_sha256: 373df2ff2d66a2243c4fea7b314d0dfdccb7db58d3b27c4bcd22e185aa443935
-  disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  disposition: updates
+  review_basis: Full current document reviewed line by line for bounded diagnosis, audience admission, immutable custody and non-authorizing recovery; qualified release proof remains separate.
 - document: skills/agentbus/SKILL.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -389,13 +387,12 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 222
-  line_count: 222
-  sha256: e0a8b2df362ed7fc2f5c6408040369d89175443b1416443233f7b560bd17db3d
-  baseline_sha256: 964efd6e8c235942564b34d0849c0fb7441c4862519643883cd7d15d702fdf3a
+    - 226
+  line_count: 226
+  sha256: 10ad5d86752a231bc8e38898bf133284c3d9309fc2db30458ed5a51041a6734d
+  baseline_sha256: e0a8b2df362ed7fc2f5c6408040369d89175443b1416443233f7b560bd17db3d
   disposition: updates
-  review_basis: Changed document reviewed line by line for current capability, setup, scope, recovery and public
-    privacy; original release proof remains tied to its original subject.
+  review_basis: Full current document reviewed line by line for audience preflight, bounded receipt reasons, scope and honest recovery; matching release proof remains required.
 - document: skills/agentbus/agents/openai.yaml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -489,13 +486,12 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 123
-  line_count: 123
-  sha256: 3f993620f1c50e7e0b88765a83f93f12acf26641fa5e0a2a62c08c4526dfa4a3
+    - 124
+  line_count: 124
+  sha256: 3911d6e6bcdcf7748fcc59733ce7687945957a639c71fb57370bebb01a3c56ce
   baseline_sha256: 3f993620f1c50e7e0b88765a83f93f12acf26641fa5e0a2a62c08c4526dfa4a3
-  disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  disposition: updates
+  review_basis: Full current document reviewed line by line for bounded diagnosis, audience admission, immutable custody and non-authorizing recovery; qualified release proof remains separate.
 - document: contracts/participation/v1/participation.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -533,13 +529,12 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 53
-  line_count: 53
-  sha256: ae0fe3e29b9ce7798decd7d3b22ccc9ca8f15909baf7831eeb43cef363016526
+    - 55
+  line_count: 55
+  sha256: e82191507eb93b21585d57b2dd91a0c0251da45b372be10b5368bf14d739af52
   baseline_sha256: ae0fe3e29b9ce7798decd7d3b22ccc9ca8f15909baf7831eeb43cef363016526
-  disposition: retained
-  review_basis: Every current line reviewed for capability, owner, scope, recovery, experimental limits and public
-    deployment privacy; hashes identify reviewed bytes, not release proof.
+  disposition: updates
+  review_basis: Full current document reviewed line by line for bounded diagnosis, audience admission, immutable custody and non-authorizing recovery; qualified release proof remains separate.
 - document: contracts/retention/v1/automatic-retention.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:

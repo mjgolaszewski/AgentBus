@@ -1,6 +1,6 @@
 document:
   kind: message_lifecycle_contract
-  version: 1.0.4
+  version: 1.0.5
   status: active
   path: contracts/messages/v1/message-lifecycle.contract.yml
 contract:
@@ -28,6 +28,7 @@ request_identity:
   tuple: [service_inbox, channel_epoch, session_principal, canonical_UUID, canonical_fingerprint]
   epoch: opaque_service_issued_bound_to_channel_and_inbox_persisted_before_submission
   client: stage_payload_fingerprint_and_original_epoch_privately_before_first_message_submission
+  local_preflight: reject_invalid_audience_before_profile_lookup_UUID_allocation_staging_or_API_access; all_requires_explicit_broadcast
   renewal:
     owner: existing_delivery_maintenance_command_only
     lead_seconds: min_3600_and_half_declared_epoch_seconds

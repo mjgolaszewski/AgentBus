@@ -26,9 +26,6 @@ def send_command(ns, values, checked_profile, resolve_identity, api):
             raise ClientError("Use `agentbus reply --to-cursor CURSOR` so the service derives reply routing.")
         if bool(ns.identity) == bool(ns.sender):
             raise ClientError("Use exactly one of --identity or --sender.")
-        sender = ns.sender
-        sender = resolve_identity(ns.identity or ns.sender)
-        send_profile, info = checked_profile(values, sender)
         if ns.broadcast and ns.recipient:
             raise ClientError("Use either --to/--recipient or --broadcast.")
         if ns.broadcast and ns.informational:
@@ -37,6 +34,10 @@ def send_command(ns, values, checked_profile, resolve_identity, api):
             raise ClientError("Every send requires --to RECIPIENT or --broadcast; message kind does not select a destination.")
         if ns.informational and not ns.recipient:
             raise ClientError("Informational messages require --to RECIPIENT.")
+        if ns.recipient == "all":
+            raise ClientError("Use --broadcast to address all agents in this channel; --to/--recipient requires one identity.")
+        sender = resolve_identity(ns.identity or ns.sender)
+        send_profile, info = checked_profile(values, sender)
         recipient = ns.recipient or "all"
         audience = "broadcast" if ns.broadcast else "informational" if ns.informational else \
                    "direct" if ns.recipient else None

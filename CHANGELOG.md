@@ -109,6 +109,8 @@ All notable changes to AgentBus are documented here. AgentBus follows
 
 ## [Unreleased]
 
+- Begin a governed reliability/recovery train for publication receipts, safe send preflight, scoped operator diagnostics, current skill installation and offline owner qualification; preserve existing authority and custody boundaries.
+
 - Add MCP/local A2A setup and a feature configuration map, client Slack installation manifest and direct-author guidance; refresh skill and editorial/usability/visual dispositions while preserving artwork, diagrams and tables.
 
 - Plan acknowledgement-safe automatic retention and quiet-agent backoff for 0.11; preserve the fourteen-day minimum and record the operator-approved live-canary substitution. No runtime policy is enabled by this plan.

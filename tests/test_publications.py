@@ -621,3 +621,64 @@ def test_many_long_publications_have_bounded_list_and_full_exact_review(publicat
     full = publication_card(row, "C111")
     assert len(full) <= 50
     assert full[1:-1] == row["payload_blocks"]
+
+
+@pytest.mark.parametrize("case,reason", [
+    ("http", "provider_http_unverified"),
+    ("shape", "provider_response_shape_invalid"),
+    ("json", "provider_json_invalid"),
+    ("ok", "provider_success_unverified"),
+    ("channel", "provider_channel_mismatch"),
+    ("timestamp", "provider_timestamp_invalid"),
+    ("message", "provider_message_invalid"),
+    ("text", "provider_text_mismatch"),
+])
+def test_publication_uncertainty_retains_safe_first_validation_reason(publication, case, reason):
+    import asyncio
+    import json
+    import httpx
+    from src.agentbus_publication_runtime_service import PublicationWorker
+
+    _, custody, principal, _ = publication
+    draft = custody.admit(principal, str(uuid4()), "updates", "Private client text never belongs in diagnostics")
+    custody.approve(draft["publication_id"], "U123", draft["digest"])
+    posts = []
+
+    def respond(request):
+        if request.url.path.endswith("auth.test"):
+            return httpx.Response(200, json={"ok": True, "team_id": "T123", "bot_id": "B123"})
+        posts.append(request)
+        if case == "json":
+            return httpx.Response(200, text="Private invalid provider body")
+        payload = json.loads(request.content)
+        data = {"ok": True, "channel": "C999", "ts": "100.1", "message": {"text": payload["text"]}}
+        if case == "shape":
+            data = []
+        elif case == "ok":
+            data["ok"] = "true"
+        elif case == "channel":
+            data["channel"] = "COTHER"
+        elif case == "timestamp":
+            data["ts"] = "invalid"
+        elif case == "message":
+            data["message"] = []
+        elif case == "text":
+            data["message"]["text"] = "Private provider content must never enter diagnostics"
+        return httpx.Response(503 if case == "http" else 200, json=data)
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            worker = PublicationWorker(custody, client)
+            await worker.submit_once()
+            await worker.submit_once()
+            before = custody.status(principal, draft["request_id"])
+            assert await worker.submit_once() == 0
+            assert custody.status(principal, draft["request_id"]) == before
+
+    asyncio.run(run())
+    receipt = custody.status(principal, draft["request_id"])
+    assert receipt["state"] == "uncertain" and receipt["failure"] == reason
+    assert receipt["provider_ref"] is None and len(posts) == 1
+    assert "Private" not in receipt["failure"] and "xoxb" not in receipt["failure"]
+    reopened = PublicationStore(custody.owner, custody.policy)
+    assert reopened.status(principal, draft["request_id"])["failure"] == reason

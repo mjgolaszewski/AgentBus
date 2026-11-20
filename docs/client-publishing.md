@@ -187,6 +187,14 @@ blindly retried. An explicit rate rejection preserves the same payload/identity
 and honors durable per-installation/method backoff. `delivered` means the bound
 provider confirmed the post, not that a client read it or accepted its claims.
 
+The receipt's `failure` field retains a bounded classification rather than the
+provider body. HTTP status, invalid JSON/response shape, missing success,
+channel mismatch, invalid timestamp, missing message and text mismatch have
+separate reason codes. A text mismatch is evidence of a failed comparison; it
+does not establish whether Slack normalization or another cause produced it.
+Old `provider_response_unverified` receipts remain unclassified. Neither a
+reason code nor a visible post authorizes resubmission or rewriting custody.
+
 Back up the existing database consistently before enabling the feature. After
 new custody is accepted, retain the new binary/database and repair forward;
 disabling publishing preserves drafts and uncertainty. Lifecycle-enabled stores
