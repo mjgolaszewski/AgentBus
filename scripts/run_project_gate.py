@@ -195,14 +195,14 @@ def _runtime_container_probe(image: str, name: str, script: str) -> None:
         if (state.get("Running") is not False or state.get("Status") != "exited"
                 or type(state.get("ExitCode")) is not int or state["ExitCode"] != int(code)):
             raise RuntimeError("Container terminal state could not be confirmed")
-        terminal = True
         logs = run(["docker", "logs", name], capture=True)
         require_success(logs)
+        terminal = True  # Both actual exit and retained diagnostic retrieval succeeded.
         require_success(subprocess.CompletedProcess(
             ["runtime-container", name], int(code), stdout=logs.stdout, stderr=logs.stderr,
         ))
     finally:
-        # An uncertain or still-running container is retained for its owner.
+        # Uncertain state or unavailable diagnostics remain retained for the owner.
         if terminal:
             require_success(run(["docker", "rm", name], capture=True))
 

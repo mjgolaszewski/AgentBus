@@ -60,7 +60,8 @@ def test_runtime_probe_uses_retained_logs_after_exit(monkeypatch, capsys, exit_c
     assert all("--attach" not in argv and "--force" not in argv for argv in calls)
 
 
-def test_runtime_probe_retains_unconfirmed_container(monkeypatch):
+@pytest.mark.parametrize("scenario", ["running", "logs_unavailable"])
+def test_runtime_probe_retains_unconfirmed_container(monkeypatch, scenario):
     from scripts import run_project_gate as gate
 
     calls = []
@@ -69,10 +70,16 @@ def test_runtime_probe_retains_unconfirmed_container(monkeypatch):
         calls.append(argv)
         output = "1\n" if argv[1] == "wait" else ""
         if argv[1] == "inspect":
-            output = json.dumps({"Running": True, "Status": "running", "ExitCode": 0})
+            output = json.dumps({"Running": scenario == "running",
+                                 "Status": "running" if scenario == "running" else "exited",
+                                 "ExitCode": 0 if scenario == "running" else 1})
+        if argv[1] == "logs":
+            return subprocess.CompletedProcess(argv, 7, stdout="", stderr="logs unavailable")
         return subprocess.CompletedProcess(argv, 0, stdout=output, stderr="")
 
     monkeypatch.setattr(gate, "run", docker)
-    with pytest.raises(RuntimeError, match="terminal state could not be confirmed"):
+    error = RuntimeError if scenario == "running" else subprocess.CalledProcessError
+    with pytest.raises(error):
         gate._runtime_container_probe("qualified-image", "owned-container", "child-only-check")
-    assert [argv[1] for argv in calls] == ["create", "start", "wait", "inspect"]
+    expected = ["create", "start", "wait", "inspect"]
+    assert [argv[1] for argv in calls] == expected + ([] if scenario == "running" else ["logs"])
