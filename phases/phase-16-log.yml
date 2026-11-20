@@ -72,11 +72,15 @@ execution_evidence:
     executed under source-only admission. Legacy upgrade copy now states that session/channel proof remains required.
   - Fresh complete editorial reading covers all51 current editorial/contract/skill/manifest files and all3 images;
     alias/onboarding/historical applicability and repaired-publication wording corrected. Final changed spans, visuals
-    and usability reconciliation remain pending; no inherited hash-only review claim.
+    and usability reconciliation are complete in the source audit; no inherited hash-only review claim.
   - P16 source constructs private identity preview/confirmation custody, explicit revocation, canonical guarded
     history batches, scoped contact hints, cursor-first local headers and early federation-capacity views. Source-only
     AST/YAML/diff checks are not behavioral proof. Tests are authored/registered but not run; final generated manifests
     and canonical proof remain pending. No live removal, post, service change or host connection was performed.
+  - Fresh editorial audit completed on source checkpoint f200ea87:51 files,26 unchanged reviews,24 edits,1 addition,0
+    combinations/removals;3 image assets retained, all table/diagram/example spans recorded. First canonical prospective
+    failed before suites on authored context budgets. Registry re-encoded with equivalent YAML data and spec wording
+    shortened without raising limits; first traceback preserved. No behavioral or final custody proof is inferred.
 closeout_requirements:
   claims:
     workitems_closed:

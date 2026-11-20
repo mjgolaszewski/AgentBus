@@ -88,7 +88,7 @@ known_constraints:
   - Reported full-service hangs remain unclassified; the snapshot and carrier-classification repairs do not establish their cause or a remote-health guarantee
   - Every final subject requires canonical protected PR exact-main archive and isolated-installation proof; deployment and live canaries remain separate custodian actions with concrete prerequisites
   - "P15 computed closed on protected c0d81f1b and immutable 0.11.1 is published; P16 active from that exact release subject. Authored completion never substitutes for computed closure/custody; inherited records remain intact"
-  - Complete editorial review retains exact line coverage hashes and dispositions, excludes BCF machinery and changelog, and preserves historical proof; current capability text links Experimenters guidance
+  - Fresh complete editorial review covers51 files with exact line coverage/hashes/dispositions plus images/tables/examples; excludes BCF machinery/changelog, preserves README BCF placement and graphics; later changes reopen affected review
   - Historical inputs may be cold-archived only with verified content manifests restoration instructions and durable references; live environments Git objects credentials databases and service volumes remain protected
   - "Automatic retention stays opt-in with dry-run before apply, fourteen-day minimum and thirty-day default; unresolved or unacknowledged custody remains pinned. Production-client live canary was waived for authenticated two-location substitution plus isolated publication and adapter controls"
 reusable_commands: [make governance-validate, make architecture-test, make lint, make typecheck, make test, make release-check]
