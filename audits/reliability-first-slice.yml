@@ -1,7 +1,7 @@
 document:
   kind: bounded_slice_execution
   path: audits/reliability-first-slice.yml
-  status: component_controls_passed_governance_repair_pending
+  status: component_controls_and_governance_passed_final_proof_pending
 subject:
   commit: 4dd1c8ff8eaf6f97d0cfe8c45ccf44d83cbd0a38
   tree: c5f4018142a271230bc4ea60a433e0d310e682d0
@@ -62,3 +62,22 @@ evidence:
     baseline-manifest.json:
       bytes: 24701
       sha256: f301625c543150dc5f344157309de6668e044996204cf6903be02ab7cf66a8d0
+
+governance_followup:
+  subject: aef07cbafa03aa1e58e05d8f043ed621a4d3366f
+  canonical_validation: schema semantic and placeholder checks passed
+  standard_lint: passed
+  prior_failure: retained unchanged; authored plan-deliverable names aligned with workitem summaries
+canonical_projection:
+  operation: bcf reconcile --apply
+  sdk: released 2.3.4; no generated SDK code repair
+  result: converged in two rounds; subsequent governance passed
+  purpose: active phase progress must not inherit the prior phase closure proposition
+  new_case_manifest_entries_per_suite: 13
+  suites: [contract-test, python314-compatibility]
+  natural_exit: true
+  kernel_echild: true
+  handles_and_physical_fence_closed: true
+  elapsed_seconds: 45.390045007
+  peak_tree_rss_bytes: 226107392
+  phase_closure_claim: false
