@@ -42,6 +42,14 @@ construction_edges:
     producer: own local continuity record and explicitly configured contact's authenticated existing messages
     consumer: own scoped resume/info and private configured operator command
     evidence: [tests/test_recovery_client.py, tests/test_observations.py, tests/test_slack_commands.py]
+  capacity_observation:
+    invariant: Occupancy warnings grant no configuration, archival, retry, restart or execution authority.
+    owner: Existing FederationStore.capacity and private operator health/diagnostics owners
+    canonical_primitives: [agentbus.federation.signed-frame.v1, agentbus.channel-principal.v1]
+    contract: contracts/observability/v1/telemetry.contract.yml
+    producer: Existing bounded table-count projection; no additional periodic network work
+    consumer: Private operator per-table counts, finite limits and existing 80-percent warning convention
+    evidence: [tests/test_federation_service.py, tests/test_slack_commands.py, test, contract-test]
   wake_qualification:
     invariant: No external agent text is promoted to human authority; only the actual owner may admit a turn without interference.
     owner: existing wake binding/intent owners and actual external conversation owner
@@ -67,6 +75,10 @@ intake:
     kind: maintained_release_already_has_supported_quota
     disposition: Current 0.10/0.11 bounded AGENTBUS_FEDERATION_CUSTODY_ROWS supersedes the older constant patch; P16 diagnostics will disclose pressure, while safe federation archival remains unqualified.
     evidence: Existing configured-capacity/startup/lowering controls; remote patch is not adopted as delivered source. NFS inventory pending owner-fenced receipt.
+  - source: Follow-up remote custodian capacity saturation and review-export accessibility report
+    kind: supported_capacity_limit_and_planned_observability_export_guidance
+    disposition: Existing finite startup configuration remains supported; P16-P3-02 owns early per-table warnings and P16-P5-01 owns preservation/export guidance.
+    acceptance: Inspect exact deployed version, configured limit and table counts before classification; preserve history, retry UUIDs and checkpoints. Approved NFS exchange retains immutable byte mapping without widening live/private permissions.
   - source: participant invalid direct all / informational all sends
     kind: reproduced_interface_mismatch_and_recovery_confusion
     disposition: P15-P2-01 local preflight plus honest retained non-admission guidance.
@@ -103,6 +115,10 @@ racecar:
     disposition: P16-P5-01 external-custodian prerequisite/runbook; no invented NFS qualification or AgentBus remote execution.
   - suggestion: Credential-free export mapping, immutable context manifest and portable evidence summary with access requirements.
     disposition: P16-P1-01/P16-P5-01 recovery record and documentation; no credential replication or new registry.
+  - suggestion: Expose federation table occupancy and finite limits before capacity rejection.
+    disposition: P16-P3-02 reuses existing count queries and warning convention in private operator views; no new periodic probe or automatic quota change.
+  - suggestion: Approved review exports need fresh public-readable copies and original manifest/byte mapping.
+    disposition: P16-P5-01 requires credential-free approved members, fresh inodes rather than hard links, unchanged live/private permissions and explicit packaging/digest differences. File readability grants no execution or NFS durability authority.
 security_issue76:
   F3_F4_F5: Accepted trusted-workspace boundary; hostile same-user isolation and repository ownership require external OS/identity owners. Not represented as repaired application bugs.
   F8: Independent evaluator/trust authority remains BCF/assurance-owner scope; no application-minted certification.

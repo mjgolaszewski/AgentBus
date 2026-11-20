@@ -63,6 +63,8 @@ workitems:
     checks
   - Read-only grouped worker/queue/receipt reason views omit tokens message bodies and raw provider responses; buttons
     retain exact destination authorization
+  - Existing private health and diagnostics show each federation custody table count and finite configured limit,
+    with the existing 80-percent warning convention before admission closes; no new worker or provider probe
   - Fully hung service is disclosed as requiring custodian out-of-band capture; no repair/retry/reset actions implied
   acceptance_evidence:
   - test
@@ -88,6 +90,10 @@ workitems:
   acceptance:
   - Reviewed launcher/NFS/cache/portable evidence guidance refers to canonical custodian/resource owners instead
     of implementing new host systems
+  - Finite federation capacity guidance preserves every retained history row, original retry UUID and checkpoint;
+    configured capacity review is separate from unqualified federation archival
+  - Approved credential-free review exports use fresh inodes rather than hard links, with original manifest and
+    byte mapping; live/private permissions remain unchanged and changed packaging never inherits an old digest
   - Canonical final-subject proof install/skill/compatibility checks and measured default-off overhead complete
   - External prerequisites stay blocked with resume conditions; no unsupported production wake or stronger hostile-agent
     guarantee
