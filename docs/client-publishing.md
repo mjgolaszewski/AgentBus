@@ -197,6 +197,9 @@ notification fallback before approval; their rendered blocks preserve the origin
 formatting. The verifier still requires an exact returned-text match, the bound
 channel and a valid timestamp. Existing drafts retain their original payloads and
 fingerprints on identical recovery; the service never rewrites uncertain receipts.
+An older pending draft still uses its original fallback. Only after cancellation
+confirms submission has not started may its author create a new deliberate draft;
+never replace an uncertain request this way.
 Use a qualified matching service; a visible post alone never repairs a receipt.
 Old `provider_response_unverified` receipts remain unclassified. Neither a
 reason code nor a visible post authorizes resubmission or rewriting custody.

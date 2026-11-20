@@ -102,6 +102,7 @@ closeout_requirements:
     - governance-exposure-scan
   finding_registry: governance/findings.yml
 known_constraints:
+- Legacy pending drafts retain their original fallback and may still produce uncertain receipts; only confirmed pre-submission cancellation permits a new deliberate draft. No uncertain request is replayed or rewritten.
 - Custodian schedules shared resources; Recovery project priority is respected; preserve services/storage/credentials/wake preferences;
   consuming work requires original fence.
 - Certified BCF2.3.4 remains the baseline; generated BCF files installer-owned; no SDK upgrade presumed.
