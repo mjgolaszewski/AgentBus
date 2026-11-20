@@ -45,7 +45,8 @@ construction_edges:
   capacity_observation:
     invariant: Occupancy warnings grant no configuration, archival, retry, restart or execution authority.
     owner: Existing FederationStore.capacity and private operator health/diagnostics owners
-    canonical_primitives: [agentbus.federation.signed-frame.v1, agentbus.channel-principal.v1]
+    canonical_primitives: [agentbus.federation.signed-frame.v1]
+    representation: Derived read-only custody counts; no new authoritative primitive or operator grant
     contract: contracts/observability/v1/telemetry.contract.yml
     producer: Existing bounded table-count projection; no additional periodic network work
     consumer: Private operator per-table counts, finite limits and existing 80-percent warning convention
