@@ -220,7 +220,8 @@ def test_recipient_retirement_preserves_exact_accepted_replay_but_blocks_new_adm
     body=SendMessage(sender=sender.route,recipient='local:demo:second',text='Original accepted work',audience='direct')
     body._sender_assurance='session'
     key=str(uuid4())
-    check=lambda: require_target(store,'C111',body)
+    def check():
+        return require_target(store,'C111',body)
     accepted=store.local_delivery.accept('C111',key,fingerprint(body.model_dump()),body,'session:'+sender.session_id,
                                          session_token=ids['first'][2],target_check=check)
     preview=owner.preview('UOP','C111',ids['second'][0],'retire')

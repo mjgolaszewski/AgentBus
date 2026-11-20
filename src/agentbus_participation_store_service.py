@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 from src.agentbus_message_assurance_service import route_parts
 from src.agentbus_participation_service import (
     DEFAULT_POLL_POLICY,
-    MAX_ALIASES_PER_CHAT,
+    MAX_ALIASES_PER_CHAT as MAX_ALIASES_PER_CHAT,
     MAX_ENROLLED_CHATS,
     EffectivePolicy,
     resolve_policy,
