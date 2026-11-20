@@ -1,7 +1,7 @@
 document:
   kind: editorial_audit
   path: audits/editorial-review.yml
-  status: final_protocol_addendum_review_pending
+  status: editorial_source_review_complete
 request:
   scope: Current public product guidance, application contracts, packaged skill and historical authored prose; explicit
     per-document line review and disposition.
@@ -35,11 +35,11 @@ experimental_claims:
     or execution guarantee.
 summary:
   documents: 52
-  state: final_protocol_addendum_review_pending
+  state: fresh_full_scope_read_and_protocol_addendum_reconciled
   dispositions:
-    reviewed: 27
-    added: 1
-    edited: 23
+    reviewed: 26
+    added: 2
+    edited: 24
     combined: 0
     removed: 0
   remaining: Behavioral, canonical protected PR/exact-main, archive/install and skill qualification remain separately
@@ -682,15 +682,16 @@ documents:
   review_basis: Full file read to identify boundaries; application guidance reviewed, BCF governance machinery excluded
     from editorial disposition.
 - document: docs/README.md
-  review_status: final_changed_spans_reread_pending
+  review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 99
-  line_count: 99
-  sha256: 87c9a86ddfcb4649124409b99959bfb67781e9126eaa9837e827bc2c0d8cfab3
+    - 103
+  line_count: 103
+  sha256: 8e4c8435c93874114e73a37f736634ea31eed7f4cbc051973b7a6291c7c7efa1
   disposition: edited
-  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
-    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+  review_basis: Fresh full in-scope file reading in this sweep, followed by final changed-span reread; new wire
+    guide read in full as draft and committed source against exact decoders. Tables, examples and receive-path diagram
+    included; no live/provider qualification inferred.
 - document: docs/adoption-measurements.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -822,25 +823,27 @@ documents:
   review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
     tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
 - document: docs/contracts.md
-  review_status: final_changed_spans_reread_pending
+  review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 170
-  line_count: 170
-  sha256: a3b719f6f2d494ea6296252903d0839bd8b7bedb9b2e403e764b5f9810d5ca42
+    - 173
+  line_count: 173
+  sha256: 845f1300e3708b905f0be00f62c4c968d8aaae635f5e6f277b669055414cfbc5
   disposition: edited
-  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
-    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+  review_basis: Fresh full in-scope file reading in this sweep, followed by final changed-span reread; new wire
+    guide read in full as draft and committed source against exact decoders. Tables, examples and receive-path diagram
+    included; no live/provider qualification inferred.
 - document: docs/federation.md
-  review_status: final_changed_spans_reread_pending
+  review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 420
-  line_count: 420
-  sha256: 7b95c78a01f7aee059c8f8bd0612e79caf8b520f241a4e55bda06991bcf7de3d
-  disposition: reviewed
-  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
-    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+    - 423
+  line_count: 423
+  sha256: 98df5d3d6066cd6d3407567f9c749ca7a0ce0895581b21773c62737553dda2d2
+  disposition: edited
+  review_basis: Fresh full in-scope file reading in this sweep, followed by final changed-span reread; new wire
+    guide read in full as draft and committed source against exact decoders. Tables, examples and receive-path diagram
+    included; no live/provider qualification inferred.
 - document: docs/governance-model.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -892,15 +895,16 @@ documents:
   review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
     tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
 - document: docs/recovery.md
-  review_status: final_changed_spans_reread_pending
+  review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 286
-  line_count: 286
-  sha256: 477fc02589a1e06fe4fd89ff1e4b07da5d40aa2d016c0b9689601d786a0d00e5
+    - 297
+  line_count: 297
+  sha256: 333e4886164f2223d10fea23ed5a7d16e27baeb9c58461c53b4f8c95bddd6638
   disposition: edited
-  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
-    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+  review_basis: Fresh full in-scope file reading in this sweep, followed by final changed-span reread; new wire
+    guide read in full as draft and committed source against exact decoders. Tables, examples and receive-path diagram
+    included; no live/provider qualification inferred.
 - document: skills/agentbus/SKILL.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -1102,15 +1106,16 @@ documents:
   review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
     tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
 - document: docs/wire-protocols.md
-  review_status: fresh_full_draft_reviewed_final_source_reread_pending
+  review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
     - 213
   line_count: 213
   sha256: 096a4229f0ae845e68d4a3b450e3766def2af01bb4e004be5009faa85f01131c
   disposition: added
-  review_basis: Fresh full draft read against exact normalizer/frame/bridge/ancestry/projection/receipt code; final
-    installed-source reread pending.
+  review_basis: Fresh full in-scope file reading in this sweep, followed by final changed-span reread; new wire
+    guide read in full as draft and committed source against exact decoders. Tables, examples and receive-path diagram
+    included; no live/provider qualification inferred.
 current_review:
   scope: Complete fresh line-by-line sweep explicitly reaffirmed for P16; baseline entries are not current review
     evidence.

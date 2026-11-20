@@ -157,5 +157,21 @@ coverage:
     bounded consumer/epoch observations never authority.
   recovery: Preserve original UUID/sender/epoch, tombstones and uncertain custody; private receipt navigation and
     finite capacity warnings. No host stop or external erasure.
+- capability: low_level_wire_formats_and_recovery_diagnosis
+  guides:
+  - docs/wire-protocols.md
+  - docs/federation.md
+  - docs/recovery.md
+  prerequisites: Approved local session or verified operator observations; a separately authorized peer arrangement
+    for actual signed traffic.
+  configuration: Existing peer publisher/key-generation/channel/capability bindings; no new credential or trust
+    operation.
+  first_use: Identify ordinary envelope versus signed outer frame and inspect retained scoped receipts; examples
+    are invented and signature placeholders cannot be submitted.
+  verification: Separate canonical signature/origin authentication, destination custody, inbox projection and explicit
+    consumer ACK; current rejection/no-quarantine behavior disclosed.
+  recovery: Preserve raw carrier, original UUID, scoped positions and checkpoints; approved signed roundtrip is
+    separate live traffic, not a read-only probe.
+  limit: No automatic quarantine, per-frame Slack alert, timer, new wire version or owner-wake authority.
 result: Fresh corpus and configuration/first-use/recovery walkthrough completed against current source; qualification
   is separate and pending.

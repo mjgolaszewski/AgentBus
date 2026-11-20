@@ -1,11 +1,151 @@
 document:
   kind: production_code_review
   path: audits/p16-code-review.yml
-  status: in_progress
+  status: source_review_complete_provider_qualification_pending
 baseline:
   release: 0.11.1
   commit: c0d81f1bdf46904250244cda7f71a70e3dd6d9f7
   prior_inventory: audits/reliability-code-review.yml
-current_source_review: Unqualified source in progress; new/changed modules need exact-byte review and final actual
-  CI evidence. No absence-of-bugs or current all-module review claim.
-reviewed: []
+current_source_review: Consolidated model-maintainer review of every changed production diff with affected call
+  context; new intent/manager/UI/contact modules and recovery owner read in full. Behavioral and negative controls
+  use the successful standard local BCF run; this is not independent human audit, provider certification or an absence-of-bugs
+  guarantee.
+reviewed:
+- path: src/agentbus_channel_api_service.py
+  sha256: c0941fa057f850e50e6a7b95ca208039e180cff67b39ca49bc3cea45ea8c98b2
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_channel_store_service.py
+  sha256: 0483f3bfa2e741ca3998979b5560765ba4aaec02cce05e46adf5842feb0f4534
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_client.py
+  sha256: 2b9f2fa6f93168091b9146291efd3863644e7c3d01fc8b6c02ed28065e6eaf28
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_delivery_api_service.py
+  sha256: 90ad6b9e80718df55de1d9542107f1e1e016f424544376eeee8af43db8b5c957
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_delivery_client.py
+  sha256: 3ae81943b7ab795e3f9745b9d6dd0a8ff1a9787a98d523a2baaa5c7b22d09aa0
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_identity_intent_service.py
+  sha256: bbb218a75e6be9d97af482fd4016a790152531224a7222131501a6a4a144f8b8
+  basis: full current module and callers
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_identity_management_service.py
+  sha256: 409b750f50418857ac8faf7a18ae572853f101b08d0b620afcdcc48eb315dbd4
+  basis: full current module and callers
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_identity_ui_service.py
+  sha256: f63d565b936885eca7a921369ab35ef355403bfbf0226f5652f9166ea5ef3b73
+  basis: full current module and callers
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_lifecycle_client.py
+  sha256: 3ceba86ae29cc0d6acba643627828a55780e89a8a3dbd0e2d0351d544955e39e
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_local_delivery_service.py
+  sha256: 4f19f668d22d91387957c636ed512cf57f8bfc1d84136bbe6f04456330d0e32a
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_operator_presentation_service.py
+  sha256: fae12dfc7fd009fd0c286e3e72100c7b8cd59f3c4486458e7fb21dc25479a64c
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_operator_query_service.py
+  sha256: f4083446d94578f643dd608f6d7cfbe7d83c830ed363908494a96dda4d9b0f49
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_parser_client.py
+  sha256: fc95c06e1c884ec9add7ef668e71406af165aa4681d80a1e0e5a48587e27aae0
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_participation_api_service.py
+  sha256: 9c824314069f2309b91f0d355a4121f816a33808ef0fc39117216a9c74878ff1
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_participation_store_service.py
+  sha256: d7101302112970ae3c076bec9b296c0c982aec05689fe95b5a49ec946a64d7d0
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_presentation_service.py
+  sha256: 679d24499cc8744f58cdcfcdad746dcde6fa59b78ef081d833134584d399ea82
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_profile_client.py
+  sha256: 9e4682defbeb35a90ab66305bc66df39b625fec92b3760a491fcfc34a3c0c525
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_recovery_client.py
+  sha256: e8eed261bc5d1a6a0f049413204ddec2ab5fe5005be1ed9fe4189f128fd6ac0b
+  basis: full current module and callers
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_recovery_contact_service.py
+  sha256: 226f6e65e638da1bdd2c7a5b742bba8893ece7d0e9e592f345a00709ec216716
+  basis: full current module and callers
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_retention_service.py
+  sha256: 85bef67218495226d539824041074b9022f6043ee8e8a35193dcc62775170a69
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_runtime_inventory_service.py
+  sha256: 307741bb241ab96021ee3f13371eee8f4d1f0ead2df2be8f8bd76096603c0dfb
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_scope_client.py
+  sha256: 10ac00424947a91da7fbd7879450dd6a0a489e6c042fc481f151b179f1c08d07
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_service.py
+  sha256: 17be23a15da742f2c46ddbc72bae7121bbbea8fd91a169204b27e9924d2fac91
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_settings_service.py
+  sha256: 47442387cf5b1d00d16b33249fca93c09d25e0a2f1b3e41bfe5cfe0168b0d70d
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_slack_command_service.py
+  sha256: 4189205e2c67ef84fcc9aebb03bfd5953a673ca4942bc70bde18438ff9ac6269
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_slack_socket_service.py
+  sha256: 340761d167de6f1bc9b9c1381deea04f75e9a466d952bfc7b71da896908d357d
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_slack_ui_commands_service.py
+  sha256: 0e0d7e19ee374662b614f6a488044e9798f482218a13dfcc409652d407ed9b40
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_slack_ui_service.py
+  sha256: 2ad00e0093224f9f3f450e7562a4500131090e8794066688518803dcbacb03c2
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+- path: src/agentbus_status_api_service.py
+  sha256: 32ff46241772a0e5c43716652763c02c3301cfd96dd72443c7a53f6c165643e0
+  basis: changed spans and affected call context
+  disposition: retain reviewed implementation; qualification tied to exact subject
+local_evidence:
+  subject: 178f1ce73acdef9006cc7669d6f9165ea8fcf52d
+  tree: 56235533c0ac01126c8d888e348247d44e075fdb
+  bcf: released 2.3.4
+  result: 19 standard local producers plus final PR-progress truth passed; provider reexecution required
+  limits: No proof identities copied to the documentation follow-up subject; BCF derives applicability.
+checks:
+- Actor/channel/inbox authorization before target lookup; immutable exact preview and current-policy recheck
+- Atomic rename/revocation/history actions, actual ACK/reference pins, restart receipts and duplicate confirmation
+- Retained exact request replay precedes new-target admission; no fresh UUID or sender/epoch rewrite
+- Nonblocking/no-follow bounded local reads, malformed scope rejection and short checkpoint CAS outside API work
+- Read-only private global operator diagnostics versus channel-scoped identity controls; no provider probe
+- Public-cursor-only header, retained locator/wire/echo behavior, complete runtime and three-gate test registrations
+residuals:
+- Trusted non-hostile workspace only; same-user credential/filesystem compromise and independent message-authority
+  inference remain outside guarantee
+- History cleanup is bounded and may remain pinned by unknown-reference populations; no external erasure or automatic
+  committed-operation receipt pruning
+- Actual production idle CPU/RSS comparison is not established by pipeline-process peak RSS; runtime custodian observation
+  remains separate
+- Live owner admission, AHP/native queue, hourly host scheduling and stronger independent audit guarantees remain
+  unqualified/external-owned

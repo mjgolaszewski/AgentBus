@@ -269,3 +269,16 @@ current_observations:
     passed on985e958; canonical reconciliation projected active PR progress and new test manifests. Original failures
     remain retained. Superseded by protected PR122/exact-main44763117713 closure and immutable 0.11.1 on c0d81f1b;
     original artifacts, archive/install and negative controls verified. P16 remains independently qualified.
+wire_observation_followup:
+  classification: Ordinary foreign-bot protocol2 text remaining raw/unrouted is expected; no signed delivery loss
+    established.
+  delivered_guidance: docs/wire-protocols.md explains exact versions, publisher/signature checks, rejection behavior,
+    raw/projection separation and authorized signed roundtrip diagnosis.
+  existing_controls:
+  - tests.test_service::test_only_authenticated_agentbus_bot_can_supply_routing_metadata
+  - tests.test_federation_bridge::test_forged_publisher_signature_destination_and_conflicting_replay_fail_closed
+  suggested_followup: Evaluate bounded local fixed-reason diagnostics for rejected signed carriers through existing
+    ingress/worker observations; no per-frame Slack alerts, quarantine database, automatic probe or trust change
+    claimed.
+  owner: existing federation ingress/custody and private operator diagnostics; future feature needs its own acceptance,
+    not a fabricated current defect.
