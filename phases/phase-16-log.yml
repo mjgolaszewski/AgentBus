@@ -49,6 +49,10 @@ execution_evidence:
   - Planning refinement records a forwarded capacity-saturation report and review-export access stalls. Existing
     finite capacity is supported; early private per-table warnings and preservation/export guidance have explicit
     owners. No implementation, service change, archival qualification or phase activation is inferred.
+  - Bounded read-only NFS intake verified referenced original/review manifest digests and consistency of all
+    70 declared mappings. Only the two reported access failures received actual byte/inode checks; both were
+    readable and distinct from originals. Capacity snapshot records owner observations and separate runtime/release
+    identities. No foreign package was executed, live/private permissions changed or NFS durability qualified.
 closeout_requirements:
   claims:
     workitems_closed:
