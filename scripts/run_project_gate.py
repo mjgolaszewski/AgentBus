@@ -197,15 +197,16 @@ def runtime_smoke() -> None:
         require_success(run(["docker", "build", "--iidfile", str(iid), "-t", image_tag, str(context)]))
         image = iid.read_text(encoding="utf-8").strip()
         try:
+            # Build oracle markers in the child: echoed argv alone must not prove rejection.
             require_success(run([
                 "docker", "run", "--rm", "--entrypoint", "/app/.venv/bin/python", image,
                 "-c", (
                     "import os,sys,tomllib,pathlib,agentbus_service; "
-                    "sys.exit('runtime-user-mismatch') if os.getuid()!=10001 else None; "
+                    "sys.exit('runtime-'+'user-mismatch') if os.getuid()!=10001 else None; "
                     "assert agentbus_service.create_app; "
                     "assert all(not os.access(path,os.W_OK) for path in "
                     "('/app/agentbus_service.py','/app/src','/app/src/agentbus_service.py','/app/pyproject.toml')), "
-                    "'runtime-code-writable'; "
+                    "'runtime-'+'code-writable'; "
                     "assert tomllib.loads(pathlib.Path('/app/pyproject.toml').read_text())['project']['version']"
                 ),
             ]))
