@@ -84,7 +84,7 @@ known_constraints:
   - Existing unresolved or legacy-unknown custody remains pinned; offline migration, backup and repair-forward rules govern incompatible cutovers; public Slack channels provide no confidentiality or indefinite availability guarantee
   - Reported full-service hangs remain unclassified; the snapshot and carrier-classification repairs do not establish their cause or a remote-health guarantee
   - Every final subject requires canonical protected PR exact-main archive and isolated-installation proof; deployment and live canaries remain separate custodian actions with concrete prerequisites
-  - "P14/HF01 computed closed on a72c7c03; P15 active and P16 planned. Every repair/release needs its own canonical proof; inherited records are not retired by hand"
+  - "P14/HF01 computed closed on a72c7c03; P15 authored completed with provider proof pending; P16 planned. Authored completion never substitutes for computed closure/custody; inherited records remain intact"
   - Complete editorial review retains exact line coverage hashes and dispositions, excludes BCF machinery and changelog, and preserves historical proof; current capability text links Experimenters guidance
   - Historical inputs may be cold-archived only with verified content manifests restoration instructions and durable references; live environments Git objects credentials databases and service volumes remain protected
   - "Automatic retention stays opt-in with dry-run before apply, fourteen-day minimum and thirty-day default; unresolved or unacknowledged custody remains pinned. Production-client live canary was waived for authenticated two-location substitution plus isolated publication and adapter controls"

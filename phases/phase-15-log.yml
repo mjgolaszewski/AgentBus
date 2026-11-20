@@ -4,17 +4,18 @@ document:
   id: agentbus-phase-15-log
   version: 1.0.0
   generated_at_utc: '2026-11-19T00:00:00Z'
-  status: active
+  status: completed
   path: phases/phase-15-log.yml
 phase:
   id: P15
   build_block: reliable_publication_and_recovery
 summary:
-  outcome: planned
+  outcome: completed
   highlights:
-  - P15 is opened for Repair reported publication and message recovery defects with classified diagnostics and exact
-    release proof
-  - phase artifacts were scaffolded from the governance template
+  - Publication/admission repairs, classified diagnostics, all 86 production-module review dispositions and qualified
+    skill continuity are implemented; all 19 canonical local producers passed on 44ccda5.
+  - This authored closeout candidate means implementation complete with provider checks pending. Computed P15
+    closure, protected PR/exact-main and release custody remain unclaimed until canonical authentication.
 workitems:
 - id: P15-P0-01
   status: DONE
@@ -32,7 +33,7 @@ workitems:
   status: DONE
   summary: Refresh installed skill safely and reconcile audited guidance
 - id: P15-P5-01
-  status: IN_PROGRESS
+  status: DONE
   summary: Qualify and publish bounded patch repair
 execution_evidence:
   planned_commands:
@@ -49,6 +50,7 @@ execution_evidence:
   - bcf ci prospective-train --repo-root . --remote origin --python verified_project_python --format json (first SDK diagnostic retained; stale closure scope refused unfinished P15)
   - bcf reconcile --repo-root . --python verified_project_python --apply (canonical projection converged in two rounds; governance passed)
   notes:
+  - "Closeout preparation uses the existing completed taxonomy: implementation done, checks pending or partial. Authored DONE/completed is a candidate claim, not computed verified/closed or published release. The existing production-client canary waiver remains in force; an additional live receipt post is optional and still separately unauthorized. Earlier notes requiring that extra post are superseded. GitHub CLI authentication was supplied by the operator; canonical provider submission remains the required next action."
   - "Final canonical local prospective on44ccda5/tree8506e7a6 passed all19 required producers, including both actual root/writable-code rejection causes, Python3.14, security, architecture and release smoke. Local bundle716116a878bb40be61b54dd4298fcc85c55ce4f4e98f515db76cd48809293940 is non-authoritative/not persisted; ephemeral state retired. Native0/ECHILD/handles/original fence observed released in767.615s at396779520-byte peak RSS. Provider authentication, protected PR/exact-main, final custody and separately authorized live receipt remain pending; no post, deployment or release claim."
   - "Onf94023a, standard lint, all9 focused runtime namespace/recovery/failure controls, canonical reconcile/apply and governance passed. SDK-owned normal and Python3.14 manifests include all four new recovery cases. No Docker/provider/service/post calls in this preparation; native0/ECHILD/handles/fence released in45.997s at218157056-byte peak RSS. Final runtime mutations and consolidated canonical proof remain required."
   - "On352e0f9, explicit capture alone did not recover negative-control diagnostics; second canonical failure bd32568e retained, natural1/ECHILD/handles/fence closed in99.804s. A separately scheduled6.479s Docker diagnostic confirmed root exit1 with empty attached output but exact runtime-user-mismatch in retained json-file logs; print-control streams matched, attach flags true and TTY false. Both containers exited and were removed. CI probe now waits for matching inspected terminal state, reads retained logs, then removes only known exited fixtures; unknown/running custody is retained. No host-wide Docker defect, service change or qualified release is inferred. New recovery controls and canonical proof pending."
@@ -114,4 +116,4 @@ known_constraints:
 - Trusted non-hostile workspace remains the boundary. Live owner admission and stronger external security/audit
   guarantees require independent prerequisites.
 next_work:
-- implement scoped workitems and record execution evidence in this log
+- Submit the clean closeout candidate through canonical BCF; verify actual protected PR/exact-main closure and release custody, then coordinate the custodian upgrade. Activate P16 only after computed P15 closure.

@@ -4,7 +4,7 @@ document:
   id: agentbus-phase-15-workitems
   version: 1.0.0
   generated_at_utc: '2026-11-19T00:00:00Z'
-  status: active
+  status: completed
   path: plans/phase-15-workitems.yml
   phase_id: P15
 workitems:
@@ -68,7 +68,7 @@ workitems:
   - contract-test
 - id: P15-P5-01
   priority: P5
-  status: IN_PROGRESS
+  status: DONE
   summary: Qualify and publish bounded patch repair
   acceptance:
   - Canonical graph protected PR/exact-main archive and isolated installation proofs authenticate final subject
