@@ -185,7 +185,16 @@ def runtime_smoke() -> None:
         raise SystemExit(str(exc)) from None
     with tempfile.TemporaryDirectory(prefix="agentbus-runtime-") as directory:
         iid = Path(directory) / "image-id"
-        require_success(run(["docker", "build", "--iidfile", str(iid), "-t", image_tag, "."]))
+        # Exercise a restrictive source checkout without modifying the subject.
+        # The image's non-root runtime must not depend on public host file modes.
+        context = Path(directory) / "context"
+        context.mkdir(mode=0o700)
+        for name in ("Dockerfile", "pyproject.toml", "uv.lock", "agentbus_service.py"):
+            shutil.copyfile(ROOT / name, context / name)
+        shutil.copytree(ROOT / "src", context / "src", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+        for path in context.rglob("*"):
+            path.chmod(0o700 if path.is_dir() else 0o600)
+        require_success(run(["docker", "build", "--iidfile", str(iid), "-t", image_tag, str(context)]))
         image = iid.read_text(encoding="utf-8").strip()
         try:
             require_success(run([

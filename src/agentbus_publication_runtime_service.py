@@ -20,6 +20,34 @@ def retry_seconds(value):
     return 86400  # An unparseable hint cannot authorize an early retry; drafts expire.
 
 
+def publication_text_matches(message, payload):
+    """Verify content, allowing only Slack's observed fallback newline folding.
+
+    Block Kit carries the rendered content; top-level text is its notification
+    fallback. A folded fallback needs the exact immutable blocks and request ID,
+    rather than broad whitespace normalization that could hide changed content.
+    """
+    exact = message.get("text") == payload["text"]
+    if "client_msg_id" in message and message["client_msg_id"] != payload["client_msg_id"]:
+        return False
+    if exact and "blocks" not in message:
+        return True
+    if not exact and (message.get("text") != payload["text"].replace("\n", " ")
+                      or message.get("client_msg_id") != payload["client_msg_id"]):
+        return False
+    blocks = message.get("blocks")
+    if not isinstance(blocks, list) or len(blocks) != len(payload["blocks"]):
+        return False
+    for actual, expected in zip(blocks, payload["blocks"]):
+        if not isinstance(actual, dict):
+            return False
+        # Slack assigns block IDs; no other extra fields may alter rendering.
+        content = {key: value for key, value in actual.items() if key != "block_id"}
+        if content != expected:
+            return False
+    return True
+
+
 class PublicationWorker:
     def __init__(self, custody, client):
         self.custody, self.client = custody, client
@@ -71,7 +99,6 @@ class PublicationWorker:
         if row is None:
             return 0
         payload = json.loads(row["payload"])
-        text = payload["text"]
         try:
             response = await bounded_response(self.client, token, "chat.postMessage", payload, max_bytes=262144,
                                               timeout_seconds=max(0.001, min(15, deadline - time.monotonic())))
@@ -103,7 +130,7 @@ class PublicationWorker:
                 reason = "provider_timestamp_invalid"
             elif not isinstance(data.get("message"), dict):
                 reason = "provider_message_invalid"
-            elif data["message"].get("text") != text:
+            elif not publication_text_matches(data["message"], payload):
                 reason = "provider_text_mismatch"
             if reason is not None:
                 self.custody.settle(request_id, "uncertain", failure=reason,

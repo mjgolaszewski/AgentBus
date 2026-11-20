@@ -8,8 +8,8 @@ RUN python -c 'from pathlib import Path; import hashlib, ssl; name="mozilla/emSi
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
-COPY agentbus_service.py ./
-COPY src/ ./src/
+COPY --chown=10001:10001 agentbus_service.py ./
+COPY --chown=10001:10001 src/ ./src/
 RUN useradd --uid 10001 --create-home agentbus \
     && mkdir /data && chown agentbus:agentbus /data
 USER agentbus

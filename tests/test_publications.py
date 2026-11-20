@@ -684,3 +684,71 @@ def test_publication_uncertainty_retains_safe_first_validation_reason(publicatio
     assert "Private" not in receipt["failure"] and "xoxb" not in receipt["failure"]
     reopened = PublicationStore(custody.owner, custody.policy)
     assert reopened.status(principal, draft["request_id"])["failure"] == reason
+
+
+@pytest.mark.parametrize("change,expected_state", [
+    ("provider_block_id", "delivered"),
+    ("missing_blocks", "uncertain"),
+    ("missing_request_id", "uncertain"),
+    ("wrong_request_id", "uncertain"),
+    ("changed_block_text", "uncertain"),
+    ("exact_fallback_changed_block", "uncertain"),
+    ("changed_verbatim", "uncertain"),
+    ("extra_block", "uncertain"),
+    ("extra_rendering_field", "uncertain"),
+    ("collapsed_body_spaces", "uncertain"),
+])
+def test_publication_folded_fallback_requires_exact_blocks_and_request(publication, change, expected_state):
+    import asyncio
+    import json
+
+    import httpx
+
+    from src.agentbus_publication_runtime_service import PublicationWorker
+
+    _, custody, principal, _ = publication
+    draft = custody.admit(principal, str(uuid4()), "updates", "Keep  two spaces\nand a line break")
+    custody.approve(draft["publication_id"], "U123", draft["digest"])
+    posts = []
+
+    def respond(request):
+        if request.url.path.endswith("auth.test"):
+            return httpx.Response(200, json={"ok": True, "team_id": "T123", "bot_id": "B123"})
+        body = json.loads(request.content)
+        posts.append(body)
+        message = {"text": body["text"].replace("\n", " "),
+                   "blocks": body["blocks"], "client_msg_id": body["client_msg_id"]}
+        message["blocks"][0]["block_id"] = "provider-assigned"
+        if change == "missing_blocks":
+            del message["blocks"]
+        elif change == "missing_request_id":
+            del message["client_msg_id"]
+        elif change == "wrong_request_id":
+            message["client_msg_id"] = str(uuid4())
+        elif change == "changed_block_text":
+            message["blocks"][0]["text"]["text"] += " changed"
+        elif change == "exact_fallback_changed_block":
+            message["text"] = body["text"]
+            message["blocks"][0]["text"]["text"] += " changed"
+        elif change == "changed_verbatim":
+            message["blocks"][0]["text"]["verbatim"] = False
+        elif change == "extra_block":
+            message["blocks"].append({"type": "divider"})
+        elif change == "extra_rendering_field":
+            message["blocks"][0]["fields"] = [{"type": "plain_text", "text": "changed"}]
+        elif change == "collapsed_body_spaces":
+            message["text"] = " ".join(body["text"].split())
+        return httpx.Response(200, json={"ok": True, "channel": "C999", "ts": "100.1", "message": message})
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            worker = PublicationWorker(custody, client)
+            await worker.submit_once()
+            await worker.submit_once()
+            assert await worker.submit_once() == 0
+
+    asyncio.run(run())
+    receipt = custody.status(principal, draft["request_id"])
+    assert receipt["state"] == expected_state
+    assert len(posts) == 1
+    assert receipt["failure"] == ("provider_text_mismatch" if expected_state == "uncertain" else None)

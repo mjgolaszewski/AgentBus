@@ -268,9 +268,9 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 207
-  line_count: 207
-  sha256: f876586102af1ab4d38f1a46031c981593d079a2c69d47cbd997c32ad42969f1
+    - 212
+  line_count: 212
+  sha256: d6c8182167bb5e45c742c16f89e4c315ff20feeaba70c86e3fe55b2bdb8c4fc6
   baseline_sha256: c7aca5d3a6260167493b0621ee35ec0d18cbbcd34886fe1987dda7162c62816f
   disposition: updates
   review_basis: Full current document reviewed line by line for audience preflight, bounded receipt reasons, scope and honest recovery; matching release proof remains required.
@@ -529,9 +529,9 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 55
-  line_count: 55
-  sha256: e82191507eb93b21585d57b2dd91a0c0251da45b372be10b5368bf14d739af52
+    - 56
+  line_count: 56
+  sha256: b96bd68d97849f561a9bb4c5923c97d609a18d8e48218b140cd7276a59841b27
   baseline_sha256: ae0fe3e29b9ce7798decd7d3b22ccc9ca8f15909baf7831eeb43cef363016526
   disposition: updates
   review_basis: Full current document reviewed line by line for bounded diagnosis, audience admission, immutable custody and non-authorizing recovery; qualified release proof remains separate.

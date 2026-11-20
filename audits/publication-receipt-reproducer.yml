@@ -1,0 +1,30 @@
+document:
+  kind: bounded_recovery_reproducer
+  path: audits/publication-receipt-reproducer.yml
+  status: root_observed_candidate_not_qualified
+subject: 7e12d33182861728a0bcef7261aeba7be2c3cc0e
+authorization: Operator expressly authorized exactly one labelled diagnostic post; existing destination policy,
+  isolated custody
+observations:
+- Exactly one post; verified workspace/bot, HTTP200/ok, exact channel and valid timestamp
+- Fallback text differed only by newline folded into space; retained as uncertain/provider_text_mismatch
+- No raw response retained; only safe shape/equality/length/hash observations
+- Original uncertain records untouched; no post retry
+- First local precondition stopped before provider calls; check-in restored own compliant participation
+- Candidate requires original publication ID and exact retained blocks for newline-folded fallback; actual diagnostic
+  did not retain block echoes, so final live receipt verification remains unqualified
+runtime_reproducer:
+  first_failure: Non-root import PermissionError in native runtime-smoke under restrictive source checkout modes
+  candidate: Copy application source owned by runtime UID10001; standard runtime producer always builds private-mode
+    source copy
+  root_user_rejection: unchanged and still required
+evidence:
+  provider-observations.json:
+    bytes: 738
+    sha256: fd872113df6bcc5c2df81bdd6c460b5be966c560249fe6991c4dd4d4c06ae467
+  receipt-summary.json:
+    bytes: 286
+    sha256: 03692ab0cd9cf995734c0634a951930ca07c8a542e4b45d62a25c212c929f8ae
+  execution-v2/results/result.json:
+    bytes: 393
+    sha256: 86e92dc258869dcaf218f728020a74d3c954af1fc28325502226186f4e145a21
