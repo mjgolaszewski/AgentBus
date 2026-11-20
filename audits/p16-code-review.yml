@@ -1,0 +1,11 @@
+document:
+  kind: production_code_review
+  path: audits/p16-code-review.yml
+  status: in_progress
+baseline:
+  release: 0.11.1
+  commit: c0d81f1bdf46904250244cda7f71a70e3dd6d9f7
+  prior_inventory: audits/reliability-code-review.yml
+current_source_review: Unqualified source in progress; new/changed modules need exact-byte review and final actual
+  CI evidence. No absence-of-bugs or current all-module review claim.
+reviewed: []

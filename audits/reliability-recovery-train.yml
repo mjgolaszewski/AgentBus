@@ -94,6 +94,24 @@ construction_edges:
     - tests/test_codex_wake_contract.py
     - tests/test_wake_intent_lifecycle.py
     - tests/test_codex_rpc_client.py
+  operator_identity:
+    invariant: Current verified operator/channel, immutable membership, no fabricated semantic ACK and no unresolved-history
+      deletion.
+    domain_owner: ParticipationStore, ChannelStore and RetentionStore through existing private operator adapter
+    architectural_layer: existing service context
+    canonical_primitives:
+    - agentbus.identity-management-intent.v1
+    - agentbus.channel-principal.v1
+    - agentbus.automatic-retention-policy.v1
+    contract: contracts/participation/v2/operator-identity.contract.yml
+    producer: one canonical immutable intent decoder after current verified operator context
+    consumer: existing participation and retention command owners; not a host/model execution grant
+    evidence:
+    - tests/test_identity_management.py
+    - test
+    - contract-test
+    - python314-compatibility
+    qualification: intent source modeled; management persistence/UI still under construction, no live deletion
 intake:
 - source: issue120
   kind: confirmed_receipt_defect

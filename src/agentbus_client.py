@@ -429,17 +429,8 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
         return 0
     if ns.command == "agents":
         bound, _ = checked_profile(values, resolve_identity(getattr(ns, "identity", None)))
-        directory = consumer_state_dir(values)
-        profiles = []
-        if directory.is_dir():
-            for path in sorted(directory.glob("*.json")):
-                try:
-                    data = json.loads(path.read_text())
-                    if isinstance(data, dict) and all(data.get(k) == bound.get(k) for k in ("service_url", "inbox_id", "channel")):
-                        profiles.append({key: data.get(key) for key in
-                                         ("identity", "display_name", "repo", "role", "chat_id")})
-                except (OSError, ValueError):
-                    continue
+        from src.agentbus_profile_client import profile_inventory
+        profiles = profile_inventory(values, bound)
         if ns.json:
             print(json.dumps(profiles, indent=2, ensure_ascii=False))
         else:

@@ -1,18 +1,23 @@
 document:
   kind: recovery_observation_contract
-  version: 1.0.0
+  version: 1.1.0
   status: active
   path: contracts/participation/v2/recovery-observation.contract.yml
 scope:
   availability: opt-in monitoring in 0.11; compact resume observations use existing private client state
   owners: participation observations, client resume projection and existing worker
 invariants:
-- Service health, enrollment, last actual authenticated API access and consumer-reported work observations remain distinct
-- A missing checkpoint or interrupted worker is an explicit unmonitored gap, never evidence of continuous polling or work
+- Service health, enrollment, last actual authenticated API access and consumer-reported work observations remain
+  distinct
+- A missing checkpoint or interrupted worker is an explicit unmonitored gap, never evidence of continuous polling
+  or work
 - Persist only bounded latest observations and interruption episode identity, not a new event journal
-- Resume reads current controls and inbox through the same principal; no cursor reset, auto-ACK, grant replay or re-enrollment follows from a gap
-- Stale notices require explicit monitoring configuration, target only configured allowlisted operators privately, and confer no wake or execution authority
-- One notice per session/interruption episode; only a fresh actual access establishes recovery and permits a later episode
+- Resume reads current controls and inbox through the same principal; no cursor reset, auto-ACK, grant replay or
+  re-enrollment follows from a gap
+- Stale notices require explicit monitoring configuration, target only configured allowlisted operators privately,
+  and confer no wake or execution authority
+- One notice per session/interruption episode; only a fresh actual access establishes recovery and permits a later
+  episode
 - Disabled notices add no periodic network calls, per-agent Slack probes, daemon or model turns
 policy:
   default_enabled: false
@@ -28,3 +33,33 @@ acceptance:
 - interrupted resume, unknown checkpoints and stale observations disclose gaps without inventing activity
 - stale notice deduplication survives worker restart and fails closed on unauthorized recipients
 - new actual access resets only the relevant episode; unrelated bus chatter and health probes do not fabricate monitoring
+continuity:
+  scope: exact existing service/inbox/channel/chat/session; opt-in bounded local recovery context
+  fields:
+  - source commit branch tree and dirty-source references
+  - next client-update deadline
+  - held-owner and original receipt references
+  provenance: Label consumer-reported context separately from observed Git/API facts; never claim a complete source
+    archive or continuous monitoring.
+  invariants:
+  - No credentials, restored grants, automatic source copying, channel switching, retry, host wake or semantic ACK.
+  - Malformed, foreign or contradictory checkpoints remain preserved; context cannot bypass current controls.
+  - Local profile inventory excludes disposable projections and mismatched/nonregular files without deleting legacy
+    profiles.
+  - Compare-and-swap a checkpoint under a short local lock after API reads; never overwrite concurrent context or
+    hold a lock across network access.
+  - A backwards observation clock preserves the existing checkpoint and reports recovery required; never invent
+    a negative monitoring interval.
+  interface: agentbus resume --identity ROUTE --context-file FILE
+  bounds:
+    checkpoint_bytes: 16384
+    dirty_paths: 128
+    held_owners: 16
+    receipt_references: 32
+  evidence_role: consumer_reported_context_only; raw input digest identifies bytes, not independent source/authority
+    proof
+handoff_context:
+  source: optional operator-configured current-channel contact and existing accepted messages
+  limits: bounded latest read-only observation; no new registry or periodic provider probe
+  disclosure: authorship, observation time, expiry, service/host epoch unknowns and receipt pointers are context,
+    never job admission

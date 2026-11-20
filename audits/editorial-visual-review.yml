@@ -1,7 +1,7 @@
 document:
   kind: editorial_visual_audit
   path: audits/editorial-visual-review.yml
-  status: reviewed
+  status: review_in_progress
 scope: Public README/docs imagery, Markdown tables and Mermaid diagrams; no assets removed. Embedded code examples
   are reviewed with their containing editorial file.
 baseline: 89eb2e35f040741a5031e1255edbdb0d695c128d
@@ -171,3 +171,5 @@ preservation:
   graphics: All three assets retain exact baseline bytes.
   limits: No Mermaid renderer/browser screenshots or assistive-technology audit claimed. Historical measurement
     tables retain their historical labels; wake illustrations confer no live wake guarantee.
+current_review: Prior visual entries are baseline only; all images and every current table/diagram source require
+  fresh inspection for P16. No asset removed.

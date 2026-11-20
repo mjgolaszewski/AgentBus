@@ -12,6 +12,7 @@ planning_inputs:
     - MEMORY.yml
     - plans/phase-ledger.yml
 global_delivery_rules:
+  - "Local identity inventory excludes non-profile projections without deletion; identity previews and recovery context retain immutable scope, original requests and acknowledgement distinctions."
   - "Federation startup row limits preserve all custody and replay; mobile smart punctuation applies only to declared Slack option positions, and refresh retains the original operation."
   - "Slack enrollment approval redeems immutable staged proof through canonical grants; file grants remain supported. Bounded recovery never resets checkpoints or invents retry identities."
   - "Broadcast and poll retain one shared payload and fixed channel targets; explicit read ACK and answers differ from delivery and wake. Private buttons and copyable fallback commands preserve operator authority."

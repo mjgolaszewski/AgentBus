@@ -1,7 +1,7 @@
 document:
   kind: editorial_audit
   path: audits/editorial-review.yml
-  status: editorial_review_complete
+  status: editorial_review_in_progress
 request:
   scope: Current public product guidance, application contracts, packaged skill and historical authored prose; explicit
     per-document line review and disposition.
@@ -31,7 +31,25 @@ experimental_claims:
     retirement.
   monitoring: Bounded actual-access observations and explicitly requested private notices; no continuous-monitoring
     or execution guarantee.
-documents:
+summary:
+  documents: 49
+  dispositions:
+    retained: 39
+    updates: 8
+    new: 2
+    merged: 0
+    removed: 0
+  merged_or_removed: No current product document needed merging or removal; superseded participation v1 remains
+    explicitly historical because v2 inherits its non-conflicting controls.
+  private_details: Current public guidance contains generic example identifiers only; historical subjects retain
+    public commit/evidence references without local deployment inventories.
+  remaining: Release and hotfix proof is established independently by canonical CI/custody on its exact subject;
+    no authored inventory status establishes runtime qualification.
+visual_inventory: audits/editorial-visual-review.yml
+review_continuity: Unchanged files inherit their baseline line review with byte/hash verification; changed documents
+  and the new seat were reviewed in full. The pinned baseline inventory retains original 0.11 dispositions.
+usability_inventory: audits/editorial-usability-review.yml
+prior_documents:
 - document: .env.example
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -273,7 +291,8 @@ documents:
   sha256: ac8de7a1b534fb9edfcd631207e6dcb1eebc4b289ea970302280503b07f42339
   baseline_sha256: c7aca5d3a6260167493b0621ee35ec0d18cbbcd34886fe1987dda7162c62816f
   disposition: updates
-  review_basis: Full current document reviewed line by line for audience preflight, bounded receipt reasons, scope and honest recovery; matching release proof remains required.
+  review_basis: Full current document reviewed line by line for audience preflight, bounded receipt reasons, scope
+    and honest recovery; matching release proof remains required.
 - document: docs/codex-skill.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -371,7 +390,8 @@ documents:
   sha256: 2d8e87a5ada699599cc67bb67d473609cf8ce9fb9a59b9cea24b2ef5bf62ffb4
   baseline_sha256: 373df2ff2d66a2243c4fea7b314d0dfdccb7db58d3b27c4bcd22e185aa443935
   disposition: updates
-  review_basis: Full current document reviewed line by line for bounded diagnosis, audience admission, immutable custody and non-authorizing recovery; qualified release proof remains separate.
+  review_basis: Full current document reviewed line by line for bounded diagnosis, audience admission, immutable
+    custody and non-authorizing recovery; qualified release proof remains separate.
 - document: skills/agentbus/SKILL.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -392,7 +412,8 @@ documents:
   sha256: 10ad5d86752a231bc8e38898bf133284c3d9309fc2db30458ed5a51041a6734d
   baseline_sha256: e0a8b2df362ed7fc2f5c6408040369d89175443b1416443233f7b560bd17db3d
   disposition: updates
-  review_basis: Full current document reviewed line by line for audience preflight, bounded receipt reasons, scope and honest recovery; matching release proof remains required.
+  review_basis: Full current document reviewed line by line for audience preflight, bounded receipt reasons, scope
+    and honest recovery; matching release proof remains required.
 - document: skills/agentbus/agents/openai.yaml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -491,7 +512,8 @@ documents:
   sha256: 3911d6e6bcdcf7748fcc59733ce7687945957a639c71fb57370bebb01a3c56ce
   baseline_sha256: 3f993620f1c50e7e0b88765a83f93f12acf26641fa5e0a2a62c08c4526dfa4a3
   disposition: updates
-  review_basis: Full current document reviewed line by line for bounded diagnosis, audience admission, immutable custody and non-authorizing recovery; qualified release proof remains separate.
+  review_basis: Full current document reviewed line by line for bounded diagnosis, audience admission, immutable
+    custody and non-authorizing recovery; qualified release proof remains separate.
 - document: contracts/participation/v1/participation.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -534,7 +556,8 @@ documents:
   sha256: 46022bbbc4b097a23ba3406e83eff741d561a80428a60bcd88fef11f19b95c2a
   baseline_sha256: ae0fe3e29b9ce7798decd7d3b22ccc9ca8f15909baf7831eeb43cef363016526
   disposition: updates
-  review_basis: Full current document reviewed line by line for bounded diagnosis, audience admission, immutable custody and non-authorizing recovery; qualified release proof remains separate.
+  review_basis: Full current document reviewed line by line for bounded diagnosis, audience admission, immutable
+    custody and non-authorizing recovery; qualified release proof remains separate.
 - document: contracts/retention/v1/automatic-retention.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -568,21 +591,70 @@ documents:
   disposition: new
   review_basis: Minimal outbound-only Slack app manifest reviewed with client installation walkthrough; no secrets,
     event subscriptions, slash commands, inbound handler or new socket.
-summary:
-  documents: 49
-  dispositions:
-    retained: 39
-    updates: 8
-    new: 2
-    merged: 0
-    removed: 0
-  merged_or_removed: No current product document needed merging or removal; superseded participation v1 remains
-    explicitly historical because v2 inherits its non-conflicting controls.
-  private_details: Current public guidance contains generic example identifiers only; historical subjects retain
-    public commit/evidence references without local deployment inventories.
-  remaining: Release and hotfix proof is established independently by canonical CI/custody on its exact subject;
-    no authored inventory status establishes runtime qualification.
-visual_inventory: audits/editorial-visual-review.yml
-review_continuity: Unchanged files inherit their baseline line review with byte/hash verification; changed documents
-  and the new seat were reviewed in full. The pinned baseline inventory retains original 0.11 dispositions.
-usability_inventory: audits/editorial-usability-review.yml
+documents: []
+current_review:
+  scope: Complete fresh line-by-line sweep explicitly reaffirmed for P16; baseline entries are not current review
+    evidence.
+  required_dispositions:
+  - reviewed
+  - added
+  - edited
+  - combined
+  - removed
+  pending_baseline_documents:
+  - .env.example
+  - LICENSE
+  - README.md
+  - CONTRACT.md
+  - CONTRIBUTING.md
+  - SECURITY.md
+  - audits/README.md
+  - audits/2026-09-29-external-product-review.md
+  - docs/OPERATIONS.md
+  - docs/README.md
+  - docs/adoption-measurements.md
+  - docs/architecture.md
+  - docs/audiences/adapter-users.md
+  - docs/audiences/agents.md
+  - docs/audiences/experimenters.md
+  - docs/audiences/hippiebots.md
+  - docs/audiences/humans.md
+  - docs/audiences/maintainers.md
+  - docs/audiences/operators.md
+  - docs/audiences/security-reviewers.md
+  - docs/channel-migration.md
+  - docs/client-publishing.md
+  - docs/codex-skill.md
+  - docs/contracts.md
+  - docs/federation.md
+  - docs/governance-model.md
+  - docs/http-api.md
+  - docs/local-adapters.md
+  - docs/message-lifecycle.md
+  - docs/operator-federation.md
+  - docs/recovery.md
+  - skills/agentbus/SKILL.md
+  - skills/agentbus/references/participation.md
+  - skills/agentbus/agents/openai.yaml
+  - contracts/channels/v1/channel-isolation.contract.yml
+  - contracts/codex-wake/v1/codex-wake.contract.yml
+  - contracts/federation/v1/federation.contract.yml
+  - contracts/federation/v1/operator.contract.yml
+  - contracts/local-adapters/v1/a2a.contract.yml
+  - contracts/mailbox/v1/mailbox.contract.yml
+  - contracts/mailbox/v1/mcp.contract.yml
+  - contracts/messages/v1/message-lifecycle.contract.yml
+  - contracts/participation/v1/participation.contract.yml
+  - contracts/participation/v2/participation.contract.yml
+  - contracts/participation/v2/recovery-observation.contract.yml
+  - contracts/publication/v1/publication.contract.yml
+  - contracts/retention/v1/automatic-retention.contract.yml
+  - docs/audiences/mailbox-tool-users.md
+  - docs/examples/client-slack-manifest.json
+  additional_pending:
+  - contracts/participation/v2/operator-identity.contract.yml
+  preserve:
+  - all graphics and tone
+  - README BCF section and placement
+  qualification: No editorial or release completion claim until every final-subject document and visual is actually
+    reviewed.

@@ -73,3 +73,161 @@ def test_resume_rejects_foreign_checkpoint_before_controls_or_inbox(resume, tmp_
     with pytest.raises(ClientError, match="scope differs"):
         recovery.cli_resume(ns, tmp_path, values)
     assert calls == [] and json.loads(checkpoint.read_text())["channel"] == "C222"
+
+
+def test_profile_inventory_ignores_projections_and_preserves_legacy_profiles(resume, tmp_path):
+    from src.agentbus_profile_client import profile_inventory
+    profile, _, _, values, _ = resume
+    for name, data in {
+        profile['identity'] + '.json': profile,
+        '.resume-scope.json': {key: profile[key] for key in ('service_url', 'inbox_id', 'channel', 'chat_id')},
+        'alpha:agentbus:null.json': {key: profile[key] for key in ('service_url', 'inbox_id', 'channel', 'chat_id')},
+        'alpha:agentbus:redirect.json': {**profile, 'identity': profile['identity']},
+        'other:agentbus:foreign.json': {**profile, 'identity': 'other:agentbus:foreign', 'channel': 'C222'},
+        'agentbus:legacy.json': {**profile, 'identity': 'agentbus:legacy', 'chat_id': str(uuid4())},
+    }.items():
+        (tmp_path / name).write_text(json.dumps(data))
+    before = {path.name: path.read_bytes() for path in tmp_path.glob('*.json')}
+    rows = profile_inventory(values, profile)
+    assert {row['identity'] for row in rows} == {profile['identity'], 'agentbus:legacy'}
+    assert all('participation' not in row and 'session_secret' not in row for row in rows)
+    assert {path.name: path.read_bytes() for path in tmp_path.glob('*.json')} == before
+
+
+def test_profile_inventory_skips_symlinks_and_non_regular_files(resume, tmp_path):
+    import os
+    from src.agentbus_profile_client import profile_inventory
+    profile, _, _, values, _ = resume
+    target = tmp_path / 'retained-evidence.json'
+    target.write_text(json.dumps(profile))
+    (tmp_path / (profile['identity'] + '.json')).symlink_to(target)
+    pipe = tmp_path / 'alpha:agentbus:pipe.json'
+    os.mkfifo(pipe)
+    descriptor = os.open(pipe, os.O_RDWR | os.O_NONBLOCK)
+    try:
+        assert profile_inventory(values, profile) == []
+    finally:
+        os.close(descriptor)
+    assert target.exists() and (tmp_path / (profile['identity'] + '.json')).is_symlink()
+
+
+def context_value(profile, **changes):
+    value = {'version': 1, 'scope': recovery.scope(profile), 'reported_at': 100.0,
+             'source': {'commit': 'a'*40, 'tree': 'b'*40, 'branch': 'work/topic', 'dirty_paths': ['src/current.py']},
+             'next_update_due_at': 200.0,
+             'held_owners': [{'owner': 'alpha:operations:steward', 'receipt_cursor': 9, 'request_id': None}],
+             'receipts': [{'kind': 'message', 'cursor': 8, 'request_id': str(uuid4())}]}
+    value.update(changes)
+    return value
+
+
+def test_resume_context_binds_exact_scope_and_never_restores_authority(resume, tmp_path, capsys):
+    import hashlib
+    profile, _, _, values, calls = resume
+    before = copy.deepcopy(profile)
+    source = tmp_path/'context.json'
+    source.write_text(json.dumps(context_value(profile)))
+    raw = source.read_bytes()
+    ns = SimpleNamespace(identity=profile['identity'], context_file=str(source))
+    recovery.cli_resume(ns, tmp_path, values)
+    result = json.loads(capsys.readouterr().out)
+    context = result['recovery_context']
+    assert context['input_sha256'] == hashlib.sha256(raw).hexdigest()
+    assert context['execution_authority'] is False and context['automatic_update_or_retry'] is False
+    assert result['semantic_ack_cursor'] == 7 and profile == before and source.read_bytes() == raw
+    assert not any('wake' in path or '/ack' in path for path in calls)
+    recovery.cli_resume(SimpleNamespace(identity=profile['identity']), tmp_path, values)
+    assert json.loads(capsys.readouterr().out)['recovery_context']['input_sha256'] == context['input_sha256']
+
+
+@pytest.mark.parametrize('case', ['foreign', 'credential_field', 'known_secret', 'oversize', 'symlink', 'invalid_version'])
+def test_bad_context_preserves_checkpoint_before_checkin_or_mailbox(resume, tmp_path, capsys, case):
+    profile, _, _, values, calls = resume
+    recovery.cli_resume(SimpleNamespace(identity=profile['identity']), tmp_path, values)
+    capsys.readouterr()
+    checkpoint = next(tmp_path.glob('.resume-*.json'))
+    before = checkpoint.read_bytes()
+    value = context_value(profile)
+    if case == 'foreign':
+        value['scope']['channel'] = 'C222'
+    elif case == 'credential_field':
+        value['session_secret'] = 'not-a-context-field'
+    elif case == 'known_secret':
+        profile['participation']['session_secret'] = 's'*40
+        value['source']['branch'] = 's'*40
+    elif case == 'invalid_version':
+        value['version'] = True
+    source = tmp_path/'provided.json'
+    source.write_text('x'*16385 if case == 'oversize' else json.dumps(value))
+    if case == 'symlink':
+        link = tmp_path/'context-link.json'
+        link.symlink_to(source)
+        source = link
+    calls.clear()
+    with pytest.raises(ClientError):
+        recovery.cli_resume(SimpleNamespace(identity=profile['identity'], context_file=str(source)), tmp_path, values)
+    assert calls == [] and checkpoint.read_bytes() == before and source.exists()
+
+
+def test_context_cannot_bypass_stop_or_create_a_new_request(resume, tmp_path, capsys):
+    profile, presence, _, values, calls = resume
+    presence['state'] = 'stopped'
+    source = tmp_path/'context.json'
+    source.write_text(json.dumps(context_value(profile, next_update_due_at=1)))
+    recovery.cli_resume(SimpleNamespace(identity=profile['identity'], context_file=str(source)), tmp_path, values)
+    result = json.loads(capsys.readouterr().out)
+    assert result['mailbox'] is None and result['recovery_context']['deadline_state'] == 'past_due'
+    assert calls == [] and not list(tmp_path.glob('send-requests/*'))
+
+
+def test_resume_preserves_checkpoint_on_clock_regression(resume, tmp_path, capsys, monkeypatch):
+    profile, _, _, values, calls = resume
+    ns = SimpleNamespace(identity=profile['identity'])
+    recovery.cli_resume(ns, tmp_path, values)
+    capsys.readouterr()
+    checkpoint = next(tmp_path.glob('.resume-*.json'))
+    before = checkpoint.read_bytes()
+    calls.clear()
+    monkeypatch.setattr(recovery.time, 'time', lambda: 0.0)
+    with pytest.raises(ClientError, match='clock precedes'):
+        recovery.cli_resume(ns, tmp_path, values)
+    assert calls == [] and checkpoint.read_bytes() == before
+
+
+def test_resume_context_does_not_overwrite_a_concurrent_checkpoint(resume, tmp_path, capsys, monkeypatch):
+    profile, _, _, values, _ = resume
+    ns = SimpleNamespace(identity=profile['identity'])
+    recovery.cli_resume(ns, tmp_path, values)
+    capsys.readouterr()
+    checkpoint = next(tmp_path.glob('.resume-*.json'))
+    newer = json.loads(checkpoint.read_text())
+    newer['observed_at'] += 1
+    def page(*args):
+        checkpoint.write_text(json.dumps(newer))
+        return {'messages': [], 'next_cursor': 12, 'has_more': False}
+    monkeypatch.setattr(recovery, 'scoped_api', page)
+    with pytest.raises(ClientError, match='changed concurrently'):
+        recovery.cli_resume(ns, tmp_path, values)
+    assert json.loads(checkpoint.read_text()) == newer
+
+
+@pytest.mark.parametrize('corrupt', ['fifo', 'deep_json'])
+def test_resume_rejects_nonregular_or_deep_checkpoint_without_hanging(resume, tmp_path, capsys, corrupt):
+    import hashlib
+    import os
+    profile, _, _, values, calls = resume
+    checkpoint = tmp_path/('.resume-'+hashlib.sha256(profile['chat_id'].encode()).hexdigest()+'.json')
+    descriptor = None
+    if corrupt == 'fifo':
+        os.mkfifo(checkpoint, 0o600)
+        descriptor = os.open(checkpoint, os.O_RDWR | os.O_NONBLOCK)
+    else:
+        checkpoint.write_text('['*1100+']'*1100)
+        checkpoint.chmod(0o600)
+    try:
+        with pytest.raises(ClientError, match='checkpoint is invalid'):
+            recovery.cli_resume(SimpleNamespace(identity=profile['identity']), tmp_path, values)
+        assert calls == [] and checkpoint.exists()
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)

@@ -21,7 +21,7 @@ workitems:
   - contract-test
 - id: P16-P1-01
   priority: P1
-  status: TODO
+  status: IN_PROGRESS
   summary: Extend local resume continuity and source/update-deadline observations
   acceptance:
   - Credential-free record binds exact source commit/branch/tree, dirty source locations, report deadline, held
@@ -121,6 +121,9 @@ workitems:
   - Canonical final-subject proof install/skill/compatibility checks and measured default-off overhead complete
   - External prerequisites stay blocked with resume conditions; no unsupported production wake or stronger hostile-agent
     guarantee
+  - Complete fresh line-by-line editorial review of every tracked editorial file, not changed files only, with exact
+    hash/line count and reviewed/added/edited/combined/removed disposition; include skill, examples and every visual/table/diagram,
+    excluding BCF machinery and changelog, preserving graphics/tone and README BCF placement.
   acceptance_evidence:
   - test
   - contract-test

@@ -85,6 +85,7 @@ def build_parser() -> argparse.ArgumentParser:
     inbox.add_argument("--context", action="store_true")
     resume = commands.add_parser("resume", help="Read current controls and mailbox with an explicit unmonitored gap; never acknowledge or wake")
     resume.add_argument("--identity")
+    resume.add_argument("--context-file", help="Record bounded credential-free JSON context for this exact session; never restore grants, retry or acknowledge")
     mcp = commands.add_parser("mcp", help="Serve session-bound tools on stdio")
     mcp.add_argument("--identity")
     search = commands.add_parser("search", help="Search retained text in this identity inbox")
