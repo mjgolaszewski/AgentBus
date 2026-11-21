@@ -337,9 +337,12 @@ def test_compact_resume_requires_lifecycle_without_inferring_terminal_history(re
 @pytest.mark.parametrize("hold",["stopped","pause_work","stop_end_turn","policy_ack"])
 def test_compact_resume_checks_controls_even_without_lifecycle_support(resume,tmp_path,capsys,hold):
     profile,presence,controls,values,calls=resume
-    if hold=="stopped":presence["state"]="stopped"
-    elif hold=="policy_ack":controls["ack_required"]=True
-    else:controls["controls"]=[{"kind":hold,"control_id":str(uuid4())}]
+    if hold=="stopped":
+        presence["state"]="stopped"
+    elif hold=="policy_ack":
+        controls["ack_required"]=True
+    else:
+        controls["controls"]=[{"kind":hold,"control_id":str(uuid4())}]
     recovery.cli_resume(SimpleNamespace(identity=profile["identity"],unhandled=True),tmp_path,values)
     assert json.loads(capsys.readouterr().out)["mailbox"] is None
     assert calls==([] if hold=="stopped" else ["check-in"])
