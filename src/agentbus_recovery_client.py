@@ -196,6 +196,8 @@ def cli_resume(ns, project, values):
                 after = inbox['next_cursor']
                 if not inbox['has_more']:
                     break
+            if inbox is None:
+                raise ClientError('Resume scan returned no page; checkpoint retained')
             if compact:
                 inbox = {**inbox, 'messages': retained[-20:], 'retired_history': retired_gap, 'resume_projection': {
                     'view': 'nonterminal_within_scanned_window', 'pages_scanned': page_index + 1,

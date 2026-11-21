@@ -79,9 +79,9 @@ source_review:
   basis: Consolidated changed spans and affected owner/caller context reviewed; no whole-production re-audit or
     independent human review claim.
 - path: src/agentbus_recovery_client.py
-  sha256: 28da1668aa10bda17ac5099ad792a4cc29bb4892dc61b9a8d4ad455c69abbd37
-  basis: Consolidated changed spans and affected owner/caller context reviewed; no whole-production re-audit or
-    independent human review claim.
+  sha256: 385cc3ed8c4b53c4fd79464dbf949a41d2eb383d7197513571aca19e35a35cf2
+  basis: Changed spans/caller context and explicit no-page fail-close guard reviewed after canonical typecheck rejected
+    optional page inference. No behavior or custody qualification inferred.
 - path: src/agentbus_service.py
   sha256: 830fa8ee2992554355e9d327820b55bc6abd51ad9bac330f5e0cd9edd8b18243
   basis: Consolidated changed spans and affected owner/caller context reviewed; no whole-production re-audit or
