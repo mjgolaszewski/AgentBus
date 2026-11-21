@@ -44,6 +44,9 @@ execution_evidence:
   - First canonical submit rejected an added completed patch train without a declared phase. P16-HF01 belongs to
     existing P16/release_16; remove only the added unowned row and update that existing target to0.12.1. Original
     diagnostic retained; no SDK upgrade or provider retry.
+  - Canonical submit v3 lint caught FastAPI version metadata remaining0.12.0 while package0.12.1. Synchronize only
+    that metadata literal; retain original failure bundle and all SQL behavioral/snapshot evidence. No provider
+    action occurred.
 closeout_requirements:
   claims:
     required_suites_green:

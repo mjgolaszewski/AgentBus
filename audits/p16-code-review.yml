@@ -106,8 +106,9 @@ reviewed:
   basis: changed spans and affected call context
   disposition: retain reviewed implementation; qualification tied to exact subject
 - path: src/agentbus_service.py
-  sha256: 17be23a15da742f2c46ddbc72bae7121bbbea8fd91a169204b27e9924d2fac91
-  basis: changed spans and affected call context
+  sha256: 8e8a05a5ba2e858e3d4927222f1083641cfe51de4d75c1244c7e977f3c250f31
+  basis: Single FastAPI version metadata literal synchronized with canonical package0.12.1; no route or runtime
+    behavior change. Prior source review retained for unchanged bytes.
   disposition: retain reviewed implementation; qualification tied to exact subject
 - path: src/agentbus_settings_service.py
   sha256: 47442387cf5b1d00d16b33249fca93c09d25e0a2f1b3e41bfe5cfe0168b0d70d
