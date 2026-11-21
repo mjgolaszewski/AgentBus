@@ -1183,4 +1183,6 @@ peer_followup_review:
   preserved:
   - README artwork tone and BCF placement
   - all original graphics and embedded examples
-  qualification: Pending canonical final-subject proof and skill installation.
+  qualification: Canonical local19-producer graph passed on e5bcdab2, including release/archive, isolated install
+    and packaged skill. Final protected PR/exact-main/closure and deployment applicability remain separately required;
+    no automatic transfer to this metadata closeout.

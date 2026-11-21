@@ -1,7 +1,7 @@
 document:
   kind: peer_followup_construction_audit
   path: audits/p17-peer-followup.yml
-  status: source_prepared_qualification_pending
+  status: source_review_complete_local_pipeline_passed_provider_pending
 baseline: 9de64b434df2ae6bdb6267228826c42275887942
 invariants:
 - Exact session/channel/inbox before lookup
@@ -94,5 +94,34 @@ source_review:
   sha256: 9d27c98338c50ddb76275801780031cfeacf84180aad85c20253f8426dc06f05
   basis: Consolidated changed spans and affected owner/caller context reviewed; no whole-production re-audit or
     independent human review claim.
-validation: Canonical automated pipeline and actual provider results pending; no release readiness, performance
-  or host-wake claim.
+validation:
+  local_subject: e5bcdab2d12ba5e0c959c3ea83e96778c8232185
+  local_tree: debdbd6daccbe59fec7fc4e3ccfdbd34a4120fe2
+  producers_passed:
+  - architecture-test
+  - architecture-duplication
+  - architecture-cqrs-side
+  - runtime-smoke
+  - lint
+  - test
+  - architecture-import-boundaries
+  - python314-compatibility
+  - security-sbom
+  - typecheck
+  - architecture-context-membership
+  - architecture-layer-membership
+  - release-smoke
+  - security-secret-scan
+  - security-vulnerability-scan
+  - security-dependency-audit
+  - architecture-module-size
+  - architecture-router-thinness
+  - contract-test
+  authority: local_non_authoritative_provider_required
+  proof_bundle: not_persisted
+  review: Consolidated changed-call-path and actual canonical-result review; no independent human/security audit
+    claim.
+  remaining:
+  - protected PR and exact-main closure
+  - final-subject archive/install applicability
+  - custodian handoff
