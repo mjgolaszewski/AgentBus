@@ -4,7 +4,7 @@ document:
   id: agentbus-phase-16-hotfix01
   version: 1.0.0
   generated_at_utc: '2026-11-21T00:00:00Z'
-  status: planned
+  status: completed
   path: phases/phase-16-hotfix01.yml
 hotfix:
   id: P16-HF01
@@ -18,10 +18,29 @@ execution_evidence:
   - make test
   - make contract-test
   - make release-check
-  executed_commands: []
+  executed_commands:
+  - command: Baseline regressions
+    result: All three failed before repair; original JUnit retained
+    exit_code: 1
+  - command: Focused repaired identity/lifecycle controls
+    result: 132 passed after selective-candidate repair; Ruff passed. Extra EOF blank line rejected by final diff
+      check and corrected without changing tested production bytes
+    exit_code: 0
+  - command: Actual SQLite interrupt after archive insertion
+    result: Passed partial-write rollback, retained payload/receipt and cleared-handler checks
+    exit_code: 0
+  - command: Exact incident target on isolated snapshot after repair
+    result: Eligibility and ordinary detail completed within finite product work budget; originals unchanged. Provider
+      proof remains separately required
+    exit_code: 0
   notes:
-  - record failing workflows, diagnosed root cause, remediation scope, and merge-back
-    status
+  - Incident snapshot replay reproduced costly eligibility for four of five sampled identities; original snapshot
+    ledger held zero identity-operation previews or commits. Exact-target follow-up remains separately recorded
+    in private owner evidence.
+  - Contract/tests precede production repair; original RED and focused green JUnit are retained. Final canonical
+    graph, protected PR/main, archive/install and custodian rollout remain required.
+  - No live identity action, service restart, database deletion, checkpoint reset, client post or new wake authority
+    performed.
 closeout_requirements:
   claims:
     required_suites_green:

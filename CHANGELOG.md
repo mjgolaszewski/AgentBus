@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.12.1] - 2026-11-21
+
+- Keep identity details and non-history previews responsive without scanning deletion eligibility. Bound retention SQL work, preserve every custody/ACK pin and roll back interrupted cleanup; improve indexed replay/claim and ancestry lookup.
+
 ## [0.12.0] - 2026-11-20
 
 - Document ordinary and signed wire formats, routing and acknowledgement boundaries; retain audited guidance and a bounded default-off comparison without claiming production performance.

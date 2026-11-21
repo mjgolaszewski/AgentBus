@@ -5,12 +5,15 @@ import hashlib
 import json
 import re
 import zlib
+from contextlib import contextmanager
 from decimal import Decimal
 from pathlib import Path
+from sqlite3 import SQLITE_INTERRUPT, OperationalError
 
 from src.agentbus_message_lifecycle_service import LifecycleRejected
 from src.agentbus_transaction_service import atomic
 
+QUERY_WORK_STEPS = 5_000_000
 MAX_PAYLOAD = 65536
 ARCHIVE_MAINTENANCE_BYTES = 32 * 1024 * 1024
 PROVIDER_TIMESTAMP = r'[0-9]{1,20}\.[0-9]{1,20}'
@@ -35,6 +38,8 @@ class RetentionStore:
                 owner._db.execute('ALTER TABLE messages ADD COLUMN sender TEXT')
             owner._db.execute("UPDATE messages SET sender=json_extract(payload,'$.sender') WHERE sender IS NULL AND payload!='null'")
             owner._db.execute('CREATE INDEX IF NOT EXISTS messages_sender_cursor ON messages(channel,sender,cursor)')
+            owner._db.execute('CREATE INDEX IF NOT EXISTS lifecycle_request_cursor ON lifecycle_requests(cursor,replay_until)')
+            owner._db.execute('CREATE INDEX IF NOT EXISTS claims_cursor ON claims(cursor)')
             owner._db.execute('''CREATE TABLE IF NOT EXISTS lifecycle_edges (
                 cursor INTEGER PRIMARY KEY REFERENCES messages(cursor),
                 parent INTEGER NOT NULL REFERENCES messages(cursor))''')
@@ -137,6 +142,24 @@ class RetentionStore:
                 raise ValueError('Archived payload is not a message')
             return result
 
+    @contextmanager
+    def _query_budget(self):
+        # Every caller holds the canonical lock; a failed budget grants no eligibility.
+        remaining = QUERY_WORK_STEPS
+        def progress():
+            nonlocal remaining
+            remaining -= min(1000, QUERY_WORK_STEPS)
+            return int(remaining <= 0)
+        self.owner._db.set_progress_handler(progress, min(1000, QUERY_WORK_STEPS))
+        try:
+            yield
+        except OperationalError as exc:
+            if getattr(exc, 'sqlite_errorcode', None) != SQLITE_INTERRUPT:
+                raise
+            raise LifecycleRejected(503, 'History eligibility exceeded its work limit; no cleanup was applied') from exc
+        finally:
+            self.owner._db.set_progress_handler(None, 0)
+
     def _eligible(self, channel, current, *, purge=False, automatic_age_seconds=None,
                   author_chat_id=None, positions=None, include_live=False):
         # Legacy and federated custody stay pinned; no remote expiry is inferred.
@@ -147,53 +170,61 @@ class RetentionStore:
         if automatic_age_seconds is not None:
             if type(automatic_age_seconds) is not int or not 14 * 86400 <= automatic_age_seconds <= 365 * 86400:
                 raise LifecycleRejected(422, 'Automatic retention requires14..365 days')
-            automatic_guard = """AND EXISTS (SELECT 1 FROM lifecycle_targets t WHERE t.cursor=m.cursor)
-                AND NOT EXISTS (SELECT 1 FROM lifecycle_targets t WHERE t.cursor=m.cursor
+            automatic_guard = """AND EXISTS (SELECT 1 FROM lifecycle_targets t WHERE t.cursor=p.cursor)
+                AND NOT EXISTS (SELECT 1 FROM lifecycle_targets t WHERE t.cursor=p.cursor
                     AND (t.state!='handled' OR t.semantic_ack_at IS NULL))
-                AND MAX(p.created_at,COALESCE((SELECT max(t.outcome_at) FROM lifecycle_targets t WHERE t.cursor=m.cursor),p.created_at),
-                    COALESCE((SELECT max(t.semantic_ack_at) FROM lifecycle_targets t WHERE t.cursor=m.cursor),p.created_at),
-                    COALESCE((SELECT at FROM lifecycle_activity a WHERE a.cursor=m.cursor),p.created_at))<=?"""
+                AND MAX(p.created_at,COALESCE((SELECT max(t.outcome_at) FROM lifecycle_targets t WHERE t.cursor=p.cursor),p.created_at),
+                    COALESCE((SELECT max(t.semantic_ack_at) FROM lifecycle_targets t WHERE t.cursor=p.cursor),p.created_at),
+                    COALESCE((SELECT at FROM lifecycle_activity a WHERE a.cursor=p.cursor),p.created_at))<=?"""
             parameters.append(current - automatic_age_seconds)
         if purge or automatic_age_seconds is not None:
             cutoff = str(max(0, current-max(self.owner.lifecycle.policy.retention_seconds, automatic_age_seconds or 0)))
             parameters.extend((cutoff, cutoff))
             provider_guard = """AND agentbus_provider_ref_covered_v1(m.slack_ts,?)=1
                 AND NOT EXISTS (SELECT 1 FROM local_delivery_observations observed
-                    WHERE observed.channel=m.channel AND observed.local_cursor=m.cursor
+                    WHERE observed.channel=m.channel AND observed.local_cursor=p.cursor
                     AND agentbus_provider_ref_covered_v1(observed.provider_ref,?)=0)"""
         scope_guard = ''
+        message_source = 'messages m'
         if author_chat_id is not None:
-            scope_guard += """AND m.sender_assurance='session' AND EXISTS (
-                SELECT 1 FROM chat_identities identity JOIN chat_channels membership USING(chat_id)
-                WHERE identity.chat_id=? AND membership.channel=m.channel AND
-                (identity.current_route=m.sender OR EXISTS (SELECT 1 FROM routing_aliases alias
-                 WHERE alias.chat_id=identity.chat_id AND alias.route=m.sender)))"""
-            parameters.append(author_chat_id)
+            # The compound route population and CROSS JOIN force selective indexed
+            # author lookup before any correlated safety checks; UNION deduplicates aliases.
+            message_source = """(SELECT identity.current_route AS route FROM chat_identities identity
+                JOIN chat_channels membership USING(chat_id)
+                WHERE identity.chat_id=? AND membership.channel=?
+                UNION SELECT alias.route FROM routing_aliases alias
+                JOIN chat_channels membership USING(chat_id)
+                WHERE alias.chat_id=? AND membership.channel=?) authored
+                CROSS JOIN messages m ON m.sender=authored.route"""
+            parameters = [author_chat_id, channel, author_chat_id, channel, *parameters]
+            scope_guard = "AND m.sender_assurance='session'"
         if positions is not None:
             if (not isinstance(positions, (list, tuple)) or len(positions) > 100
                     or any(type(value) is not int or not 1 <= value <= 2**63-1 for value in positions)
                     or len(set(positions)) != len(positions)):
                 raise LifecycleRejected(422, 'A bounded distinct public position population is required')
             scope_guard += (' AND EXISTS (SELECT 1 FROM channel_positions selected WHERE '
-                'selected.channel=m.channel AND selected.message_id=m.cursor AND selected.position IN ('
+                'selected.channel=m.channel AND selected.message_id=p.cursor AND selected.position IN ('
                 + ','.join('?' for _ in positions) + '))') if positions else ' AND 0'
             parameters.extend(positions)
         payload_guard = '' if include_live else ("AND m.payload = 'null'" if purge else "AND m.payload != 'null'")
-        rows = self.owner._db.execute(f'''SELECT m.* FROM messages m
-            JOIN lifecycle_payloads p ON p.cursor=m.cursor
+        rows = self.owner._db.execute(f'''SELECT m.* FROM {message_source}
+            CROSS JOIN lifecycle_payloads p ON p.cursor=m.cursor
             WHERE m.channel=? AND p.legacy_unknown=0 AND p.{field}<=?
-            AND NOT EXISTS (SELECT 1 FROM lifecycle_targets t WHERE t.cursor=m.cursor
+            AND NOT EXISTS (SELECT 1 FROM lifecycle_targets t WHERE t.cursor=p.cursor
                 AND t.state NOT IN ('handled','expired_unclaimed'))
-            AND NOT EXISTS (SELECT 1 FROM lifecycle_requests r WHERE r.cursor=m.cursor AND r.replay_until>?)
-            AND NOT EXISTS (SELECT 1 FROM local_delivery_obligations o WHERE o.local_cursor=m.cursor
+            AND NOT EXISTS (SELECT 1 FROM lifecycle_requests r WHERE r.cursor=p.cursor AND r.replay_until>?)
+            AND NOT EXISTS (SELECT 1 FROM local_delivery_obligations o WHERE o.local_cursor=p.cursor
                 AND (o.state NOT IN ('submitted','expired_unsubmitted') OR o.federation_frame_hash IS NOT NULL))
-            AND NOT EXISTS (SELECT 1 FROM federation_inbox_projection f WHERE f.cursor=m.cursor)
-            AND NOT EXISTS (SELECT 1 FROM claims c WHERE c.cursor=m.cursor)
-            AND NOT EXISTS (SELECT 1 FROM claim_recovery_audit c WHERE c.channel=m.channel AND c.cursor=m.cursor)
-            AND NOT EXISTS (SELECT 1 FROM lifecycle_edges e WHERE e.parent=m.cursor)
+            AND NOT EXISTS (SELECT 1 FROM federation_inbox_projection f WHERE f.cursor=p.cursor)
+            AND NOT EXISTS (SELECT 1 FROM claims c WHERE c.cursor=p.cursor)
+            AND NOT EXISTS (SELECT 1 FROM claim_recovery_audit c WHERE c.channel=m.channel AND c.cursor=p.cursor)
+            AND NOT EXISTS (SELECT 1 FROM lifecycle_edges e WHERE e.parent=p.cursor)
             AND NOT EXISTS (SELECT 1 FROM messages child WHERE child.channel=m.channel
-                AND child.cursor!=m.cursor AND (child.thread_ts=m.slack_ts OR child.thread_ts IN
-                    (SELECT provider_ref FROM local_delivery_observations o WHERE o.channel=m.channel AND o.local_cursor=m.cursor)))
+                AND child.thread_ts=m.slack_ts AND child.cursor!=p.cursor)
+            AND NOT EXISTS (SELECT 1 FROM local_delivery_observations o
+                JOIN messages child ON child.channel=o.channel AND child.thread_ts=o.provider_ref
+                WHERE o.channel=m.channel AND o.local_cursor=p.cursor AND child.cursor!=p.cursor)
             {payload_guard}
             {automatic_guard}
             {provider_guard}
@@ -210,7 +241,7 @@ class RetentionStore:
             raise LifecycleRejected(422, 'An operator actor is required')
         if apply and (not isinstance(request_key, str) or not request_key or len(request_key) > 256):
             raise LifecycleRejected(422, 'A bounded operation identity is required')
-        with self.owner._lock, atomic(self.owner._db):
+        with self.owner._lock, atomic(self.owner._db), self._query_budget():
             if not self.owner._db.execute('SELECT 1 FROM bus_channels WHERE channel=?', (channel,)).fetchone():
                 raise LifecycleRejected(404, 'Channel is not configured')
             if apply:
@@ -250,7 +281,7 @@ class RetentionStore:
             raise LifecycleRejected(422, 'An operator actor is required')
         if apply and (not isinstance(request_key, str) or not request_key or len(request_key) > 256):
             raise LifecycleRejected(422, 'A bounded operation identity is required')
-        with self.owner._lock, atomic(self.owner._db):
+        with self.owner._lock, atomic(self.owner._db), self._query_budget():
             if not self.owner._db.execute('SELECT 1 FROM bus_channels WHERE channel=?', (channel,)).fetchone():
                 raise LifecycleRejected(404, 'Channel is not configured')
             if apply:
@@ -329,7 +360,7 @@ class RetentionStore:
 
     def identity_history(self, channel, chat_id, *, positions=None, instant=None):
         """Operator preview, using the same eligibility and unknown-reference guards."""
-        with self.owner._lock:
+        with self.owner._lock, self._query_budget():
             count = self.owner._db.execute("""SELECT count(*) FROM messages m
                 JOIN chat_identities identity ON identity.chat_id=?
                 JOIN chat_channels membership ON membership.chat_id=identity.chat_id AND membership.channel=m.channel
@@ -346,7 +377,7 @@ class RetentionStore:
                                                   (channel, row['cursor'])).fetchone()
                 if position is not None:
                     public.append(position[0])
-            return {'supported':supported,'retained':count,'positions':public,'eligible':len(public),'batch_limit':100,
+            return {'supported':supported,'eligibility_checked':supported and positions != (),'retained':count,'positions':public,'eligible':len(public),'batch_limit':100,
                     'pins':'Original target ACK, minimum fourteen-day activity age, longer policy, replay, ancestry, claims, provider coverage and unknown references remain authoritative; unknown authorship is not selected.'}
 
     def remove_identity_history(self, channel, chat_id, *, positions, actor, request_key, instant=None):

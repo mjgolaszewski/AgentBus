@@ -168,7 +168,7 @@ class IdentityManagement:
             self._idle_writer()
             row = self._row(channel, chat_id)
             sessions = self._sessions(chat_id)
-            history = self.store.retention.identity_history(channel, chat_id)
+            history = self.store.retention.identity_history(channel, chat_id, positions=())
             return {'chat_id':chat_id,'route':row['current_route'],'display_name':row['display_name'],
                     'retired':row['retired_at'] is not None,'revision':row['identity_revision'],
                     'sessions':len(sessions),'history':history,'channel':channel}
@@ -187,7 +187,8 @@ class IdentityManagement:
                         raise ValueError('Configure the local prefix and exact new name before preview')
                     new_route = self.settings.local_prefix+':'+row['repo']+':'+name
                 instant = self._instant()
-                history = self.store.retention.identity_history(channel, chat_id, instant=instant)
+                history = self.store.retention.identity_history(channel, chat_id, instant=instant,
+                    positions=None if action == 'retire_with_history' else ())
                 positions = history['positions'] if action == 'retire_with_history' else []
                 if action == 'retire_with_history' and not history['supported']:
                     raise ValueError('History eligibility is unavailable; retire without deleting history')
