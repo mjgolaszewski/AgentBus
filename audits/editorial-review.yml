@@ -22,7 +22,8 @@ baseline_review:
   inventory: audits/editorial-review.yml
   sha256: 6e25f4b8b777b0d140300842273ec5a8c61873bc3c3520854332b6019a3c4628
 experimental_claims:
-  candidate: P16 source has protected progress certification; final phase closure and release custody remain separately required. Existing released 0.11.1 custody applies only to its own subject.
+  candidate: P16 source has protected progress certification; final phase closure and release custody remain separately
+    required. Existing released 0.11.1 custody applies only to its own subject.
   AHP_native_queue: Live interoperability and atomic idle-only admission remain unqualified.
   publication: Explicit optional named-destination policy only; production-client canary waived by operator in favor
     of approved two-location substitution, with isolated provider controls; broader client deployments not inferred.
@@ -775,12 +776,12 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 439
-  line_count: 439
-  sha256: 920d85a8d0e365ebf252704547dede2b19465b07dfbbb1838b3a8a083bac1790
+    - 446
+  line_count: 446
+  sha256: 47cff64cdd55b654e26055fdc6bbb1b06f473e0d82e66041f922d9a9cafbb5bd
   disposition: edited
-  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
-    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+  review_basis: Full current source read and declared hotfix additions reviewed; final changed spans checked. Unchanged
+    documents retain their exact reviewed hashes. This is editorial source review, not release certification.
 - document: docs/audiences/security-reviewers.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -1088,12 +1089,12 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 70
-  line_count: 70
-  sha256: 9a1ac40c50bc23e6196ba4dc518eedbc30d3dee7a1e54a7fc0cc57ed187ef173
+    - 76
+  line_count: 76
+  sha256: 15e456e294c2c10a905938679c90bbefd759a587b9254ca0d68ddd23526f15e0
   disposition: added
-  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
-    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+  review_basis: Full current source read and declared hotfix additions reviewed; final changed spans checked. Unchanged
+    documents retain their exact reviewed hashes. This is editorial source review, not release certification.
 - document: slack-app-manifest.json
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -1141,3 +1142,10 @@ current_review:
   - Re-read every changed document listed changed_since_full_read_final_reread_required after final code/tests;
     do not infer completion from refreshed hashes
 candidate_review_baseline: c0d81f1bdf46904250244cda7f71a70e3dd6d9f7
+hotfix_review:
+  id: P16-HF01
+  changed_documents:
+  - docs/audiences/operators.md
+  - contracts/participation/v2/operator-identity.contract.yml
+  scope: Reopen both changed documents; retain exact unchanged editorial/visual bytes. No graphics or README BCF
+    changes.
