@@ -43,7 +43,7 @@ def identity_detail(owner, actor, channel, chat_id, command):
     history = data['history']
     text = ('*'+_safe(data['route'])+'*\n'
             +('Retired' if data['retired'] else 'Registered')+' · non-stopped sessions `'+str(data['sessions'])+'`\n'
-            +'Known authored local messages `'+str(history['retained'])+'`; eligible batch `'+str(history['eligible'])+'`\n\n'
+            +'Known authored local messages `'+str(history['retained'])+'`; deletion eligibility not assessed.\n\n'
             +'Rename: `'+_safe(command)+' identities rename UNIQUE-FRAGMENT new-name`\n'
             +'Remove revokes AgentBus access; it does not stop a host or acknowledge work.\n'
             +'History cleanup retains all reference/ACK/age pins. Slack, remote copies, updates and backups stay intact.')

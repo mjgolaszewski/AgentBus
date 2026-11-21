@@ -251,24 +251,24 @@ embedded:
 - path: docs/audiences/operators.md
   kind: text_illustration_or_example
   lines:
-  - 103
-  - 109
+  - 110
+  - 116
   sha256: 1b76023ce98893ed682765681abc4c392deebca26eaebc39ab8887710f6ccafa
   disposition: reviewed
   basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: docs/audiences/operators.md
   kind: code_example
   lines:
-  - 128
-  - 132
+  - 135
+  - 139
   sha256: ac04271b7fb7ea37e4353d3ddfeb8a6fe84044f7c39c4b7f0ea7f16c80b169e8
   disposition: reviewed
   basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
 - path: docs/audiences/operators.md
   kind: text_illustration_or_example
   lines:
-  - 171
-  - 179
+  - 178
+  - 186
   sha256: 71b9c8e360fe544f7df6c1cbfa03b28c1953b891ed64aae4fcd1cff58c43bd38
   disposition: reviewed
   basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.

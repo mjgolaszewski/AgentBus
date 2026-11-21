@@ -36,12 +36,16 @@ reviewed:
   basis: full current module and callers
   disposition: retain reviewed implementation; qualification tied to exact subject
 - path: src/agentbus_identity_management_service.py
-  sha256: 409b750f50418857ac8faf7a18ae572853f101b08d0b620afcdcc48eb315dbd4
-  basis: full current module and callers
+  sha256: 2a6217b0425cf0842e489ea0cfcf64c9b8049617867608f84a32b4a93bc30e8e
+  basis: 'Hotfix changed spans and affected context reviewed: equivalent joined-cursor predicates, selective author
+    routes, budget cleanup before transaction rollback;132 controls and isolated exact-target evidence separately
+    recorded.'
   disposition: retain reviewed implementation; qualification tied to exact subject
 - path: src/agentbus_identity_ui_service.py
-  sha256: f63d565b936885eca7a921369ab35ef355403bfbf0226f5652f9166ea5ef3b73
-  basis: full current module and callers
+  sha256: 9969568d269dc28eeff3ae60e9fb9eb2b28b2ed727853b1afe50311c798d1f1d
+  basis: 'Hotfix changed spans and affected context reviewed: equivalent joined-cursor predicates, selective author
+    routes, budget cleanup before transaction rollback;132 controls and isolated exact-target evidence separately
+    recorded.'
   disposition: retain reviewed implementation; qualification tied to exact subject
 - path: src/agentbus_lifecycle_client.py
   sha256: 3ceba86ae29cc0d6acba643627828a55780e89a8a3dbd0e2d0351d544955e39e
@@ -88,8 +92,10 @@ reviewed:
   basis: full current module and callers
   disposition: retain reviewed implementation; qualification tied to exact subject
 - path: src/agentbus_retention_service.py
-  sha256: 85bef67218495226d539824041074b9022f6043ee8e8a35193dcc62775170a69
-  basis: changed spans and affected call context
+  sha256: cd526816ce7f61ab19c0695aa53435fb75f32f00d7253ace64bd1b6fa9823a2c
+  basis: 'Hotfix changed spans and affected context reviewed: equivalent joined-cursor predicates, selective author
+    routes, budget cleanup before transaction rollback;132 controls and isolated exact-target evidence separately
+    recorded.'
   disposition: retain reviewed implementation; qualification tied to exact subject
 - path: src/agentbus_runtime_inventory_service.py
   sha256: 307741bb241ab96021ee3f13371eee8f4d1f0ead2df2be8f8bd76096603c0dfb
@@ -100,8 +106,9 @@ reviewed:
   basis: changed spans and affected call context
   disposition: retain reviewed implementation; qualification tied to exact subject
 - path: src/agentbus_service.py
-  sha256: 17be23a15da742f2c46ddbc72bae7121bbbea8fd91a169204b27e9924d2fac91
-  basis: changed spans and affected call context
+  sha256: 8e8a05a5ba2e858e3d4927222f1083641cfe51de4d75c1244c7e977f3c250f31
+  basis: Single FastAPI version metadata literal synchronized with canonical package0.12.1; no route or runtime
+    behavior change. Prior source review retained for unchanged bytes.
   disposition: retain reviewed implementation; qualification tied to exact subject
 - path: src/agentbus_settings_service.py
   sha256: 47442387cf5b1d00d16b33249fca93c09d25e0a2f1b3e41bfe5cfe0168b0d70d

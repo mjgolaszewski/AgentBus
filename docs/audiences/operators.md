@@ -94,11 +94,18 @@ forward rules when installing its additive request table.
 
 ## Manage an enrolled identity
 
-A matching qualified 0.12 release adds `<command> identities`. Use matching
-qualified client/service bytes; older runtimes do not implement this surface.
+A matching qualified 0.12.1 release supports `<command> identities`. Use matching
+qualified client/service bytes; use this patch or newer for bounded inspection.
 It lists identities in the invoking channel, with private **Manage identity**,
 preview and confirmation buttons. Use **Include retired** for retained
 identities. A chat with multiple sessions appears once. No UUID typing is needed.
+
+**Manage identity** opens a private read-only detail view. Deletion eligibility
+is shown as not assessed until **Preview remove + history** is requested.
+Ordinary details and rename/remove-only previews do not scan deletion candidates.
+A history query that reaches its work limit refuses cleanup. Existing receipts
+and custody remain intact; the limit grants no retry or checkpoint-reset authority.
+The work budget limits SQLite computation, not storage I/O latency.
 
 ```text
 <command> identities

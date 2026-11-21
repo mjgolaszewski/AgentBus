@@ -84,6 +84,7 @@ known_constraints:
   - Owner admission must bind backend transport incarnation connection generation and exact thread; upstream reports and idle observations do not grant writer or retry authority
   - Historical federation canaries apply only to their pinned subjects; no new multi-installation or live-provider qualification follows from local regression success
   - AgentBus assumes a trusted workspace with trusted non-hostile agents and operators; hostile OS/process isolation credential theft and independent agent authority inference remain outside its guarantee
+  - Identity details exclude deletion eligibility; retention SQL uses a finite five-million-step work budget and selective indexes. Exhaustion grants no cleanup authority and transaction rollback preserves custody.
   - Existing unresolved or legacy-unknown custody remains pinned; offline migration, backup and repair-forward rules govern incompatible cutovers; public Slack channels provide no confidentiality or indefinite availability guarantee
   - Reported full-service hangs remain unclassified; the snapshot and carrier-classification repairs do not establish their cause or a remote-health guarantee
   - Every final subject requires canonical protected PR exact-main archive and isolated-installation proof; deployment and live canaries remain separate custodian actions with concrete prerequisites

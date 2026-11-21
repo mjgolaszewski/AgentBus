@@ -309,3 +309,96 @@ def test_identity_preview_capacity_never_discards_a_retained_operation(managed,m
     with pytest.raises(ValueError,match='capacity'):
         owner.preview('UOP','C111',ids['second'][0],'retire')
     assert owner.receipt('UOP','C111',preview['intent']['request_id'])['state']=='preview'
+
+
+def test_identity_detail_and_nonhistory_previews_never_run_eligibility(managed, monkeypatch):
+    store,_,owner,ids=managed
+    store.lifecycle.activate_fresh(instant=100)
+    def forbidden(*args,**kwargs):
+        raise AssertionError('ordinary identity view scanned deletion eligibility')
+    monkeypatch.setattr(store.retention,'_eligible',forbidden)
+    chat=ids['first'][0]
+    assert owner.detail('UOP','C111',chat)['history']['eligibility_checked'] is False
+    for action,name in [('retire',None),('rename','renamed')]:
+        preview=owner.preview('UOP','C111',chat,action,name=name)
+        assert preview['history']['eligibility_checked'] is False
+        assert preview['intent']['positions']==[]
+    assert store.participation.session_state(ids['first'][1])['state']=='active'
+
+
+def test_identity_history_query_limit_releases_lock_and_preserves_custody(managed,monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+
+    import src.agentbus_retention_service as retention_module
+    from src.agentbus_message_lifecycle_service import LifecycleRejected
+    store,_,owner,ids=managed
+    store.lifecycle.activate_fresh(instant=100)
+    before=store._db.total_changes
+    monkeypatch.setattr(retention_module,'QUERY_WORK_STEPS',1)
+    with pytest.raises(LifecycleRejected,match='work limit'):
+        owner.preview('UOP','C111',ids['first'][0],'retire_with_history')
+    assert store._db.execute('SELECT count(*) FROM identity_management_operations').fetchone()[0]==0
+    assert not store._db.in_transaction
+    monkeypatch.setattr(retention_module,'QUERY_WORK_STEPS',5000000)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        result=pool.submit(owner.detail,'UOP','C111',ids['first'][0]).result(timeout=2)
+    assert result['retired'] is False
+    assert store._db.total_changes==before
+
+
+def test_identity_view_labels_history_as_unassessed(managed):
+    from src.agentbus_identity_ui_service import identity_detail
+    store,_,owner,ids=managed
+    reply=identity_detail(owner,'UOP','C111',ids['first'][0],'/custombus')
+    assert 'not assessed' in reply.text
+    assert 'eligible batch `0`' not in reply.text
+
+
+def test_interrupted_archive_rolls_back_partial_writes_and_clears_budget(managed, monkeypatch):
+    from src.agentbus_message_lifecycle_service import LifecycleRejected
+    from src.agentbus_service import SendMessage
+    store,_,_,_=managed
+    monkeypatch.setattr('src.agentbus_message_lifecycle_service.time.time',lambda:100.0)
+    store.lifecycle.activate_fresh(instant=100)
+    body=SendMessage(sender='local:demo:first',recipient='local:demo:second',text='Retain interrupted archive',kind='request')
+    body._sender_assurance='session'
+    message=store.append('C111',str(uuid4()),body)
+    instant=100+8*86400
+    store.lifecycle.settle(instant)
+    assert store.retention.archive('C111',actor='operator',instant=instant)['eligible']==1
+    intercepted=[]
+    def interrupt_after_first_write(sql):
+        if sql.startswith("UPDATE messages SET payload='null'"):
+            intercepted.append(True)
+            store._db.set_progress_handler(lambda:1,1)
+    store._db.set_trace_callback(interrupt_after_first_write)
+    try:
+        with pytest.raises(LifecycleRejected,match='work limit'):
+            store.retention.archive('C111',actor='operator',request_key='interrupted-budget',apply=True,instant=instant)
+    finally:
+        store._db.set_trace_callback(None)
+    assert intercepted and not store._db.in_transaction
+    assert store._db.execute('SELECT count(*) FROM lifecycle_archive').fetchone()[0]==0
+    assert store._db.execute('SELECT count(*) FROM lifecycle_operations WHERE request_key=?',('interrupted-budget',)).fetchone()[0]==0
+    assert store.message('C111',message.cursor).text==body.text
+
+
+def test_identity_eligibility_cost_excludes_large_unrelated_author_population(managed,monkeypatch):
+    import src.agentbus_retention_service as retention_module
+    from src.agentbus_service import SendMessage
+    store,_,_,ids=managed
+    monkeypatch.setattr('src.agentbus_message_lifecycle_service.time.time',lambda:100.0)
+    store.lifecycle.activate_fresh(instant=100)
+    body=SendMessage(sender='local:demo:first',recipient='local:demo:second',text='Own retained work',kind='request')
+    body._sender_assurance='session'
+    store.append('C111',str(uuid4()),body)
+    noise=SendMessage(sender='local:demo:second',recipient='all',text='Other author retained history',audience='broadcast')
+    raw=noise.model_dump_json()
+    with store._db:
+        store._db.executemany("INSERT INTO messages(channel,slack_ts,thread_ts,recipient,audience,received_at,payload,sender,sender_assurance) VALUES('C111',?,NULL,'all','broadcast','1970-01-01',?,'local:demo:second','session')",[(f'noise-{i}',raw) for i in range(10000)])
+        store._db.execute("INSERT INTO lifecycle_payloads(cursor,channel,created_at,archive_after,purge_after,legacy_unknown) SELECT cursor,channel,0,0,0,0 FROM messages WHERE slack_ts LIKE 'noise-%'")
+    monkeypatch.setattr(retention_module,'QUERY_WORK_STEPS',1000000)
+    before=store._db.total_changes
+    result=store.retention.identity_history('C111',ids['first'][0],instant=100)
+    assert result['retained']==1 and result['eligible']==0
+    assert store._db.total_changes==before
