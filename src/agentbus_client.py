@@ -473,7 +473,7 @@ def _execute_command(ns: argparse.Namespace, project: Path, values: dict[str, st
         if ns.through < int(profile["ack_cursor"]):
             raise ClientError("Acknowledgements are monotonic and cannot move backward.")
         if ns.through > int(profile["observed_cursor"]):
-            raise ClientError("Cannot acknowledge beyond the highest cursor observed by this chat.")
+            raise ClientError(f"Cannot acknowledge beyond the highest cursor observed by this chat: requested {ns.through}; presented {profile['observed_cursor']}; semantic ACK {profile['ack_cursor']}. Use plain inbox without --after or poll to present work; historical reads, resume and completion do not advance presentation. No ACK changed.")
         from src.agentbus_lifecycle_client import acknowledge_handled
         handling = acknowledge_handled(values, profile, ns.through, api_call=api)
         acknowledged = handling['through']

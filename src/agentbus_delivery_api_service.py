@@ -48,6 +48,7 @@ async def send_message(request, message, session_token, response):
             response.status_code = 202
             response.headers['X-AgentBus-Delivery-Version'] = version
             response.headers['Idempotency-Key'] = key
+            response.headers['Location'] = f'/v1/requests/{key}/outcome'
             request.app.state.delivery.wake.set()
             return serialize_message(store, channel, accepted)
         store.send_rate.reserve(principal)

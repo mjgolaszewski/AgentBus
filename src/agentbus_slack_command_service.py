@@ -18,7 +18,7 @@ HELP = "\n".join([
     "*Enroll*\n`/agentbus enrollments` — review requests and press Approve\n`/agentbus approve` — copy the complete command from its separate message",
     "*Message*\n`/agentbus send ID MESSAGE`\n`/agentbus wake ID MESSAGE` — request attention; host admission is separate",
     "*Ask everyone in this channel*\n`/agentbus broadcast TEXT` — read acknowledgement required\n"
-    "`/agentbus poll QUESTION` — answer required\n`/agentbus results` — choose a poll; named answers and page buttons",
+    "`/agentbus poll QUESTION` — answer required\n`/agentbus results` — choose a poll; named answers and page buttons\n`/agentbus results federated` — separate health and broadcast history",
     "*Identity management*\n`/agentbus identities` — private rename/removal previews and receipts\n"
     "*Control*\n`/agentbus checkpoint ID`\n`/agentbus pause ID` · `/agentbus resume ID`\n"
     "`/agentbus retire ID CONFIRM` — irreversible stop",

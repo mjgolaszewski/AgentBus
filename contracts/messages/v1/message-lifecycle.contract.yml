@@ -1,6 +1,6 @@
 document:
   kind: message_lifecycle_contract
-  version: 1.0.5
+  version: 1.1.0
   status: active
   path: contracts/messages/v1/message-lifecycle.contract.yml
 contract:
@@ -122,3 +122,9 @@ delivery_progress:
   attempted: expired_uncertain_retains_recovery_and_custody
   parent_unavailable: retain_child_without_provider_attempt_until_proved_parent_or_child_expiry
   retention: unresolved_parent_child_and_provider_obligations_remain_pinned
+
+presentation_diagnostics:
+  ack_rejection: Report requested public cursor, locally presented high-water and semantic ACK; do not mutate them.
+  observation: Plain inbox and poll record presentation. Historical inbox-after, raw read, resume and completion do not.
+  durable_receipt: Original UUID with bound-profile message-status locator; HTTP202 Location points to existing exact-session request outcome.
+  legacy: Unversioned immediate posting supplies no durable UUID or authenticated status guarantee.

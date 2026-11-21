@@ -40,6 +40,7 @@ def test_local_acceptance_survives_slack_outage_and_deduplicates_request(tmp_pat
             assert first.status_code == 202
             assert first.json()['slack_ts'] == ''  # no fabricated provider timestamp
             assert first.headers['X-AgentBus-Delivery-Version'] == '1'
+            assert first.headers['Location'] == f"/v1/requests/{headers['Idempotency-Key']}/outcome"
             again = client.post('/v1/messages', headers=headers, json=body)
             assert again.status_code == 202
             assert again.json()['cursor'] == first.json()['cursor']

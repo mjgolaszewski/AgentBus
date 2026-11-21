@@ -199,7 +199,8 @@ embedded:
   - 23
   sha256: 188b5326c201113f031f08209449eed8956f1135aef3c6d2705a1470aecc36c0
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: docs/audiences/agents.md
   kind: code_example
   lines:
@@ -207,7 +208,8 @@ embedded:
   - 58
   sha256: 97fe4ec63d4155f80bb1ec53fa85e96caa4194ed5b9de35206283723d3db973f
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: docs/audiences/experimenters.md
   kind: table
   lines:
@@ -239,7 +241,8 @@ embedded:
   - 48
   sha256: 3b4abb51ff60283910a49c390e79d3253fca8a5808d9ed14dd48c596714dcff2
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: docs/audiences/operators.md
   kind: code_example
   lines:
@@ -247,7 +250,8 @@ embedded:
   - 54
   sha256: e0ae4ddf71f89dd0d7e098b0a42410c538c741ec64dc76d2b2ea03341e33d218
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: docs/audiences/operators.md
   kind: text_illustration_or_example
   lines:
@@ -255,7 +259,8 @@ embedded:
   - 116
   sha256: 1b76023ce98893ed682765681abc4c392deebca26eaebc39ab8887710f6ccafa
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: docs/audiences/operators.md
   kind: code_example
   lines:
@@ -263,7 +268,8 @@ embedded:
   - 139
   sha256: ac04271b7fb7ea37e4353d3ddfeb8a6fe84044f7c39c4b7f0ea7f16c80b169e8
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: docs/audiences/operators.md
   kind: text_illustration_or_example
   lines:
@@ -271,7 +277,8 @@ embedded:
   - 186
   sha256: 71b9c8e360fe544f7df6c1cbfa03b28c1953b891ed64aae4fcd1cff58c43bd38
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: docs/channel-migration.md
   kind: code_example
   lines:
@@ -367,15 +374,17 @@ embedded:
   - 36
   sha256: c4460accbf42e6dc5be3ae9ab2033e4e052ce47afe2f52a5818f3e9b94f75464
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: docs/http-api.md
   kind: code_example
   lines:
-  - 52
-  - 54
+  - 59
+  - 61
   sha256: 3a7465cf1a08c09dbf80b348b71b7806d69186ef57d46fa1c242f834aa613c64
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: docs/local-adapters.md
   kind: code_example
   lines:
@@ -436,26 +445,29 @@ embedded:
   kind: text_illustration_or_example
   lines:
   - 24
-  - 32
-  sha256: f843c270774dbbe7b16476b44e5d2ccaa78467745d4d6d3e22154b1640f1ea0c
-  disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  - 33
+  sha256: c8383946c64efe74dc0596da176a1139af0ad42333c0cfae633b4f623b4aa0ff
+  disposition: edited
+  basis: Original command example retained with one explicit federated-results selector added; full source and changed
+    span read.
 - path: docs/operator-federation.md
   kind: text_illustration_or_example
   lines:
-  - 42
-  - 44
+  - 43
+  - 45
   sha256: ad662cb64927893dc87f2383b6961ec02aab9b4f1574c671f2a5c5a8e6a4f0a1
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: docs/operator-federation.md
   kind: code_example
   lines:
-  - 81
-  - 94
+  - 83
+  - 96
   sha256: 8683b994798e6cee42f08e61c3d3e026763c15f705c9a7d432c2f63dc46c6889
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: docs/recovery.md
   kind: code_example
   lines:
@@ -463,47 +475,53 @@ embedded:
   - 29
   sha256: e563dfcda82e761f596e1d6561c71dbf80b286b63cef740591de8b76ba580fa6
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: docs/recovery.md
   kind: code_example
   lines:
-  - 52
-  - 54
+  - 77
+  - 79
   sha256: 4f07fe14b22082332f94bee4374a2ff141f881448091cadb9889b424541ff8b0
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: docs/recovery.md
   kind: code_example
   lines:
-  - 67
-  - 83
+  - 92
+  - 108
   sha256: 1c6d8e2c0a405f2731b867fff3a5532842f16bedaae208e37ff55ac098705160
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: docs/recovery.md
   kind: code_example
   lines:
-  - 114
-  - 116
+  - 139
+  - 141
   sha256: a49a3cc5499baafa1be651ba5bb29a4eb7e3b5e0e0f2b5f117fcef46cb41051d
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: docs/recovery.md
   kind: code_example
   lines:
-  - 141
-  - 150
+  - 166
+  - 175
   sha256: cad0b75d4c73c8b829c7c6ae9ddb8f09fa78f1b7a912da9b77862eddbd3384fe
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: docs/recovery.md
   kind: text_illustration_or_example
   lines:
-  - 172
-  - 174
+  - 203
+  - 205
   sha256: 5bde419bd114550dc7b16ec2c1cd39e587a88fdcf32dd9fddadb0359dd1c8e3a
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: skills/agentbus/references/participation.md
   kind: code_example
   lines:
@@ -511,7 +529,8 @@ embedded:
   - 13
   sha256: 1ff6e1fc74fde9f6190d2fefe8ab1df28fd2b23be0c673de77fe9aaec4b605a3
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: skills/agentbus/references/participation.md
   kind: code_example
   lines:
@@ -519,7 +538,8 @@ embedded:
   - 20
   sha256: fe40d40b6e241017d6b15cc759c0f9b00cec50525d1f616996b82a10c182ffcd
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: skills/agentbus/references/participation.md
   kind: code_example
   lines:
@@ -527,7 +547,8 @@ embedded:
   - 31
   sha256: e2f808066218b43583d8123bfc9d170e46a7527becca15dbec17434bbeeffc9d
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: skills/agentbus/references/participation.md
   kind: code_example
   lines:
@@ -535,7 +556,8 @@ embedded:
   - 44
   sha256: 7e355ba5e50ca780841aceefadf66ebcea3d313889ab10120d23c9bdec4e392e
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: skills/agentbus/references/participation.md
   kind: code_example
   lines:
@@ -543,7 +565,8 @@ embedded:
   - 53
   sha256: 6d73dc6078eeaebb48bdea5a4dceb68635c7e30a738f977413be0b117c412828
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: skills/agentbus/references/participation.md
   kind: code_example
   lines:
@@ -551,7 +574,8 @@ embedded:
   - 65
   sha256: c56dada9d86479053d581bd2a170d9bb5bae6d87886f6d2d7a0d4a443a1e5f52
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: skills/agentbus/references/participation.md
   kind: code_example
   lines:
@@ -559,7 +583,8 @@ embedded:
   - 77
   sha256: c9921c46c6b3200ba1b0376f18ca8abb61f288585f89d588b3ce2be375669051
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: skills/agentbus/references/participation.md
   kind: code_example
   lines:
@@ -567,23 +592,26 @@ embedded:
   - 103
   sha256: a2911c4f55a161f131c21c4dde08a10d54d8b06f17776eedd3f3c7eb0398c3a7
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: skills/agentbus/references/participation.md
   kind: code_example
   lines:
-  - 110
-  - 113
+  - 114
+  - 117
   sha256: 1b652421b4a7601e6dfe0b7046c35caffa1591b2babfefedc9e50e9c3a21caec
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: skills/agentbus/references/participation.md
   kind: code_example
   lines:
-  - 157
-  - 161
+  - 163
+  - 167
   sha256: 85d1da8e3750b2b5d06a0f36b34997b2c8e32224b0091028ebdca75fc769919c
   disposition: reviewed
-  basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+  basis: P17 containing document and changed spans read; original visual/example bytes retained and location reconciled.
+    No new browser rendering claim.
 - path: docs/audiences/mailbox-tool-users.md
   kind: table
   lines:
@@ -736,6 +764,14 @@ embedded:
   sha256: 4122c9e163b761f131bf06267fc6f24a1e524ef52bec50b43e233d4b59116d45
   disposition: added
   basis: Read with containing file and final changed spans; source semantics only, no browser rendering claim.
+- path: docs/recovery.md
+  kind: code_example
+  lines:
+  - 53
+  - 55
+  sha256: 9221320c43ac44c84b7d1300cddbe32c97956d1d82fe65cfe1c539b4cb518d85
+  disposition: added
+  basis: New bounded resume example read with full guide and actual final source; matching installed support required.
 preservation:
   removed: 0
   bcf_section: README Good vibes, governed builds remains near the front with its original graphic; unchanged section
@@ -746,3 +782,5 @@ preservation:
 current_review: All three unchanged images freshly visually inspected; all current tables, diagrams and fenced examples
   read with containing files, including new wire-format source examples and receive-path diagram; final spans/hashes
   reconciled.
+peer_followup_review: P17 changes preserve all original illustrations and tables; one bounded resume code example
+  added. Prior image inspection applies only to exact unchanged bytes.

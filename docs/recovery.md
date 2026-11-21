@@ -45,6 +45,31 @@ a separate non-authorizing response observer. Liveness/status probes, rejected
 proof and unproved operator inspection do not invent agent activity. An actual
 access is still not evidence of continuous inbox monitoring or model execution.
 
+## Focus a resume view without acknowledging history
+
+If installed `resume --help` advertises `--unhandled` and the profile has matching
+message-lifecycle support, use:
+
+```bash
+agentbus resume --identity ROUTE --unhandled
+```
+
+This explicit read scans at most five pages of twenty scoped inbox messages and
+returns the latest twenty nonterminal entries within that window. It omits
+`handled` and `expired_unclaimed` entries from this projection, while preserving
+unknown and recovery-required observations. The output reports scanned pages,
+omitted terminal entries, earlier nonterminal entries not shown and any unscanned
+remainder. An empty bounded view with more history is not an empty mailbox.
+Use ordinary scoped inbox continuation to inspect omitted or unscanned work.
+The original ACK, presentation high-water, stages and custody stay unchanged.
+STOP, holds and policy acknowledgement still precede every scan.
+
+Plain inbox without `--after` and full poll presentation establish the local
+presentation high-water used by ACK. Historical reads, resume and completion do
+not. An ACK rejection reports the requested cursor, presented high-water and
+current semantic ACK; present and handle the relevant work rather than editing
+cursors or recreating delivery.
+
 ## Carry a bounded recovery note
 
 A matching qualified 0.12 client adds an optional local context file:
@@ -164,6 +189,12 @@ No additional monitor daemon, per-agent Slack probes, wake, retry or execution
 authority is introduced. Health can stay good while a client is unmonitored.
 
 ## Recover an uncertain message
+
+Durable send/reply output includes a `status` locator for the original UUID and
+bound identity. HTTP `202` responses also supply the existing authenticated
+request-outcome `Location`; it grants no access without exact session/inbox proof.
+MCP clients use their bound process profile with the `status` tool and original
+`message_id`, never an identity override.
 
 Keep the original request UUID from the successful send/reply receipt or the
 existing private retry stage. A public inbox cursor is local to that inbox;

@@ -287,3 +287,24 @@ def test_refresh_snapshot_preserves_original_request_and_admission(pair):
     assert stores["alpha"]._db.execute("SELECT count(*) FROM operator_fanout").fetchone()[0] == before
     with pytest.raises(ValueError):
         operator_results(owner, request, "U999", "C111")
+
+
+
+def test_federated_history_buttons_are_typed_bounded_scoped_and_read_only(pair):
+    from src.agentbus_operator_scope_service import recent_operator_buttons
+    from src.agentbus_slack_ui_service import parse_action
+    stores, bridges, _ = pair
+    owner = bridges['alpha'].operator
+    ids = [owner.start(actor='U123',channel='C111',operation='health' if i % 2 else 'broadcast',
+                       location='alpha',text='' if i % 2 else 'Read only',request_key=f'history-{i}')
+           for i in range(5)]
+    before = stores['alpha']._db.total_changes
+    blocks = recent_operator_buttons(owner,'U123','C111')
+    buttons = [e for b in blocks if b['type']=='actions' for e in b['elements']]
+    assert len(buttons)==4
+    assert {b['text']['text'] for b in buttons} <= {'Health results','Broadcast receipts'}
+    assert all(parse_action(b).target in ids and parse_action(b).channel=='C111' for b in buttons)
+    assert 'Created' in str(blocks) and 'UTC' in str(blocks)
+    assert recent_operator_buttons(owner,'UOTHER','C111')==[]
+    assert recent_operator_buttons(owner,'U123','COTHER')==[]
+    assert stores['alpha']._db.total_changes==before

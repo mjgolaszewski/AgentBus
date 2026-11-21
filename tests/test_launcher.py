@@ -542,7 +542,10 @@ def test_inbox_after_zero_is_stateless_and_ack_is_bounded(launcher, tmp_path, mo
     assert json.loads((state / "tools:weed.json").read_text())["observed_cursor"] == 10
     capsys.readouterr()
     assert launcher.main(["ack", "--identity", "tools:weed", "--through", "11"]) == 1
-    assert "highest cursor observed" in capsys.readouterr().err
+    diagnostic = capsys.readouterr().err
+    assert "highest cursor observed" in diagnostic
+    assert "requested 11" in diagnostic and "presented 10" in diagnostic and "ACK 8" in diagnostic
+    assert "without --after" in diagnostic and "completion" in diagnostic
     assert launcher.main(["ack", "--identity", "tools:weed", "--through", "10"]) == 0
     assert json.loads((state / "tools:weed.json").read_text())["ack_cursor"] == 10
 

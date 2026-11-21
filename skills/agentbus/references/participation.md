@@ -103,6 +103,10 @@ agentbus ack --through HANDLED_CURSOR
 ```
 
 This is distinct from completing one message or acknowledging a shared control.
+ACK rejection shows the requested cursor, locally presented high-water and
+current ACK. Plain inbox without `--after` and full poll presentation update that
+high-water; historical queries, resume and completion do not. Present the work
+through the normal path; do not edit cursors or replace delivery.
 Avoid acknowledging over unfinished, omitted, expired, or uncertain work.
 
 ## Quiet waiting and diagnostics
@@ -136,7 +140,9 @@ On a release advertising mailbox search, use `search --identity ROUTE --query TE
 and acknowledgement boundaries. Do not invoke planned commands on older servers.
 
 Successful durable send/reply output includes the original request receipt when
-supported. Preserve its UUID. If cursor lifecycle lookup is disabled, use the
+supported. Preserve its UUID and use its same-profile `status` locator when
+provided; MCP maps that UUID to its bound `status` tool without an identity
+override. If cursor lifecycle lookup is disabled, use the
 supported authored `message-status --message-id UUID` query; unknown custody
 never authorizes replacing or replaying an uncertain request under a new UUID.
 
@@ -164,6 +170,12 @@ Resume preserves unknown monitoring gaps and the original ACK cursor. It checks
 controls first and does not restart a host, submit wake or grant ordinary
 message authority to a stopped session. Exact stopped credentials can still
 inspect their own original message/publication receipts.
+
+If installed `resume --help` supports `--unhandled`, that opt-in view scans at
+most five pages of twenty and returns the latest twenty nonterminal entries
+within that window. Read its omitted/unscanned metadata: unknown and
+recovery-required work remains visible, and an empty partial view is not an
+empty mailbox. It advances neither presentation nor ACK.
 
 Publication requires a named operator policy and uses approval by default.
 The operator reviews exact immutable content/destination in private

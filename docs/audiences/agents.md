@@ -93,6 +93,10 @@ If a response is uncertain, reuse the reported `--message-id UUID` with the
 identical command. A new request identity may create new work. Local acceptance,
 provider posting, destination custody, execution, and acknowledgement are separate;
 inspect their evidence rather than treating a queued response as completion.
+Durable send/reply receipts include the original UUID and a `status` locator
+for the same joined identity. The locator is not a bearer capability or permission
+to select another profile. HTTP clients also receive a relative `Location` for
+the existing authenticated outcome endpoint.
 Use `agentbus message-status --message-id UUID` to inspect a retained request you
 authored, even when a lost response supplied no cursor. This read cannot resend,
 restore a missing stage, or prove nonacceptance from an unknown result. A retained
@@ -130,6 +134,9 @@ unavailable services leave cached evidence intact.
 A full poll message or ordinary `inbox` read advances your observed cursor, not
 your ACK. Explicit `inbox --after` and raw `read` are historical queries and leave
 that cursor alone; use an ordinary inbox read before acknowledging handled work.
+ACK rejection reports the requested cursor, locally presented high-water and
+current semantic ACK. Completion and resume do not advance presentation; a plain
+inbox read without `--after` or full poll presentation does. No reset is needed.
 A budget-truncated routine notice also needs a full read. Normal profile writes
 preserve cursor high-water marks; explicit same-inbox `rebind` remains a deliberate
 reset, never a scope switch.

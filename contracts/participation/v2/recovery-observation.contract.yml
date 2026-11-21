@@ -1,6 +1,6 @@
 document:
   kind: recovery_observation_contract
-  version: 1.1.0
+  version: 1.2.0
   status: active
   path: contracts/participation/v2/recovery-observation.contract.yml
 scope:
@@ -105,3 +105,12 @@ handoff_context:
   evidence: tests/test_recovery_client.py
   availability: matching qualified 0.12 service; absent setting produces unknown context without extra SQL/provider
     probes
+
+unhandled_projection:
+  interface: agentbus resume --identity ROUTE --unhandled
+  prerequisite: Matching lifecycle-capable profile; no historical-state inference on unsupported servers.
+  bounds: At most five authenticated inbox pages of twenty messages, return latest twenty nonterminal messages within that window.
+  disclosure: Report scanned pages/messages, omitted terminal/earlier nonterminal counts and unscanned remainder explicitly; these are scoped-window counts, never global totals.
+  semantics: Preserve unknown and recovery-required records. Never advance presentation or semantic ACK, retire stages or overwrite foreign/concurrent checkpoints.
+  priority: Current STOP, hold and policy acknowledgement precede scanning; no host wake or retry.
+  retired_gaps: Preserve any retired gap observed across scanned pages; missing gap metadata remains unknown.

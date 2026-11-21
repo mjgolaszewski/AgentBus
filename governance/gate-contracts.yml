@@ -503,6 +503,8 @@ gates:
         expected_nodes_mode: exact
         artifact_binding: *id042
     negative_controls:
+    - {id: poll-listing-excludes-federated-history, mutation: {path: src/agentbus_slack_ui_commands_service.py, search: '        if len(parts) == 2 and parts[1] == ''federated'':', replace: '        if len(parts) == 1 or (len(parts) == 2 and parts[1] == ''federated''):'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_slack_commands::test_poll_listing_never_looks_up_federated_health_history']}}
+    - {id: durable-receipt-keeps-status-locator, mutation: {path: src/agentbus_delivery_client.py, search: '''status'': {''command'': ''message-status''', replace: '''status_lost'': {''command'': ''message-status'''}, oracle: {kind: test_node_failure, node_ids: ['tests.test_delivery_client::test_successful_durable_send_returns_original_uuid_receipt_without_mutating_provider_result']}}
     - {id: a2a-card-keeps-protojson-string-list, mutation: {path: src/agentbus_a2a_api_service.py, search: '"securityRequirements": [{"schemes": {"bearer": {"list": []}, "session": {"list": []}, "inbox": {"list": []}}}]', replace: '"securityRequirements": [{"schemes": {"bearer": [], "session": [], "inbox": []}}]'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_a2a::test_a2a_private_card_and_pagination_are_scope_bound']}}
     - {id: a2a-history-zero-does-not-accept-bool, mutation: {path: src/agentbus_a2a_service.py, search: return type(value) is int and value == 0, replace: return value == 0}, oracle: {kind: test_node_failure, node_ids: ['tests.test_a2a::test_a2a_malformed_history_and_tokens_fail_before_admission']}}
     - {id: a2a-empty-token-is-still-typed, mutation: {path: src/agentbus_a2a_service.py, search: 'if "pageToken" in params and not isinstance(params["pageToken"], str):', replace: 'if False:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_a2a::test_a2a_malformed_history_and_tokens_fail_before_admission']}}
@@ -619,7 +621,7 @@ gates:
     - {id: unused-import-is-rejected, mutation: {path: *id043, search: import argparse, replace: 'import argparse
 
           import definitely_unused_agentbus_symbol'}, oracle: {kind: *id059, exit_codes: [1], stream: stdout, regex: F401|imported but unused}}
-    - {id: version-drift-is-rejected-at-source-boundary, mutation: {path: *id002, search: version = "0.12.1", replace: version = "9.9.9"}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: project version must match}}
+    - {id: version-drift-is-rejected-at-source-boundary, mutation: {path: *id002, search: version = "0.13.0", replace: version = "9.9.9"}, oracle: {kind: *id059, exit_codes: [1], stream: stderr, regex: project version must match}}
   python314-compatibility:
     invocation: {argv: [python3, *id037, python314-compatibility, --junit, .artifacts/junit/python314-compatibility.xml], cwd: ., env: {}, required_env: []}
     evidence:
@@ -694,6 +696,10 @@ gates:
         expected_nodes_mode: exact
         artifact_binding: *id042
     negative_controls:
+    - {id: ack-diagnostic-keeps-presentation-limits, mutation: {path: src/agentbus_client.py, search: 'requested {ns.through}; presented {profile[''observed_cursor'']}; semantic ACK {profile[''ack_cursor'']}', replace: requested unknown; presented unknown; semantic ACK unknown}, oracle: {kind: test_node_failure, node_ids: ['tests.test_launcher::test_inbox_after_zero_is_stateless_and_ack_is_bounded']}}
+    - {id: compact-resume-omits-only-terminal-history, mutation: {path: src/agentbus_recovery_client.py, search: '                    if compact and isinstance(lifecycle, dict) and lifecycle.get(''state'') in {''handled'', ''expired_unclaimed''}:', replace: '                    if False:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_recovery_client::test_compact_resume_skips_terminal_history_but_preserves_unknown_recovery_and_ack']}}
+    - {id: compact-resume-preserves-earlier-retired-gaps, mutation: {path: src/agentbus_recovery_client.py, search: '''retired_history'': retired_gap', replace: '''retired_history'': inbox.get(''retired_history'')'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_recovery_client::test_compact_resume_preserves_retired_gap_from_earlier_scan_page']}}
+    - {id: compact-resume-keeps-finite-scan-bound, mutation: {path: src/agentbus_recovery_client.py, search: range(5 if compact else 1), replace: range(6 if compact else 1)}, oracle: {kind: test_node_failure, node_ids: ['tests.test_recovery_client::test_compact_resume_scan_is_finite_and_never_claims_no_more_work']}}
     - {id: poll-observation-is-recorded-before-explicit-ACK, mutation: {path: src/agentbus_client.py, search: '                    profile = record_observed_cursor(values, profile, event["message"]["cursor"])', replace: '                    pass'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_launcher::test_poll_message_observation_permits_explicit_ack_without_extra_inbox']}}
     - {id: stale-save-cannot-regress-cursor-high-water, mutation: {path: src/agentbus_profile_client.py, search: '                result[field] = incoming if reset_cursors else max(incoming, existing)', replace: '                result[field] = incoming'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_launcher::test_stale_profile_save_preserves_same_session_cursor_high_water']}}
     - {id: enrollment-binding-denial-precedes-staging, mutation: {path: src/agentbus_enrollment_client.py, search: '        if profile.get("service_url") != values.get("AGENTBUS_URL"):', replace: '        if False:'}, oracle: {kind: test_node_failure, node_ids: ['tests.test_self_service_client::test_file_grant_join_rejects_missing_or_foreign_service_before_staging[http://foreign.invalid]']}}
