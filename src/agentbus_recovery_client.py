@@ -120,6 +120,7 @@ def cli_resume(ns, project, values):
 
     profile, presence = control_profile(values, resolve_identity(ns.identity))
     binding = scope(profile)
+    compact = getattr(ns, 'unhandled', False)
     root = consumer_state_dir(values)
     path = root / (".resume-" + hashlib.sha256(binding["chat_id"].encode()).hexdigest() + ".json")
     previous = None
@@ -164,11 +165,46 @@ def cli_resume(ns, project, values):
                 or controls.get("ack_required") is True
                 or any(item.get("kind") in {"stop_end_turn", "pause_work"} for item in controls.get("controls", [])))
         if not held:
-            query = urlencode({"identity": profile["identity"], "after": int(profile.get("ack_cursor", 0)), "limit": 20})
-            inbox = scoped_api(values, "/v1/inbox?" + query, profile)
-            if (not isinstance(inbox.get("messages"), list) or len(inbox["messages"]) > 20
-                    or type(inbox.get("next_cursor")) is not int or type(inbox.get("has_more")) is not bool):
-                raise ClientError("Resume inbox response is invalid; checkpoint retained")
+            if compact and profile.get('message_lifecycle_version') != 1:
+                raise ClientError('Compact resume requires matching message lifecycle support; no history state inferred')
+            after = int(profile.get("ack_cursor", 0))
+            retained, scanned, omitted = [], 0, 0
+            retired_gap: bool | None = False
+            for page_index in range(5 if compact else 1):
+                query = urlencode({"identity": profile["identity"], "after": after, "limit": 20})
+                inbox = scoped_api(values, "/v1/inbox?" + query, profile)
+                if (not isinstance(inbox.get("messages"), list) or len(inbox["messages"]) > 20
+                        or type(inbox.get("next_cursor")) is not int or type(inbox.get("has_more")) is not bool
+                        or inbox['next_cursor'] < after or inbox['has_more'] and inbox['next_cursor'] <= after):
+                    raise ClientError("Resume inbox response is invalid; checkpoint retained")
+                if compact and (any(not isinstance(m, dict) or type(m.get('cursor')) is not int
+                        or not after < m['cursor'] <= inbox['next_cursor'] for m in inbox['messages'])
+                        or [m['cursor'] for m in inbox['messages']] != sorted({m['cursor'] for m in inbox['messages']})):
+                    raise ClientError('Resume inbox ordering is invalid; checkpoint retained')
+                gap = inbox.get('retired_history')
+                if gap is True or retired_gap is True:
+                    retired_gap = True
+                elif gap is not False:
+                    retired_gap = None
+                scanned += len(inbox['messages'])
+                for message in inbox['messages']:
+                    lifecycle = message.get('lifecycle')
+                    if compact and isinstance(lifecycle, dict) and lifecycle.get('state') in {'handled', 'expired_unclaimed'}:
+                        omitted += 1
+                    else:
+                        retained.append(message)
+                after = inbox['next_cursor']
+                if not inbox['has_more']:
+                    break
+            if inbox is None:
+                raise ClientError('Resume scan returned no page; checkpoint retained')
+            if compact:
+                inbox = {**inbox, 'messages': retained[-20:], 'retired_history': retired_gap, 'resume_projection': {
+                    'view': 'nonterminal_within_scanned_window', 'pages_scanned': page_index + 1,
+                    'messages_scanned': scanned, 'terminal_omitted': omitted,
+                    'earlier_nonterminal_not_shown': max(0, len(retained) - 20),
+                    'scan_limit_reached': inbox['has_more'],
+                    'presentation_and_semantic_ack_advanced': False}}
     write_resume_checkpoint(path, snapshot, checkpoint_baseline)
     result = {"scope": binding, "presence": presence, "controls": controls,
               "unmonitored_gap": {"from": previous, "to": instant, "continuous_monitoring": False,

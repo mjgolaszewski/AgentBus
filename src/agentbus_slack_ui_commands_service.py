@@ -32,17 +32,21 @@ def query_reply(parts: list[str], settings, store, channel: str, actor=None, com
             from src.agentbus_enrollment_approval_service import MAX_REQUESTS
             rows = store.channels.pending_enrollments(channel=channel, limit=MAX_REQUESTS)
             return enrollment_reply(rows, command, channel=channel, page=page)
+        if len(parts) == 2 and parts[1] == 'federated':
+            owner = getattr(store, 'operator_federation', None)
+            if owner is None:
+                return 'Operator federation is not configured.'
+            if not actor:
+                raise ValueError('Verified operator identity required.')
+            from src.agentbus_operator_scope_service import recent_operator_buttons
+            blocks = recent_operator_buttons(owner, actor, channel)
+            text = 'Latest four retained federated operations: choose the labelled result.' if blocks else 'No retained federated operations for you in this channel.'
+            return OperatorReply(text, [*section_blocks(text), *blocks])
         if len(parts) == 1 or parts[1] == 'recent':
             if len(parts) == 2 or len(parts) > 3:
                 raise ValueError(f'Use {command} results, then choose Results.')
             page = page_number(parts[2]) if len(parts) == 3 else 0
             reply = recent_polls_reply(store.controls.recent_polls(channel), channel=channel, page=page)
-            owner = getattr(store, 'operator_federation', None)
-            if owner is not None and actor and page == 0:
-                from src.agentbus_operator_scope_service import recent_operator_buttons
-                extra = recent_operator_buttons(owner, actor, channel)
-                if extra:
-                    return OperatorReply(reply.text + '\n\nRecent federated operations: choose Results.', [*reply.blocks, *extra], reply.command_messages)
             return reply
         from src.agentbus_slack_ui_service import UUID
         if len(parts) > 3 or not UUID.fullmatch(parts[1]):

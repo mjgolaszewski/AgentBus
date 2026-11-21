@@ -94,7 +94,9 @@ def deliver_payload(values, send_profile, info, payload, api, *, message_id=None
     try:
         result = api(values, '/v1/messages', payload, session_token=session, delivery_key=key, inbox_id=send_profile["inbox_id"], **options)
         return {**result, 'delivery_receipt': {'request_id': key, 'state': 'accepted',
-                'provider_delivery': 'not_inferred', 'recipient_execution': 'not_inferred'}}
+                'provider_delivery': 'not_inferred', 'recipient_execution': 'not_inferred',
+                'status': {'command': 'message-status', 'identity': send_profile.get('identity', payload['sender']),
+                           'message_id': key, 'scope': 'same_session'}}}
     except ClientError as exc:
         if exc.status == 410:
             raise ClientError('Request expired. Its identity is retained; do not resubmit under a new UUID.', status=410) from None

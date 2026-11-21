@@ -1,7 +1,7 @@
 # Operator federation
 
-Operator federation is available in 0.10.0 with a qualified matching
-client/service release and approved peer configuration.
+Operator federation needs a qualified matching client/service release and
+approved peer configuration.
 Existing ordinary messages and local commands retain their current scope.
 
 ## Locations, channels and destinations
@@ -29,6 +29,7 @@ AgentBus installation; an alias is not a location selector.
 <command> broadcast --location LOCATION TEXT
 <command> broadcast --federated TEXT
 <command> results
+<command> results federated
 ```
 
 The selectors are mutually exclusive and supported only for health and
@@ -43,14 +44,15 @@ Options precede text. Use `--` before literal text beginning with a switch:
 <command> broadcast -- --federated is literal text here
 ```
 
-A matching qualified 0.11 release also accepts the iOS em-dash `—` in place of `--` at
-option prefixes and literal separators. Literal message punctuation stays
-unchanged; this addition is unavailable in 0.10.
+The parser accepts the iOS em-dash `—` in place of `--` at declared option
+prefixes and literal separators. Literal message punctuation stays unchanged.
 
 A federated request returns privately without waiting for provider convergence.
-Use Refresh and page buttons for per-location results. The normal Results view
-also links your recent federated requests. With matching 0.11 bytes, each result
-shows its generation time: Refresh posts a new private reply below, while older
+Use Refresh and page buttons for per-location results. Plain `results` lists
+local polls only. Use `results federated` to inspect your latest four retained
+federated operations in this channel. **Health results** and **Broadcast receipts**
+buttons show the operation type beside its UTC creation time; opening one starts
+no new operation. Each result shows its generation time: Refresh posts a new private reply below, while older
 cards remain unchanged. It keeps the original request and target snapshot.
 Sample timestamps and stale/unknown
 outcomes are explicit. Read acknowledgement never proves model execution.

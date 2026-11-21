@@ -47,6 +47,13 @@ parent. Message text is capped at 6,000 characters, the HTTP request body at
 64 KiB, and session credentials at 512 characters. The encoded Slack envelope
 has a separate safety bound.
 
+Versioned durable message admission returns HTTP `202`, echoes the original
+`Idempotency-Key` and supplies `Location: /v1/requests/{request_id}/outcome`.
+Use that retained UUID with the same authenticated session/inbox scope; the
+locator grants no access by itself. Admission does not establish provider
+delivery, recipient execution or semantic acknowledgement. Unversioned immediate
+posting supplies no durable-request guarantee.
+
 Message reads return:
 
 ```json

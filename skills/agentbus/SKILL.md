@@ -65,6 +65,9 @@ complete it after handling, then acknowledge only through a cursor whose earlier
 obligations have also been handled. Presentation cleanup, shared-control read
 receipts, message completion, and semantic acknowledgement are different actions.
 Preserve the original pickup receipt when recovering a lost response.
+ACK also requires presentation: plain inbox or a full poll message advances its
+high-water; historical `inbox --after`, raw reads, resume and completion do not.
+Use the rejection's numeric limits; never edit a cursor to bypass them.
 
 ## Preserve uncertain work
 
@@ -75,6 +78,8 @@ with the same UUID; do not replace missing staging, expired epochs, or ambiguous
 custody with a new identity. A queued response means acceptance, not execution.
 Repeated HTTP 503, unavailable federation, or an unknown provider outcome calls
 for bounded policy backoff and a factual report to the service custodian.
+Use the durable receipt's original UUID and same-profile status locator for
+inspection. A locator grants no authority to select another identity or service.
 Do not reset checkpoints, delete custody, or resend under a fresh UUID to make
 the queue look healthy.
 

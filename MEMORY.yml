@@ -49,7 +49,7 @@ memory_retention_policy:
 environment_facts:
   current_repo_state:
     - MCP and local A2A setup lives in docs/audiences/mailbox-tool-users.md; exact profile and loopback boundaries apply; editorial review is separate from custody
-    - "P15/P16 reliability train starts from protected a72c7c03 with computed P14/HF01 closure; custodian now schedules shared resources and owns service/storage continuity; Recovery project priority is respected; no SDK upgrade presumed"
+    - "P17 starts from immutable0.12.1 exact9de64b with computed P16/HF01 closure. Custodian schedules the original fence; Recovery priority and cleanup boundaries apply. Certified BCF2.3.4 retained."
     - Certified BCF 2.3.4 Standard contract v3 remains the project runtime; successor adoption is a separate decision, not a retrospective prerequisite
     - Application source lives under src; public client/service shims and protocol2 paths remain stable; Python3.12 and pinned Python3.14 compatibility are required
     - One service, SQLite database, Slack app and socket serve an explicit bounded channel registry; each grant-backed identity has one immutable channel
@@ -70,10 +70,11 @@ environment_facts:
     build_plan: plans/build-plan.yml
     active_phase_ledger: plans/phase-ledger.yml
     phase_history: plans/phase-history.yml
-    active_phase_plan: plans/phase-16-plan.yml
-    active_workitem_ledger: plans/phase-16-workitems.yml
-    active_phase_log: phases/phase-16-log.yml
+    active_phase_plan: plans/phase-17-plan.yml
+    active_workitem_ledger: plans/phase-17-workitems.yml
+    active_phase_log: phases/phase-17-log.yml
 known_constraints:
+  - "P17 separates result navigation, original request lookup and presentation from semantic ACK/execution. Host wake remains unqualified; no new event daemon or periodic network work."
   - Optional resume context is exact-scope consumer-reported metadata only; bounded input rejects unknown fields and known credential material, preserves unknown or concurrent state, and never restores grants, retries work or advances semantic ACK.
   - Local profile inventory is metadata only, excludes checkpoint and mismatched/nonregular files, and retains valid legacy profiles; no per-profile network probe or file deletion follows.
   - Operator identity management binds exact full-route/channel/inbox previews; revocation never supplies recipient STOP ACK; history cleanup preserves retention floor, unresolved custody and shared references; optional scoped contact hints never restore resource admission.
@@ -86,9 +87,9 @@ known_constraints:
   - AgentBus assumes a trusted workspace with trusted non-hostile agents and operators; hostile OS/process isolation credential theft and independent agent authority inference remain outside its guarantee
   - Identity details exclude deletion eligibility; retention SQL uses a finite five-million-step work budget and selective indexes. Exhaustion grants no cleanup authority and transaction rollback preserves custody.
   - Existing unresolved or legacy-unknown custody remains pinned; offline migration, backup and repair-forward rules govern incompatible cutovers; public Slack channels provide no confidentiality or indefinite availability guarantee
-  - Reported full-service hangs remain unclassified; the snapshot and carrier-classification repairs do not establish their cause or a remote-health guarantee
+  - Identity-history lock starvation is reproduced and repaired in0.12.1; other historical hangs without captured stacks remain unclassified. SQLite work bounds do not bound I/O latency.
   - Every final subject requires canonical protected PR exact-main archive and isolated-installation proof; deployment and live canaries remain separate custodian actions with concrete prerequisites
-  - "P15 computed closed on protected c0d81f1b and immutable 0.11.1 is published; P16 implementation completed from that exact release subject; final computed closure and release custody remain canonical BCF results. Authored completion never substitutes for computed closure/custody; inherited records remain intact"
+  - "P17 source completion is authored; only BCF establishes final phase closure and release applicability. Preserve inherited records and external Issue75 limits; a local prospective result grants no publication or deployment authority."
   - Fresh complete editorial review covers52 files with exact line coverage/hashes/dispositions plus images/tables/examples; excludes BCF machinery/changelog, preserves README BCF placement and graphics; later changes reopen affected review
   - Historical inputs may be cold-archived only with verified content manifests restoration instructions and durable references; live environments Git objects credentials databases and service volumes remain protected
   - "Automatic retention stays opt-in with dry-run before apply, fourteen-day minimum and thirty-day default; unresolved or unacknowledged custody remains pinned. Production-client live canary was waived for authenticated two-location substitution plus isolated publication and adapter controls"
@@ -96,4 +97,4 @@ reusable_commands: [make governance-validate, make architecture-test, make lint,
 references:
   governance: [AGENTS.yml, governance-profile.yml, architecture-boundaries.yml, contracts/observability/v1/, contracts/codex-wake/v1/, contracts/participation/v2/participation.contract.yml, contracts/channels/v1/channel-isolation.contract.yml, plans/phase-ledger.yml, plans/phase-history.yml, docs/OPERATIONS.md]
   product: [plans/product-spec.yml, plans/build-plan.yml, docs/contracts.md, docs/audiences/experimenters.md]
-  execution: [plans/phase-15-plan.yml, plans/phase-15-workitems.yml, phases/phase-15-log.yml, plans/phase-16-plan.yml]
+  execution: [plans/phase-17-plan.yml, plans/phase-17-workitems.yml, phases/phase-17-log.yml]

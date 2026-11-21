@@ -1,0 +1,127 @@
+document:
+  kind: peer_followup_construction_audit
+  path: audits/p17-peer-followup.yml
+  status: source_review_complete_local_pipeline_passed_provider_pending
+baseline: 9de64b434df2ae6bdb6267228826c42275887942
+invariants:
+- Exact session/channel/inbox before lookup
+- Retain original request UUID and staged payload
+- Presentation pickup completion and ACK remain distinct
+- No new broker daemon periodic provider probe or production wake
+items:
+- workitem: P17-P1-01
+  domain: operator_federation
+  layer: private query presentation
+  contract: contracts/federation/v1/operator.contract.yml
+  primitive: existing operator_fanout retained request
+  producer: recent_operator_buttons
+  consumer: configured Slack results federated
+  evidence:
+  - tests/test_slack_commands.py
+  - tests/test_operator_federation.py
+  acceptance: Poll listing excludes federation; typed bounded history stays actor/channel scoped and read only
+- workitem: P17-P2-01
+  domain: message_lifecycle
+  layer: client presentation and HTTP transport
+  contract: contracts/messages/v1/message-lifecycle.contract.yml
+  primitive: original delivery key, existing request_outcome, local presentation high-water
+  producer: deliver_payload and send_message
+  consumer: CLI/MCP status and ACK diagnostics
+  evidence:
+  - tests/test_delivery_client.py
+  - tests/test_local_delivery_custody.py
+  - tests/test_launcher.py
+  acceptance: Original UUID status locator, authenticated relative Location, numeric ACK limits; unknown never proves
+    nonacceptance
+- workitem: P17-P3-01
+  domain: participation_recovery
+  layer: client query projection
+  contract: contracts/participation/v2/recovery-observation.contract.yml
+  primitive: existing scoped inbox and resume checkpoint
+  producer: cli_resume
+  consumer: opt-in --unhandled CLI reader
+  evidence:
+  - tests/test_recovery_client.py
+  acceptance: At most100 scanned/20 returned, truthful partial window, no ACK/presentation advance and controls
+    first
+- workitem: P17-P4-01
+  domain: owner_notification
+  layer: existing worker
+  contract: contracts/codex-wake/v1/codex-wake.contract.yml
+  primitive: independent control and inbox deadlines
+  producer: _worker/project_check_in
+  consumer: existing local spool/poll
+  evidence:
+  - tests/test_poll_client.py
+  - tests/test_poll_projection_recovery.py
+  disposition: Existing controls project at their own bound; ordinary addressed messages wait for the negotiated
+    inbox deadline. Participation/worker owners retain mailbox-change notification research; host admission remains
+    independently unqualified under Issue75. No daemon, forced model turn or extra polling added.
+source_review:
+- path: src/agentbus_client.py
+  sha256: ae93694a23d3824e46b9a75438a4b80799ba0d182dffc276cdeb610a8a3d7dba
+  basis: Consolidated changed spans and affected owner/caller context reviewed; no whole-production re-audit or
+    independent human review claim.
+- path: src/agentbus_delivery_api_service.py
+  sha256: 90390053f9f89294cfaecf7c75ac234b6d09f8d00547fa42d8cf206362848736
+  basis: Consolidated changed spans and affected owner/caller context reviewed; no whole-production re-audit or
+    independent human review claim.
+- path: src/agentbus_delivery_client.py
+  sha256: 5fad165c52ebdf4fbec980e778534dff2c758624288d9148dba5f4a0fcd91480
+  basis: Consolidated changed spans and affected owner/caller context reviewed; no whole-production re-audit or
+    independent human review claim.
+- path: src/agentbus_operator_scope_service.py
+  sha256: 595de436ff4b7944e3579098f90690d190ac544edc1fbb34b3f049346002b5ac
+  basis: Consolidated changed spans and affected owner/caller context reviewed; no whole-production re-audit or
+    independent human review claim.
+- path: src/agentbus_parser_client.py
+  sha256: ee368cf277936183b1e12928ec27df60f740da0eb98e60e62736ab8dce370f3a
+  basis: Consolidated changed spans and affected owner/caller context reviewed; no whole-production re-audit or
+    independent human review claim.
+- path: src/agentbus_recovery_client.py
+  sha256: 385cc3ed8c4b53c4fd79464dbf949a41d2eb383d7197513571aca19e35a35cf2
+  basis: Changed spans/caller context and explicit no-page fail-close guard reviewed after canonical typecheck rejected
+    optional page inference. No behavior or custody qualification inferred.
+- path: src/agentbus_service.py
+  sha256: 830fa8ee2992554355e9d327820b55bc6abd51ad9bac330f5e0cd9edd8b18243
+  basis: Consolidated changed spans and affected owner/caller context reviewed; no whole-production re-audit or
+    independent human review claim.
+- path: src/agentbus_slack_command_service.py
+  sha256: dae2e3c70d3d0843eb1a66a21ad40a730b07968297fcd66b54f4bd77a4fb4142
+  basis: Consolidated changed spans and affected owner/caller context reviewed; no whole-production re-audit or
+    independent human review claim.
+- path: src/agentbus_slack_ui_commands_service.py
+  sha256: 9d27c98338c50ddb76275801780031cfeacf84180aad85c20253f8426dc06f05
+  basis: Consolidated changed spans and affected owner/caller context reviewed; no whole-production re-audit or
+    independent human review claim.
+validation:
+  local_subject: e5bcdab2d12ba5e0c959c3ea83e96778c8232185
+  local_tree: debdbd6daccbe59fec7fc4e3ccfdbd34a4120fe2
+  producers_passed:
+  - architecture-test
+  - architecture-duplication
+  - architecture-cqrs-side
+  - runtime-smoke
+  - lint
+  - test
+  - architecture-import-boundaries
+  - python314-compatibility
+  - security-sbom
+  - typecheck
+  - architecture-context-membership
+  - architecture-layer-membership
+  - release-smoke
+  - security-secret-scan
+  - security-vulnerability-scan
+  - security-dependency-audit
+  - architecture-module-size
+  - architecture-router-thinness
+  - contract-test
+  authority: local_non_authoritative_provider_required
+  proof_bundle: not_persisted
+  review: Consolidated changed-call-path and actual canonical-result review; no independent human/security audit
+    claim.
+  remaining:
+  - protected PR and exact-main closure
+  - final-subject archive/install applicability
+  - custodian handoff

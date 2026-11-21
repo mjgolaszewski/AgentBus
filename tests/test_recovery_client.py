@@ -286,3 +286,75 @@ def test_recovery_contact_configuration_rejects_foreign_unbounded_or_credential_
          'receipt_position':None,'service_epoch':None,'host_epoch':None}
     with pytest.raises(ValueError,match='Invalid bounded'):
         decode_contacts(json.dumps({'version':1,'contacts':[{**row,**change}]}),('C111',))
+
+
+
+def test_compact_resume_skips_terminal_history_but_preserves_unknown_recovery_and_ack(resume,tmp_path,monkeypatch,capsys):
+    profile,_,_,values,_=resume
+    profile['message_lifecycle_version']=1
+    calls=[]
+    pages=[{'messages':[{'cursor':8+i,'lifecycle':{'state':'handled'}} for i in range(20)],'next_cursor':27,'has_more':True},
+           {'messages':[{'cursor':28,'lifecycle':{'state':'recovery_required'}},{'cursor':29,'lifecycle':None},
+                        {'cursor':30,'lifecycle':{'state':'unclaimed'}}],'next_cursor':30,'has_more':False}]
+    def get(_values,path,_profile):
+        calls.append(path)
+        return pages.pop(0)
+    monkeypatch.setattr(recovery,'scoped_api',get)
+    before=copy.deepcopy(profile)
+    recovery.cli_resume(SimpleNamespace(identity=profile['identity'],unhandled=True),tmp_path,values)
+    result=json.loads(capsys.readouterr().out)
+    assert [m['cursor'] for m in result['mailbox']['messages']]==[28,29,30]
+    assert result['mailbox']['resume_projection']['terminal_omitted']==20
+    assert result['mailbox']['resume_projection']['scan_limit_reached'] is False
+    assert len(calls)==2 and 'after=27' in calls[1] and profile==before
+
+
+def test_compact_resume_scan_is_finite_and_never_claims_no_more_work(resume,tmp_path,monkeypatch,capsys):
+    profile,_,_,values,_=resume
+    profile['message_lifecycle_version']=1
+    calls=[]
+    def get(_values,path,_profile):
+        calls.append(path)
+        first=8+(len(calls)-1)*20
+        return {'messages':[{'cursor':i,'lifecycle':{'state':'handled'}} for i in range(first,first+20)],
+                'next_cursor':first+19,'has_more':True}
+    monkeypatch.setattr(recovery,'scoped_api',get)
+    recovery.cli_resume(SimpleNamespace(identity=profile['identity'],unhandled=True),tmp_path,values)
+    result=json.loads(capsys.readouterr().out)
+    assert len(calls)==5 and result['mailbox']['messages']==[]
+    assert result['mailbox']['has_more'] is True
+    assert result['mailbox']['resume_projection']['scan_limit_reached'] is True
+    assert profile['ack_cursor']==7
+
+
+def test_compact_resume_requires_lifecycle_without_inferring_terminal_history(resume,tmp_path,monkeypatch):
+    profile,_,_,values,calls=resume
+    with pytest.raises(ClientError,match='lifecycle'):
+        recovery.cli_resume(SimpleNamespace(identity=profile['identity'],unhandled=True),tmp_path,values)
+    assert calls==['check-in']
+
+
+@pytest.mark.parametrize("hold",["stopped","pause_work","stop_end_turn","policy_ack"])
+def test_compact_resume_checks_controls_even_without_lifecycle_support(resume,tmp_path,capsys,hold):
+    profile,presence,controls,values,calls=resume
+    if hold=="stopped":
+        presence["state"]="stopped"
+    elif hold=="policy_ack":
+        controls["ack_required"]=True
+    else:
+        controls["controls"]=[{"kind":hold,"control_id":str(uuid4())}]
+    recovery.cli_resume(SimpleNamespace(identity=profile["identity"],unhandled=True),tmp_path,values)
+    assert json.loads(capsys.readouterr().out)["mailbox"] is None
+    assert calls==([] if hold=="stopped" else ["check-in"])
+
+
+def test_compact_resume_preserves_retired_gap_from_earlier_scan_page(resume,tmp_path,monkeypatch,capsys):
+    profile,_,_,values,_=resume
+    profile["message_lifecycle_version"]=1
+    pages=[{"messages":[{"cursor":8,"lifecycle":{"state":"handled"}}],"next_cursor":8,"has_more":True,"retired_history":True},
+           {"messages":[{"cursor":9,"lifecycle":{"state":"unclaimed"}}],"next_cursor":9,"has_more":False,"retired_history":False}]
+    monkeypatch.setattr(recovery,"scoped_api",lambda *_:pages.pop(0))
+    recovery.cli_resume(SimpleNamespace(identity=profile["identity"],unhandled=True),tmp_path,values)
+    result=json.loads(capsys.readouterr().out)
+    assert result["mailbox"]["retired_history"] is True
+    assert profile["ack_cursor"]==7

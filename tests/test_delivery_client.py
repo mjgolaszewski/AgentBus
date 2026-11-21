@@ -417,7 +417,7 @@ def test_successful_durable_send_returns_original_uuid_receipt_without_mutating_
     ns = parse_args(['send', '--identity', 'local:agentbus:flower', '--recipient', 'local:agentbus:other', 'hello'])
     result = send_command(ns, values, lambda *_: (profile, {}), lambda value: value, post)
     receipt = result['delivery_receipt']
-    assert receipt == {'request_id': calls[0]['delivery_key'], 'state': 'accepted',
+    assert {k:v for k,v in receipt.items() if k != 'status'} == {'request_id': calls[0]['delivery_key'], 'state': 'accepted',
                        'provider_delivery': 'not_inferred', 'recipient_execution': 'not_inferred'}
     assert str(UUID(receipt['request_id'])) == receipt['request_id']
     assert 'delivery_receipt' not in response and 'private-session' not in str(result)
@@ -524,3 +524,33 @@ def test_request_stage_special_file_is_rejected_without_blocking_or_replacing_it
         assert fifo.exists()
     finally:
         os.close(descriptor)
+
+
+@pytest.mark.parametrize('command,args', [('send',['--recipient','local:agentbus:other']),('reply',['--to-cursor','1'])])
+def test_send_and_reply_receipt_locator_keeps_original_uuid_and_bound_identity(command,args):
+    from src.agentbus_delivery_client import send_command
+    profile = {'identity':'local:agentbus:flower','inbox_id':'inbox-one','repo':'agentbus',
+               'participation':{'session_secret':'private-session'}}
+    calls=[]
+    def post(_values,_path,_payload,**kwargs):
+        calls.append(kwargs)
+        return {'cursor':7}
+    ns=parse_args([command,'--identity',profile['identity'],*args,'hello'])
+    receipt=send_command(ns,{'_AGENTBUS_DELIVERY_VERSION':'1'},lambda *_:(profile,{}),lambda v:v,post)['delivery_receipt']
+    assert receipt['status']=={'command':'message-status','identity':profile['identity'],
+                              'message_id':calls[0]['delivery_key'],'scope':'same_session'}
+    assert 'private-session' not in str(receipt)
+
+
+def test_retry_status_locator_uses_current_profile_without_rewriting_original_sender():
+    from src.agentbus_delivery_client import deliver_payload
+    profile={"identity":"local:agentbus:renamed","inbox_id":"inbox-one","participation":{"session_secret":"private-session"}}
+    payload={"sender":"local:agentbus:original","recipient":"local:agentbus:other","text":"original"}
+    calls=[]
+    def post(_values,_path,body,**kwargs):
+        calls.append((body,kwargs))
+        return {"cursor":7}
+    key="00000000-0000-4000-8000-000000000099"
+    receipt=deliver_payload({"_AGENTBUS_DELIVERY_VERSION":"1"},profile,{},payload,post,message_id=key)["delivery_receipt"]
+    assert receipt["request_id"]==key and receipt["status"]["identity"]==profile["identity"]
+    assert calls[0][0]["sender"]=="local:agentbus:original" and calls[0][1]["delivery_key"]==key

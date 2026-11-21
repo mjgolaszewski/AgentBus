@@ -1028,3 +1028,21 @@ def test_doctor_receipt_button_reuses_destination_authorization_and_has_no_post(
     assert action.kind=='publication_page' and action.channel==settings.slack_channel and not action.target
     assert 'Publication receipts: WARN' in result and 'original receipt' in result
     assert not web.posts and store._db.total_changes==before
+
+
+def test_poll_listing_never_looks_up_federated_health_history(enrolled):
+    settings, store, _, web = enrolled
+    class ForbiddenHistory:
+        @property
+        def store(self):
+            raise AssertionError('poll listing looked up federation')
+    store.operator_federation = ForbiddenHistory()
+    result = command(settings, store, web, 'results')
+    assert 'Federated' not in result.text
+    assert 'Recent federated operations' not in str(result.blocks)
+
+
+def test_explicit_federation_results_preserve_disabled_and_authorization(enrolled):
+    settings, store, _, web = enrolled
+    assert 'not configured' in command(settings, store, web, 'results federated')
+    assert 'not enabled' in command(settings, store, web, 'results federated', user='U999')

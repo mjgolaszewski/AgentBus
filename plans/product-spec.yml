@@ -9,8 +9,8 @@ constraints:
     - "File-free operator Slack approval retains immutable staged enrollment proof; pending requests grant no session authority. Lifecycle maintenance renews epochs before expiry without query writes or altered original deadlines; pickup, handling and reference-safe retention remain distinct, and unknown shared and federated custody stays pinned."
     - "Federation recovery uses bounded resumable oldest-prefix coverage and generation-bound uncertain retries; occupied raw carriers retain timestamp ownership and project distinct scoped notifications. Transport custody is not local session assurance, execution or semantic ACK. Retained transport rows default to1024 per table; operator startup configuration may choose1..65536 after resource review. Resizing preserves custody and replay; new admission fails closed with a fixed diagnostic. No automatic federation archival."
     - "One primary and at most eight explicitly configured Slack command aliases serve the same existing app and socket without rewriting command or message text. Fresh empty participation stores use the standard 1/2/4/8/12/16/24/32-minute idle ladder; existing operator policies and mandatory control-check bounds remain authoritative."
-    - "Native workers handle quiet idle waits; unchanged checks emit no narration. Skill guidance cannot enforce agent reasoning or token use."
-    - "Private health/workers/doctor/pending/explain report bounded local scope/progress, never remote health, repairs, ACKs or added monitoring loops."
+    - "Workers wait silently; skills cannot enforce agent reasoning or token use."
+    - "Private diagnostics show bounded local progress, never remote health, repair, ACK or added monitoring."
     - "one process SQLite database and coordination Slack app and Socket Mode receiver; explicit allowlist up to16 channels; one immutable grant-backed channel per identity"
     - "all agent reads/writes require exact session proof and bound inbox; no bearer-only or unjoined fallback; channel-local public cursors conceal other-channel counts"
     - "bearer-authenticated HTTP is loopback-only unless an operator supplies a secure boundary; opt-in federation enqueue requires a joined session, operator Ed25519 bindings, durable bounded custody, and separate live-provider qualification"
@@ -36,4 +36,5 @@ execution_phases:
   - {phase_id: P14, build_block: controlled_client_publishing, objective: Approved client publishing local A2A recovery and acknowledgement-safe retention, release_train: release_14}
   - {phase_id: P15, build_block: reliable_publication_and_recovery, objective: Reliable receipts and recovery, release_train: release_15}
   - {phase_id: P16, build_block: lightweight_recovery_and_owner_qualification, objective: Identity management recovery context and offline wake qualification, release_train: release_16}
+  - {phase_id: P17, build_block: lightweight_receipts_and_operator_results, objective: Scoped receipt and result reliability, release_train: release_17}
 acceptance: {release_gate: make release-check, evidence_location: phases/}

@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.13.0] - 2026-11-21
+
+- Separate poll results from retained federated health/broadcast history, expose original request status locators and clarify ACK presentation limits.
+- Add opt-in bounded nonterminal resume without advancing presentation or semantic acknowledgement; retain unknown and recovery-required work.
+
 ## [0.12.1] - 2026-11-21
 
 - Keep identity details and non-history previews responsive without scanning deletion eligibility. Bound retention SQL work, preserve every custody/ACK pin and roll back interrupted cleanup; improve indexed replay/claim and ancestry lookup.

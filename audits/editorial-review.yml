@@ -37,9 +37,9 @@ summary:
   documents: 52
   state: fresh_full_scope_read_and_protocol_addendum_reconciled
   dispositions:
-    reviewed: 26
+    reviewed: 24
     added: 2
-    edited: 24
+    edited: 26
     combined: 0
     removed: 0
   remaining: Behavioral, canonical protected PR/exact-main, archive/install and skill qualification remain separately
@@ -726,12 +726,13 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 187
-  line_count: 187
-  sha256: a30f73b2a0e349e4cfa6dc6cfb89d4893f4c3582bd50106b1826926de103adc2
+    - 194
+  line_count: 194
+  sha256: a3b0e1a02df6d7e8bc5aa876fa8f3888e00c1624dc6c12612922d14aad53933e
   disposition: edited
-  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
-    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+  review_basis: P17 entire baseline document read line by line, followed by actual changed-span reread. Covers request/presentation
+    boundaries, partial resume, configured command scope and examples. Source review only; qualification remains
+    separate.
 - document: docs/audiences/experimenters.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -776,12 +777,13 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 446
-  line_count: 446
-  sha256: 47cff64cdd55b654e26055fdc6bbb1b06f473e0d82e66041f922d9a9cafbb5bd
+    - 450
+  line_count: 450
+  sha256: 3f470afdf8c953a3743206e1330dc585e1b7a95e7651fef34ad384f1ddcb9486
   disposition: edited
-  review_basis: Full current source read and declared hotfix additions reviewed; final changed spans checked. Unchanged
-    documents retain their exact reviewed hashes. This is editorial source review, not release certification.
+  review_basis: P17 entire baseline document read line by line, followed by actual changed-span reread. Covers request/presentation
+    boundaries, partial resume, configured command scope and examples. Source review only; qualification remains
+    separate.
 - document: docs/audiences/security-reviewers.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -858,12 +860,13 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 101
-  line_count: 101
-  sha256: 3962778953eedfc191b1f8580efc155c861061981941b4d67dc6aaad5dc2c5f3
+    - 108
+  line_count: 108
+  sha256: ad26189f1d47f34b868c17770464b95fd12ae523b20b77210bd7d8ca3bb93911
   disposition: edited
-  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
-    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+  review_basis: P17 entire baseline document read line by line, followed by actual changed-span reread. Covers request/presentation
+    boundaries, partial resume, configured command scope and examples. Source review only; qualification remains
+    separate.
 - document: docs/local-adapters.md
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -888,43 +891,46 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 152
-  line_count: 152
-  sha256: 8e45e9a61f990e790edbfc9b85c9e59de68f76b8e3a5a97d817745015f550c2a
+    - 154
+  line_count: 154
+  sha256: 0f6f223f4293e2cbd31f6e7123ad3308cf917ef06376a9eb3caedb044489c416
   disposition: edited
-  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
-    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+  review_basis: P17 entire baseline document read line by line, followed by actual changed-span reread. Covers request/presentation
+    boundaries, partial resume, configured command scope and examples. Source review only; qualification remains
+    separate.
 - document: docs/recovery.md
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 297
-  line_count: 297
-  sha256: 333e4886164f2223d10fea23ed5a7d16e27baeb9c58461c53b4f8c95bddd6638
+    - 328
+  line_count: 328
+  sha256: d78c885cd046b75454334025c88df8bd31db46eb8afd6842fd3e8d2c3a7efbda
   disposition: edited
-  review_basis: Fresh full in-scope file reading in this sweep, followed by final changed-span reread; new wire
-    guide read in full as draft and committed source against exact decoders. Tables, examples and receive-path diagram
-    included; no live/provider qualification inferred.
+  review_basis: P17 entire baseline document read line by line, followed by actual changed-span reread. Covers request/presentation
+    boundaries, partial resume, configured command scope and examples. Source review only; qualification remains
+    separate.
 - document: skills/agentbus/SKILL.md
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 135
-  line_count: 135
-  sha256: 6be6bf33e32a520f16ccfa66e4ae8ec04ff42b2b69fb15654683796fb1dfa9a2
+    - 140
+  line_count: 140
+  sha256: e97ec1065304d1e63c48c5e60c9ea5808f8714ac4feb21ac19355b87b643bddf
   disposition: edited
-  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
-    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+  review_basis: P17 entire baseline document read line by line, followed by actual changed-span reread. Covers request/presentation
+    boundaries, partial resume, configured command scope and examples. Source review only; qualification remains
+    separate.
 - document: skills/agentbus/references/participation.md
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 250
-  line_count: 250
-  sha256: f90c603d22d0c1f89d5d68c66f5b816c8037603bf86bf59bceb0f9f642296410
+    - 262
+  line_count: 262
+  sha256: aaec9df2ef9e3c49b96e89f8f1a7aedb4786e465056c2864f018ec6b292604db
   disposition: edited
-  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
-    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+  review_basis: P17 entire baseline document read line by line, followed by actual changed-span reread. Covers request/presentation
+    boundaries, partial resume, configured command scope and examples. Source review only; qualification remains
+    separate.
 - document: skills/agentbus/agents/openai.yaml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -969,12 +975,13 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 22
-  line_count: 22
-  sha256: 5d527427afa06ec900b8c1160a5b3a953dd12c89398e12849f8a59c4e7e0180f
-  disposition: reviewed
-  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
-    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+    - 28
+  line_count: 28
+  sha256: ab94bee60c805de06432411568f391e53657ca6f810a999e4cfd2417e0b20f28
+  disposition: edited
+  review_basis: P17 entire baseline document read line by line, followed by actual changed-span reread. Covers request/presentation
+    boundaries, partial resume, configured command scope and examples. Source review only; qualification remains
+    separate.
 - document: contracts/local-adapters/v1/a2a.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -1009,12 +1016,13 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 124
-  line_count: 124
-  sha256: 3911d6e6bcdcf7748fcc59733ce7687945957a639c71fb57370bebb01a3c56ce
-  disposition: reviewed
-  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
-    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+    - 130
+  line_count: 130
+  sha256: b6f7d3b37172bce2d97eb45106288848cd38055819caa5220fd65fbca4331690
+  disposition: edited
+  review_basis: P17 entire baseline document read line by line, followed by actual changed-span reread. Covers request/presentation
+    boundaries, partial resume, configured command scope and examples. Source review only; qualification remains
+    separate.
 - document: contracts/participation/v1/participation.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -1039,12 +1047,13 @@ documents:
   review_status: full_document_line_reviewed
   reviewed_lines:
   - - 1
-    - 107
-  line_count: 107
-  sha256: b49955d4e321143944add440dc564b256782c25e2ddc5f99512d3a81d66490cc
+    - 116
+  line_count: 116
+  sha256: 1fefea0ce9273dd23e5a4eaf4c4953ed406aba24c7fd849a3b57b86e8bacd201
   disposition: edited
-  review_basis: Fresh entire-file line reading in this sweep, followed by final changed-span rereading; examples,
-    tables and diagrams included. Hash identifies reviewed source, not behavioral or release proof.
+  review_basis: P17 entire baseline document read line by line, followed by actual changed-span reread. Covers request/presentation
+    boundaries, partial resume, configured command scope and examples. Source review only; qualification remains
+    separate.
 - document: contracts/publication/v1/publication.contract.yml
   review_status: full_document_line_reviewed
   reviewed_lines:
@@ -1149,3 +1158,31 @@ hotfix_review:
   - contracts/participation/v2/operator-identity.contract.yml
   scope: Reopen both changed documents; retain exact unchanged editorial/visual bytes. No graphics or README BCF
     changes.
+peer_followup_review:
+  phase: P17
+  changed_documents:
+  - docs/http-api.md
+  - docs/audiences/agents.md
+  - docs/audiences/operators.md
+  - docs/operator-federation.md
+  - docs/recovery.md
+  - skills/agentbus/SKILL.md
+  - skills/agentbus/references/participation.md
+  - contracts/federation/v1/operator.contract.yml
+  - contracts/messages/v1/message-lifecycle.contract.yml
+  - contracts/participation/v2/recovery-observation.contract.yml
+  dispositions:
+    edited: 10
+    added: 0
+    combined: 0
+    removed: 0
+  unchanged: Other editorial bytes match the retained prior review; no new whole-corpus reading claim.
+  excluded:
+  - BCF governance machinery
+  - CHANGELOG.md
+  preserved:
+  - README artwork tone and BCF placement
+  - all original graphics and embedded examples
+  qualification: Canonical local19-producer graph passed on e5bcdab2, including release/archive, isolated install
+    and packaged skill. Final protected PR/exact-main/closure and deployment applicability remain separately required;
+    no automatic transfer to this metadata closeout.

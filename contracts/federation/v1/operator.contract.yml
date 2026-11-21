@@ -1,6 +1,6 @@
 document:
   kind: federated_operator_contract
-  version: 1.1.0
+  version: 1.2.0
   status: active
   path: contracts/federation/v1/operator.contract.yml
 wire: {version: 4, kinds: [operator_request, operator_result], unchanged_versions: [1, 2, 3]}
@@ -20,3 +20,9 @@ slack_entry:
   payload: Original literal message typography remains unchanged; unknown and conflicting selectors reject before custody
   refresh: Same immutable request identity and retained target population; never allocates another operation
   snapshot: Each private result shows generation time and explains that refresh posts a new private reply below, leaving older cards unchanged
+
+result_navigation:
+  local: Plain configured-command results and poll navigation show local polls only.
+  federated: Explicit results federated lists the latest four retained operations for the exact actor/channel.
+  labels: Operation-specific buttons and UTC creation times distinguish health from broadcast receipts.
+  effects: Query and button selection allocate no operation, custody, provider request or acknowledgement.

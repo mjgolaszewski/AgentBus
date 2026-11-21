@@ -138,17 +138,18 @@ def scoped_command(parsed, payload, settings, store):
 def recent_operator_buttons(owner, actor, channel):
     with owner.store._lock:
         rows = owner.store._db.execute(
-            "SELECT request_id,spec FROM operator_fanout WHERE actor=? AND channel=? ORDER BY created DESC LIMIT 4",
+            "SELECT request_id,spec,created FROM operator_fanout WHERE actor=? AND channel=? ORDER BY created DESC LIMIT 4",
             (actor, channel),
         ).fetchall()
     blocks = []
     for row in rows:
         kind = json.loads(row["spec"])["operation"]
-        blocks.extend(section_blocks("Federated " + kind))
+        stamp = datetime.fromtimestamp(row['created'], timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
+        blocks.extend(section_blocks(f"*Federated {kind}*\nCreated `{stamp}`"))
         blocks.append(
             {
                 "type": "actions",
-                "elements": [action_button("Results", OperatorAction("operator_results", channel, row["request_id"]))],
+                "elements": [action_button("Health results" if kind == "health" else "Broadcast receipts", OperatorAction("operator_results", channel, row["request_id"]))],
             }
         )
     return blocks

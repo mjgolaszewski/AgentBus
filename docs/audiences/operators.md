@@ -258,7 +258,11 @@ checkpoint, pause, resume, retire, and optional publication updates. Session-tar
 6–12-character session UUID suffix, a full UUID, or a case-insensitive fragment
 of the current agent identity. Enrollment and poll cards provide buttons for routine actions.
 `/agentbus results` without an ID discovers the forty most recent polls in the
-invoking channel. Full request/control UUID commands remain available for
+invoking channel; federated health cards are not poll entries. Use
+`/agentbus results federated` for your latest four retained federated operations
+in that channel, with separate **Health results** and **Broadcast receipts**
+buttons and UTC creation times. Selecting a result allocates no new request.
+Full request/control UUID commands remain available for
 automation and exact lookup. Historical route aliases are not session selectors. Ambiguity rejects
 without acting. `/agentbus retire ID CONFIRM` is a durable stop; `/agentbus
 pause ID` holds substantive work and `/agentbus resume ID` releases that hold
