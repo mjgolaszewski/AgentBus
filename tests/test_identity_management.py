@@ -309,3 +309,45 @@ def test_identity_preview_capacity_never_discards_a_retained_operation(managed,m
     with pytest.raises(ValueError,match='capacity'):
         owner.preview('UOP','C111',ids['second'][0],'retire')
     assert owner.receipt('UOP','C111',preview['intent']['request_id'])['state']=='preview'
+
+
+def test_identity_detail_and_nonhistory_previews_never_run_eligibility(managed, monkeypatch):
+    store,_,owner,ids=managed
+    store.lifecycle.activate_fresh(instant=100)
+    def forbidden(*args,**kwargs):
+        raise AssertionError('ordinary identity view scanned deletion eligibility')
+    monkeypatch.setattr(store.retention,'_eligible',forbidden)
+    chat=ids['first'][0]
+    assert owner.detail('UOP','C111',chat)['history']['eligibility_checked'] is False
+    for action,name in [('retire',None),('rename','renamed')]:
+        preview=owner.preview('UOP','C111',chat,action,name=name)
+        assert preview['history']['eligibility_checked'] is False
+        assert preview['intent']['positions']==[]
+    assert store.participation.session_state(ids['first'][1])['state']=='active'
+
+
+def test_identity_history_query_limit_releases_lock_and_preserves_custody(managed,monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from src.agentbus_message_lifecycle_service import LifecycleRejected
+    import src.agentbus_retention_service as retention_module
+    store,_,owner,ids=managed
+    store.lifecycle.activate_fresh(instant=100)
+    before=store._db.total_changes
+    monkeypatch.setattr(retention_module,'QUERY_WORK_STEPS',1)
+    with pytest.raises(LifecycleRejected,match='work limit'):
+        owner.preview('UOP','C111',ids['first'][0],'retire_with_history')
+    assert store._db.execute('SELECT count(*) FROM identity_management_operations').fetchone()[0]==0
+    assert not store._db.in_transaction
+    monkeypatch.setattr(retention_module,'QUERY_WORK_STEPS',5000000)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        result=pool.submit(owner.detail,'UOP','C111',ids['first'][0]).result(timeout=2)
+    assert result['retired'] is False
+    assert store._db.total_changes==before
+
+
+def test_identity_view_labels_history_as_unassessed(managed):
+    from src.agentbus_identity_ui_service import identity_detail
+    store,_,owner,ids=managed
+    reply=identity_detail(owner,'UOP','C111',ids['first'][0],'/custombus')
+    assert 'not assessed' in reply.text
+    assert 'eligible batch `0`' not in reply.text

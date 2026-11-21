@@ -1,0 +1,41 @@
+document:
+  kind: hotfix_execution_log
+  name: P16-HF01 Hotfix Log
+  id: agentbus-phase-16-hotfix01
+  version: 1.0.0
+  generated_at_utc: '2026-11-21T00:00:00Z'
+  status: planned
+  path: phases/phase-16-hotfix01.yml
+hotfix:
+  id: P16-HF01
+  mode: full
+  related_phase_id: P16
+  hotfix_number: 1
+  summary: Bound identity history inspection and prevent shared-store starvation
+execution_evidence:
+  planned_commands:
+  - make governance-validate
+  - make test
+  - make contract-test
+  - make release-check
+  executed_commands: []
+  notes:
+  - record failing workflows, diagnosed root cause, remediation scope, and merge-back
+    status
+closeout_requirements:
+  claims:
+    required_suites_green:
+      required_evidence:
+      - test
+      - contract-test
+    security_review_complete:
+      required_evidence:
+      - governance-validate
+    health_checks_green:
+      required_evidence:
+      - runtime-smoke
+  reconciliation:
+    required_evidence:
+    - governance-validate
+    - governance-exposure-scan
+  finding_registry: governance/findings.yml

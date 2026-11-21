@@ -33,6 +33,7 @@ limits:
   canonical_intent_bytes: 32768
   canonical_result_bytes: 32768
   name_characters: 32
+  history_query_vm_steps: 5000000
 laws:
 - Authorize verified operator and channel before target lookup; a button locator grants no authority.
 - Rename preserves chat/channel/inbox, same repository, reserved namespaces, aliases, original staged requests and
@@ -54,6 +55,10 @@ laws:
   custody recovery, not new delivery authority.
 - Committed operation receipts do not automatically expire; capacity rejects new previews without deleting existing
   outcomes.
+- Ordinary detail and rename/retire-only preview do not evaluate history deletion eligibility; the UI labels it
+  unassessed.
+- Retention eligibility and cleanup SQL use a finite work budget under the canonical lock; exhausted work fails
+  closed without granting eligibility or committing partial cleanup. The budget does not promise a storage I/O deadline.
 evidence:
 - tests/test_identity_management.py
 - test
@@ -66,5 +71,6 @@ migration:
   - add explicit session revocation provenance
   - bounded operation preview/result custody
   - authority-transition revision triggers
+  - add selective replay-request and claim cursor indexes; no custody row or intent wire change
   preserve: all existing membership/session/alias/history/ACK rows; no live migration is executed by source authoring
   rollback: offline verified backup before new accepted custody; repair forward thereafter
