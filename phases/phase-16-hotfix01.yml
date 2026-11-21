@@ -41,6 +41,9 @@ execution_evidence:
     graph, protected PR/main, archive/install and custodian rollout remain required.
   - No live identity action, service restart, database deletion, checkpoint reset, client post or new wake authority
     performed.
+  - First canonical submit rejected an added completed patch train without a declared phase. P16-HF01 belongs to
+    existing P16/release_16; remove only the added unowned row and update that existing target to0.12.1. Original
+    diagnostic retained; no SDK upgrade or provider retry.
 closeout_requirements:
   claims:
     required_suites_green:
