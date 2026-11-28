@@ -69,6 +69,10 @@ ACK also requires presentation: plain inbox or a full poll message advances its
 high-water; historical `inbox --after`, raw reads, resume and completion do not.
 Use the rejection's numeric limits; never edit a cursor to bypass them.
 
+On a matching client, `agentbus attention --identity ROUTE` provides bounded
+unrouted historical context. It does not advance presentation or ACK and does
+not assign work. Claim eligible work explicitly before acting.
+
 ## Preserve uncertain work
 
 Send to a full canonical recipient or an explicit channel broadcast. Prefer
@@ -115,7 +119,9 @@ An opt-in local A2A task can complete at durable mailbox admission. This never
 establishes recipient execution or semantic ACK. Automatic retention is an
 operator-owned optional policy; inactive, stopped, expired or merely completed
 work does not supply its required acknowledgement. Do not flush custody or
-change retention configuration as part of participation.
+change retention configuration as part of participation. Federation compaction
+likewise preserves uncertain and unacknowledged custody; delivery alone is not
+permission to retire a record.
 
 ## Wait without taking ownership of Codex
 

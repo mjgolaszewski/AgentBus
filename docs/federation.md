@@ -267,8 +267,10 @@ Existing over-capacity records remain intact; exact retries and state progress
 remain possible. Capacity checks and allocation reserve the same SQLite writer,
 including across processes. New local enqueue receives 503 with Retry-After.
 Failed inbound allocation creates no custody receipt and advances no checkpoint.
-There is no automatic federation pruning; retained custody needs operator-owned
-capacity recovery before exhaustion. Raising a reviewed row bound does not delete
+Optional [custody compaction](federation-maintenance.md) supports explicit offline
+preview/apply and opt-in hourly maintenance for acknowledged, unreferenced outbound
+messages after fourteen days. Inbound, unresolved and referenced custody stays
+pinned; capacity recovery remains operator-owned. Raising a reviewed row bound does not delete
 or rebind any accepted identity, payload or checkpoint.
 
 An installation may opt into normal inbox notification projection with

@@ -133,6 +133,9 @@ async def run_delivery(worker, bridge=None, *, connect=None):
                 storage = worker.store.retention.storage()
                 if storage['accounted_bytes'] * 5 >= storage['limit_bytes'] * 4:
                     worker.store.retention.checkpoint()
+            compaction = getattr(worker, "federation_compaction", None)
+            if compaction is not None:
+                compaction.tick()
             maintenance = getattr(worker, "automatic_retention", None)
             if maintenance is not None:
                 maintenance.tick()
@@ -188,9 +191,13 @@ class DeliveryCoordinator:
         self.observations = WorkerObservations()
         self.publications = None
         self.stale_notices = None
+        self.capacity_notices = None
         self.automatic_retention = None
+        self.federation_compaction = None
 
     def bind_transport(self,bot_id,bridge):
+        if self.capacity_notices is not None and bridge is not None:
+            self.capacity_notices.bind_channel(bridge.channel)
         for worker in self.workers:
             worker.trusted_bot_id=bot_id
             worker.federation=bridge if bridge is not None and bridge.channel==worker.channel else None
@@ -199,7 +206,10 @@ class DeliveryCoordinator:
         self.cycle_incomplete = False
         publication_pending = self.publications is not None and self.publications.custody.next_ready() is not None
         notice_pending = self.stale_notices is not None and self.stale_notices.pending()
-        quota,deadline=8 - int(publication_pending) - int(notice_pending),time.monotonic()+30
+        if self.capacity_notices is not None:
+            self.capacity_notices.sample()
+        capacity_pending = self.capacity_notices is not None and self.capacity_notices.pending()
+        quota,deadline=8 - int(publication_pending) - int(notice_pending) - int(capacity_pending),time.monotonic()+30
         workers=self.workers[self.offset:]+self.workers[:self.offset]
         self.offset=(self.offset+1)%len(workers)
         for worker in workers:
@@ -225,6 +235,12 @@ class DeliveryCoordinator:
             except (sqlite3.Error, OSError, ValueError):
                 self.cycle_incomplete = True
                 LOGGER.warning('Private notice observation incomplete; no automatic resubmission')
+        if capacity_pending and self.capacity_notices is not None and time.monotonic() < deadline:
+            try:
+                await self.capacity_notices.submit_once(budget=1, deadline=deadline)
+            except (sqlite3.Error, OSError, ValueError):
+                self.cycle_incomplete = True
+                LOGGER.warning('Capacity notice observation incomplete; no automatic resubmission')
 
     async def run(self,bridge=None,*,connect=None):
         self.observations.mark('task', 'running')

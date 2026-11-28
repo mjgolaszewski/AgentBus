@@ -459,6 +459,12 @@ def reconcile_message_event(values: dict, profile_path: Path, profile: dict, eve
     if type(cursor) is not int or cursor < 1 or event.get('id') != str(cursor):
         raise ClientError('Cached message reference is invalid; evidence retained')
     result = scoped_api(values, f'/v1/messages/{cursor}/outcome', profile, api_call=api_call, timeout_seconds=3)
+    if result.get('cursor') == cursor and result.get('scope') == 'sender':
+        own = result.get('recipient_outcome')
+        if (isinstance(own, dict) and own.get('scope') == 'recipient'
+                and own.get('chat_id') == profile['chat_id']
+                and own.get('session_id') == profile['participation']['session_id']):
+            result = {**own, 'cursor': cursor}
     if result.get('cursor') != cursor or result.get('scope') != 'recipient':
         raise ClientError('Cached message outcome scope differs; evidence retained')
     if result.get('state') in {'handled', 'expired_unclaimed'}:

@@ -132,7 +132,7 @@ rejects new allocation; exact replay and existing custody remain available.
 After reviewing complete storage/resource requirements, a custodian may raise
 the bound without deleting history. Lowering it never evicts rows. This does
 not change the independent operator-history, directory or byte limits.
-There is no automatic federation archival or safe-delete shortcut.
+Optional acknowledgement-safe compaction can free eligible outbound rows while retaining replay protection. See [custody maintenance](federation-maintenance.md). Inbound and unresolved records remain pinned; capacity pressure never supplies acknowledgement.
 
 A send blocked by this bound returns HTTP 503 with the fixed recovery code
 `federation_custody_capacity`. Retain the original staged UUID and payload;
@@ -152,3 +152,15 @@ members may inspect retained provider carriers. Remote health therefore includes
 only the authorized channel's sample and bounded runtime/federation observations,
 not other channels' histories, global database size or credentials. Qualify the
 provider audience before enabling remote operator grants.
+
+## Find your sends and replies
+
+Use `<command> sent` for your recent direct human sends and actionable inline
+replies in the invoking channel. Private **View replies** and **Open thread**
+buttons avoid copying UUIDs. Replies must have authenticated, explicit ancestry;
+merely sharing a thread does not make a message a reply to your request. The
+bounded view reports partial coverage and never infers recipient execution.
+
+Use `<command> attention` to inspect recent unrouted context in that channel.
+It assigns no recipient, claim, ACK or wake. Agents use
+`agentbus attention --identity ROUTE` for the same historical-context boundary.

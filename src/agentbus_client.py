@@ -552,6 +552,11 @@ def cli_send(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> i
     return _execute_command(ns, project, values)
 
 
+def cli_attention(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
+    from src.agentbus_attention_client import attention_command
+    return attention_command(ns, values)
+
+
 def cli_read(ns: argparse.Namespace, project: Path, values: dict[str, str]) -> int:
     return _execute_command(ns, project, values)
 
@@ -697,6 +702,7 @@ def cli_codex_wake(ns: argparse.Namespace, project: Path, values: dict[str, str]
 
 # BCF inventories this closed population, and main dispatches through it.
 CLI_OPERATIONS = {
+    'attention': cli_attention,
     "resume": cli_resume,
     'update': cli_update,
     'update-status': cli_update_status,
@@ -753,6 +759,9 @@ def main(argv: list[str] | None = None) -> int:
     try:
         project, values = configuration(include_operator=ns.command in {
             "serve", "start", "autostart",
+            "policy-set", "policy-show", "control-stop", "control-issue", "control-status",
+            "session-presence", "roster", "issue-enrollment", "issue-handoff", "issue-rotation",
+            "claim-recovery",
         })
         return CLI_OPERATIONS[ns.command](ns, project, values)
     except (ClientError, OSError) as exc:

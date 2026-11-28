@@ -175,6 +175,8 @@ class FederationStore:
             self._db.execute("""CREATE TABLE IF NOT EXISTS federation_checkpoints (
                 reader TEXT PRIMARY KEY, cursor TEXT NOT NULL)""")
             columns = {row['name'] for row in self._db.execute('PRAGMA table_info(bridge_obligations)')}
+            from src.agentbus_federation_retirement_service import initialize_archive
+            initialize_archive(self._db)
             if 'next_attempt_at' not in columns:
                 self._db.execute('ALTER TABLE bridge_obligations ADD COLUMN next_attempt_at REAL NOT NULL DEFAULT 0')
 
@@ -203,6 +205,17 @@ class FederationStore:
             if not isinstance(local, str) or len(local.encode()) > MAX_PAYLOAD:
                 raise ValueError('federation local payload exceeds limit')
             local_hash = hashlib.sha256(local.encode()).hexdigest()
+            from src.agentbus_federation_retirement_service import retired_obligation
+            retired = retired_obligation(self._db, origin_instance_id, origin_message_id, destination_instance_id)
+            if retired is not None:
+                if retired['payload_hash'] != digest or retired['origin_payload_hash'] != local_hash:
+                    raise ValueError('conflicting retired federation payload')
+                return retired
+            historical = self._db.execute('SELECT origin_payload_hash FROM federation_retired_obligations '
+                'WHERE origin_instance_id=? AND origin_message_id=? LIMIT 1',
+                (origin_instance_id, origin_message_id)).fetchone()
+            if historical and historical['origin_payload_hash'] != local_hash:
+                raise ValueError('conflicting retired origin payload')
             origin = self._db.execute('SELECT payload_hash FROM federation_origin_messages WHERE origin_instance_id=? AND origin_message_id=?',
                                       (origin_instance_id, origin_message_id)).fetchone()
             obligation = self.obligation(origin_instance_id, origin_message_id, destination_instance_id)
@@ -268,6 +281,9 @@ class FederationStore:
                     for table in ('bridge_obligations', 'federation_origin_messages',
                                   'federated_messages', 'federation_inbox_projection')}
             return {'per_table_limit': self.custody_row_limit, 'rows': rows,
+                    'remaining': {table:max(0, self.custody_row_limit - count) for table,count in rows.items()},
+                    'approaching_limit': [table for table,count in rows.items()
+                                          if count * 5 >= self.custody_row_limit * 4],
                     'at_limit': [table for table, count in rows.items() if count >= self.custody_row_limit]}
 
     def _custody_writer(self) -> None:
@@ -631,7 +647,11 @@ class FederationStore:
     def obligation(self, origin_instance_id: str, origin_message_id: str, destination_instance_id: str) -> dict[str, Any] | None:
         with self._lock:
             row = self._db.execute("SELECT * FROM bridge_obligations WHERE origin_instance_id=? AND origin_message_id=? AND destination_instance_id=?", (origin_instance_id, origin_message_id, destination_instance_id)).fetchone()
-        return dict(row) if row else None
+        if row is not None:
+            return dict(row)
+        from src.agentbus_federation_retirement_service import retired_obligation
+        with self._lock:
+            return retired_obligation(self._db, origin_instance_id, origin_message_id, destination_instance_id)
 
     def pending(self, *, now: float, max_attempts: int, limit: int = 100,
                 unattempted_only: bool = False) -> list[dict[str, Any]]:

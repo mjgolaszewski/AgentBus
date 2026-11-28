@@ -1,0 +1,34 @@
+document:
+  kind: federation_custody_retirement_contract
+  version: 1.0.0
+  status: active
+  path: contracts/federation/v1/custody-retirement.contract.yml
+owner: federation custody; offline custodian or configured existing delivery worker
+invariants:
+- Dry-run is read-only; apply requires the exact versioned preview digest and original database scope.
+- Only acknowledged message obligations older than fourteen days with no local delivery or ancestry pin qualify.
+- Destination acceptance alone is insufficient; no human declaration fabricates semantic acknowledgement.
+- Inbound custody and projection retirement are unsupported and remain pinned without a qualified consumer/replay contract.
+- Preserve original identity, wire hash and origin payload hash in bounded durable replay archives.
+- Identical late retries return the original terminal outcome without allocation or provider submission; conflicting retries fail closed.
+- Archive payloads are bounded and digest-verified; corruption is recovery required, never absence.
+- No archive tombstone expiry or deletion; exhausted archive bounds block maintenance.
+- One atomic writer transaction revalidates every selected row; any failure rolls back the entire batch.
+bounds:
+  batch: 100
+  minimum_age_seconds: 1209600
+  retained_archive_rows: 65536
+  retained_archive_payload_bytes: 536870912
+  preview_bytes: 262144
+compatibility:
+  enabled: offline preview/apply or opt-in AGENTBUS_FEDERATION_AUTO_COMPACT=1 on the existing worker
+  automatic: hourly bounded sampling; at most100 eligible rows;14-day minimum; no network or new daemon
+  startup: disabled by default; configuration does not authorize acknowledgement or weaken pins
+  progress: rotate through stable origin/message/destination keys so pinned rows cannot starve later eligible rows
+  rollback: after archival apply do not open with an older binary; repair forward from backed-up current custody
+  legacy: existing state without authenticated acknowledgement stays pinned; no retrospective settlement inferred
+evidence:
+- concurrent admission and exact retries before/after archive
+- wrong preview database/digest, changed row and failed transaction preserve custody
+- late receipt and changed-payload replay cannot resurrect an obligation
+- archived payload tampering and archive quota exhaustion fail closed

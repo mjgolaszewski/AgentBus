@@ -266,8 +266,9 @@ The custodian reviews current counts, retained obligations and complete resource
 requirements before changing `AGENTBUS_FEDERATION_CUSTODY_ROWS` at startup.
 The default is 1024 rows per table; the supported range is 1–65536. A larger
 bound retains every accepted identity and payload. A lower bound rejects new
-allocations without deleting existing history. Automatic federation archival
-is not provided. Never purge unresolved custody, reset checkpoints or replace
+allocations without deleting existing history. Optional [federation compaction](federation-maintenance.md)
+archives only eligible acknowledged, unreferenced outbound custody after fourteen days;
+legacy destination acceptance and inbound history stay pinned. Never purge unresolved custody, reset checkpoints or replace
 an uncertain UUID to clear a capacity alarm.
 
 ## Intact restart or lost state?

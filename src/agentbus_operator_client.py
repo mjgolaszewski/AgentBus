@@ -11,7 +11,7 @@ from src.agentbus_transport_client import ClientError, api
 
 
 def _operator_token(values: dict[str, str]) -> str:
-    token = os.environ.get("AGENTBUS_OPERATOR_TOKEN", "")
+    token = os.environ.get("AGENTBUS_OPERATOR_TOKEN") or values.get("AGENTBUS_OPERATOR_TOKEN", "")
     if not token or token == values.get("AGENTBUS_API_TOKEN"):
         raise ClientError("Export a separate AGENTBUS_OPERATOR_TOKEN for operator commands.")
     return token

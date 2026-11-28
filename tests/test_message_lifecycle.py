@@ -59,6 +59,24 @@ def message(store, sender, recipient):
     return store.append(sender.channel, str(uuid4()), body)
 
 
+def test_own_broadcast_sender_outcome_has_separate_exact_recipient(lifecycle):
+    store, principals = lifecycle
+    sender = principals['sender']
+    body = SendMessage(sender=sender.route, recipient='all', audience='broadcast',
+                       text='own broadcast is still a recipient obligation')
+    body._sender_assurance = 'session'
+    item = store.append(sender.channel, str(uuid4()), body)
+    before = store._db.total_changes
+    result = store.lifecycle.outcome(sender, item.cursor)
+    assert result['scope'] == 'sender'
+    own = result['recipient_outcome']
+    assert own['scope'] == 'recipient' and own['state'] == 'unclaimed'
+    assert own['chat_id'] == sender.chat_id and own['session_id'] == sender.session_id
+    assert store._db.total_changes == before
+    with pytest.raises(LifecycleRejected):
+        store.lifecycle.outcome(principals['foreign'], item.cursor)
+
+
 def test_unclaimed_deadline_is_terminal_and_not_a_read_ack(lifecycle):
     store, p = lifecycle
     m = message(store, p["sender"], p["recipient"])

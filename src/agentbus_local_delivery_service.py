@@ -92,6 +92,7 @@ class LocalDeliveryStore:
                 channel TEXT NOT NULL, provider_ref TEXT NOT NULL,
                 local_cursor INTEGER NOT NULL REFERENCES messages(cursor),
                 PRIMARY KEY(channel, provider_ref))''')
+            owner._db.execute("CREATE INDEX IF NOT EXISTS local_delivery_request_reference ON local_delivery_obligations(request_id)")
             owner._db.execute("CREATE INDEX IF NOT EXISTS local_delivery_unresolved ON "
                               "local_delivery_obligations(state) WHERE state!='submitted'")
             owner._db.execute('CREATE INDEX IF NOT EXISTS local_observation_cursor ON local_delivery_observations(channel,local_cursor)')
