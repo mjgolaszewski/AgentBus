@@ -31,7 +31,7 @@ class OperatorAction:
         if needs_target and not UUID.fullmatch(self.target):
             raise ValueError('Invalid operator action reference')
         if self.kind in {'sent_replies', 'sent_open'}:
-            if not re.fullmatch(r'[1-9][0-9]{0,18}', self.target):
+            if not re.fullmatch(r'[1-9][0-9]{0,18}', self.target) or int(self.target) > 2**63 - 1:
                 raise ValueError('Invalid sent message reference')
             needs_target = True
         if not needs_target and self.target:

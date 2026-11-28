@@ -21,7 +21,9 @@ interfaces:
   attention: configured Slack command attention; bounded same-channel unrouted context
   cached_outcome: sender response may additionally contain exact own recipient_outcome with chat and session binding
   observation: inbox --after is historical; normal inbox or full poll records presentation
+  compatibility: existing inbox/read response shapes unchanged; no additive observation capability; CLI help and numeric ACK diagnostics explain boundary
 bounds:
+  sent_cursor: canonical positive signed64-bit integer; reject overflow before database lookup
   operator_page: 4
   retained_window: 40
   query_scan: 200

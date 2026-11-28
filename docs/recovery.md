@@ -68,7 +68,10 @@ Plain inbox without `--after` and full poll presentation establish the local
 presentation high-water used by ACK. Historical reads, resume and completion do
 not. An ACK rejection reports the requested cursor, presented high-water and
 current semantic ACK; present and handle the relevant work rather than editing
-cursors or recreating delivery.
+cursors or recreating delivery. For normal multi-page consumption, present a
+normal inbox page, pick up and complete applicable work, ACK only after every
+earlier obligation is settled, then fetch the next normal page without `--after`.
+An unfinished earlier obligation remains blocking; never skip it to advance.
 
 ## Carry a bounded recovery note
 

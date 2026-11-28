@@ -59,8 +59,8 @@
       {
         "path": "docs/recovery.md",
         "disposition": "edited",
-        "lines": 329,
-        "sha256": "e04522ba788a4369b341ef6e86c730679bae887ee6d0b47dcaf1d126be113fe5"
+        "lines": 332,
+        "sha256": "8b46d9fb9604c4ac5b62c3ffa097b732ebc023aa08dfaee43b6156dc17dd0b48"
       },
       {
         "path": "docs/federation.md",
@@ -188,7 +188,7 @@
     },
     {
       "path": "src/agentbus_slack_ui_service.py",
-      "sha256": "7e47d152d00c15313844a8fa6f0530adca78638b0976c4979fcbf8aadd2762bd",
+      "sha256": "468f3ee659a316e0c7d6254c6d16a10580ed2e56c1fad9bccfb40b168375d462",
       "disposition": "edited",
       "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
     },
@@ -212,7 +212,7 @@
     },
     {
       "path": "src/agentbus_capacity_notice_service.py",
-      "sha256": "331fcd3e989c5fce794415cd582bcec0d58403c325464592e1ea47a46fdfe778",
+      "sha256": "98967d313eea23266fe3d968b429c5828998d701a13d193c96f57626594b89d3",
       "disposition": "added",
       "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
     },
@@ -224,7 +224,7 @@
     },
     {
       "path": "src/agentbus_operator_mailbox_service.py",
-      "sha256": "96b6a4a14cb6b97f81b654777702e8ce0166fc7601237c7ab860dd71b4e69e40",
+      "sha256": "93f2dab8601c3b3b48543e0958286052aa9474936325fee8bbd1633fa6ef293d",
       "disposition": "added",
       "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
     }
@@ -236,5 +236,10 @@
     "governance": "governance-yaml-ok",
     "packaged_skill": "quick_validate passed",
     "canonical_final_subject": "pending"
-  }
+  },
+  "review_followup": [
+    "Canonical test producer caught stale launcher population; add attention to exact expected set without weakening equality.",
+    "Sent cursor boundary negative controls reproduced2**63 and19-digit overflow before repair; enforce SQLite signed64 bounds in both action decoding and query before lookup.",
+    "Issue127 safe normal-page handle/ACK/next sequence explicit in recovery guide. Existing inbox/read wire shapes unchanged; additive observation metadata deferred because current numeric rejection/frontier and help suffice without another capability."
+  ]
 }

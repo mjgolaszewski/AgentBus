@@ -74,7 +74,7 @@ def test_attention_retains_low_assurance_and_never_claims(enrolled):
     assert store._db.total_changes == before and not web.posts
 
 
-@pytest.mark.parametrize('target', ['0', '-1', '01', '1.0', 'x', '1' * 20])
+@pytest.mark.parametrize('target', ['0', '-1', '01', '1.0', 'x', '1' * 20, str(2**63), '9' * 19])
 def test_sent_locator_is_strict(target):
     from src.agentbus_slack_ui_service import OperatorAction
 

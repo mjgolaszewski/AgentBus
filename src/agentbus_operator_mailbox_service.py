@@ -17,7 +17,7 @@ def sent_reply(store, channel, actor, *, page=0, target=None, open_thread=False)
     """Actor comes only from the verified Socket Mode operator principal."""
     with store._lock:
         if target is not None:
-            if not re.fullmatch(r'[1-9][0-9]{0,18}', target):
+            if not re.fullmatch(r'[1-9][0-9]{0,18}', target) or int(target) > 2**63 - 1:
                 raise ValueError('Choose a message from Sent.')
             cursor = store.channels.internal_cursor(channel, int(target))
             row = store._db.execute("SELECT * FROM messages WHERE channel=? AND cursor=? "

@@ -83,7 +83,7 @@ class CapacityNoticeWorker:
                 f"{item['observed_count']}/{item['row_limit']} retained rows; "
                 f"{max(0, item['row_limit'] - item['observed_count'])} remaining. "
                 f"Sample {item['sampled_at']}. Review private health and custodian capacity planning. "
-                'No automatic increase, pruning, replay or work acknowledgement is authorized.')
+                'This notice authorizes no capacity increase, forced pruning, replay or work acknowledgement.')
         state = 'uncertain'
         try:
             response = await bounded_response(self.client, self.settings.slack_bot_token,
