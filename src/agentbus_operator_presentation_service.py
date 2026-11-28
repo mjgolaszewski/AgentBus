@@ -106,8 +106,11 @@ def health_text(snapshot):
     capacity_note = (f"; per-table row limit `{custody_capacity['per_table_limit']}`; at-limit tables "
                      f"`{', '.join(custody_capacity['at_limit']) or 'none'}`" if custody_capacity else '')
     if custody_capacity:
-        capacity_note += '\n' + '\n'.join(f"{table}: `{count}/{custody_capacity['per_table_limit']}`"
+        capacity_note += '\n' + '\n'.join(f"{table}: `{count}/{custody_capacity['per_table_limit']}`; remaining "
+                                               f"`{max(0, custody_capacity['per_table_limit'] - count)}`"
                                                for table,count in sorted(custody_capacity['rows'].items()))
+        if 'observed_at' in custody_capacity:
+            capacity_note += f"\nSample timestamp `{custody_capacity['observed_at']}`; retained rows, not active calls."
         warnings = [table for table,count in custody_capacity['rows'].items()
                     if count*5 >= custody_capacity['per_table_limit']*4]
         if warnings:
@@ -128,6 +131,11 @@ def health_text(snapshot):
             +f"`{identities['retained']}/{identities['limit']}`; {states}"
             +('\nWARNING — at or above 80%; committed receipts are not automatically deleted.' if identities['warning'] else '')
             +'\nPreview is not applied; revocation is not a recipient ACK or host termination.')
+    if compaction := snapshot.get('federation_compaction'):
+        latest = compaction.get('latest') or {}
+        sections.append('*Federation compaction*\n' + f"Enabled `{compaction['enabled']}`; minimum age `14d`\n"
+            + f"Latest compacted `{latest.get('archived', 'not observed')}`; sample `{latest.get('observed_at', 'not observed')}`\n"
+            + 'Unacknowledged, referenced and inbound custody stays pinned; replay archives remain retained.')
     if automatic := snapshot.get('automatic_retention'):
         latest = automatic.get('latest') or {}
         sections.append('*Automatic retention*\n' + f"Enabled `{automatic['enabled']}`; apply `{automatic['apply']}`; "

@@ -98,7 +98,7 @@ def assert_cli_query_nonmutation(operations):
     from src import agentbus_operator_client as operator
     from src import agentbus_transport_client as transport
     from src.agentbus_parser_client import parse_args
-    cases = {'search':['--query','hello'], 'status':[], 'read':[], 'agents':[], 'roster':['--json'],
+    cases = {'attention':[], 'search':['--query','hello'], 'status':[], 'read':[], 'agents':[], 'roster':['--json'],
         'policy-show':['--session-id','session-one'], 'control-status':['control-one'],
         'session-presence':['session-one'], 'message-status':['--cursor','1'], 'update-status':[]}
     queries = {o['population_key'] for o in operations
@@ -112,6 +112,9 @@ def assert_cli_query_nonmutation(operations):
         profile = {'identity':'agentbus:probe','channel':CHANNEL,'inbox_id':'inbox-one',
             'service_url':values['AGENTBUS_URL'],'chat_id':'chat-one','ack_cursor':0,
             'participation':{'session_id':'session-one','session_secret':'x'*32}}
+        from src import agentbus_attention_client as attention
+        patch.setattr(attention, 'checked_profile', lambda *_a, **_k: (dict(profile), {'high_water_cursor': 0}))
+        patch.setattr(attention, 'resolve_identity', lambda *_a: profile['identity'])
         calls = []
         def read_only(_values, path, payload=None, **kwargs):
             assert payload is None and kwargs.get('method', 'GET') == 'GET', (path,payload,kwargs)

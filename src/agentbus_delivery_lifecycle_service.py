@@ -109,12 +109,18 @@ async def delivery_lifespan(app, settings, http_client, socket_factory):
     store.publications = None
     try:
         store.observations = ObservationStore(store, monitors)
+        if settings.federation_auto_compact:
+            from src.agentbus_federation_retirement_service import AutomaticFederationCompaction
+            app.state.delivery.federation_compaction = AutomaticFederationCompaction(store)
         if settings.automatic_retention:
             from src.agentbus_automatic_retention_service import AutomaticRetention
             app.state.delivery.automatic_retention = AutomaticRetention(store, settings)
         if monitors:
             from src.agentbus_observation_runtime_service import StaleNoticeWorker
             app.state.delivery.stale_notices = StaleNoticeWorker(store.observations, client, settings)
+        if settings.federation_capacity_notices:
+            from src.agentbus_capacity_notice_service import CapacityNoticeWorker
+            app.state.delivery.capacity_notices = CapacityNoticeWorker(store, settings, client)
         if settings.a2a_enabled:
             from src.agentbus_a2a_service import A2AStore
             app.state.a2a = A2AStore(store)

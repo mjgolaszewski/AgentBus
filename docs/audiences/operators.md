@@ -24,9 +24,9 @@ workspace custodian; preserve identities, bindings, custody and rollback evidenc
 ## Bootstrap a fresh store
 
 Configure a random `AGENTBUS_OPERATOR_TOKEN` distinct from the API bearer in the
-service environment before starting it. Export that same capability only in
-the operator's own shell when issuing CLI controls or enrollment grants.
-Ordinary clients do not load it from service configuration. Same-user filesystem
+service environment before starting it. Explicit operator CLI commands may load that same capability from protected local
+configuration or the operator's shell. Ordinary message/query commands do not
+load it from service configuration. Same-user filesystem
 access remains outside the isolation guarantee.
 
 A fresh HTTP service initializes a global policy for an empty participation store.
@@ -231,7 +231,7 @@ service address before transmitting a credential. If a concurrent profile update
 conflicts, reload and retry the retained request; do not discard its staged secret.
 `persona --json` contains only public fields.
 
-The operator exports `AGENTBUS_OPERATOR_TOKEN` only in the operator's own shell.
+Operator capabilities remain locally protected; ordinary agents need only their own session.
 For Slack operation, register one `/agentbus` slash command with the existing
 Socket Mode app and its `commands` scope. To use another name, set
 `AGENTBUS_SLACK_COMMAND=/workspace-bus` in the service configuration and
@@ -253,7 +253,7 @@ change no channel or operator permissions. The examples below use the default na
 authorize exact human Slack user IDs; the default empty allowlist disables all
 slash operations and actionable ordinary replies. The service accepts commands only from its channel allowlist. Roster and
 full-ID/suffix/current-identity-fragment lookup are scoped to the invoking channel before resolution.
-`/agentbus help` lists the fixed surface: health, workers, doctor, pending, explain, identities, enrollments, approve, broadcast, poll, results, roster, status, metrics, send, wake,
+`/agentbus help` lists the fixed surface: health, workers, doctor, pending, explain, sent, attention, identities, enrollments, approve, broadcast, poll, results, roster, status, metrics, send, wake,
 checkpoint, pause, resume, retire, and optional publication updates. Session-targeting commands accept a unique
 6–12-character session UUID suffix, a full UUID, or a case-insensitive fragment
 of the current agent identity. Enrollment and poll cards provide buttons for routine actions.
@@ -448,3 +448,18 @@ These features reuse the existing process/database and aggregate worker budget.
 Back up consistently before rollout; preserve new custody and repair forward
 after accepting new writes. The [Experimenters seat](experimenters.md) explains
 which local interoperability and external-provider claims remain unqualified.
+
+## Find replies and manage federation capacity
+
+Use `<command> sent` for private, actor/channel-scoped recent sends and inline
+requests, with **View replies** and **Open thread** buttons. An explicit reply
+parent and authenticated attribution are required; thread chatter is not guessed
+into an answer. `<command> attention` shows recent unrouted context without
+assigning work. Both views report bounded coverage and change no ACK or claim.
+
+[Federation maintenance](../federation-maintenance.md) explains capacity headroom,
+optional private threshold notices, offline previews and opt-in hourly compaction.
+Only acknowledged, unreferenced outbound message custody at least fourteen days
+old qualifies. Unresolved, merely destination-accepted and inbound records stay
+pinned. Compacted replay archives remain retained; this is not a physical erasure
+or an automatic capacity increase.

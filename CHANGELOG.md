@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.14.0] - 2026-11-28
+
+- Add private sent/reply navigation and bounded unrouted attention without assigning work or advancing ACK.
+- Reconcile cached own-broadcast outcomes using exact recipient scope and clarify historical inbox pagination.
+- Show federation capacity headroom and optional private threshold notices; retain uncertain custody.
+- Add previewed offline and opt-in hourly acknowledgement-safe federation compaction with a fourteen-day floor and durable replay archives.
+
 ## [0.13.0] - 2026-11-21
 
 - Separate poll results from retained federated health/broadcast history, expose original request status locators and clarify ACK presentation limits.

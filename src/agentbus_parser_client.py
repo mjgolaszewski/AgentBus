@@ -12,7 +12,8 @@ def _inbox_page_limit(raw: str) -> int:
         raise argparse.ArgumentTypeError("inbox page limit must be an integer from 1 to 200") from exc
     if not 1 <= limit <= 200:
         raise argparse.ArgumentTypeError(
-            "inbox page limit must be 1 to 200; use --after CURSOR to read later pages"
+            "inbox page limit must be 1 to 200; --after is historical inspection, not presentation; "
+            "handle and acknowledge each normal page only after its earlier obligations are settled"
         )
     return limit
 
@@ -78,11 +79,14 @@ def build_parser() -> argparse.ArgumentParser:
     roster.add_argument("--all", action="store_true", help="Include stopped sessions")
     inbox = commands.add_parser("inbox", help="Read a chat inbox without acknowledging it")
     inbox.add_argument("--identity")
-    inbox.add_argument("--after", type=int)
+    inbox.add_argument("--after", type=int,
+                       help="Historical inspection only; does not advance presentation or ACK")
     inbox.add_argument("--limit", type=_inbox_page_limit, default=100,
-                       help="Page size 1–200; use --after CURSOR for later pages")
+                       help="Page size 1–200; handle/ACK settled normal pages before fetching the next normal page")
     inbox.add_argument("--thread-ts")
     inbox.add_argument("--context", action="store_true")
+    attention = commands.add_parser('attention', help='Bounded recent unrouted context; no presentation, ACK or claim')
+    attention.add_argument('--identity')
     resume = commands.add_parser("resume", help="Read current controls and mailbox with an explicit unmonitored gap; never acknowledge or wake")
     resume.add_argument("--identity")
     resume.add_argument("--unhandled", action="store_true", help="Bounded nonterminal mailbox view; partial coverage is explicit and no ACK advances")

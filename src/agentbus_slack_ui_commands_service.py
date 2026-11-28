@@ -25,6 +25,13 @@ def query_reply(parts: list[str], settings, store, channel: str, actor=None, com
     """Caller must authorize the verified Slack operator before any query."""
     command = command or settings.slack_command
     try:
+        if parts[0] in {'sent', 'attention'}:
+            from src.agentbus_operator_mailbox_service import attention_reply, sent_reply
+            if len(parts) > 2:
+                raise ValueError('Use the private page buttons.')
+            page = page_number(parts[1]) if len(parts) == 2 else 0
+            return (sent_reply(store, channel, actor, page=page) if parts[0] == 'sent'
+                    else attention_reply(store, channel, page=page))
         if parts[0] == 'enrollments':
             if len(parts) > 2:
                 raise ValueError(f'Use {command} enrollments, then choose a request.')
@@ -100,6 +107,12 @@ def execute_interaction(payload: dict, settings, store, web_client) -> str:
         action = parse_action(actions[0])
         if action.channel != channel:
             raise ValueError('This button belongs to another channel. Open the local command again.')
+        if action.kind in {'sent_page', 'sent_replies', 'sent_open', 'attention_page'}:
+            from src.agentbus_operator_mailbox_service import attention_reply, sent_reply
+            if action.kind == 'attention_page':
+                return attention_reply(store, channel, page=action.page)
+            return sent_reply(store, channel, uid, page=action.page,
+                              target=action.target or None, open_thread=action.kind == 'sent_open')
         if action.kind.startswith('identity_'):
             from src.agentbus_identity_ui_service import identity_interaction
             return identity_interaction(action,settings,store,uid,channel)

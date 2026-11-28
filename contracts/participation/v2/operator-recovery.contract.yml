@@ -1,0 +1,46 @@
+document:
+  kind: operator_recovery_contract
+  version: 1.0.0
+  status: active
+  path: contracts/participation/v2/operator-recovery.contract.yml
+scope: Issue108 and linked127; existing service database and workers only
+owners:
+  client_observation: agentbus_poll_client and agentbus_parser_client
+  operator_queries: agentbus_operator_query_service and bounded operator UI
+  federation_custody: agentbus_federation_service
+invariants:
+- History inspection never advances presentation or semantic acknowledgement.
+- A sender aggregate cannot replace the exact authenticated recipient outcome.
+- Sent queries require verified human attribution and the invoking channel; buttons grant no authority.
+- Reply discovery uses retained exact ancestry, never text similarity or timestamp alone.
+- Unrouted fallback observations remain context with their original assurance; no automatic recipient or claim.
+- Delivery, pickup, replies, completion and semantic ACK remain separate.
+- Capacity diagnostics are read-only; no automatic limit increase or unresolved-custody deletion.
+interfaces:
+  sent: configured Slack command sent; private bounded newest-first pages and ancestry replies
+  attention: configured Slack command attention; bounded same-channel unrouted context
+  cached_outcome: sender response may additionally contain exact own recipient_outcome with chat and session binding
+  observation: inbox --after is historical; normal inbox or full poll records presentation
+  compatibility: existing inbox/read response shapes unchanged; no additive observation capability; CLI help and numeric ACK diagnostics explain boundary
+bounds:
+  sent_cursor: canonical positive signed64-bit integer; reject overflow before database lookup
+  operator_page: 4
+  retained_window: 40
+  query_scan: 200
+capacity_notices:
+  enabled_by: AGENTBUS_FEDERATION_CAPACITY_NOTICES=1; disabled by default
+  recipients: at most sixteen currently allowlisted coordination operators
+  channel: existing federation coordination channel; private ephemeral notices only
+  thresholds_percent: [80, 95, 100]
+  recovery_below_percent: 70
+  sample_seconds: 60
+  durable_pairs: 64
+  submission: reserve before provider call; no blind retry after uncertain outcome
+  budget: one existing aggregate provider slot per cycle; no new daemon or provider probe
+  authority: warning and recovery observations only; no ACK, automatic capacity increase or custody deletion
+acceptance:
+- Missing or forged actor, foreign channel, malformed buttons and retired ancestry never widen a view.
+- Sender-only aggregates and wrong-session nested outcomes retain cached evidence and reject reconciliation.
+- Own broadcast recipient outcomes can refresh or retire only that session's presentation.
+- Partial coverage and unavailable remote replies are explicit; an empty window is not proof of absence.
+- No presentation action posts, acknowledges, retries, claims or executes work.

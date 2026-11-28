@@ -366,12 +366,22 @@ class MessageLifecycleStore:
                 recipients = dict(self.owner._db.execute(
                     'SELECT state,count(*) FROM lifecycle_targets WHERE channel=? AND cursor=? GROUP BY state',
                     (principal.channel, cursor)).fetchall())
-                return {'recipients':recipients, 'scope':'sender', 'acknowledgement_inferred':False}
-            target = self.target(principal, cursor)
-            return {'state':target['state'], 'deadline':target['deadline'],
-                    'deadline_elapsed':target['deadline_elapsed'], 'scope':'recipient',
-                    'lease_elapsed':target['lease_elapsed'],
-                    'owned_by_this_session':target['pickup_session'] == principal.session_id}
+                result = {'recipients':recipients, 'scope':'sender', 'acknowledgement_inferred':False}
+                own = self.owner._db.execute(
+                    'SELECT 1 FROM lifecycle_targets WHERE channel=? AND cursor=? AND chat_id=?',
+                    (principal.channel, cursor, principal.chat_id)).fetchone()
+                if own is not None:
+                    result['recipient_outcome'] = self._recipient_outcome(principal, cursor)
+                return result
+            return self._recipient_outcome(principal, cursor)
+
+    def _recipient_outcome(self, principal, cursor):
+        target = self.target(principal, cursor)
+        return {'state':target['state'], 'deadline':target['deadline'],
+                'deadline_elapsed':target['deadline_elapsed'], 'scope':'recipient',
+                'lease_elapsed':target['lease_elapsed'],
+                'chat_id':principal.chat_id, 'session_id':principal.session_id,
+                'owned_by_this_session':target['pickup_session'] == principal.session_id}
 
     def verify_session(self, principal, secret, *, allow_stopped=False):
         row = self.owner.participation.authorize_session(principal.session_id, secret)

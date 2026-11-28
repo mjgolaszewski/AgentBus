@@ -30,6 +30,8 @@ class Settings:
     local_prefix: str | None = None
     slack_command_aliases: tuple[str, ...] = ()
     federation_custody_rows: int | None = None
+    federation_capacity_notices: bool = False
+    federation_auto_compact: bool = False
     publication_config: Path | None = None
     automatic_retention: bool = False
     automatic_retention_apply: bool = False
@@ -52,6 +54,11 @@ class Settings:
         return isinstance(command, str) and command in self.slack_commands
 
     def __post_init__(self):
+        if type(self.federation_auto_compact) is not bool:
+            raise ValueError("Federation automatic compaction requires boolean enablement")
+        if (type(self.federation_capacity_notices) is not bool or self.federation_capacity_notices
+                and not 1 <= len(self.slack_operator_user_ids) <= 16):
+            raise ValueError('Capacity notices require explicit enablement and1..16 allowlisted operators')
         from src.agentbus_recovery_contact_service import RecoveryContact
         if (not isinstance(self.recovery_contacts,tuple) or len(self.recovery_contacts)>16
                 or any(not isinstance(row,RecoveryContact) or row.channel not in self.channels for row in self.recovery_contacts)
@@ -141,6 +148,12 @@ class Settings:
         if raw_custody and not re.fullmatch(r"[0-9]{1,5}", raw_custody):
             raise ValueError("AGENTBUS_FEDERATION_CUSTODY_ROWS requires an integer in1..65536")
         custody_rows = int(raw_custody) if raw_custody else None
+        auto_compact = os.environ.get('AGENTBUS_FEDERATION_AUTO_COMPACT', '0')
+        if auto_compact not in {'0', '1'}:
+            raise ValueError('AGENTBUS_FEDERATION_AUTO_COMPACT must be0 or1')
+        capacity_notices = os.environ.get('AGENTBUS_FEDERATION_CAPACITY_NOTICES', '0')
+        if capacity_notices not in {'0', '1'}:
+            raise ValueError('AGENTBUS_FEDERATION_CAPACITY_NOTICES must be0 or1')
         raw_aliases = os.environ.get("AGENTBUS_SLACK_COMMAND_ALIASES", "").strip()
         aliases = tuple(name.strip() for name in raw_aliases.split(",")) if raw_aliases else ()
         retention = os.environ.get("AGENTBUS_AUTO_RETENTION", "0")
@@ -163,6 +176,7 @@ class Settings:
                    slack_command=os.environ.get("AGENTBUS_SLACK_COMMAND", "/agentbus").strip(),
                    local_prefix=os.environ.get("AGENTBUS_LOCAL_PREFIX", "").strip() or None,
                    slack_command_aliases=aliases, federation_custody_rows=custody_rows,
+                   federation_capacity_notices=capacity_notices == '1', federation_auto_compact=auto_compact == '1',
                    publication_config=Path(publication_config).expanduser() if publication_config else None,
                    slack_channel=channels[0] if len(channels)==1 else "",
                    slack_channels=channels if multiple is not None else (),

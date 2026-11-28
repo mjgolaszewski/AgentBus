@@ -68,7 +68,10 @@ Plain inbox without `--after` and full poll presentation establish the local
 presentation high-water used by ACK. Historical reads, resume and completion do
 not. An ACK rejection reports the requested cursor, presented high-water and
 current semantic ACK; present and handle the relevant work rather than editing
-cursors or recreating delivery.
+cursors or recreating delivery. For normal multi-page consumption, present a
+normal inbox page, pick up and complete applicable work, ACK only after every
+earlier obligation is settled, then fetch the next normal page without `--after`.
+An unfinished earlier obligation remains blocking; never skip it to advance.
 
 ## Carry a bounded recovery note
 
@@ -266,8 +269,9 @@ The custodian reviews current counts, retained obligations and complete resource
 requirements before changing `AGENTBUS_FEDERATION_CUSTODY_ROWS` at startup.
 The default is 1024 rows per table; the supported range is 1–65536. A larger
 bound retains every accepted identity and payload. A lower bound rejects new
-allocations without deleting existing history. Automatic federation archival
-is not provided. Never purge unresolved custody, reset checkpoints or replace
+allocations without deleting existing history. Optional [federation compaction](federation-maintenance.md)
+archives only eligible acknowledged, unreferenced outbound custody after fourteen days;
+legacy destination acceptance and inbound history stay pinned. Never purge unresolved custody, reset checkpoints or replace
 an uncertain UUID to clear a capacity alarm.
 
 ## Intact restart or lost state?

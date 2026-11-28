@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from src.agentbus_presentation_service import section_blocks
 
 UUID = re.compile(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}")
-ACTIONS = frozenset({'identity_page', 'identity_retired_page', 'identity_detail', 'identity_retire', 'identity_history', 'identity_confirm', 'identity_receipt', 'results', 'results_page', 'enrollments_page', 'approve', 'operator_results', 'publication_page', 'publication_results', 'publication_approve'})
+ACTIONS = frozenset({'sent_page', 'sent_replies', 'sent_open', 'attention_page', 'identity_page', 'identity_retired_page', 'identity_detail', 'identity_retire', 'identity_history', 'identity_confirm', 'identity_receipt', 'results', 'results_page', 'enrollments_page', 'approve', 'operator_results', 'publication_page', 'publication_results', 'publication_approve'})
 ACTION_PREFIX = 'agentbus.operator.'
 
 
@@ -30,6 +30,10 @@ class OperatorAction:
         needs_target = self.kind in {'identity_detail', 'identity_retire', 'identity_history', 'identity_confirm', 'identity_receipt', 'results_page', 'approve', 'operator_results', 'publication_results', 'publication_approve'}
         if needs_target and not UUID.fullmatch(self.target):
             raise ValueError('Invalid operator action reference')
+        if self.kind in {'sent_replies', 'sent_open'}:
+            if not re.fullmatch(r'[1-9][0-9]{0,18}', self.target) or int(self.target) > 2**63 - 1:
+                raise ValueError('Invalid sent message reference')
+            needs_target = True
         if not needs_target and self.target:
             raise ValueError('Unexpected operator action reference')
         if self.kind in {'publication_approve', 'identity_confirm'}:

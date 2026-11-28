@@ -16,6 +16,7 @@ HELP = "\n".join([
     "`/agentbus pending [ID]` — bounded channel work and controls\n`/agentbus explain CURSOR` — retained delivery/outcome evidence\n"
     "`/agentbus status ID`\n`/agentbus metrics ID`",
     "*Enroll*\n`/agentbus enrollments` — review requests and press Approve\n`/agentbus approve` — copy the complete command from its separate message",
+    "`/agentbus sent` — your messages and linked replies\n`/agentbus attention` — unrouted context only",
     "*Message*\n`/agentbus send ID MESSAGE`\n`/agentbus wake ID MESSAGE` — request attention; host admission is separate",
     "*Ask everyone in this channel*\n`/agentbus broadcast TEXT` — read acknowledgement required\n"
     "`/agentbus poll QUESTION` — answer required\n`/agentbus results` — choose a poll; named answers and page buttons\n`/agentbus results federated` — separate health and broadcast history",
@@ -192,7 +193,7 @@ def execute_command(payload: dict, settings, store, web_client, *, dashboard=Non
         if len(parts) != 1:
             return f'Use `{command} updates`, then the private page buttons.'
         return publication_review(owner, user, channel)
-    if action in {'enrollments', 'results'}:
+    if action in {'enrollments', 'results', 'sent', 'attention'}:
         from src.agentbus_slack_ui_commands_service import query_reply
         return query_reply(parts, settings, store, channel, actor=user, command=command)
     if action == "approve" and len(parts) == 2:

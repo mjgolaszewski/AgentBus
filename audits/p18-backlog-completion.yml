@@ -1,0 +1,245 @@
+{
+  "document": {
+    "kind": "backlog_completion_audit",
+    "path": "audits/p18-backlog-completion.yml",
+    "status": "source_review_complete_final_proof_pending"
+  },
+  "scope": "Issue108 and linked127 only; no owning-host or IdP construction",
+  "baseline": "21d51e052c10e4f1147718ec7a687a3baee50c6f",
+  "review_method": "Affected owner/caller context and changed production spans; full new modules; retained earlier per-module audit hashes remain historical. No absence-of-all-bugs claim.",
+  "prior_reviews": [
+    "audits/reliability-code-review.yml",
+    "audits/p17-peer-followup.yml"
+  ],
+  "dispositions": [
+    {
+      "report": "Original lifecycle presentation, controls, send preflight, enrollment, aliases, identity management and production audit",
+      "disposition": "Retain delivered0.9.4 through0.13 implementation and tests; P18 adds exact own-broadcast recipient projection instead of replacing sender aggregates. Historical audit evidence is not relabelled as final-subject proof."
+    },
+    {
+      "report": "Historical inbox pagination and ACK confusion127",
+      "disposition": "Clarify historical --after and bounded page validation; preserve normal presentation and ACK guards."
+    },
+    {
+      "report": "Sent replies discovery and unrouted emergency attention",
+      "disposition": "Actor/channel scoped private buttons and bounded exact-session context; no inferred reply ancestry or new authority."
+    },
+    {
+      "report": "Federation full retained tables and proactive warnings",
+      "disposition": "Headroom and sample diagnostics, explicit local operator capability loading and optional durable private threshold notices."
+    },
+    {
+      "report": "Federation retirement and automatic pruning",
+      "disposition": "Offline exact preview/apply and optional hourly100-row compaction;14-day minimum, unsettled/reference pins, durable replay archive. No general ordinary semantic ACK producer; accepted legacy and inbound rows remain pinned."
+    },
+    {
+      "report": "Historical service hang without stack",
+      "disposition": "Cause remains unclassified. Recovery runbook bounded custodian diagnostics remain authoritative; no unsupported stability-fix claim."
+    }
+  ],
+  "editorial_review": {
+    "method": "Every line of these affected editorial files read in full; edits reconciled against implementation and contracts. No fresh whole-corpus audit claim.",
+    "excluded": [
+      "BCF governance machinery",
+      "CHANGELOG.md"
+    ],
+    "documents": [
+      {
+        "path": ".env.example",
+        "disposition": "edited",
+        "lines": 80,
+        "sha256": "45552aace82e07d9608e45c3bc3aa6874f961d20d9c1484d3404607557270400"
+      },
+      {
+        "path": "docs/operator-federation.md",
+        "disposition": "edited",
+        "lines": 166,
+        "sha256": "b00fdac75b0651fb302fb630a311a41cb98a46a71a479e27f394fc99d92ef0a6"
+      },
+      {
+        "path": "docs/recovery.md",
+        "disposition": "edited",
+        "lines": 332,
+        "sha256": "8b46d9fb9604c4ac5b62c3ffa097b732ebc023aa08dfaee43b6156dc17dd0b48"
+      },
+      {
+        "path": "docs/federation.md",
+        "disposition": "edited",
+        "lines": 425,
+        "sha256": "09a6108ccae6e1252cd9dc5a07f5343b86cbd085cae9279ee34e56ccf489a590"
+      },
+      {
+        "path": "docs/audiences/operators.md",
+        "disposition": "edited",
+        "lines": 465,
+        "sha256": "4f56316f0d545b2df5bbfe91e491334f9e6c9960bf9804a0d1aa0b3158d5e780"
+      },
+      {
+        "path": "docs/federation-maintenance.md",
+        "disposition": "added",
+        "lines": 77,
+        "sha256": "a87407f827cb4e9b0a54b121f465e44eedfb9124262e8f761ac1dd78b25fd707"
+      },
+      {
+        "path": "skills/agentbus/SKILL.md",
+        "disposition": "edited",
+        "lines": 146,
+        "sha256": "982baa395f3ffb1a56c069ef9bcc7656aa7f0d1cfe03fcf2da71a836d146d43a"
+      }
+    ],
+    "combined": [],
+    "removed": [],
+    "preserved": "Root README, artwork, diagrams and BCF placement unchanged."
+  },
+  "qualification": {
+    "focused": "Behavioral and negative tests recorded in phase log; canonical final-subject proof pending.",
+    "live_changes": "No live configuration, DB pruning, provider canary, credential or service mutation performed."
+  },
+  "source_review": [
+    {
+      "path": "src/agentbus_client.py",
+      "sha256": "81b9a051f37a4a2e289824aa4454b38e892619928052f8ed8c0a9348005b467b",
+      "disposition": "edited",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_delivery_lifecycle_service.py",
+      "sha256": "981633cbe61f408529492d6a134fa232a7e61d816557022a64f513e9488e62f4",
+      "disposition": "edited",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_delivery_runtime_service.py",
+      "sha256": "052239a99dedec80696adabeef59d2723027099251c79e2a3cd3f88ef8917155",
+      "disposition": "edited",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_federation_service.py",
+      "sha256": "ce63cce45a74f59eeb45f8a2980a0ec215e7e4a6d9a451d33bad5125002f01fc",
+      "disposition": "edited",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_local_delivery_service.py",
+      "sha256": "9e99f07b4504151ab2da6bd500b2a11db87d9276d2d19771a0b4e820899b2094",
+      "disposition": "edited",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_message_lifecycle_service.py",
+      "sha256": "fcddd1483349643c05b4f4e6ef4475ae3c46dfc2d0d1bc94932b0f37877b3fe8",
+      "disposition": "edited",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_operator_client.py",
+      "sha256": "18e16babdb2761a65e404677176fe4ed9a061b79c94a8f5430a689dae4dc6c33",
+      "disposition": "edited",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_operator_presentation_service.py",
+      "sha256": "30712f849adffc5c9075e9ad5b8bc1f1a6a5e7fd2b82e607435ae01092b020c7",
+      "disposition": "edited",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_parser_client.py",
+      "sha256": "230ff8041a3965eb89aafee0a75e6233b0389ecc44bc028d26fb213c1a12d98d",
+      "disposition": "edited",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_poll_client.py",
+      "sha256": "09c8ef91d1ae75e9aa9b7488c42102d50e674e9af3beb20bd0acbd1d6b889700",
+      "disposition": "edited",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_runtime_inventory_service.py",
+      "sha256": "1000115f79071e0ac5fbb20ab35761cbf58047fa0aea687ccf47ea9b1c5e1ba7",
+      "disposition": "edited",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_service.py",
+      "sha256": "fa0289ac718e56397f49834480c56f0f78a40ddf05c64bdf5664225ee615e16d",
+      "disposition": "edited",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_settings_service.py",
+      "sha256": "f0f617dd7e19453c9c4c845ef1dfaf2bb0f6fca5d9ac1b56c820d640d801bb6b",
+      "disposition": "edited",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_slack_command_service.py",
+      "sha256": "bef20205c8e08947665cab0883e3d9bcec7d837898f335d559161978c4e01324",
+      "disposition": "edited",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_slack_ui_commands_service.py",
+      "sha256": "2973875b672b3c9e465aeb21260a05e88a7100ad000ff0462a8de37517597a93",
+      "disposition": "edited",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_slack_ui_service.py",
+      "sha256": "468f3ee659a316e0c7d6254c6d16a10580ed2e56c1fad9bccfb40b168375d462",
+      "disposition": "edited",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_status_api_service.py",
+      "sha256": "3c70bcea2aeb12e34dea20f7bfc847ac09eac3b182a16f0abbc1b8a36cfcce94",
+      "disposition": "edited",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "scripts/federation_retention.py",
+      "sha256": "63d42093ccddac48b526f967f13dd74e1dfb36896f57e24666026b424d3c5feb",
+      "disposition": "added",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_attention_client.py",
+      "sha256": "2f398ea598235918e46e3a355da724518a0e7d0a0665b4ab539e9ac071e08ce0",
+      "disposition": "added",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_capacity_notice_service.py",
+      "sha256": "98967d313eea23266fe3d968b429c5828998d701a13d193c96f57626594b89d3",
+      "disposition": "added",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_federation_retirement_service.py",
+      "sha256": "7593d7f6df98f3cea2910df25ec61ac69223422271a655c3eb25ee4c306a7b4f",
+      "disposition": "added",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    },
+    {
+      "path": "src/agentbus_operator_mailbox_service.py",
+      "sha256": "93f2dab8601c3b3b48543e0958286052aa9474936325fee8bbd1633fa6ef293d",
+      "disposition": "added",
+      "basis": "Complete new module or changed spans and owning caller context; behavioral/negative controls registered in canonical gate selections."
+    }
+  ],
+  "validation": {
+    "combined_affected_tests": "207 passed in31.83s",
+    "architecture_and_attention": "16 passed",
+    "typecheck": "96 source files passed",
+    "governance": "governance-yaml-ok",
+    "packaged_skill": "quick_validate passed",
+    "canonical_final_subject": "pending"
+  },
+  "review_followup": [
+    "Canonical test producer caught stale launcher population; add attention to exact expected set without weakening equality.",
+    "Sent cursor boundary negative controls reproduced2**63 and19-digit overflow before repair; enforce SQLite signed64 bounds in both action decoding and query before lookup.",
+    "Issue127 safe normal-page handle/ACK/next sequence explicit in recovery guide. Existing inbox/read wire shapes unchanged; additive observation metadata deferred because current numeric rejection/frontier and help suffice without another capability."
+  ]
+}
